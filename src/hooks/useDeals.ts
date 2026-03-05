@@ -1,0 +1,347 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../components/ui/Toast';
+import type { DealRow, DealInsert, DealUpdate } from '../types/database';
+
+// ---------------------------------------------------------------------------
+// Filter / pagination types
+// ---------------------------------------------------------------------------
+
+export interface DealFilters {
+  stage?: string;
+  contact_id?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface UseDealsOptions {
+  filters?: DealFilters;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface UseDealsReturn {
+  deals: DealRow[];
+  loading: boolean;
+  error: string | null;
+  totalCount: number;
+  refetch: () => Promise<void>;
+  createDeal: (data: DealInsert) => Promise<DealRow | null>;
+  updateDeal: (id: string, data: DealUpdate) => Promise<DealRow | null>;
+  deleteDeal: (id: string) => Promise<boolean>;
+}
+
+// ---------------------------------------------------------------------------
+// Hook – list all deals with optional filters
+// ---------------------------------------------------------------------------
+
+export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
+  const { filters = {}, page = 1, pageSize = 24 } = options;
+
+  const [deals, setDeals] = useState<DealRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const { toast } = useToast();
+
+  // ---- Fetch deals --------------------------------------------------------
+
+  const fetchDeals = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      let query = supabase
+        .from('deals')
+        .select('*', { count: 'exact' });
+
+      // Stage filter
+      if (filters.stage) {
+        query = query.eq('stage', filters.stage);
+      }
+
+      // Contact filter
+      if (filters.contact_id) {
+        query = query.eq('contact_id', filters.contact_id);
+      }
+
+      // Sorting
+      const sortBy = filters.sortBy || 'created_at';
+      const sortOrder = filters.sortOrder || 'desc';
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+      // Pagination (offset-based via .range)
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error: fetchError, count } = await query;
+
+      if (fetchError) throw fetchError;
+
+      setDeals((data as DealRow[]) ?? []);
+      setTotalCount(count ?? 0);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to fetch deals';
+      setError(message);
+      toast({ title: 'Error', description: message, variant: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  }, [filters.stage, filters.contact_id, filters.sortBy, filters.sortOrder, page, pageSize, toast]);
+
+  useEffect(() => {
+    fetchDeals();
+  }, [fetchDeals]);
+
+  // ---- Create deal --------------------------------------------------------
+
+  const createDeal = useCallback(
+    async (data: DealInsert): Promise<DealRow | null> => {
+      try {
+        // Auto-set user_id from current session
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.user) {
+          toast({ title: 'Error', description: 'You must be logged in', variant: 'error' });
+          return null;
+        }
+
+        const { data: created, error: insertError } = await supabase
+          .from('deals')
+          .insert({ ...data, user_id: session.user.id })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        toast({ title: 'Deal created', description: `Deal has been added.`, variant: 'success' });
+
+        return created as DealRow;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to create deal';
+        toast({ title: 'Error', description: message, variant: 'error' });
+        return null;
+      }
+    },
+    [toast],
+  );
+
+  // ---- Update deal --------------------------------------------------------
+
+  const updateDeal = useCallback(
+    async (id: string, data: DealUpdate): Promise<DealRow | null> => {
+      try {
+        const { data: updated, error: updateError } = await supabase
+          .from('deals')
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+
+        toast({ title: 'Deal updated', description: `Deal has been saved.`, variant: 'success' });
+
+        return updated as DealRow;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to update deal';
+        toast({ title: 'Error', description: message, variant: 'error' });
+        return null;
+      }
+    },
+    [toast],
+  );
+
+  // ---- Delete deal --------------------------------------------------------
+
+  const deleteDeal = useCallback(
+    async (id: string): Promise<boolean> => {
+      try {
+        const { error: deleteError } = await supabase
+          .from('deals')
+          .delete()
+          .eq('id', id);
+
+        if (deleteError) throw deleteError;
+
+        toast({ title: 'Deal deleted', variant: 'success' });
+
+        return true;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to delete deal';
+        toast({ title: 'Error', description: message, variant: 'error' });
+        return false;
+      }
+    },
+    [toast],
+  );
+
+  return {
+    deals,
+    loading,
+    error,
+    totalCount,
+    refetch: fetchDeals,
+    createDeal,
+    updateDeal,
+    deleteDeal,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Hook – deals for a specific contact
+// ---------------------------------------------------------------------------
+
+export interface UseContactDealsReturn {
+  deals: DealRow[];
+  loading: boolean;
+  refetch: () => Promise<void>;
+  createDeal: (data: DealInsert) => Promise<DealRow | null>;
+  updateDeal: (id: string, data: DealUpdate) => Promise<DealRow | null>;
+  deleteDeal: (id: string) => Promise<boolean>;
+}
+
+export function useContactDeals(contactId: string): UseContactDealsReturn {
+  const [deals, setDeals] = useState<DealRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const { toast } = useToast();
+
+  // ---- Fetch deals for contact --------------------------------------------
+
+  const fetchDeals = useCallback(async () => {
+    if (!contactId) {
+      setDeals([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('deals')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+
+      setDeals((data as DealRow[]) ?? []);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to fetch deals';
+      toast({ title: 'Error', description: message, variant: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  }, [contactId, toast]);
+
+  useEffect(() => {
+    fetchDeals();
+  }, [fetchDeals]);
+
+  // ---- Create deal --------------------------------------------------------
+
+  const createDeal = useCallback(
+    async (data: DealInsert): Promise<DealRow | null> => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.user) {
+          toast({ title: 'Error', description: 'You must be logged in', variant: 'error' });
+          return null;
+        }
+
+        const { data: created, error: insertError } = await supabase
+          .from('deals')
+          .insert({ ...data, user_id: session.user.id })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        toast({ title: 'Deal created', description: `Deal has been added.`, variant: 'success' });
+
+        return created as DealRow;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to create deal';
+        toast({ title: 'Error', description: message, variant: 'error' });
+        return null;
+      }
+    },
+    [toast],
+  );
+
+  // ---- Update deal --------------------------------------------------------
+
+  const updateDeal = useCallback(
+    async (id: string, data: DealUpdate): Promise<DealRow | null> => {
+      try {
+        const { data: updated, error: updateError } = await supabase
+          .from('deals')
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+
+        toast({ title: 'Deal updated', description: `Deal has been saved.`, variant: 'success' });
+
+        return updated as DealRow;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to update deal';
+        toast({ title: 'Error', description: message, variant: 'error' });
+        return null;
+      }
+    },
+    [toast],
+  );
+
+  // ---- Delete deal --------------------------------------------------------
+
+  const deleteDeal = useCallback(
+    async (id: string): Promise<boolean> => {
+      try {
+        const { error: deleteError } = await supabase
+          .from('deals')
+          .delete()
+          .eq('id', id);
+
+        if (deleteError) throw deleteError;
+
+        toast({ title: 'Deal deleted', variant: 'success' });
+
+        return true;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to delete deal';
+        toast({ title: 'Error', description: message, variant: 'error' });
+        return false;
+      }
+    },
+    [toast],
+  );
+
+  return {
+    deals,
+    loading,
+    refetch: fetchDeals,
+    createDeal,
+    updateDeal,
+    deleteDeal,
+  };
+}

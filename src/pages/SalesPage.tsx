@@ -1,0 +1,378 @@
+import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSales } from '../hooks/useSales';
+import { useArtworks } from '../hooks/useArtworks';
+import { useContacts } from '../hooks/useContacts';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
+import { Modal } from '../components/ui/Modal';
+import { SearchInput } from '../components/ui/SearchInput';
+import { EmptyState } from '../components/ui/EmptyState';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { GallerySelect } from '../components/galleries/GallerySelect';
+import { Textarea } from '../components/ui/Textarea';
+import { formatCurrency, formatDate } from '../lib/utils';
+import { CURRENCIES } from '../lib/constants';
+import { supabase } from '../lib/supabase';
+import type { SaleInsert, Currency } from '../types/database';
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+export function SalesPage() {
+  const navigate = useNavigate();
+
+  // ---- Filters ------------------------------------------------------------
+
+  const [search, setSearch] = useState('');
+  const [galleryFilter, setGalleryFilter] = useState<string | null>(null);
+
+  const { sales, loading, refetch, createSale } = useSales({
+    filters: {
+      search: search || undefined,
+      galleryId: galleryFilter || undefined,
+    },
+  });
+
+  // ---- Data for the form --------------------------------------------------
+
+  const { artworks } = useArtworks();
+  const { contacts } = useContacts();
+
+  // ---- Modal state --------------------------------------------------------
+
+  const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // ---- Form state ---------------------------------------------------------
+
+  const [artworkId, setArtworkId] = useState('');
+  const [galleryId, setGalleryId] = useState<string | null>(null);
+  const [contactId, setContactId] = useState('');
+  const [saleDate, setSaleDate] = useState('');
+  const [salePrice, setSalePrice] = useState('');
+  const [currency, setCurrency] = useState('EUR');
+  const [commissionPercent, setCommissionPercent] = useState('');
+  const [buyerName, setBuyerName] = useState('');
+  const [buyerEmail, setBuyerEmail] = useState('');
+  const [notes, setNotes] = useState('');
+
+  // ---- Handlers -----------------------------------------------------------
+
+  function resetForm() {
+    setArtworkId('');
+    setGalleryId(null);
+    setContactId('');
+    setSaleDate('');
+    setSalePrice('');
+    setCurrency('EUR');
+    setCommissionPercent('');
+    setBuyerName('');
+    setBuyerEmail('');
+    setNotes('');
+  }
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+  }
+
+  async function handleRecordSale(e: FormEvent) {
+    e.preventDefault();
+
+    if (!artworkId || !saleDate || !salePrice) return;
+
+    setSaving(true);
+
+    const data: SaleInsert = {
+      artwork_id: artworkId,
+      gallery_id: galleryId || null,
+      contact_id: contactId || null,
+      sale_date: saleDate,
+      sale_price: parseFloat(salePrice),
+      currency: currency as Currency,
+      commission_percent: commissionPercent ? parseFloat(commissionPercent) : null,
+      buyer_name: buyerName.trim() || null,
+      buyer_email: buyerEmail.trim() || null,
+      notes: notes.trim() || null,
+    };
+
+    const created = await createSale(data);
+
+    if (created) {
+      // Auto-update artwork status to 'sold'
+      await supabase
+        .from('artworks')
+        .update({ status: 'sold' })
+        .eq('id', artworkId);
+
+      resetForm();
+      setShowModal(false);
+    }
+
+    setSaving(false);
+  }
+
+  // ---- Render -------------------------------------------------------------
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-primary-900">
+            Sales
+          </h1>
+          <p className="mt-1 text-sm text-primary-500">
+            View and record artwork sales.
+          </p>
+        </div>
+
+        <Button onClick={() => setShowModal(true)}>
+          Record Sale
+        </Button>
+      </div>
+
+      {/* Search & Filters */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end">
+        <SearchInput
+          value={search}
+          onChange={handleSearchChange}
+          placeholder="Search by buyer name..."
+          className="max-w-md"
+        />
+
+        <div className="w-48">
+          <GallerySelect
+            value={galleryFilter}
+            onChange={setGalleryFilter}
+            label="Gallery"
+          />
+        </div>
+      </div>
+
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <LoadingSpinner size="lg" />
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && sales.length === 0 && (
+        <EmptyState
+          icon={
+            <svg
+              className="h-12 w-12"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
+              />
+            </svg>
+          }
+          title={search || galleryFilter ? 'No sales found' : 'No sales yet'}
+          description={
+            search || galleryFilter
+              ? 'Try adjusting your search terms or filters.'
+              : 'Record your first sale to start tracking revenue.'
+          }
+          action={
+            !search && !galleryFilter ? (
+              <Button onClick={() => setShowModal(true)}>
+                Record First Sale
+              </Button>
+            ) : undefined
+          }
+        />
+      )}
+
+      {/* Sales table */}
+      {!loading && sales.length > 0 && (
+        <div className="overflow-x-auto rounded-lg border border-primary-100">
+          <table className="min-w-full divide-y divide-primary-100">
+            <thead className="bg-primary-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Artwork
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Gallery
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Buyer
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Date
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Price
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Commission
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-primary-50 bg-white">
+              {sales.map((sale) => (
+                <tr
+                  key={sale.id}
+                  className="cursor-pointer hover:bg-primary-50 transition-colors"
+                  onClick={() => navigate(`/artworks/${sale.artwork_id}`)}
+                >
+                  <td className="whitespace-nowrap px-4 py-3">
+                    <div className="text-sm font-medium text-primary-900">
+                      {sale.artworks?.title ?? 'Unknown Artwork'}
+                    </div>
+                    <div className="text-xs text-primary-400">
+                      {sale.artworks?.reference_code ?? ''}
+                    </div>
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                    {sale.galleries?.name ?? '-'}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                    {sale.contacts
+                      ? `${sale.contacts.first_name} ${sale.contacts.last_name}`
+                      : sale.buyer_name ?? '-'}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                    {formatDate(sale.sale_date)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-primary-900">
+                    {formatCurrency(sale.sale_price, sale.currency)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-primary-600">
+                    {sale.commission_percent != null
+                      ? `${sale.commission_percent}%`
+                      : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Record Sale Modal */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => {
+          resetForm();
+          setShowModal(false);
+        }}
+        title="Record Sale"
+        size="lg"
+      >
+        <form onSubmit={handleRecordSale} className="space-y-4">
+          <Select
+            label="Artwork *"
+            options={artworks.map((a) => ({
+              value: a.id,
+              label: `${a.title} (${a.reference_code || a.inventory_number || 'No ref'})`,
+            }))}
+            value={artworkId}
+            onChange={(e) => setArtworkId(e.target.value)}
+            placeholder="Select artwork"
+          />
+
+          <GallerySelect
+            value={galleryId}
+            onChange={setGalleryId}
+            label="Gallery"
+          />
+
+          <Select
+            label="Contact"
+            options={[
+              { value: '', label: 'No contact' },
+              ...contacts.map((c) => ({
+                value: c.id,
+                label: `${c.first_name} ${c.last_name}`,
+              })),
+            ]}
+            value={contactId}
+            onChange={(e) => setContactId(e.target.value)}
+          />
+
+          <Input
+            label="Sale Date *"
+            type="date"
+            value={saleDate}
+            onChange={(e) => setSaleDate(e.target.value)}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Sale Price *"
+              type="number"
+              placeholder="0.00"
+              value={salePrice}
+              onChange={(e) => setSalePrice(e.target.value)}
+            />
+            <Select
+              label="Currency"
+              options={[...CURRENCIES]}
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+            />
+          </div>
+
+          <Input
+            label="Commission %"
+            type="number"
+            placeholder="e.g. 20"
+            value={commissionPercent}
+            onChange={(e) => setCommissionPercent(e.target.value)}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Buyer Name"
+              placeholder="Buyer's name"
+              value={buyerName}
+              onChange={(e) => setBuyerName(e.target.value)}
+            />
+            <Input
+              label="Buyer Email"
+              type="email"
+              placeholder="buyer@example.com"
+              value={buyerEmail}
+              onChange={(e) => setBuyerEmail(e.target.value)}
+            />
+          </div>
+
+          <Textarea
+            label="Notes"
+            placeholder="Any additional information..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-3 border-t border-primary-100 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetForm();
+                setShowModal(false);
+              }}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" loading={saving}>
+              Record Sale
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+}

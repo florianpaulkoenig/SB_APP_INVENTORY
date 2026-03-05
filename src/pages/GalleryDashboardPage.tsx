@@ -1,0 +1,239 @@
+// ---------------------------------------------------------------------------
+// NOA Inventory -- Gallery Dashboard Page
+// Dashboard view for gallery-role users showing consigned artworks overview.
+// ---------------------------------------------------------------------------
+
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import type { ArtworkRow, GalleryRow, DeliveryRow } from '../types/database';
+
+// ---------------------------------------------------------------------------
+// Status badge variant mapping
+// ---------------------------------------------------------------------------
+
+const STATUS_BADGE_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'info' | 'danger'> = {
+  available: 'success',
+  sold: 'default',
+  reserved: 'warning',
+  in_production: 'info',
+  in_transit: 'info',
+  on_consignment: 'info',
+};
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+export function GalleryDashboardPage() {
+  const { profile } = useAuth();
+
+  const [gallery, setGallery] = useState<GalleryRow | null>(null);
+  const [artworks, setArtworks] = useState<ArtworkRow[]>([]);
+  const [deliveries, setDeliveries] = useState<DeliveryRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const galleryId = profile?.gallery_id;
+
+  // ---- Fetch data ---------------------------------------------------------
+
+  useEffect(() => {
+    if (!galleryId) {
+      setLoading(false);
+      return;
+    }
+
+    async function fetchData() {
+      setLoading(true);
+
+      // Fetch gallery details
+      const { data: galleryData } = await supabase
+        .from('galleries')
+        .select('*')
+        .eq('id', galleryId!)
+        .single();
+
+      if (galleryData) setGallery(galleryData as GalleryRow);
+
+      // Fetch artworks consigned to this gallery
+      const { data: artworkData } = await supabase
+        .from('artworks')
+        .select('*')
+        .eq('gallery_id', galleryId!)
+        .order('created_at', { ascending: false });
+
+      if (artworkData) setArtworks(artworkData as ArtworkRow[]);
+
+      // Fetch active deliveries for this gallery
+      const { data: deliveryData } = await supabase
+        .from('deliveries')
+        .select('*')
+        .eq('gallery_id', galleryId!)
+        .neq('status', 'delivered')
+        .order('created_at', { ascending: false });
+
+      if (deliveryData) setDeliveries(deliveryData as DeliveryRow[]);
+
+      setLoading(false);
+    }
+
+    fetchData();
+  }, [galleryId]);
+
+  // ---- Derived stats ------------------------------------------------------
+
+  const totalConsigned = artworks.length;
+  const totalSold = artworks.filter((a) => a.status === 'sold').length;
+  const activeDeliveries = deliveries.length;
+
+  const recentArtworks = artworks.slice(0, 6);
+
+  // ---- Render: no gallery configured --------------------------------------
+
+  if (!loading && !galleryId) {
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="font-display text-3xl font-bold text-primary-900">
+            Gallery Dashboard
+          </h1>
+        </div>
+        <EmptyState
+          icon={
+            <svg
+              className="h-12 w-12"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"
+              />
+            </svg>
+          }
+          title="Your gallery profile is not configured yet"
+          description="Please contact an administrator to link your account to a gallery."
+        />
+      </div>
+    );
+  }
+
+  // ---- Render: loading ----------------------------------------------------
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // ---- Render: dashboard --------------------------------------------------
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="font-display text-3xl font-bold text-primary-900">
+          Gallery Dashboard
+        </h1>
+        <p className="mt-1 text-sm text-primary-500">
+          {gallery?.name ?? 'Gallery'}
+        </p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-lg border border-primary-100 bg-white p-6">
+          <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+            Total Consigned
+          </p>
+          <p className="mt-2 font-display text-3xl font-bold text-primary-900">
+            {totalConsigned}
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-primary-100 bg-white p-6">
+          <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+            Artworks Sold
+          </p>
+          <p className="mt-2 font-display text-3xl font-bold text-primary-900">
+            {totalSold}
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-primary-100 bg-white p-6">
+          <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+            Active Deliveries
+          </p>
+          <p className="mt-2 font-display text-3xl font-bold text-primary-900">
+            {activeDeliveries}
+          </p>
+        </div>
+      </div>
+
+      {/* Recent artworks */}
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-display text-lg font-semibold text-primary-900">
+          Recent Artworks
+        </h2>
+        <Link to="/gallery/artworks">
+          <Button variant="ghost" size="sm">
+            View All
+          </Button>
+        </Link>
+      </div>
+
+      {recentArtworks.length === 0 ? (
+        <EmptyState
+          title="No artworks yet"
+          description="Artworks consigned to your gallery will appear here."
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {recentArtworks.map((artwork) => (
+            <Card key={artwork.id} className="overflow-hidden">
+              {/* Image placeholder */}
+              <div className="flex h-40 items-center justify-center bg-primary-50">
+                <svg
+                  className="h-10 w-10 text-primary-300"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z"
+                  />
+                </svg>
+              </div>
+
+              {/* Card body */}
+              <div className="p-4">
+                <h3 className="text-sm font-medium text-primary-900 truncate">
+                  {artwork.title}
+                </h3>
+                <div className="mt-2">
+                  <Badge variant={STATUS_BADGE_VARIANT[artwork.status] ?? 'default'}>
+                    {artwork.status.replace(/_/g, ' ')}
+                  </Badge>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
