@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { getInitials } from '../../lib/utils';
 
@@ -14,6 +15,7 @@ interface TopbarProps {
 // Topbar component
 // ---------------------------------------------------------------------------
 export function Topbar({ onMenuToggle, title }: TopbarProps) {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -60,6 +62,7 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
         {/* Search button */}
         <button
           type="button"
+          onClick={() => navigate('/artworks?search=1')}
           className="rounded-md p-2 text-primary-400 transition-colors hover:bg-primary-50 hover:text-primary-700"
           aria-label="Search"
         >

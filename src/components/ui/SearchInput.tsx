@@ -6,6 +6,7 @@ export interface SearchInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  autoFocus?: boolean;
 }
 
 export function SearchInput({
@@ -13,6 +14,7 @@ export function SearchInput({
   onChange,
   placeholder = 'Search...',
   className,
+  autoFocus = false,
 }: SearchInputProps) {
   const [localValue, setLocalValue] = useState(value);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,6 +63,7 @@ export function SearchInput({
         value={localValue}
         onChange={handleChange}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         className="w-full rounded-md border border-primary-200 bg-white py-2 pl-10 pr-3 text-sm text-primary-900 placeholder:text-primary-400 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
       />
     </div>

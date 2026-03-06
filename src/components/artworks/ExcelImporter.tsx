@@ -8,6 +8,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { Badge } from '../ui/Badge';
+import { GallerySelect } from '../galleries/GallerySelect';
 import { useDocumentNumber } from '../../hooks/useDocumentNumber';
 import { useArtworks } from '../../hooks/useArtworks';
 import { generateArtworkRefCode } from '../../lib/utils';
@@ -73,6 +74,7 @@ export function ExcelImporter({
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedGalleryId, setSelectedGalleryId] = useState<string | null>(null);
   const [progress, setProgress] = useState<ImportProgress>({
     total: 0,
     completed: 0,
@@ -109,6 +111,7 @@ export function ExcelImporter({
     setMappings([]);
     setParseError(null);
     setIsDragging(false);
+    setSelectedGalleryId(null);
     setProgress({
       total: 0,
       completed: 0,
@@ -230,6 +233,7 @@ export function ExcelImporter({
           reference_code: referenceCode,
           title: mapped.title || 'Untitled',
           ...mapped,
+          ...(selectedGalleryId ? { gallery_id: selectedGalleryId } : {}),
         };
 
         const result = await createArtwork(artworkData);
@@ -256,7 +260,7 @@ export function ExcelImporter({
         errors: [...importErrors],
       });
     }
-  }, [mappedRows, generateNumber, createArtwork]);
+  }, [mappedRows, generateNumber, createArtwork, selectedGalleryId]);
 
   const handleDone = useCallback(() => {
     onImportComplete();
@@ -454,6 +458,18 @@ export function ExcelImporter({
 
   const renderUploadStep = () => (
     <div>
+      {/* Gallery selection for bulk import */}
+      <div className="mb-4">
+        <GallerySelect
+          value={selectedGalleryId}
+          onChange={setSelectedGalleryId}
+          label="Assign to Gallery (optional)"
+        />
+        <p className="mt-1 text-xs text-primary-400">
+          All imported artworks will be assigned to this gallery.
+        </p>
+      </div>
+
       <div
         className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 transition-colors ${
           isDragging

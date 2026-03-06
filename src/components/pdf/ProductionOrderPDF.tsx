@@ -1,17 +1,16 @@
 // ---------------------------------------------------------------------------
-// NOA Inventory -- Production Order PDF
+// NOA Inventory -- Production Order PDF (Artist Version)
 // ---------------------------------------------------------------------------
 
-import { Document, Page, View, Text } from '@react-pdf/renderer';
+import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 import styles, { PDF_COLORS } from './PDFStyles';
-import { PDFHeader } from './PDFHeader';
-import { COMPANY_NAME } from '../../lib/constants';
+import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 
 // ---------------------------------------------------------------------------
 // Multi-language translations
 // ---------------------------------------------------------------------------
 interface TranslationStrings {
-  productionOrder: string;
+  artworkCreationSchedule: string;
   orderNo: string;
   title: string;
   status: string;
@@ -20,67 +19,47 @@ interface TranslationStrings {
   gallery: string;
   client: string;
   price: string;
-  description: string;
-  item: string;
-  medium: string;
-  dimensions: string;
-  quantity: string;
   notes: string;
   totalItems: string;
 }
 
 const TRANSLATIONS: Record<string, TranslationStrings> = {
   en: {
-    productionOrder: 'Production Order',
+    artworkCreationSchedule: 'Artwork Creation Schedule',
     orderNo: 'Order No.',
     title: 'Title',
     status: 'Status',
     orderDate: 'Order Date',
     deadline: 'Deadline',
-    gallery: 'Gallery / Agent',
+    gallery: 'Gallery',
     client: 'Client',
     price: 'Price',
-    description: 'Description',
-    item: 'Item',
-    medium: 'Medium',
-    dimensions: 'Dimensions',
-    quantity: 'Quantity',
     notes: 'Notes',
     totalItems: 'Total Items',
   },
   de: {
-    productionOrder: 'Produktionsauftrag',
+    artworkCreationSchedule: 'Kunstwerk-Produktionsplan',
     orderNo: 'Auftrag Nr.',
     title: 'Titel',
     status: 'Status',
     orderDate: 'Auftragsdatum',
     deadline: 'Frist',
-    gallery: 'Galerie / Agent',
+    gallery: 'Galerie',
     client: 'Kunde',
     price: 'Preis',
-    description: 'Beschreibung',
-    item: 'Position',
-    medium: 'Medium',
-    dimensions: 'Ma\u00dfe',
-    quantity: 'Menge',
     notes: 'Anmerkungen',
     totalItems: 'Gesamtanzahl',
   },
   fr: {
-    productionOrder: 'Ordre de production',
+    artworkCreationSchedule: "Calendrier de Cr\u00e9ation d'Oeuvres",
     orderNo: 'Commande N\u00b0',
     title: 'Titre',
     status: 'Statut',
     orderDate: 'Date de commande',
     deadline: 'D\u00e9lai',
-    gallery: 'Galerie / Agent',
+    gallery: 'Galerie',
     client: 'Client',
     price: 'Prix',
-    description: 'Description',
-    item: 'Article',
-    medium: 'M\u00e9dium',
-    dimensions: 'Dimensions',
-    quantity: 'Quantit\u00e9',
     notes: 'Notes',
     totalItems: 'Total articles',
   },
@@ -149,14 +128,82 @@ export interface ProductionOrderPDFProps {
 }
 
 // ---------------------------------------------------------------------------
-// Table column widths (percentages)
+// Column widths for the items table (Title / Gallery / Deadline)
 // ---------------------------------------------------------------------------
-const COL_NUM = '6%';
-const COL_DESC = '28%';
-const COL_MEDIUM = '16%';
-const COL_DIM = '18%';
-const COL_QTY = '8%';
-const COL_NOTES = '24%';
+const COL_TITLE = '50%';
+const COL_GALLERY = '30%';
+const COL_DEADLINE = '20%';
+
+// ---------------------------------------------------------------------------
+// Custom styles for the artist version
+// ---------------------------------------------------------------------------
+const artistStyles = StyleSheet.create({
+  headerContainer: {
+    marginBottom: 24,
+  },
+  artistName: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 22,
+    color: PDF_COLORS.primary900,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  scheduleTitle: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 14,
+    color: PDF_COLORS.primary700,
+    marginTop: 4,
+    letterSpacing: 1,
+  },
+  orderNumber: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 10,
+    color: PDF_COLORS.primary400,
+    marginTop: 2,
+  },
+  titleBar: {
+    flexDirection: 'row',
+    backgroundColor: PDF_COLORS.primary900,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginTop: 16,
+  },
+  titleBarText: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 9,
+    color: PDF_COLORS.white,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 0.5,
+    borderBottomColor: PDF_COLORS.border,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+  },
+  itemRowAlt: {
+    flexDirection: 'row',
+    borderBottomWidth: 0.5,
+    borderBottomColor: PDF_COLORS.border,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    backgroundColor: PDF_COLORS.backgroundLight,
+  },
+  itemText: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 9,
+    color: PDF_COLORS.primary700,
+  },
+  itemTitleText: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 9,
+    color: PDF_COLORS.primary900,
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -183,20 +230,11 @@ export function ProductionOrderPDF({
   // Build info rows -- only include rows that have a value
   const infoRows: { label: string; value: string }[] = [
     { label: t.orderNo, value: order.order_number },
-    { label: t.title, value: order.title },
     { label: t.status, value: translateStatus(order.status, language) },
   ];
 
   if (order.ordered_date) {
     infoRows.push({ label: t.orderDate, value: order.ordered_date });
-  }
-
-  if (order.deadline) {
-    infoRows.push({ label: t.deadline, value: order.deadline });
-  }
-
-  if (galleryName) {
-    infoRows.push({ label: t.gallery, value: galleryName });
   }
 
   if (contactName) {
@@ -218,12 +256,14 @@ export function ProductionOrderPDF({
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* ----- Header -------------------------------------------------- */}
-        <PDFHeader
-          title={t.productionOrder}
-          subtitle={order.order_number}
-          language={language}
-        />
+        {/* ----- Header: Artist Name + Artwork Creation Schedule ---------- */}
+        <View style={artistStyles.headerContainer}>
+          <Text style={artistStyles.artistName}>{ARTIST_NAME}</Text>
+          <Text style={artistStyles.scheduleTitle}>
+            {t.artworkCreationSchedule}
+          </Text>
+          <Text style={artistStyles.orderNumber}>{order.order_number}</Text>
+        </View>
 
         {/* ----- Order Info ---------------------------------------------- */}
         <View style={styles.infoGrid}>
@@ -235,59 +275,35 @@ export function ProductionOrderPDF({
           ))}
         </View>
 
-        {/* ----- Description --------------------------------------------- */}
-        {order.description && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t.description}</Text>
-            <Text style={styles.bodyText}>{order.description}</Text>
-          </View>
-        )}
-
-        {/* ----- Items Table --------------------------------------------- */}
+        {/* ----- Items: Black title bar + rows --------------------------- */}
         <View style={styles.table}>
-          {/* Table header */}
-          <View style={styles.tableHeaderRow}>
-            <Text style={[styles.tableHeaderCell, { width: COL_NUM }]}>#</Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_DESC }]}>
-              {t.item}
+          {/* Black title bar: Title | Gallery | Deadline */}
+          <View style={artistStyles.titleBar}>
+            <Text style={[artistStyles.titleBarText, { width: COL_TITLE }]}>
+              {t.title}
             </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_MEDIUM }]}>
-              {t.medium}
+            <Text style={[artistStyles.titleBarText, { width: COL_GALLERY }]}>
+              {t.gallery}
             </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_DIM }]}>
-              {t.dimensions}
-            </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_QTY }]}>
-              {t.quantity}
-            </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_NOTES }]}>
-              {t.notes}
+            <Text style={[artistStyles.titleBarText, { width: COL_DEADLINE }]}>
+              {t.deadline}
             </Text>
           </View>
 
-          {/* Table body */}
+          {/* Item rows — each shows: description (title), gallery, deadline */}
           {items.map((item, index) => (
             <View
-              style={index % 2 === 1 ? styles.tableBodyRowAlt : styles.tableBodyRow}
+              style={index % 2 === 1 ? artistStyles.itemRowAlt : artistStyles.itemRow}
               key={`${item.description}-${index}`}
             >
-              <Text style={[styles.tableCell, { width: COL_NUM }]}>
-                {index + 1}
-              </Text>
-              <Text style={[styles.tableCell, { width: COL_DESC }]}>
+              <Text style={[artistStyles.itemTitleText, { width: COL_TITLE }]}>
                 {item.description}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_MEDIUM }]}>
-                {item.medium ?? '\u2014'}
+              <Text style={[artistStyles.itemText, { width: COL_GALLERY }]}>
+                {galleryName ?? '\u2014'}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_DIM }]}>
-                {item.dimensions}
-              </Text>
-              <Text style={[styles.tableCell, { width: COL_QTY }]}>
-                {item.quantity}
-              </Text>
-              <Text style={[styles.tableCell, { width: COL_NOTES }]}>
-                {item.notes ?? '\u2014'}
+              <Text style={[artistStyles.itemText, { width: COL_DEADLINE }]}>
+                {order.deadline ?? '\u2014'}
               </Text>
             </View>
           ))}

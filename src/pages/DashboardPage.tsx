@@ -74,6 +74,14 @@ interface GalleryOrderRevenue {
   orderCount: number;
 }
 
+// Revenue split (gallery / NOA / artist)
+interface RevenueSplit {
+  gallery: number; // CHF
+  noa: number;     // CHF
+  artist: number;  // CHF
+  total: number;   // CHF
+}
+
 // Gallery performance analysis
 interface GalleryPerformance {
   id: string;
@@ -99,6 +107,7 @@ export function DashboardPage() {
   const [galleryPotentials, setGalleryPotentials] = useState<GalleryPotential[]>([]);
   const [galleryOrderRevenues, setGalleryOrderRevenues] = useState<GalleryOrderRevenue[]>([]);
   const [galleryPerformance, setGalleryPerformance] = useState<GalleryPerformance[]>([]);
+  const [revenueSplit, setRevenueSplit] = useState<RevenueSplit>({ gallery: 0, noa: 0, artist: 0, total: 0 });
   const [loading, setLoading] = useState(true);
 
   // Store raw data so we can re-compute when exchange rates arrive
@@ -107,6 +116,7 @@ export function DashboardPage() {
   const [rawProdOrders, setRawProdOrders] = useState<RawProdOrder[]>([]);
   const [galleryNameMap, setGalleryNameMap] = useState<Record<string, string>>({});
   const [galleryCommissionRates, setGalleryCommissionRates] = useState<Record<string, number>>({});
+  const [galleryCommissionSplits, setGalleryCommissionSplits] = useState<Record<string, { gallery: number; noa: number; artist: number }>>({});
   const [consignmentDates, setConsignmentDates] = useState<Record<string, string>>({});
 
   // ---- Fetch raw data from Supabase (currency-agnostic) -------------------
@@ -190,24 +200,33 @@ export function DashboardPage() {
       if (po.gallery_id) allGalleryIds.add(po.gallery_id);
     }
 
-    // Fetch gallery names + commission rates
+    // Fetch gallery names + commission rates + splits
     const galleryIds = Array.from(allGalleryIds);
     const nameMap: Record<string, string> = {};
     const commissionMap: Record<string, number> = {};
+    const splitMap: Record<string, { gallery: number; noa: number; artist: number }> = {};
     if (galleryIds.length > 0) {
       const { data: galleries } = await supabase
         .from('galleries')
-        .select('id, name, commission_rate')
+        .select('id, name, commission_rate, commission_gallery, commission_noa, commission_artist')
         .in('id', galleryIds);
       for (const g of galleries ?? []) {
         nameMap[g.id] = g.name;
         if (g.commission_rate != null) {
           commissionMap[g.id] = g.commission_rate;
         }
+        if (g.commission_gallery != null || g.commission_noa != null || g.commission_artist != null) {
+          splitMap[g.id] = {
+            gallery: g.commission_gallery ?? 0,
+            noa: g.commission_noa ?? 0,
+            artist: g.commission_artist ?? 0,
+          };
+        }
       }
     }
     setGalleryNameMap(nameMap);
     setGalleryCommissionRates(commissionMap);
+    setGalleryCommissionSplits(splitMap);
 
     // Fetch consignment movements for avg-days-to-sell calculation
     // Get the earliest consignment date per artwork
@@ -337,6 +356,24 @@ export function DashboardPage() {
       .sort((a, b) => b.revenue - a.revenue);
     setGalleryRevenues(revenues);
 
+    // ---- Revenue split: Gallery / NOA / Artist (CHF) ----
+    let splitGallery = 0;
+    let splitNoa = 0;
+    let splitArtist = 0;
+    for (const sale of rawSales) {
+      const chfPrice = toCHF(sale.sale_price ?? 0, sale.currency ?? 'EUR');
+      if (sale.gallery_id && galleryCommissionSplits[sale.gallery_id]) {
+        const split = galleryCommissionSplits[sale.gallery_id];
+        splitGallery += chfPrice * (split.gallery / 100);
+        splitNoa += chfPrice * (split.noa / 100);
+        splitArtist += chfPrice * (split.artist / 100);
+      } else {
+        // No split defined — entire revenue attributed to artist/NOA
+        splitArtist += chfPrice;
+      }
+    }
+    setRevenueSplit({ gallery: splitGallery, noa: splitNoa, artist: splitArtist, total: revenueTotal });
+
     // ---- Gallery Performance Analysis ----
     // Collect per-gallery: sell-through rate, revenue, commission, avg days to sell
     const allGalleryIds = new Set<string>();
@@ -411,7 +448,7 @@ export function DashboardPage() {
       .filter((p) => p.totalArtworks > 0 || p.revenue > 0)
       .sort((a, b) => b.sellThroughRate - a.sellThroughRate);
     setGalleryPerformance(performances);
-  }, [ratesReady, toCHF, rawArtworks, rawSales, rawProdOrders, galleryNameMap, galleryCommissionRates, consignmentDates]);
+  }, [ratesReady, toCHF, rawArtworks, rawSales, rawProdOrders, galleryNameMap, galleryCommissionRates, galleryCommissionSplits, consignmentDates]);
 
   // ---- Stat cards ---------------------------------------------------------
 
@@ -500,6 +537,76 @@ export function DashboardPage() {
               Active production orders
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Revenue Split (Gallery / NOA / Artist) */}
+      {!loading && revenueSplit.total > 0 && (
+        <div className="mt-10">
+          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
+            Revenue Split
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-lg border border-primary-100 bg-white p-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                Gallery Share
+              </p>
+              <p className="mt-2 font-display text-2xl font-bold text-sky-600">
+                {formatCurrency(revenueSplit.gallery, 'CHF')}
+              </p>
+              {revenueSplit.total > 0 && (
+                <p className="mt-1 text-xs text-primary-400">
+                  {((revenueSplit.gallery / revenueSplit.total) * 100).toFixed(1)}% of revenue
+                </p>
+              )}
+            </div>
+            <div className="rounded-lg border border-primary-100 bg-white p-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                NOA Share
+              </p>
+              <p className="mt-2 font-display text-2xl font-bold text-accent">
+                {formatCurrency(revenueSplit.noa, 'CHF')}
+              </p>
+              {revenueSplit.total > 0 && (
+                <p className="mt-1 text-xs text-primary-400">
+                  {((revenueSplit.noa / revenueSplit.total) * 100).toFixed(1)}% of revenue
+                </p>
+              )}
+            </div>
+            <div className="rounded-lg border border-primary-100 bg-white p-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                Artist Share (Simon Berger)
+              </p>
+              <p className="mt-2 font-display text-2xl font-bold text-emerald-600">
+                {formatCurrency(revenueSplit.artist, 'CHF')}
+              </p>
+              {revenueSplit.total > 0 && (
+                <p className="mt-1 text-xs text-primary-400">
+                  {((revenueSplit.artist / revenueSplit.total) * 100).toFixed(1)}% of revenue
+                </p>
+              )}
+            </div>
+          </div>
+          {/* Visual bar */}
+          {revenueSplit.total > 0 && (
+            <div className="mt-3 flex h-3 overflow-hidden rounded-full">
+              <div
+                className="bg-sky-500 transition-all"
+                style={{ width: `${(revenueSplit.gallery / revenueSplit.total) * 100}%` }}
+              />
+              <div
+                className="bg-amber-500 transition-all"
+                style={{ width: `${(revenueSplit.noa / revenueSplit.total) * 100}%` }}
+              />
+              <div
+                className="bg-emerald-500 transition-all"
+                style={{ width: `${(revenueSplit.artist / revenueSplit.total) * 100}%` }}
+              />
+            </div>
+          )}
+          <p className="mt-2 text-xs text-primary-400">
+            Based on commission split percentages defined per gallery profile. Revenue without a gallery split is attributed to the artist.
+          </p>
         </div>
       )}
 

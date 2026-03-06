@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useArtworks } from '../hooks/useArtworks';
 import type { ArtworkFilters as ArtworkFiltersType } from '../hooks/useArtworks';
@@ -39,6 +39,15 @@ type ViewMode = 'grid' | 'table';
 
 export function ArtworksPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const shouldFocusSearch = searchParams.get('search') === '1';
+
+  // Clear the search param after reading it (so browser back doesn't re-trigger)
+  useEffect(() => {
+    if (shouldFocusSearch) {
+      setSearchParams({}, { replace: true });
+    }
+  }, [shouldFocusSearch, setSearchParams]);
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -180,6 +189,7 @@ export function ArtworksPage() {
           onChange={handleSearchChange}
           placeholder="Search artworks by title, inventory number, reference code, or medium..."
           className="max-w-md"
+          autoFocus={shouldFocusSearch}
         />
       </div>
 
