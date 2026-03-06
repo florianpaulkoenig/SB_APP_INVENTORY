@@ -610,6 +610,9 @@ export function ProductionOrdersPage() {
                   Title
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Gallery
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Status
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
@@ -635,6 +638,11 @@ export function ProductionOrdersPage() {
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
                     {order.title}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                    {order.gallery_id && galleryNameMap[order.gallery_id]
+                      ? galleryNameMap[order.gallery_id]
+                      : <span className="text-primary-300">—</span>}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
                     <StatusBadge status={order.status} />
