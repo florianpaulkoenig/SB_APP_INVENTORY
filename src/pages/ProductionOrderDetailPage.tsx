@@ -215,12 +215,14 @@ export function ProductionOrderDetailPage() {
       </Modal>
 
       {/* Convert to Artwork Dialog */}
-      <ConvertToArtworkDialog
-        isOpen={!!convertItem}
-        onClose={() => setConvertItem(null)}
-        item={convertItem}
-        onConvert={handleConvertToArtwork}
-      />
+      {convertItem && (
+        <ConvertToArtworkDialog
+          isOpen
+          onClose={() => setConvertItem(null)}
+          item={convertItem}
+          onConverted={handleConvertToArtwork}
+        />
+      )}
     </div>
   );
 }
