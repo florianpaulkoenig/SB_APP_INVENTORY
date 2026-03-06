@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pdf } from '@react-pdf/renderer';
 import { supabase } from '../lib/supabase';
@@ -13,7 +13,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { PRODUCTION_STATUSES } from '../lib/constants';
-import { formatDate, formatDimensions } from '../lib/utils';
+import { formatDate, formatDimensions, formatCurrency } from '../lib/utils';
 import type { ProductionStatus, ProductionOrderRow } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -49,6 +49,50 @@ export function ProductionOrdersPage() {
       status: (statusFilter || undefined) as ProductionStatus | undefined,
     },
   });
+
+  // ---- Gallery name resolution for summary --------------------------------
+
+  const [galleryNameMap, setGalleryNameMap] = useState<Record<string, string>>({});
+
+  const fetchGalleryNames = useCallback(async () => {
+    const galleryIds = [
+      ...new Set(productionOrders.map((o) => o.gallery_id).filter(Boolean)),
+    ] as string[];
+    if (galleryIds.length === 0) {
+      setGalleryNameMap({});
+      return;
+    }
+    const { data: galleries } = await supabase
+      .from('galleries')
+      .select('id, name')
+      .in('id', galleryIds);
+    const map: Record<string, string> = {};
+    for (const g of galleries ?? []) map[g.id] = g.name;
+    setGalleryNameMap(map);
+  }, [productionOrders]);
+
+  useEffect(() => {
+    fetchGalleryNames();
+  }, [fetchGalleryNames]);
+
+  // ---- Revenue summary computations ---------------------------------------
+
+  const totalOrderValue = productionOrders.reduce(
+    (sum, o) => sum + (o.price != null && o.price > 0 ? o.price : 0),
+    0,
+  );
+
+  const perGalleryValue: Array<{ id: string; name: string; value: number }> = (() => {
+    const map: Record<string, number> = {};
+    for (const o of productionOrders) {
+      if (o.gallery_id && o.price != null && o.price > 0) {
+        map[o.gallery_id] = (map[o.gallery_id] || 0) + o.price;
+      }
+    }
+    return Object.entries(map)
+      .map(([gId, val]) => ({ id: gId, name: galleryNameMap[gId] || 'Unknown', value: val }))
+      .sort((a, b) => b.value - a.value);
+  })();
 
   // ---- Handlers -----------------------------------------------------------
 
@@ -307,6 +351,38 @@ export function ProductionOrdersPage() {
         </div>
       </div>
 
+      {/* Revenue summary */}
+      {!loading && productionOrders.length > 0 && totalOrderValue > 0 && (
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Total */}
+            <div className="rounded-lg border border-primary-100 bg-white px-5 py-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                Total Order Value
+              </p>
+              <p className="mt-1 font-display text-xl font-bold text-primary-900">
+                {formatCurrency(totalOrderValue, 'EUR')}
+              </p>
+            </div>
+            {/* Per gallery */}
+            {perGalleryValue.map((g) => (
+              <div
+                key={g.id}
+                className="cursor-pointer rounded-lg border border-primary-100 bg-white px-5 py-3 transition-shadow hover:shadow-md"
+                onClick={() => navigate(`/galleries/${g.id}`)}
+              >
+                <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                  {g.name}
+                </p>
+                <p className="mt-1 font-display text-xl font-bold text-accent">
+                  {formatCurrency(g.value, 'EUR')}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-20">
@@ -375,6 +451,9 @@ export function ProductionOrdersPage() {
                   Deadline
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Value
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
                   Action
                 </th>
               </tr>
@@ -400,6 +479,11 @@ export function ProductionOrdersPage() {
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
                     {order.deadline ? formatDate(order.deadline) : '-'}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-primary-800">
+                    {order.price != null && order.price > 0
+                      ? formatCurrency(order.price, order.currency ?? 'EUR')
+                      : '-'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
