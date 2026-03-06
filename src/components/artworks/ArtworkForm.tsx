@@ -116,6 +116,17 @@ export function ArtworkForm({
   const [currentLocation, setCurrentLocation] = useState(artwork?.current_location ?? '');
   const [galleryId, setGalleryId] = useState<string | null>(artwork?.gallery_id ?? null);
 
+  // Commission split
+  const [commissionGallery, setCommissionGallery] = useState(
+    artwork?.commission_gallery != null ? String(artwork.commission_gallery) : '',
+  );
+  const [commissionNoa, setCommissionNoa] = useState(
+    artwork?.commission_noa != null ? String(artwork.commission_noa) : '',
+  );
+  const [commissionArtist, setCommissionArtist] = useState(
+    artwork?.commission_artist != null ? String(artwork.commission_artist) : '',
+  );
+
   // Notes
   const [notes, setNotes] = useState(artwork?.notes ?? '');
 
@@ -184,6 +195,19 @@ export function ArtworkForm({
       }
     }
 
+    // Commission split validation: if any field is filled, all must add to 100
+    const cg = commissionGallery !== '' ? parseFloat(commissionGallery) : null;
+    const cn = commissionNoa !== '' ? parseFloat(commissionNoa) : null;
+    const ca = commissionArtist !== '' ? parseFloat(commissionArtist) : null;
+
+    const anyFilled = cg !== null || cn !== null || ca !== null;
+    if (anyFilled) {
+      const total = (cg ?? 0) + (cn ?? 0) + (ca ?? 0);
+      if (Math.abs(total - 100) > 0.01) {
+        next.commission = `Commission split must total 100% (currently ${total.toFixed(1)}%)`;
+      }
+    }
+
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -217,6 +241,9 @@ export function ArtworkForm({
       status: status as ArtworkStatus,
       current_location: currentLocation.trim() || null,
       gallery_id: galleryId,
+      commission_gallery: commissionGallery !== '' ? parseFloat(commissionGallery) : null,
+      commission_noa: commissionNoa !== '' ? parseFloat(commissionNoa) : null,
+      commission_artist: commissionArtist !== '' ? parseFloat(commissionArtist) : null,
       category: (category || null) as ArtworkCategory | null,
       motif: (motif || null) as ArtworkMotif | null,
       series: (series || null) as ArtworkSeries | null,
@@ -504,7 +531,57 @@ export function ArtworkForm({
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Section 7: Notes                                                   */}
+      {/* Section 7: Commission Split                                        */}
+      {/* ------------------------------------------------------------------ */}
+      <section>
+        <SectionHeader>Commission Split</SectionHeader>
+
+        {errors.commission && (
+          <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-800">
+            {errors.commission}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Input
+            label="Gallery / Agent %"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="0"
+            value={commissionGallery}
+            onChange={(e) => setCommissionGallery(e.target.value)}
+          />
+          <Input
+            label="NOA %"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="0"
+            value={commissionNoa}
+            onChange={(e) => setCommissionNoa(e.target.value)}
+          />
+          <Input
+            label="Artist %"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="0"
+            value={commissionArtist}
+            onChange={(e) => setCommissionArtist(e.target.value)}
+          />
+        </div>
+
+        <p className="mt-2 text-xs text-primary-400">
+          Must total 100%. Leave all empty if not applicable.
+        </p>
+      </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 8: Notes                                                   */}
       {/* ------------------------------------------------------------------ */}
       <section>
         <SectionHeader>Notes</SectionHeader>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   useProductionOrder,
@@ -7,6 +7,7 @@ import {
 } from '../hooks/useProductionOrders';
 import { ProductionOrderDetail } from '../components/production/ProductionOrderDetail';
 import { ProductionOrderForm } from '../components/production/ProductionOrderForm';
+import { ProductionOrderImages } from '../components/production/ProductionOrderImages';
 import { ProductionItemEditor } from '../components/production/ProductionItemEditor';
 import { ConvertToArtworkDialog } from '../components/production/ConvertToArtworkDialog';
 import { Button } from '../components/ui/Button';
@@ -37,6 +38,46 @@ export function ProductionOrderDetailPage() {
     refetch: refetchItems,
   } = useProductionOrderItems(id!);
   const { deleteProductionOrder, updateProductionOrder } = useProductionOrders();
+
+  // ---- Resolve gallery & contact names -------------------------------------
+  const [galleryName, setGalleryName] = useState<string | null>(null);
+  const [contactName, setContactName] = useState<string | null>(null);
+
+  const fetchRelatedNames = useCallback(async () => {
+    if (!productionOrder) return;
+
+    if (productionOrder.gallery_id) {
+      const { data } = await supabase
+        .from('galleries')
+        .select('name')
+        .eq('id', productionOrder.gallery_id)
+        .single();
+      if (data) setGalleryName(data.name);
+    } else {
+      setGalleryName(null);
+    }
+
+    if (productionOrder.contact_id) {
+      const { data } = await supabase
+        .from('contacts')
+        .select('first_name, last_name, company')
+        .eq('id', productionOrder.contact_id)
+        .single();
+      if (data) {
+        setContactName(
+          [data.first_name, data.last_name, data.company ? `(${data.company})` : '']
+            .filter(Boolean)
+            .join(' '),
+        );
+      }
+    } else {
+      setContactName(null);
+    }
+  }, [productionOrder]);
+
+  useEffect(() => {
+    fetchRelatedNames();
+  }, [fetchRelatedNames]);
 
   // ---- Modal state --------------------------------------------------------
 
@@ -173,6 +214,8 @@ export function ProductionOrderDetailPage() {
       <ProductionOrderDetail
         order={productionOrder}
         items={items}
+        galleryName={galleryName}
+        contactName={contactName}
         onEdit={() => setShowEditModal(true)}
         onDelete={handleDelete}
         onAddItem={() => setShowAddItem(true)}
@@ -183,6 +226,11 @@ export function ProductionOrderDetailPage() {
           if (found) setConvertItem(found);
         }}
       />
+
+      {/* Reference Images */}
+      <div className="mt-8">
+        <ProductionOrderImages productionOrderId={id!} />
+      </div>
 
       {/* Add Item Modal */}
       <Modal
@@ -206,10 +254,8 @@ export function ProductionOrderDetailPage() {
         size="lg"
       >
         <ProductionOrderForm
-          orderNumber={productionOrder.order_number}
-          initialData={productionOrder}
+          productionOrder={productionOrder}
           onSubmit={handleEdit}
-          onCancel={() => setShowEditModal(false)}
           loading={editLoading}
         />
       </Modal>

@@ -5,7 +5,7 @@ import { StatusBadge } from '../ui/StatusBadge';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { ProductionOrderPDF } from '../pdf/ProductionOrderPDF';
-import { formatDate, formatDimensions } from '../../lib/utils';
+import { formatDate, formatDimensions, formatCurrency } from '../../lib/utils';
 import { PRODUCTION_STATUSES } from '../../lib/constants';
 import type {
   ProductionOrderRow,
@@ -40,6 +40,8 @@ export interface ProductionOrderDetailProps {
       } | null;
     }
   >;
+  galleryName?: string | null;
+  contactName?: string | null;
   onEdit: () => void;
   onDelete: () => Promise<void>;
   onAddItem: () => void;
@@ -132,6 +134,8 @@ function ProductionStatusFlow({
 export function ProductionOrderDetail({
   order,
   items,
+  galleryName,
+  contactName,
   onEdit,
   onDelete,
   onAddItem,
@@ -256,6 +260,18 @@ export function ProductionOrderDetail({
             label="Deadline"
             value={order.deadline ? formatDate(order.deadline) : null}
           />
+          <InfoRow label="Gallery / Agent" value={galleryName} />
+          <InfoRow label="Client" value={contactName} />
+          {order.price != null && (
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                Price
+              </dt>
+              <dd className="mt-1 text-sm font-semibold text-primary-800">
+                {formatCurrency(order.price, order.currency)}
+              </dd>
+            </div>
+          )}
         </dl>
         {!order.title && !order.description && (
           <p className="text-sm text-primary-400">No overview details provided.</p>

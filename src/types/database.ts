@@ -132,6 +132,9 @@ export interface ArtworkRow {
   status: ArtworkStatus;
   current_location: string | null;
   gallery_id: string | null;
+  commission_gallery: number | null;
+  commission_noa: number | null;
+  commission_artist: number | null;
   category: ArtworkCategory | null;
   motif: ArtworkMotif | null;
   series: ArtworkSeries | null;
@@ -165,6 +168,9 @@ export interface ArtworkInsert {
   status?: ArtworkStatus;
   current_location?: string | null;
   gallery_id?: string | null;
+  commission_gallery?: number | null;
+  commission_noa?: number | null;
+  commission_artist?: number | null;
   category?: ArtworkCategory | null;
   motif?: ArtworkMotif | null;
   series?: ArtworkSeries | null;
@@ -396,6 +402,10 @@ export interface ProductionOrderRow {
   status: ProductionStatus;
   ordered_date: string | null;
   deadline: string | null;
+  gallery_id: string | null;
+  contact_id: string | null;
+  price: number | null;
+  currency: Currency;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -410,6 +420,10 @@ export interface ProductionOrderInsert {
   status?: ProductionStatus;
   ordered_date?: string | null;
   deadline?: string | null;
+  gallery_id?: string | null;
+  contact_id?: string | null;
+  price?: number | null;
+  currency?: Currency;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;

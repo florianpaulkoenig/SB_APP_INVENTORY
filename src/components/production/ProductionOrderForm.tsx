@@ -3,13 +3,16 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import { PRODUCTION_STATUSES, DOC_PREFIXES } from '../../lib/constants';
+import { GallerySelect } from '../galleries/GallerySelect';
+import { PRODUCTION_STATUSES, CURRENCIES, DOC_PREFIXES } from '../../lib/constants';
 import { useDocumentNumber } from '../../hooks/useDocumentNumber';
+import { supabase } from '../../lib/supabase';
 import type {
   ProductionOrderRow,
   ProductionOrderInsert,
   ProductionOrderUpdate,
   ProductionStatus,
+  Currency,
 } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -57,7 +60,36 @@ export function ProductionOrderForm({
     productionOrder?.ordered_date ?? new Date().toISOString().split('T')[0],
   );
   const [deadline, setDeadline] = useState(productionOrder?.deadline ?? '');
+  const [galleryId, setGalleryId] = useState<string | null>(productionOrder?.gallery_id ?? null);
+  const [contactId, setContactId] = useState<string | null>(productionOrder?.contact_id ?? null);
+  const [price, setPrice] = useState(productionOrder?.price != null ? String(productionOrder.price) : '');
+  const [currency, setCurrency] = useState<string>(productionOrder?.currency ?? 'EUR');
   const [notes, setNotes] = useState(productionOrder?.notes ?? '');
+
+  // ---- Fetch contacts for dropdown ------------------------------------------
+  const [contacts, setContacts] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    async function fetchContacts() {
+      const { data } = await supabase
+        .from('contacts')
+        .select('id, first_name, last_name, company')
+        .order('last_name', { ascending: true });
+
+      if (data) {
+        setContacts(
+          data.map((c) => ({
+            id: c.id,
+            name: [c.first_name, c.last_name, c.company ? `(${c.company})` : '']
+              .filter(Boolean)
+              .join(' '),
+          })),
+        );
+      }
+    }
+
+    fetchContacts();
+  }, []);
 
   // ---- Auto-generate order number for new orders --------------------------
 
@@ -105,6 +137,10 @@ export function ProductionOrderForm({
       status: status as ProductionStatus,
       ordered_date: orderedDate || null,
       deadline: deadline || null,
+      gallery_id: galleryId,
+      contact_id: contactId,
+      price: price !== '' ? parseFloat(price) : null,
+      currency: currency as Currency,
       notes: notes.trim() || null,
     };
 
@@ -180,7 +216,53 @@ export function ProductionOrderForm({
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Section 3: Notes                                                   */}
+      {/* Section 3: Client & Gallery                                        */}
+      {/* ------------------------------------------------------------------ */}
+      <section>
+        <SectionHeader>Client &amp; Gallery</SectionHeader>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <GallerySelect value={galleryId} onChange={setGalleryId} label="Gallery / Agent" />
+
+          <Select
+            label="Client"
+            options={[
+              { value: '', label: 'No client' },
+              ...contacts.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+            value={contactId ?? ''}
+            onChange={(e) => setContactId(e.target.value === '' ? null : e.target.value)}
+          />
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 4: Price                                                   */}
+      {/* ------------------------------------------------------------------ */}
+      <section>
+        <SectionHeader>Price</SectionHeader>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Input
+            label="Price"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="0.00"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+          <Select
+            label="Currency"
+            options={CURRENCIES.map((c) => ({ value: c.value, label: `${c.label} (${c.symbol})` }))}
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+          />
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 5: Notes                                                   */}
       {/* ------------------------------------------------------------------ */}
       <section>
         <SectionHeader>Notes</SectionHeader>
