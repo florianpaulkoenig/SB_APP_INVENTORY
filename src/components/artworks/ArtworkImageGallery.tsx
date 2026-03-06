@@ -30,10 +30,15 @@ interface ImageWithUrl extends ArtworkImageRow {
 // Tabs config
 // ---------------------------------------------------------------------------
 
-const IMAGE_TABS = IMAGE_TYPES.map((t) => ({
-  key: t.value,
-  label: t.label,
-}));
+function buildImageTabs(images: ImageWithUrl[]) {
+  return IMAGE_TYPES.map((t) => {
+    const count = images.filter((img) => img.image_type === t.value).length;
+    return {
+      key: t.value,
+      label: count > 0 ? `${t.label} (${count})` : t.label,
+    };
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -90,6 +95,13 @@ export function ArtworkImageGallery({
     }
 
     setImages(imagesWithUrls);
+
+    // Auto-select the first tab that has images
+    if (imagesWithUrls.length > 0) {
+      const firstType = imagesWithUrls[0].image_type;
+      setActiveTab(firstType);
+    }
+
     setLoading(false);
   }, [artworkId]);
 
@@ -176,7 +188,7 @@ export function ArtworkImageGallery({
   return (
     <div className="space-y-4">
       {/* Image type tabs */}
-      <Tabs tabs={IMAGE_TABS} activeTab={activeTab} onChange={setActiveTab} />
+      <Tabs tabs={buildImageTabs(images)} activeTab={activeTab} onChange={setActiveTab} />
 
       {/* Grid */}
       {filteredImages.length > 0 ? (
