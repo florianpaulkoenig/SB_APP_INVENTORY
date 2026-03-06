@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { pdf } from '@react-pdf/renderer';
+import { supabase } from '../lib/supabase';
 import { useProductionOrders } from '../hooks/useProductionOrders';
+import { ProductionOrderPDF } from '../components/pdf/ProductionOrderPDF';
 import { Button } from '../components/ui/Button';
 import { SearchInput } from '../components/ui/SearchInput';
 import { Select } from '../components/ui/Select';
@@ -8,8 +11,20 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { PRODUCTION_STATUSES } from '../lib/constants';
-import { formatDate } from '../lib/utils';
-import type { ProductionStatus } from '../types/database';
+import { formatDate, formatDimensions } from '../lib/utils';
+import type { ProductionStatus, ProductionOrderRow } from '../types/database';
+
+// ---------------------------------------------------------------------------
+// Language options for PDF export
+// ---------------------------------------------------------------------------
+
+type Language = 'en' | 'de' | 'fr';
+
+const LANGUAGE_OPTIONS = [
+  { value: 'en', label: 'English' },
+  { value: 'de', label: 'Deutsch' },
+  { value: 'fr', label: 'Français' },
+] as const;
 
 // ---------------------------------------------------------------------------
 // Page
@@ -22,6 +37,8 @@ export function ProductionOrdersPage() {
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [language, setLanguage] = useState<Language>('en');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const { productionOrders, loading } = useProductionOrders({
     filters: {
@@ -38,6 +55,79 @@ export function ProductionOrdersPage() {
 
   function handleStatusChange(value: string) {
     setStatusFilter(value);
+  }
+
+  // ---- PDF download for a single order ------------------------------------
+
+  async function handleDownloadPDF(order: ProductionOrderRow) {
+    setDownloadingId(order.id);
+
+    try {
+      // Fetch items for this order
+      const { data: items } = await supabase
+        .from('production_order_items')
+        .select('*')
+        .eq('production_order_id', order.id)
+        .order('sort_order', { ascending: true });
+
+      const pdfItems = (items ?? []).map((item) => ({
+        description: item.description,
+        medium: item.medium,
+        dimensions: formatDimensions(
+          item.height,
+          item.width,
+          item.depth,
+          item.dimension_unit ?? 'cm',
+        ),
+        quantity: item.quantity,
+        notes: item.notes,
+      }));
+
+      // Fetch gallery name if set
+      let galleryName: string | null = null;
+      if (order.gallery_id) {
+        const { data: gallery } = await supabase
+          .from('galleries')
+          .select('name')
+          .eq('id', order.gallery_id)
+          .single();
+        galleryName = gallery?.name ?? null;
+      }
+
+      // Fetch contact name if set
+      let contactName: string | null = null;
+      if (order.contact_id) {
+        const { data: contact } = await supabase
+          .from('contacts')
+          .select('first_name, last_name')
+          .eq('id', order.contact_id)
+          .single();
+        if (contact) {
+          contactName = [contact.first_name, contact.last_name].filter(Boolean).join(' ');
+        }
+      }
+
+      const blob = await pdf(
+        <ProductionOrderPDF
+          order={order}
+          items={pdfItems}
+          galleryName={galleryName}
+          contactName={contactName}
+          language={language}
+        />,
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${order.order_number}_production-order.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadingId(null);
+    }
   }
 
   // ---- Render -------------------------------------------------------------
@@ -75,6 +165,15 @@ export function ProductionOrdersPage() {
             value={statusFilter}
             onChange={(e) => handleStatusChange(e.target.value)}
             placeholder="All Statuses"
+          />
+        </div>
+
+        <div className="w-48">
+          <Select
+            label="PDF Language"
+            options={[...LANGUAGE_OPTIONS]}
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as Language)}
           />
         </div>
       </div>
@@ -174,16 +273,42 @@ export function ProductionOrdersPage() {
                     {order.deadline ? formatDate(order.deadline) : '-'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/production/${order.id}`);
-                      }}
-                    >
-                      View
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Download PDF"
+                        loading={downloadingId === order.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadPDF(order);
+                        }}
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth="1.5"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                          />
+                        </svg>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/production/${order.id}`);
+                        }}
+                      >
+                        View
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
