@@ -186,10 +186,78 @@ export function ProductionItemEditor({
     ...ARTWORK_SERIES.map((s) => ({ value: s.value, label: s.label })),
   ];
 
+  // ---- Presets ------------------------------------------------------------
+
+  function applyPreset(preset: {
+    height: string; width: string; depth: string;
+    framedHeight: string; framedWidth: string; framedDepth: string;
+    weight: string; medium: string; category: string; motif: string;
+    series: string; currency: string; price: string;
+  }) {
+    setHeight(preset.height);
+    setWidth(preset.width);
+    setDepth(preset.depth);
+    setFramedHeight(preset.framedHeight);
+    setFramedWidth(preset.framedWidth);
+    setFramedDepth(preset.framedDepth);
+    setWeight(preset.weight);
+    setMedium(preset.medium);
+    setCategory(preset.category);
+    setMotif(preset.motif);
+    setSeries(preset.series);
+    setCurrency(preset.currency);
+    setPrice(preset.price);
+    setDimensionUnit('cm');
+    setEditionType('unique');
+    setYear(String(new Date().getFullYear()));
+  }
+
+  const PRESETS = [
+    {
+      label: '100 × 100 cm — $25,000',
+      values: {
+        height: '100', width: '100', depth: '10',
+        framedHeight: '', framedWidth: '', framedDepth: '',
+        weight: '44', medium: 'Glass, acrylic', category: 'painting',
+        motif: 'portrait', series: 'portrait', currency: 'USD', price: '25000',
+      },
+    },
+    {
+      label: '150 × 150 cm — $37,500',
+      values: {
+        height: '150', width: '150', depth: '15',
+        framedHeight: '', framedWidth: '', framedDepth: '',
+        weight: '100', medium: 'Glass, acrylic', category: 'painting',
+        motif: 'portrait', series: 'portrait', currency: 'USD', price: '37500',
+      },
+    },
+  ];
+
   // ---- Render -------------------------------------------------------------
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* ---- Quick Presets ---- */}
+      {!item && (
+        <div>
+          <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-primary-400">
+            Quick Presets
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {PRESETS.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => applyPreset(preset.values)}
+                className="rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-100 hover:border-primary-300"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ---- Basic Info ---- */}
       <div>
         <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-primary-400">

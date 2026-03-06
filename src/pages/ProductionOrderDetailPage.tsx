@@ -45,6 +45,7 @@ export function ProductionOrderDetailPage() {
     items,
     loading: itemsLoading,
     addItem,
+    updateItem,
     removeItem,
     refetch: refetchItems,
   } = useProductionOrderItems(id!);
@@ -96,6 +97,7 @@ export function ProductionOrderDetailPage() {
   const [showAddItem, setShowAddItem] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [editingItem, setEditingItem] = useState<ProductionOrderItemWithJoins | null>(null);
   const [convertItem, setConvertItem] = useState<ProductionOrderItemWithJoins | null>(null);
 
   // ---- Handlers -----------------------------------------------------------
@@ -104,6 +106,50 @@ export function ProductionOrderDetailPage() {
     const created = await addItem(data);
     if (created) {
       setShowAddItem(false);
+      await refetchOrder();
+    }
+  }
+
+  async function handleUpdateItem(data: ProductionOrderItemInsert) {
+    if (!editingItem) return;
+    const updated = await updateItem(editingItem.id, data);
+    if (updated) {
+      setEditingItem(null);
+      await refetchOrder();
+    }
+  }
+
+  async function handleDuplicateItem(itemId: string) {
+    const source = items.find((i) => i.id === itemId);
+    if (!source) return;
+
+    const duplicateData: ProductionOrderItemInsert = {
+      production_order_id: id!,
+      description: source.description,
+      medium: source.medium,
+      year: source.year,
+      height: source.height,
+      width: source.width,
+      depth: source.depth,
+      dimension_unit: source.dimension_unit as DimensionUnit,
+      framed_height: source.framed_height,
+      framed_width: source.framed_width,
+      framed_depth: source.framed_depth,
+      weight: source.weight,
+      edition_type: source.edition_type as EditionType,
+      edition_number: source.edition_number,
+      edition_total: source.edition_total,
+      price: source.price,
+      currency: (source.currency ?? 'EUR') as Currency,
+      category: (source.category ?? null) as ArtworkCategory | null,
+      motif: (source.motif ?? null) as ArtworkMotif | null,
+      series: (source.series ?? null) as ArtworkSeries | null,
+      quantity: source.quantity,
+      notes: source.notes,
+    };
+
+    const created = await addItem(duplicateData);
+    if (created) {
       await refetchOrder();
     }
   }
@@ -364,6 +410,11 @@ export function ProductionOrderDetailPage() {
         onEdit={() => setShowEditModal(true)}
         onDelete={handleDelete}
         onAddItem={() => setShowAddItem(true)}
+        onEditItem={(itemId) => {
+          const found = items.find((i) => i.id === itemId);
+          if (found) setEditingItem(found);
+        }}
+        onDuplicateItem={handleDuplicateItem}
         onRemoveItem={handleRemoveItem}
         onStatusChange={handleStatusChange}
         onConvertItem={(itemId) => {
@@ -390,6 +441,24 @@ export function ProductionOrderDetailPage() {
           onCancel={() => setShowAddItem(false)}
         />
       </Modal>
+
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <Modal
+          isOpen
+          onClose={() => setEditingItem(null)}
+          title="Edit Production Item"
+          size="3xl"
+        >
+          <ProductionItemEditor
+            key={editingItem.id}
+            item={editingItem}
+            productionOrderId={id!}
+            onSubmit={handleUpdateItem}
+            onCancel={() => setEditingItem(null)}
+          />
+        </Modal>
+      )}
 
       {/* Edit Production Order Modal */}
       <Modal
