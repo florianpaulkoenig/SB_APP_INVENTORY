@@ -42,6 +42,17 @@ export type ArtworkSeries =
   | 'landscape'
   | 'abstract'
   | 'figurative'
+  | 'skull'
+  | 'sphere'
+  | 'half_sphere'
+  | 'other';
+
+export type ArtworkColor =
+  | 'green'
+  | 'red'
+  | 'white'
+  | 'silver'
+  | 'dark_grey'
   | 'other';
 
 export type DimensionUnit = 'cm' | 'inches';
@@ -145,6 +156,7 @@ export interface ArtworkRow {
   category: ArtworkCategory | null;
   motif: ArtworkMotif | null;
   series: ArtworkSeries | null;
+  color: ArtworkColor | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -181,6 +193,7 @@ export interface ArtworkInsert {
   category?: ArtworkCategory | null;
   motif?: ArtworkMotif | null;
   series?: ArtworkSeries | null;
+  color?: ArtworkColor | null;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -463,6 +476,7 @@ export interface ProductionOrderItemRow {
   category: ArtworkCategory | null;
   motif: ArtworkMotif | null;
   series: ArtworkSeries | null;
+  color: ArtworkColor | null;
   quantity: number;
   notes: string | null;
   artwork_id: string | null;
@@ -493,6 +507,7 @@ export interface ProductionOrderItemInsert {
   category?: ArtworkCategory | null;
   motif?: ArtworkMotif | null;
   series?: ArtworkSeries | null;
+  color?: ArtworkColor | null;
   quantity?: number;
   notes?: string | null;
   artwork_id?: string | null;
@@ -1297,6 +1312,7 @@ export interface ArtworkTemplateRow {
   category: ArtworkCategory | null;
   motif: ArtworkMotif | null;
   series: ArtworkSeries | null;
+  color: ArtworkColor | null;
   notes: string | null;
   sort_order: number;
   created_at: string;
@@ -1321,6 +1337,7 @@ export interface ArtworkTemplateInsert {
   category?: ArtworkCategory | null;
   motif?: ArtworkMotif | null;
   series?: ArtworkSeries | null;
+  color?: ArtworkColor | null;
   notes?: string | null;
   sort_order?: number;
   created_at?: string;

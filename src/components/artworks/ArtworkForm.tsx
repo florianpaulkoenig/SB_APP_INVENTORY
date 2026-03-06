@@ -9,6 +9,7 @@ import {
   ARTWORK_CATEGORIES,
   ARTWORK_MOTIFS,
   ARTWORK_SERIES,
+  ARTWORK_COLORS,
   EDITION_TYPES,
   CURRENCIES,
   DIMENSION_UNITS,
@@ -20,6 +21,7 @@ import type {
   ArtworkCategory,
   ArtworkMotif,
   ArtworkSeries,
+  ArtworkColor,
   DimensionUnit,
   Currency,
   EditionType,
@@ -84,6 +86,7 @@ export function ArtworkForm({
   const [category, setCategory] = useState(v?.category ?? '');
   const [motif, setMotif] = useState(v?.motif ?? '');
   const [series, setSeries] = useState(v?.series ?? '');
+  const [color, setColor] = useState(v?.color ?? 'green');
 
   // Dimensions (unframed)
   const [height, setHeight] = useState(v?.height != null ? String(v.height) : '');
@@ -253,6 +256,7 @@ export function ArtworkForm({
       category: (category || null) as ArtworkCategory | null,
       motif: (motif || null) as ArtworkMotif | null,
       series: (series || null) as ArtworkSeries | null,
+      color: (color || null) as ArtworkColor | null,
       notes: notes.trim() || null,
     };
 
@@ -320,7 +324,7 @@ export function ArtworkForm({
       <section>
         <SectionHeader>Classification</SectionHeader>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Select
             label="Category"
             options={[{ value: '', label: 'No category' }, ...ARTWORK_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))]}
@@ -338,6 +342,12 @@ export function ArtworkForm({
             options={[{ value: '', label: 'No series' }, ...ARTWORK_SERIES.map((s) => ({ value: s.value, label: s.label }))]}
             value={series}
             onChange={(e) => setSeries(e.target.value)}
+          />
+          <Select
+            label="Color"
+            options={[...ARTWORK_COLORS.map((c) => ({ value: c.value, label: c.label }))]}
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
           />
         </div>
       </section>

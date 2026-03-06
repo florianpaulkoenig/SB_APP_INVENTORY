@@ -9,6 +9,7 @@ import type {
   ArtworkCategory,
   ArtworkMotif,
   ArtworkSeries,
+  ArtworkColor,
   EditionType,
   Currency,
   DimensionUnit,
@@ -63,6 +64,7 @@ export const MAPPABLE_FIELDS = [
   { value: 'category', label: 'Category' },
   { value: 'motif', label: 'Motif' },
   { value: 'series', label: 'Series' },
+  { value: 'color', label: 'Color' },
   { value: 'notes', label: 'Notes' },
   { value: '_skip', label: '-- Skip Column --' },
 ] as const;
@@ -112,6 +114,18 @@ const VALID_SERIES: ArtworkSeries[] = [
   'landscape',
   'abstract',
   'figurative',
+  'skull',
+  'sphere',
+  'half_sphere',
+  'other',
+];
+
+const VALID_COLORS: ArtworkColor[] = [
+  'green',
+  'red',
+  'white',
+  'silver',
+  'dark_grey',
   'other',
 ];
 
@@ -251,6 +265,11 @@ export function mapRowToArtwork(
       if (VALID_SERIES.includes(lower as ArtworkSeries)) {
         result[field] = lower;
       }
+    } else if (field === 'color') {
+      const lower = strValue.toLowerCase().replace(/\s+/g, '_');
+      if (VALID_COLORS.includes(lower as ArtworkColor)) {
+        result[field] = lower;
+      }
     } else if (field === 'edition_type') {
       // Edition type is case-sensitive for AP, HC, EA
       const matched =
@@ -339,6 +358,13 @@ export function validateImportRow(
   }
 
   if (
+    data.color &&
+    !VALID_COLORS.includes(data.color as ArtworkColor)
+  ) {
+    errors.push(`${rowLabel}: Invalid color "${data.color}"`);
+  }
+
+  if (
     data.edition_type &&
     !VALID_EDITION_TYPES.includes(data.edition_type)
   ) {
@@ -394,6 +420,7 @@ export function autoDetectMappings(headers: string[]): ColumnMapping[] {
     category: ['category', 'type', 'art type', 'genre'],
     motif: ['motif', 'subject', 'theme'],
     series: ['series', 'collection', 'group'],
+    color: ['color', 'colour', 'farbe'],
     notes: ['notes', 'note', 'comments', 'comment', 'remarks', 'description'],
   };
 

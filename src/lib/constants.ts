@@ -78,6 +78,21 @@ export const ARTWORK_SERIES = [
   { value: 'landscape', label: 'Landscape' },
   { value: 'abstract', label: 'Abstract' },
   { value: 'figurative', label: 'Figurative' },
+  { value: 'skull', label: 'Skull' },
+  { value: 'sphere', label: 'Sphere' },
+  { value: 'half_sphere', label: 'Half-Sphere' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Artwork colors
+// ---------------------------------------------------------------------------
+export const ARTWORK_COLORS = [
+  { value: 'green', label: 'Green' },
+  { value: 'red', label: 'Red' },
+  { value: 'white', label: 'White' },
+  { value: 'silver', label: 'Silver' },
+  { value: 'dark_grey', label: 'Dark Grey' },
   { value: 'other', label: 'Other' },
 ] as const;
 

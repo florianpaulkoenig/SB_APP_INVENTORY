@@ -289,6 +289,7 @@ export function ExcelImporter({
         Category: 'sculpture',
         Motif: 'portrait',
         Series: 'specific_portrait',
+        Color: 'green',
         Notes: 'Commission for Gallery XYZ',
       },
       {
@@ -313,6 +314,7 @@ export function ExcelImporter({
         Category: 'sculpture',
         Motif: 'landscape',
         Series: 'landscape',
+        Color: 'white',
         Notes: '',
       },
       {
@@ -337,6 +339,7 @@ export function ExcelImporter({
         Category: 'mixed_media',
         Motif: 'abstract',
         Series: 'abstract',
+        Color: 'silver',
         Notes: 'Artist proof, not for sale',
       },
     ];
@@ -366,6 +369,7 @@ export function ExcelImporter({
       { wch: 14 }, // Category
       { wch: 12 }, // Motif
       { wch: 18 }, // Series
+      { wch: 12 }, // Color
       { wch: 30 }, // Notes
     ];
 

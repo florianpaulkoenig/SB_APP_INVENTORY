@@ -17,6 +17,7 @@ import {
   ARTWORK_CATEGORIES,
   ARTWORK_MOTIFS,
   ARTWORK_SERIES,
+  ARTWORK_COLORS,
   EDITION_TYPES,
   CURRENCIES,
   DIMENSION_UNITS,
@@ -53,6 +54,7 @@ interface TemplateFormState {
   category: string;
   motif: string;
   series: string;
+  color: string;
 }
 
 const EMPTY_FORM: TemplateFormState = {
@@ -72,6 +74,7 @@ const EMPTY_FORM: TemplateFormState = {
   category: '',
   motif: '',
   series: '',
+  color: 'green',
 };
 
 function templateToForm(t: ArtworkTemplateRow): TemplateFormState {
@@ -92,6 +95,7 @@ function templateToForm(t: ArtworkTemplateRow): TemplateFormState {
     category: t.category ?? '',
     motif: t.motif ?? '',
     series: t.series ?? '',
+    color: t.color ?? 'green',
   };
 }
 
@@ -113,6 +117,7 @@ function formToInsert(f: TemplateFormState): ArtworkTemplateInsert {
     category: (f.category || null) as ArtworkTemplateInsert['category'],
     motif: (f.motif || null) as ArtworkTemplateInsert['motif'],
     series: (f.series || null) as ArtworkTemplateInsert['series'],
+    color: (f.color || null) as ArtworkTemplateInsert['color'],
   };
 }
 
@@ -352,7 +357,7 @@ export function ArtworkTemplateManager({ isOpen, onClose }: ArtworkTemplateManag
         </div>
 
         {/* Classification */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Select
             label="Category"
             options={[...ARTWORK_CATEGORIES]}
@@ -373,6 +378,12 @@ export function ArtworkTemplateManager({ isOpen, onClose }: ArtworkTemplateManag
             value={form.series}
             onChange={(e) => updateField('series', e.target.value)}
             placeholder="Select..."
+          />
+          <Select
+            label="Color"
+            options={[...ARTWORK_COLORS]}
+            value={form.color}
+            onChange={(e) => updateField('color', e.target.value)}
           />
         </div>
 

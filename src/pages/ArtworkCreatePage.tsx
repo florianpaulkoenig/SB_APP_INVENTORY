@@ -114,6 +114,7 @@ export function ArtworkCreatePage() {
       category: template.category,
       motif: template.motif,
       series: template.series,
+      color: template.color,
     };
   }
 

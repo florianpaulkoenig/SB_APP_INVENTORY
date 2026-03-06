@@ -9,6 +9,7 @@ import {
   ARTWORK_CATEGORIES,
   ARTWORK_MOTIFS,
   ARTWORK_SERIES,
+  ARTWORK_COLORS,
   CURRENCIES,
 } from '../../lib/constants';
 import type {
@@ -20,6 +21,7 @@ import type {
   ArtworkCategory,
   ArtworkMotif,
   ArtworkSeries,
+  ArtworkColor,
 } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -105,6 +107,7 @@ export function ProductionItemEditor({
   const [category, setCategory] = useState<string>(item?.category ?? '');
   const [motif, setMotif] = useState<string>(item?.motif ?? '');
   const [series, setSeries] = useState<string>(item?.series ?? '');
+  const [color, setColor] = useState<string>(item?.color ?? 'green');
 
   // Quantity & notes
   const [quantity, setQuantity] = useState(
@@ -162,6 +165,7 @@ export function ProductionItemEditor({
       category: (category || null) as ArtworkCategory | null,
       motif: (motif || null) as ArtworkMotif | null,
       series: (series || null) as ArtworkSeries | null,
+      color: (color || null) as ArtworkColor | null,
       quantity: parseInt(quantity, 10) || 1,
       notes: notes.trim() || null,
     };
@@ -184,6 +188,10 @@ export function ProductionItemEditor({
   const seriesOptions = [
     { value: '', label: 'Select series...' },
     ...ARTWORK_SERIES.map((s) => ({ value: s.value, label: s.label })),
+  ];
+
+  const colorOptions = [
+    ...ARTWORK_COLORS.map((c) => ({ value: c.value, label: c.label })),
   ];
 
   // ---- Presets ------------------------------------------------------------
@@ -444,7 +452,7 @@ export function ProductionItemEditor({
         <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-primary-400">
           Classification
         </h3>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Select
             label="Category"
             options={categoryOptions}
@@ -462,6 +470,12 @@ export function ProductionItemEditor({
             options={seriesOptions}
             value={series}
             onChange={(e) => setSeries(e.target.value)}
+          />
+          <Select
+            label="Color"
+            options={colorOptions}
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
           />
         </div>
       </div>

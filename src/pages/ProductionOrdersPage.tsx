@@ -254,7 +254,7 @@ export function ProductionOrdersPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${order.order_number}_production-order.pdf`;
+      link.download = `NOA_SB_Production_${new Date().toISOString().slice(0, 10)}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -337,7 +337,7 @@ export function ProductionOrdersPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `production-schedule-artist.pdf`;
+      link.download = `NOA_SB_Production_Artist_${new Date().toISOString().slice(0, 10)}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -442,7 +442,7 @@ export function ProductionOrdersPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `production-orders-overview.pdf`;
+      link.download = `NOA_SB_Production_Overview_${new Date().toISOString().slice(0, 10)}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
