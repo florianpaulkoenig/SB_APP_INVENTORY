@@ -14,6 +14,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { PRODUCTION_STATUSES } from '../lib/constants';
 import { formatDate, formatDimensions, formatCurrency } from '../lib/utils';
+import { useExchangeRates } from '../hooks/useExchangeRates';
 import type { ProductionStatus, ProductionOrderRow } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -50,10 +51,13 @@ export function ProductionOrdersPage() {
     },
   });
 
+  const { toCHF } = useExchangeRates();
+
   // ---- Fetch item-level values & gallery names for all visible orders ------
 
   const [galleryNameMap, setGalleryNameMap] = useState<Record<string, string>>({});
   const [orderValueMap, setOrderValueMap] = useState<Record<string, number>>({});
+  const [orderCurrencyMap, setOrderCurrencyMap] = useState<Record<string, string>>({});
 
   const fetchOrderMeta = useCallback(async () => {
     if (productionOrders.length === 0) {
@@ -94,6 +98,7 @@ export function ProductionOrdersPage() {
       }
     }
     setOrderValueMap(valMap);
+    setOrderCurrencyMap(currMap);
 
     // Backfill: update any order whose DB price doesn't match item total
     for (const order of productionOrders) {
@@ -112,22 +117,32 @@ export function ProductionOrdersPage() {
     fetchOrderMeta();
   }, [fetchOrderMeta]);
 
-  // ---- Revenue summary computations (use item-calculated values) ----------
+  // ---- Revenue summary computations (convert to CHF) ----------------------
 
   function getOrderValue(order: ProductionOrderRow): number {
     // Prefer item-calculated value, fall back to order.price
     return orderValueMap[order.id] ?? (order.price != null && order.price > 0 ? order.price : 0);
   }
 
+  function getOrderCurrency(order: ProductionOrderRow): string {
+    return orderCurrencyMap[order.id] ?? order.currency ?? 'EUR';
+  }
+
+  function getOrderValueCHF(order: ProductionOrderRow): number {
+    const val = getOrderValue(order);
+    if (val <= 0) return 0;
+    return toCHF(val, getOrderCurrency(order));
+  }
+
   const totalOrderValue = productionOrders.reduce(
-    (sum, o) => sum + getOrderValue(o),
+    (sum, o) => sum + getOrderValueCHF(o),
     0,
   );
 
   const perGalleryValue: Array<{ id: string; name: string; value: number }> = (() => {
     const map: Record<string, number> = {};
     for (const o of productionOrders) {
-      const val = getOrderValue(o);
+      const val = getOrderValueCHF(o);
       if (o.gallery_id && val > 0) {
         map[o.gallery_id] = (map[o.gallery_id] || 0) + val;
       }
@@ -404,7 +419,7 @@ export function ProductionOrdersPage() {
                 Total Order Value
               </p>
               <p className="mt-1 font-display text-xl font-bold text-primary-900">
-                {formatCurrency(totalOrderValue, 'EUR')}
+                {formatCurrency(totalOrderValue, 'CHF')}
               </p>
             </div>
             {/* Per gallery */}
@@ -418,7 +433,7 @@ export function ProductionOrdersPage() {
                   {g.name}
                 </p>
                 <p className="mt-1 font-display text-xl font-bold text-accent">
-                  {formatCurrency(g.value, 'EUR')}
+                  {formatCurrency(g.value, 'CHF')}
                 </p>
               </div>
             ))}
@@ -524,8 +539,8 @@ export function ProductionOrdersPage() {
                     {order.deadline ? formatDate(order.deadline) : '-'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-primary-800">
-                    {getOrderValue(order) > 0
-                      ? formatCurrency(getOrderValue(order), order.currency ?? 'EUR')
+                    {getOrderValueCHF(order) > 0
+                      ? formatCurrency(getOrderValueCHF(order), 'CHF')
                       : '-'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">
