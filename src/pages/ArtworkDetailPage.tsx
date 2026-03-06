@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { pdf } from '@react-pdf/renderer';
 import { supabase } from '../lib/supabase';
 import { useArtwork } from '../hooks/useArtworks';
 import { useArtworks } from '../hooks/useArtworks';
@@ -14,8 +15,33 @@ import { ValuationHistory } from '../components/artworks/ValuationHistory';
 import { ExhibitionHistory } from '../components/artworks/ExhibitionHistory';
 import { LoanPanel } from '../components/artworks/LoanPanel';
 import { ExpenseTracker } from '../components/artworks/ExpenseTracker';
+import { CertificatePDF } from '../components/pdf/CertificatePDF';
 import { Button } from '../components/ui/Button';
+import { Select } from '../components/ui/Select';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+
+// ---------------------------------------------------------------------------
+// Language options for certificate PDF
+// ---------------------------------------------------------------------------
+
+type Language = 'en' | 'de' | 'fr';
+
+const LANGUAGE_OPTIONS = [
+  { value: 'en', label: 'English' },
+  { value: 'de', label: 'Deutsch' },
+  { value: 'fr', label: 'Français' },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Certificate row shape (minimal)
+// ---------------------------------------------------------------------------
+
+interface CertificateInfo {
+  id: string;
+  certificate_number: string;
+  issue_date: string;
+  qr_code_url: string | null;
+}
 
 // ---------------------------------------------------------------------------
 // Page
@@ -30,6 +56,9 @@ export function ArtworkDetailPage() {
 
   const [galleryName, setGalleryName] = useState<string | null>(null);
   const [imageRefreshKey, setImageRefreshKey] = useState(0);
+  const [certificate, setCertificate] = useState<CertificateInfo | null>(null);
+  const [language, setLanguage] = useState<Language>('en');
+  const [downloading, setDownloading] = useState(false);
 
   // ---- Fetch gallery name if gallery_id is set ----------------------------
 
@@ -53,6 +82,105 @@ export function ArtworkDetailPage() {
 
     fetchGalleryName();
   }, [artwork?.gallery_id]);
+
+  // ---- Fetch certificate for this artwork -----------------------------------
+
+  useEffect(() => {
+    async function fetchCertificate() {
+      if (!id) return;
+
+      const { data } = await supabase
+        .from('certificates')
+        .select('id, certificate_number, issue_date, qr_code_url')
+        .eq('artwork_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setCertificate(data as CertificateInfo | null);
+    }
+
+    fetchCertificate();
+  }, [id]);
+
+  // ---- Certificate PDF download ---------------------------------------------
+
+  const handleDownloadCertificate = useCallback(async () => {
+    if (!artwork || !certificate) return;
+
+    setDownloading(true);
+
+    try {
+      // Get signed URL for the primary artwork image (if any)
+      let artworkImageUrl: string | null = null;
+      const primaryImage = (await supabase
+        .from('artwork_images')
+        .select('storage_path')
+        .eq('artwork_id', artwork.id)
+        .eq('is_primary', true)
+        .limit(1)
+        .maybeSingle()
+      ).data;
+
+      if (primaryImage?.storage_path) {
+        const { data: urlData } = await supabase.storage
+          .from('artwork-images')
+          .createSignedUrl(primaryImage.storage_path, 60 * 60);
+        if (urlData) artworkImageUrl = urlData.signedUrl;
+      }
+
+      // Get signed URL for the signature (stored in assets bucket)
+      let signatureUrl: string | null = null;
+      try {
+        const { data: sigData } = await supabase.storage
+          .from('assets')
+          .createSignedUrl('signature.png', 60 * 60);
+        if (sigData) signatureUrl = sigData.signedUrl;
+      } catch {
+        // Signature is optional
+      }
+
+      const blob = await pdf(
+        <CertificatePDF
+          artwork={{
+            title: artwork.title,
+            reference_code: artwork.reference_code,
+            medium: artwork.medium,
+            year: artwork.year,
+            height: artwork.height,
+            width: artwork.width,
+            depth: artwork.depth,
+            dimension_unit: artwork.dimension_unit,
+            framed_height: artwork.framed_height,
+            framed_width: artwork.framed_width,
+            framed_depth: artwork.framed_depth,
+            edition_type: artwork.edition_type,
+            edition_number: artwork.edition_number,
+            edition_total: artwork.edition_total,
+          }}
+          certificate={{
+            certificate_number: certificate.certificate_number,
+            issue_date: certificate.issue_date,
+            qr_code_url: certificate.qr_code_url,
+          }}
+          artworkImageUrl={artworkImageUrl}
+          signatureUrl={signatureUrl}
+          language={language}
+        />,
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${certificate.certificate_number}_certificate.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloading(false);
+    }
+  }, [artwork, certificate, language]);
 
   // ---- Image upload handler ------------------------------------------------
 
@@ -166,6 +294,44 @@ export function ArtworkDetailPage() {
         onEdit={() => navigate(`/artworks/${id}/edit`)}
         onDelete={handleDelete}
       />
+
+      {/* Certificate PDF download */}
+      {certificate && (
+        <section className="mt-8 rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
+          <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
+            Certificate of Authenticity
+          </h2>
+          <div className="flex flex-wrap items-end gap-3">
+            <p className="mr-auto text-sm text-primary-500">
+              {certificate.certificate_number}
+            </p>
+            <div className="w-48">
+              <Select
+                label="Language"
+                options={[...LANGUAGE_OPTIONS]}
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as Language)}
+              />
+            </div>
+            <Button onClick={handleDownloadCertificate} loading={downloading}>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                />
+              </svg>
+              Download Certificate
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* Image gallery + upload */}
       <div className="mt-8 space-y-6">
