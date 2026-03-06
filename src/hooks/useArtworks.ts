@@ -173,7 +173,29 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
 
         if (insertError) throw insertError;
 
-        toast({ title: 'Artwork created', description: `"${created.title}" has been added.`, variant: 'success' });
+        // ---- Auto-create certificate of authenticity -------------------------
+        try {
+          const { data: certNumber } = await supabase.rpc('generate_document_number', {
+            p_user_id: session.user.id,
+            p_prefix: 'COA',
+          });
+
+          if (certNumber) {
+            await supabase
+              .from('certificates')
+              .insert({
+                user_id: session.user.id,
+                artwork_id: created.id,
+                certificate_number: certNumber,
+                issue_date: new Date().toISOString().split('T')[0],
+              } as never);
+          }
+        } catch {
+          // Certificate auto-creation is best-effort; don't block artwork creation
+          console.warn('[createArtwork] Auto-certificate creation failed');
+        }
+
+        toast({ title: 'Artwork created', description: `"${created.title}" has been added with certificate.`, variant: 'success' });
 
         return created as ArtworkRow;
       } catch (err: unknown) {

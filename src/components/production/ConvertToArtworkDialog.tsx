@@ -187,6 +187,28 @@ export function ConvertToArtworkDialog({
 
       if (linkError) throw linkError;
 
+      // 3. Auto-create certificate of authenticity
+      try {
+        const { data: certNumber } = await supabase.rpc('generate_document_number', {
+          p_user_id: session.user.id,
+          p_prefix: 'COA',
+        });
+
+        if (certNumber) {
+          await supabase
+            .from('certificates')
+            .insert({
+              user_id: session.user.id,
+              artwork_id: artwork.id,
+              certificate_number: certNumber,
+              issue_date: new Date().toISOString().split('T')[0],
+            } as never);
+        }
+      } catch {
+        // Best-effort; don't block artwork conversion
+        console.warn('[ConvertToArtwork] Auto-certificate creation failed');
+      }
+
       onConverted(artwork.id);
       onClose();
     } catch (err: unknown) {
