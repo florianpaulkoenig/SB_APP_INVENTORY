@@ -94,8 +94,9 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
         query = query.or(`order_number.ilike.${term},title.ilike.${term}`);
       }
 
-      // Default ordering: created_at desc
-      query = query.order('created_at', { ascending: false });
+      // Default ordering: deadline (nulls last), then created_at desc
+      query = query.order('deadline', { ascending: true, nullsFirst: false })
+                   .order('created_at', { ascending: false });
 
       // Pagination (offset-based via .range)
       const from = (page - 1) * pageSize;

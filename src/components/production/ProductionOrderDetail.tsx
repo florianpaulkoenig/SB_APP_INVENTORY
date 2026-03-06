@@ -152,6 +152,21 @@ export function ProductionOrderDetail({
   const [language, setLanguage] = useState<Language>('en');
   const [downloading, setDownloading] = useState(false);
 
+  // ---- Item price summary -------------------------------------------------
+  const itemPriceSummary = (() => {
+    let total = 0;
+    let count = 0;
+    for (const item of items) {
+      if (item.price != null && item.price > 0) {
+        const qty = item.quantity ?? 1;
+        total += item.price * qty;
+        count += qty;
+      }
+    }
+    return { total, count };
+  })();
+  const itemCurrency = items.find((i) => i.currency)?.currency ?? order.currency ?? 'EUR';
+
   async function handleDelete() {
     setDeleting(true);
     await onDelete();
@@ -299,7 +314,7 @@ export function ProductionOrderDetail({
 
         {items.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px]">
+            <table className="w-full min-w-[800px]">
               <thead>
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400">
@@ -313,6 +328,9 @@ export function ProductionOrderDetail({
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-primary-400">
                     Qty
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-400">
+                    Price
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400">
                     Artwork
@@ -344,6 +362,11 @@ export function ProductionOrderDetail({
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-primary-800">
                       {item.quantity}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm text-primary-800">
+                      {item.price != null && item.price > 0
+                        ? formatCurrency(item.price, item.currency ?? itemCurrency)
+                        : '\u2014'}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       {item.artworks ? (
@@ -397,6 +420,19 @@ export function ProductionOrderDetail({
                   </tr>
                 ))}
               </tbody>
+              {itemPriceSummary.total > 0 && (
+                <tfoot>
+                  <tr className="border-t-2 border-primary-200">
+                    <td colSpan={4} className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-primary-500">
+                      Total ({itemPriceSummary.count} {itemPriceSummary.count === 1 ? 'piece' : 'pieces'})
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm font-bold text-primary-900">
+                      {formatCurrency(itemPriceSummary.total, itemCurrency)}
+                    </td>
+                    <td colSpan={2} />
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         ) : (

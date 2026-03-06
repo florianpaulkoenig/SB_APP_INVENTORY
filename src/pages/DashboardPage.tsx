@@ -22,6 +22,9 @@ interface GalleryCount {
   id: string;
   name: string;
   count: number;
+  onConsignment: number;
+  sold: number;
+  available: number;
 }
 
 interface GalleryRevenue {
@@ -44,6 +47,7 @@ export function DashboardPage() {
   const [galleryCounts, setGalleryCounts] = useState<GalleryCount[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalPotential, setTotalPotential] = useState(0);
+  const [confirmedOrdersRevenue, setConfirmedOrdersRevenue] = useState(0);
   const [galleryRevenues, setGalleryRevenues] = useState<GalleryRevenue[]>([]);
   const [galleryPotentials, setGalleryPotentials] = useState<GalleryPotential[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,11 +73,21 @@ export function DashboardPage() {
       inTransit: data.filter((a) => a.status === 'in_transit').length,
     });
 
-    // Count artworks per gallery
+    // Count artworks per gallery (total + per status)
     const galleryIdCounts: Record<string, number> = {};
+    const galleryConsignment: Record<string, number> = {};
+    const gallerySold: Record<string, number> = {};
+    const galleryAvailable: Record<string, number> = {};
     for (const row of data) {
       if (row.gallery_id) {
         galleryIdCounts[row.gallery_id] = (galleryIdCounts[row.gallery_id] || 0) + 1;
+        if (row.status === 'on_consignment') {
+          galleryConsignment[row.gallery_id] = (galleryConsignment[row.gallery_id] || 0) + 1;
+        } else if (row.status === 'sold') {
+          gallerySold[row.gallery_id] = (gallerySold[row.gallery_id] || 0) + 1;
+        } else if (row.status === 'available') {
+          galleryAvailable[row.gallery_id] = (galleryAvailable[row.gallery_id] || 0) + 1;
+        }
       }
     }
 
@@ -89,6 +103,18 @@ export function DashboardPage() {
         galleryPotentialMap[row.gallery_id] = (galleryPotentialMap[row.gallery_id] || 0) + (row.price ?? 0);
       }
     }
+
+    // ---- Potential revenue from confirmed production orders ----
+    const { data: prodOrders } = await supabase
+      .from('production_orders')
+      .select('price, currency, status')
+      .not('status', 'in', '("draft","completed")');
+
+    const confirmedTotal = (prodOrders ?? []).reduce(
+      (sum, o) => sum + (o.price != null && o.price > 0 ? o.price : 0),
+      0,
+    );
+    setConfirmedOrdersRevenue(confirmedTotal);
 
     // ---- Fetch sales for revenue ----
     const { data: sales } = await supabase
@@ -127,13 +153,16 @@ export function DashboardPage() {
           galleryNameMap[g.id] = g.name;
         }
 
-        // Artwork counts
+        // Artwork counts with per-status breakdown
         const counts: GalleryCount[] = galleries
           .filter((g) => galleryIdCounts[g.id])
           .map((g) => ({
             id: g.id,
             name: g.name,
             count: galleryIdCounts[g.id] || 0,
+            onConsignment: galleryConsignment[g.id] || 0,
+            sold: gallerySold[g.id] || 0,
+            available: galleryAvailable[g.id] || 0,
           }))
           .sort((a, b) => b.count - a.count);
         setGalleryCounts(counts);
@@ -219,7 +248,7 @@ export function DashboardPage() {
 
       {/* Revenue Summary Cards */}
       {!loading && (
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="rounded-lg border border-primary-100 bg-white p-6">
             <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
               Total Revenue (Sales)
@@ -239,6 +268,20 @@ export function DashboardPage() {
               Unsold artworks with prices
             </p>
           </div>
+          <div
+            className="cursor-pointer rounded-lg border border-primary-100 bg-white p-6 transition-shadow hover:shadow-md"
+            onClick={() => navigate('/production')}
+          >
+            <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+              Confirmed Orders Revenue
+            </p>
+            <p className="mt-2 font-display text-3xl font-bold text-blue-600">
+              {formatCurrency(confirmedOrdersRevenue, 'EUR')}
+            </p>
+            <p className="mt-1 text-xs text-primary-400">
+              Active production orders
+            </p>
+          </div>
         </div>
       )}
 
@@ -254,14 +297,33 @@ export function DashboardPage() {
                 key={gc.id}
                 type="button"
                 onClick={() => navigate(`/galleries/${gc.id}`)}
-                className="flex items-center justify-between rounded-lg border border-primary-100 bg-white px-5 py-4 text-left transition-shadow hover:shadow-md"
+                className="rounded-lg border border-primary-100 bg-white px-5 py-4 text-left transition-shadow hover:shadow-md"
               >
-                <span className="truncate font-display text-sm font-semibold text-primary-900">
-                  {gc.name}
-                </span>
-                <span className="ml-3 flex-shrink-0 rounded-full bg-sky-50 px-3 py-1 font-display text-lg font-bold text-sky-600">
-                  {gc.count}
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="truncate font-display text-sm font-semibold text-primary-900">
+                    {gc.name}
+                  </span>
+                  <span className="ml-3 flex-shrink-0 rounded-full bg-sky-50 px-3 py-1 font-display text-lg font-bold text-sky-600">
+                    {gc.count}
+                  </span>
+                </div>
+                <div className="mt-2 flex gap-3 text-xs">
+                  {gc.onConsignment > 0 && (
+                    <span className="rounded-full bg-sky-50 px-2 py-0.5 text-sky-700">
+                      {gc.onConsignment} consignment
+                    </span>
+                  )}
+                  {gc.sold > 0 && (
+                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-red-700">
+                      {gc.sold} sold
+                    </span>
+                  )}
+                  {gc.available > 0 && (
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
+                      {gc.available} available
+                    </span>
+                  )}
+                </div>
               </button>
             ))}
           </div>

@@ -2,12 +2,16 @@ import { useState } from 'react';
 import { Button } from '../ui/Button';
 import { StatusBadge } from '../ui/StatusBadge';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { Modal } from '../ui/Modal';
+import { Input } from '../ui/Input';
+import { Select } from '../ui/Select';
 import { formatCurrency, formatDimensions } from '../../lib/utils';
 import {
   EDITION_TYPES,
   ARTWORK_CATEGORIES,
   ARTWORK_MOTIFS,
   ARTWORK_SERIES,
+  CURRENCIES,
 } from '../../lib/constants';
 import type { ArtworkRow } from '../../types/database';
 
@@ -20,6 +24,7 @@ export interface ArtworkDetailProps {
   galleryName?: string | null;
   onEdit: () => void;
   onDelete: () => Promise<void>;
+  onMarkSold?: (salePrice: number, currency: string, saleDate: string) => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -59,9 +64,17 @@ export function ArtworkDetail({
   galleryName,
   onEdit,
   onDelete,
+  onMarkSold,
 }: ArtworkDetailProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // ---- Sold dialog state ----
+  const [showSoldDialog, setShowSoldDialog] = useState(false);
+  const [salePrice, setSalePrice] = useState(artwork.price?.toString() ?? '');
+  const [saleCurrency, setSaleCurrency] = useState(artwork.currency ?? 'EUR');
+  const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10));
+  const [soldLoading, setSoldLoading] = useState(false);
 
   // Formatted values
   const unframedDimensions = formatDimensions(
@@ -96,6 +109,17 @@ export function ArtworkDetail({
     setDeleting(false);
   }
 
+  async function handleMarkSold() {
+    if (!onMarkSold) return;
+    const price = parseFloat(salePrice);
+    if (isNaN(price) || price <= 0) return;
+
+    setSoldLoading(true);
+    await onMarkSold(price, saleCurrency, saleDate);
+    setSoldLoading(false);
+    setShowSoldDialog(false);
+  }
+
   return (
     <div className="space-y-8">
       {/* ----------------------------------------------------------------- */}
@@ -115,6 +139,22 @@ export function ArtworkDetail({
         </div>
 
         <div className="flex items-center gap-3">
+          {onMarkSold && artwork.status !== 'sold' && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSalePrice(artwork.price?.toString() ?? '');
+                setSaleCurrency(artwork.currency ?? 'EUR');
+                setSaleDate(new Date().toISOString().slice(0, 10));
+                setShowSoldDialog(true);
+              }}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+              </svg>
+              Mark as Sold
+            </Button>
+          )}
           <Button variant="outline" onClick={onEdit}>
             Edit
           </Button>
@@ -216,6 +256,59 @@ export function ArtworkDetail({
           </p>
         </section>
       )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* Mark as Sold dialog                                               */}
+      {/* ----------------------------------------------------------------- */}
+      <Modal
+        isOpen={showSoldDialog}
+        onClose={() => setShowSoldDialog(false)}
+        title="Mark as Sold"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-primary-600">
+            Enter the realized sales price for <span className="font-semibold">{artwork.title}</span>.
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <Input
+                label="Sale Price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={salePrice}
+                onChange={(e) => setSalePrice(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <Select
+              label="Currency"
+              options={[...CURRENCIES]}
+              value={saleCurrency}
+              onChange={(e) => setSaleCurrency(e.target.value)}
+            />
+          </div>
+          <Input
+            label="Sale Date"
+            type="date"
+            value={saleDate}
+            onChange={(e) => setSaleDate(e.target.value)}
+          />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setShowSoldDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleMarkSold}
+              loading={soldLoading}
+              disabled={!salePrice || parseFloat(salePrice) <= 0}
+            >
+              Confirm Sale
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* ----------------------------------------------------------------- */}
       {/* Confirm delete dialog                                             */}

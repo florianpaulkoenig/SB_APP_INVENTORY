@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useArtwork } from '../hooks/useArtworks';
 import { useArtworks } from '../hooks/useArtworks';
 import { useArtworkImages } from '../hooks/useArtworkImages';
+import { useToast } from '../components/ui/Toast';
 import { ArtworkDetail } from '../components/artworks/ArtworkDetail';
 import { ArtworkImageGallery } from '../components/artworks/ArtworkImageGallery';
 import { ArtworkImageUpload } from '../components/artworks/ArtworkImageUpload';
@@ -50,9 +51,10 @@ interface CertificateInfo {
 export function ArtworkDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { artwork, loading } = useArtwork(id!);
+  const { artwork, loading, refetch: refetchArtwork } = useArtwork(id!);
   const { deleteArtwork } = useArtworks();
   const { uploadImage, deleteImage, setPrimaryImage } = useArtworkImages(id!);
+  const { toast } = useToast();
 
   const [galleryName, setGalleryName] = useState<string | null>(null);
   const [imageRefreshKey, setImageRefreshKey] = useState(0);
@@ -217,6 +219,56 @@ export function ArtworkDetailPage() {
     [setPrimaryImage],
   );
 
+  // ---- Mark as Sold handler ------------------------------------------------
+
+  const handleMarkSold = useCallback(
+    async (salePrice: number, currency: string, saleDateStr: string) => {
+      if (!id || !artwork) return;
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.user) {
+          toast({ title: 'Error', description: 'You must be logged in', variant: 'error' });
+          return;
+        }
+
+        // Create sale record
+        const { error: saleError } = await supabase
+          .from('sales')
+          .insert({
+            artwork_id: id,
+            gallery_id: artwork.gallery_id,
+            sale_date: saleDateStr,
+            sale_price: salePrice,
+            currency,
+            user_id: session.user.id,
+          } as never)
+          .select()
+          .single();
+
+        if (saleError) throw saleError;
+
+        // Update artwork status to sold
+        const { error: updateError } = await supabase
+          .from('artworks')
+          .update({ status: 'sold' } as never)
+          .eq('id', id);
+
+        if (updateError) throw updateError;
+
+        toast({ title: 'Artwork marked as sold', variant: 'success' });
+        await refetchArtwork();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to record sale';
+        toast({ title: 'Error', description: message, variant: 'error' });
+      }
+    },
+    [id, artwork, toast, refetchArtwork],
+  );
+
   // ---- Delete handler -----------------------------------------------------
 
   async function handleDelete() {
@@ -293,6 +345,7 @@ export function ArtworkDetailPage() {
         galleryName={galleryName}
         onEdit={() => navigate(`/artworks/${id}/edit`)}
         onDelete={handleDelete}
+        onMarkSold={handleMarkSold}
       />
 
       {/* Certificate PDF download */}
