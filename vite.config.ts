@@ -20,27 +20,14 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // Use 'prompt' so the SW never silently serves stale content
+      registerType: 'prompt',
+      // selfDestroying cleans up any previously installed service workers
+      selfDestroying: true,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-api-cache',
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'supabase-storage-cache',
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-        ],
+        // Only pre-cache static image assets, NOT JS/CSS/HTML
+        // JS and HTML change on every deploy — caching them causes stale app issues
+        globPatterns: ['**/*.{ico,png,svg,woff2}'],
       },
       manifest: {
         name: 'NOA Inventory',
