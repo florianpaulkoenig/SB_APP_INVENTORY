@@ -4,6 +4,7 @@ import { pdf } from '@react-pdf/renderer';
 import { supabase } from '../lib/supabase';
 import { useProductionOrders } from '../hooks/useProductionOrders';
 import { ProductionOrderPDF } from '../components/pdf/ProductionOrderPDF';
+import { ProductionOrdersOverviewPDF } from '../components/pdf/ProductionOrdersOverviewPDF';
 import { Button } from '../components/ui/Button';
 import { SearchInput } from '../components/ui/SearchInput';
 import { Select } from '../components/ui/Select';
@@ -39,6 +40,7 @@ export function ProductionOrdersPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [language, setLanguage] = useState<Language>('en');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadingOverview, setDownloadingOverview] = useState(false);
 
   const { productionOrders, loading } = useProductionOrders({
     filters: {
@@ -130,6 +132,73 @@ export function ProductionOrdersPage() {
     }
   }
 
+  // ---- PDF overview of all (filtered) orders --------------------------------
+
+  async function handleDownloadOverview() {
+    if (productionOrders.length === 0) return;
+    setDownloadingOverview(true);
+
+    try {
+      // Collect all unique gallery/contact IDs
+      const galleryIds = [...new Set(productionOrders.map((o) => o.gallery_id).filter(Boolean))] as string[];
+      const contactIds = [...new Set(productionOrders.map((o) => o.contact_id).filter(Boolean))] as string[];
+
+      // Batch-fetch gallery names
+      const galleryNameMap: Record<string, string> = {};
+      if (galleryIds.length > 0) {
+        const { data: galleries } = await supabase
+          .from('galleries')
+          .select('id, name')
+          .in('id', galleryIds);
+        for (const g of galleries ?? []) {
+          galleryNameMap[g.id] = g.name;
+        }
+      }
+
+      // Batch-fetch contact names
+      const contactNameMap: Record<string, string> = {};
+      if (contactIds.length > 0) {
+        const { data: contacts } = await supabase
+          .from('contacts')
+          .select('id, first_name, last_name')
+          .in('id', contactIds);
+        for (const c of contacts ?? []) {
+          contactNameMap[c.id] = [c.first_name, c.last_name].filter(Boolean).join(' ');
+        }
+      }
+
+      const overviewOrders = productionOrders.map((order) => ({
+        order_number: order.order_number,
+        title: order.title,
+        status: order.status,
+        ordered_date: order.ordered_date,
+        deadline: order.deadline,
+        gallery_name: order.gallery_id ? galleryNameMap[order.gallery_id] ?? null : null,
+        contact_name: order.contact_id ? contactNameMap[order.contact_id] ?? null : null,
+        price: order.price,
+        currency: order.currency ?? 'EUR',
+      }));
+
+      const blob = await pdf(
+        <ProductionOrdersOverviewPDF
+          orders={overviewOrders}
+          language={language}
+        />,
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `production-orders-overview.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadingOverview(false);
+    }
+  }
+
   // ---- Render -------------------------------------------------------------
 
   return (
@@ -145,9 +214,32 @@ export function ProductionOrdersPage() {
           </p>
         </div>
 
-        <Button onClick={() => navigate('/production/new')}>
-          New Production Order
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={handleDownloadOverview}
+            loading={downloadingOverview}
+            disabled={productionOrders.length === 0}
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+              />
+            </svg>
+            Export Overview
+          </Button>
+          <Button onClick={() => navigate('/production/new')}>
+            New Production Order
+          </Button>
+        </div>
       </div>
 
       {/* Search & Filters */}
