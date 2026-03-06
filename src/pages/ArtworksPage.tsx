@@ -6,6 +6,7 @@ import type { ArtworkFilters as ArtworkFiltersType } from '../hooks/useArtworks'
 import { ArtworkCard } from '../components/artworks/ArtworkCard';
 import { ArtworkTable } from '../components/artworks/ArtworkTable';
 import { ArtworkFilters } from '../components/artworks/ArtworkFilters';
+import { ExcelImporter } from '../components/artworks/ExcelImporter';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { SearchInput } from '../components/ui/SearchInput';
@@ -45,8 +46,9 @@ export function ArtworksPage() {
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filters, setFilters] = useState<ArtworkFiltersType>({});
+  const [excelImporterOpen, setExcelImporterOpen] = useState(false);
 
-  const { artworks, loading, totalCount } = useArtworks({
+  const { artworks, loading, totalCount, refetch } = useArtworks({
     filters: { ...filters, search, sortBy, sortOrder },
     page,
     pageSize: PAGE_SIZE,
@@ -143,9 +145,27 @@ export function ArtworksPage() {
           </p>
         </div>
 
-        <Button onClick={() => navigate('/artworks/new')}>
-          New Artwork
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setExcelImporterOpen(true)}>
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+              />
+            </svg>
+            Import Excel
+          </Button>
+          <Button onClick={() => navigate('/artworks/new')}>
+            New Artwork
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -326,6 +346,13 @@ export function ArtworksPage() {
           )}
         </>
       )}
+
+      {/* Excel Import Modal */}
+      <ExcelImporter
+        isOpen={excelImporterOpen}
+        onClose={() => setExcelImporterOpen(false)}
+        onImportComplete={() => refetch()}
+      />
     </div>
   );
 }
