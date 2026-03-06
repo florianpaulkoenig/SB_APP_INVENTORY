@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { useGalleries } from '../hooks/useGalleries';
 import { GalleryCard } from '../components/galleries/GalleryCard';
 import { Button } from '../components/ui/Button';
@@ -31,6 +32,36 @@ export function GalleriesPage() {
   });
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // ---- Fetch artwork counts per gallery ------------------------------------
+  const [artworkCounts, setArtworkCounts] = useState<Record<string, number>>({});
+
+  const fetchArtworkCounts = useCallback(async () => {
+    if (galleries.length === 0) {
+      setArtworkCounts({});
+      return;
+    }
+
+    const galleryIds = galleries.map((g) => g.id);
+    const { data } = await supabase
+      .from('artworks')
+      .select('gallery_id')
+      .in('gallery_id', galleryIds);
+
+    if (data) {
+      const counts: Record<string, number> = {};
+      for (const row of data) {
+        if (row.gallery_id) {
+          counts[row.gallery_id] = (counts[row.gallery_id] || 0) + 1;
+        }
+      }
+      setArtworkCounts(counts);
+    }
+  }, [galleries]);
+
+  useEffect(() => {
+    fetchArtworkCounts();
+  }, [fetchArtworkCounts]);
 
   // Reset to page 1 when search changes
   function handleSearchChange(value: string) {
@@ -115,6 +146,7 @@ export function GalleriesPage() {
               <GalleryCard
                 key={gallery.id}
                 gallery={gallery}
+                artworkCount={artworkCounts[gallery.id] ?? 0}
                 onClick={() => navigate(`/galleries/${gallery.id}`)}
               />
             ))}

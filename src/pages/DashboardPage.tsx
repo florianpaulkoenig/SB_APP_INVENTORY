@@ -17,15 +17,23 @@ interface DashboardStats {
   inTransit: number;
 }
 
+interface GalleryCount {
+  id: string;
+  name: string;
+  count: number;
+}
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [galleryCounts, setGalleryCounts] = useState<GalleryCount[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = useCallback(async () => {
+    // Fetch artworks with gallery_id
     const { data, error } = await supabase
       .from('artworks')
-      .select('status');
+      .select('status, gallery_id');
 
     if (error || !data) {
       setLoading(false);
@@ -41,6 +49,35 @@ export function DashboardPage() {
       inProduction: data.filter((a) => a.status === 'in_production').length,
       inTransit: data.filter((a) => a.status === 'in_transit').length,
     });
+
+    // Count artworks per gallery
+    const galleryIdCounts: Record<string, number> = {};
+    for (const row of data) {
+      if (row.gallery_id) {
+        galleryIdCounts[row.gallery_id] = (galleryIdCounts[row.gallery_id] || 0) + 1;
+      }
+    }
+
+    // Fetch gallery names
+    const galleryIds = Object.keys(galleryIdCounts);
+    if (galleryIds.length > 0) {
+      const { data: galleries } = await supabase
+        .from('galleries')
+        .select('id, name')
+        .in('id', galleryIds);
+
+      if (galleries) {
+        const counts: GalleryCount[] = galleries
+          .map((g) => ({
+            id: g.id,
+            name: g.name,
+            count: galleryIdCounts[g.id] || 0,
+          }))
+          .sort((a, b) => b.count - a.count);
+        setGalleryCounts(counts);
+      }
+    }
+
     setLoading(false);
   }, []);
 
@@ -93,6 +130,32 @@ export function DashboardPage() {
               </p>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Artworks per Gallery */}
+      {!loading && galleryCounts.length > 0 && (
+        <div className="mt-10">
+          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
+            Artworks per Gallery
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {galleryCounts.map((gc) => (
+              <button
+                key={gc.id}
+                type="button"
+                onClick={() => navigate(`/galleries/${gc.id}`)}
+                className="flex items-center justify-between rounded-lg border border-primary-100 bg-white px-5 py-4 text-left transition-shadow hover:shadow-md"
+              >
+                <span className="truncate font-display text-sm font-semibold text-primary-900">
+                  {gc.name}
+                </span>
+                <span className="ml-3 flex-shrink-0 rounded-full bg-sky-50 px-3 py-1 font-display text-lg font-bold text-sky-600">
+                  {gc.count}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -7,6 +7,7 @@ import type { GalleryRow } from '../../types/database';
 
 export interface GalleryCardProps {
   gallery: GalleryRow;
+  artworkCount?: number;
   onClick?: () => void;
 }
 
@@ -14,7 +15,7 @@ export interface GalleryCardProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function GalleryCard({ gallery, onClick }: GalleryCardProps) {
+export function GalleryCard({ gallery, artworkCount, onClick }: GalleryCardProps) {
   const location = [gallery.city, gallery.country].filter(Boolean).join(', ');
 
   return (
@@ -70,14 +71,22 @@ export function GalleryCard({ gallery, onClick }: GalleryCardProps) {
         )}
       </div>
 
-      {/* Commission badge */}
-      {gallery.commission_rate != null && (
-        <div className="mt-3">
+      {/* Artwork count + Commission badge */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {artworkCount != null && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-700">
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+            </svg>
+            {artworkCount} {artworkCount === 1 ? 'artwork' : 'artworks'}
+          </span>
+        )}
+        {gallery.commission_rate != null && (
           <span className="inline-block rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
             {gallery.commission_rate}% commission
           </span>
-        </div>
-      )}
+        )}
+      </div>
     </Card>
   );
 }
