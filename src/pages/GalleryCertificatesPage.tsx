@@ -19,6 +19,8 @@ const statusVariant: Record<string, 'success' | 'default' | 'warning' | 'info'> 
   on_consignment: 'info',
   paid: 'success',
   pending_sale: 'warning',
+  archived: 'default',
+  destroyed: 'default',
 };
 
 interface ArtworkWithCertificate {

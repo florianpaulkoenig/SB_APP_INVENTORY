@@ -4,15 +4,9 @@
 // ---------------------------------------------------------------------------
 
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import { PDF_COLORS } from './PDFStyles';
+import styles, { PDF_COLORS } from './PDFStyles';
+import { PDFHeader, getCertificateTitle } from './PDFHeader';
 import { ARTIST_NAME } from '../../lib/constants';
-
-// ---------------------------------------------------------------------------
-// Register font (already registered in PDFStyles but we import colors only)
-// We rely on PDFStyles being imported elsewhere to register AnzianoPro.
-// Import the module so the Font.register side-effect runs.
-// ---------------------------------------------------------------------------
-import './PDFStyles';
 
 // ---------------------------------------------------------------------------
 // Multi-language translations
@@ -113,25 +107,6 @@ const MONTH_NAMES: Record<string, string[]> = {
 // Certificate-specific styles (clean, minimal layout)
 // ---------------------------------------------------------------------------
 const s = StyleSheet.create({
-  page: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 10,
-    color: PDF_COLORS.primary900,
-    backgroundColor: PDF_COLORS.white,
-    paddingTop: 40,
-    paddingBottom: 50,
-    paddingHorizontal: 50,
-  },
-
-  // Title — clean italic-style text, top-left
-  title: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 14,
-    color: PDF_COLORS.primary900,
-    marginBottom: 16,
-    letterSpacing: 0.3,
-  },
-
   // Artwork image — large, full width
   imageContainer: {
     marginBottom: 24,
@@ -141,29 +116,6 @@ const s = StyleSheet.create({
     width: '100%',
     maxHeight: 420,
     objectFit: 'contain',
-  },
-
-  // Info rows — clean label/value pairs, no borders
-  infoBlock: {
-    marginBottom: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  infoLabel: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 10,
-    color: PDF_COLORS.primary900,
-    width: 160,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  infoValue: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 10,
-    color: PDF_COLORS.primary900,
-    flex: 1,
   },
 
   // Signature row — image inline in data table
@@ -332,9 +284,13 @@ export function CertificatePDF({
 
   return (
     <Document>
-      <Page size="A4" style={s.page}>
-        {/* ----- Title ---------------------------------------------------- */}
-        <Text style={s.title}>{t.certificateTitle}</Text>
+      <Page size="A4" style={styles.page}>
+        {/* ----- Header --------------------------------------------------- */}
+        <PDFHeader
+          title={t.certificateTitle}
+          language={language}
+          companyName={ARTIST_NAME}
+        />
 
         {/* ----- Artwork Image (large, full width) ------------------------ */}
         {artworkImageUrl && (
@@ -344,22 +300,22 @@ export function CertificatePDF({
         )}
 
         {/* ----- Detail Rows ---------------------------------------------- */}
-        <View style={s.infoBlock}>
+        <View style={styles.infoGrid}>
           {detailRows.map((row) => (
-            <View style={s.infoRow} key={row.label}>
-              <Text style={s.infoLabel}>{row.label}</Text>
-              <Text style={s.infoValue}>{row.value}</Text>
+            <View style={styles.infoRow} key={row.label}>
+              <Text style={styles.infoLabel}>{row.label}</Text>
+              <Text style={styles.infoValue}>{row.value}</Text>
             </View>
           ))}
 
           {/* Signature row — inline in the data table */}
-          <View style={s.infoRow}>
-            <Text style={s.infoLabel}>{t.signature}</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>{t.signature}</Text>
             <View style={{ flex: 1 }}>
               {signatureUrl ? (
                 <Image src={signatureUrl} style={s.signatureImage} />
               ) : (
-                <Text style={s.infoValue}>{ARTIST_NAME}</Text>
+                <Text style={styles.infoValue}>{ARTIST_NAME}</Text>
               )}
             </View>
           </View>
@@ -370,6 +326,15 @@ export function CertificatePDF({
 
         {/* ----- Disclaimer ----------------------------------------------- */}
         <Text style={s.disclaimer}>{t.disclaimer}</Text>
+
+        {/* ----- Footer --------------------------------------------------- */}
+        <View style={styles.footer} fixed>
+          <Text style={styles.footerText}>{`\u00a9 ${ARTIST_NAME}`}</Text>
+          <Text
+            style={styles.pageNumber}
+            render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) => `${pageNumber} / ${totalPages}`}
+          />
+        </View>
       </Page>
     </Document>
   );

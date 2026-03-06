@@ -124,3 +124,19 @@ export function generateArtworkRefCode(): string {
 
   return `${ARTWORK_REF_PREFIX}-${year}-${code}`;
 }
+
+// ---------------------------------------------------------------------------
+// Storage path sanitization -- keep original filename in DB, use safe path for storage
+// ---------------------------------------------------------------------------
+export function sanitizeStoragePath(filename: string): string {
+  const lastDot = filename.lastIndexOf('.');
+  const name = lastDot > 0 ? filename.substring(0, lastDot) : filename;
+  const ext = lastDot > 0 ? filename.substring(lastDot) : '';
+  const sanitized = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .replace(/_{2,}/g, '_')
+    .replace(/^_|_$/g, '');
+  return (sanitized || 'file') + ext.toLowerCase();
+}

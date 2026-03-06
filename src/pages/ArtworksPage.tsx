@@ -327,7 +327,7 @@ export function ArtworksPage() {
         <SearchInput
           value={search}
           onChange={handleSearchChange}
-          placeholder="Search artworks by title, inventory number, reference code, or medium..."
+          placeholder="Search by title, reference code, medium, year, location, notes..."
           className="max-w-md"
           autoFocus={shouldFocusSearch}
         />

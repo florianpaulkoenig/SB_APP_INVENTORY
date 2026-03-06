@@ -29,6 +29,8 @@ const STATUS_COLOR_MAP: Record<string, string> = {
   on_consignment: '#0ea5e9', // sky
   paid: '#10b981',            // emerald
   pending_sale: '#f97316',    // orange
+  archived: '#a3a3a3',        // gray
+  destroyed: '#991b1b',       // dark red
 };
 
 const FALLBACK_COLOR = '#a3a3a3';

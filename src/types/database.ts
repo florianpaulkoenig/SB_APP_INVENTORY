@@ -12,7 +12,9 @@ export type ArtworkStatus =
   | 'in_transit'
   | 'on_consignment'
   | 'paid'
-  | 'pending_sale';
+  | 'pending_sale'
+  | 'archived'
+  | 'destroyed';
 
 export type ArtworkCategory =
   | 'painting'

@@ -7,6 +7,7 @@ import { ProductionOrderPDF } from '../components/pdf/ProductionOrderPDF';
 import { ProductionOrdersOverviewPDF } from '../components/pdf/ProductionOrdersOverviewPDF';
 import { ProductionOrdersArtistPDF } from '../components/pdf/ProductionOrdersArtistPDF';
 import type { OverviewOrder, OverviewItem } from '../components/pdf/ProductionOrdersOverviewPDF';
+import { useToast } from '../components/ui/Toast';
 import { Button } from '../components/ui/Button';
 import { SearchInput } from '../components/ui/SearchInput';
 import { Select } from '../components/ui/Select';
@@ -46,6 +47,8 @@ export function ProductionOrdersPage() {
   const [downloadingOverview, setDownloadingOverview] = useState(false);
   const [downloadingArtist, setDownloadingArtist] = useState(false);
   const [matchingGalleryIds, setMatchingGalleryIds] = useState<string[]>([]);
+  const [artistDateFrom, setArtistDateFrom] = useState('');
+  const [artistDateTo, setArtistDateTo] = useState('');
 
   // ---- Resolve gallery IDs matching search term ----------------------------
 
@@ -81,6 +84,7 @@ export function ProductionOrdersPage() {
   });
 
   const { toCHF } = useExchangeRates();
+  const { toast } = useToast();
 
   // ---- Fetch item-level values & gallery names for all visible orders ------
 
@@ -271,8 +275,26 @@ export function ProductionOrdersPage() {
     setDownloadingArtist(true);
 
     try {
+      // Filter by date range if set
+      let dateFilteredOrders = [...productionOrders];
+      if (artistDateFrom) {
+        dateFilteredOrders = dateFilteredOrders.filter(
+          (o) => o.deadline && o.deadline >= artistDateFrom
+        );
+      }
+      if (artistDateTo) {
+        dateFilteredOrders = dateFilteredOrders.filter(
+          (o) => o.deadline && o.deadline <= artistDateTo
+        );
+      }
+      if (dateFilteredOrders.length === 0) {
+        toast({ title: 'No Orders', description: 'No orders match the selected date range.', variant: 'destructive' });
+        setDownloadingArtist(false);
+        return;
+      }
+
       // Batch-fetch all items
-      const orderIds = productionOrders.map((o) => o.id);
+      const orderIds = dateFilteredOrders.map((o) => o.id);
       const itemsByOrder: Record<string, OverviewItem[]> = {};
 
       if (orderIds.length > 0) {
@@ -307,7 +329,7 @@ export function ProductionOrdersPage() {
       }
 
       // Sort orders by deadline (earliest first)
-      const sortedOrders = [...productionOrders].sort((a, b) => {
+      const sortedOrders = [...dateFilteredOrders].sort((a, b) => {
         if (!a.deadline && !b.deadline) return 0;
         if (!a.deadline) return 1;
         if (!b.deadline) return -1;
@@ -331,6 +353,9 @@ export function ProductionOrdersPage() {
         <ProductionOrdersArtistPDF
           orders={artistOrders}
           language={language}
+          dateRange={artistDateFrom || artistDateTo
+            ? { from: artistDateFrom || undefined, to: artistDateTo || undefined }
+            : undefined}
         />,
       ).toBlob();
 
@@ -468,28 +493,45 @@ export function ProductionOrdersPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={handleDownloadArtistExport}
-            loading={downloadingArtist}
-            disabled={productionOrders.length === 0}
-            title="Simplified export for artist: Item, Dimensions, Qty, Category"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={artistDateFrom}
+              onChange={(e) => setArtistDateFrom(e.target.value)}
+              className="rounded-md border border-primary-200 bg-white px-2 py-1.5 text-sm text-primary-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              title="From date"
+            />
+            <span className="text-xs text-primary-400">to</span>
+            <input
+              type="date"
+              value={artistDateTo}
+              onChange={(e) => setArtistDateTo(e.target.value)}
+              className="rounded-md border border-primary-200 bg-white px-2 py-1.5 text-sm text-primary-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              title="To date"
+            />
+            <Button
+              variant="outline"
+              onClick={handleDownloadArtistExport}
+              loading={downloadingArtist}
+              disabled={productionOrders.length === 0}
+              title="Simplified export for artist: Item, Dimensions, Qty, Category"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-              />
-            </svg>
-            Export: Artist
-          </Button>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                />
+              </svg>
+              Export: Artist
+            </Button>
+          </div>
           <Button
             variant="outline"
             onClick={handleDownloadOverview}

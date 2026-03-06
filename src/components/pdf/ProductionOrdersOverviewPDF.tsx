@@ -6,7 +6,7 @@
 import { Document, Page, View, Text } from '@react-pdf/renderer';
 import styles, { PDF_COLORS } from './PDFStyles';
 import { PDFHeader } from './PDFHeader';
-import { COMPANY_NAME } from '../../lib/constants';
+import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 
 // ---------------------------------------------------------------------------
 // Multi-language translations
@@ -253,35 +253,37 @@ export function ProductionOrdersOverviewPDF({
           title={t.overviewTitle}
           subtitle={`${t.generatedOn} ${today}`}
           language={language}
+          companyName={ARTIST_NAME}
         />
 
         {/* Revenue Summary & Analysis */}
         {(totalValueCHF != null || (perGalleryValues && perGalleryValues.length > 0) || Object.keys(categoryCounts).length > 0) && (
           <View style={{ marginBottom: 16, borderWidth: 0.5, borderColor: PDF_COLORS.border, padding: 10 }}>
-            <View style={{ flexDirection: 'row', gap: 40, marginBottom: 8 }}>
-              {/* Revenue */}
-              {totalValueCHF != null && totalValueCHF > 0 && (
-                <View>
-                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 8, color: PDF_COLORS.primary400, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Total Revenue
-                  </Text>
-                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 14, color: PDF_COLORS.primary900, marginTop: 2 }}>
-                    {fmtCHF(totalValueCHF)}
-                  </Text>
+            {/* Revenue per gallery table */}
+            {totalValueCHF != null && totalValueCHF > 0 && (
+              <View style={{ marginBottom: 8 }}>
+                {/* Table header */}
+                <View style={{ flexDirection: 'row', backgroundColor: PDF_COLORS.primary900, paddingVertical: 5, paddingHorizontal: 8 }}>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 8, color: PDF_COLORS.white, textTransform: 'uppercase', letterSpacing: 0.5, width: '50%' }}>Gallery</Text>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 8, color: PDF_COLORS.white, textTransform: 'uppercase', letterSpacing: 0.5, width: '30%', textAlign: 'right' }}>Revenue (CHF)</Text>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 8, color: PDF_COLORS.white, textTransform: 'uppercase', letterSpacing: 0.5, width: '20%', textAlign: 'right' }}>Share</Text>
                 </View>
-              )}
-              {/* Per gallery */}
-              {perGalleryValues && perGalleryValues.map((g) => (
-                <View key={g.name}>
-                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 8, color: PDF_COLORS.primary400, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {g.name}
-                  </Text>
-                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 12, color: PDF_COLORS.accent, marginTop: 2 }}>
-                    {fmtCHF(g.value)}
-                  </Text>
+                {/* Total row */}
+                <View style={{ flexDirection: 'row', paddingVertical: 5, paddingHorizontal: 8, borderBottomWidth: 0.5, borderBottomColor: PDF_COLORS.border, backgroundColor: PDF_COLORS.backgroundLight }}>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.primary900, width: '50%' }}>TOTAL</Text>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.primary900, width: '30%', textAlign: 'right' }}>{fmtCHF(totalValueCHF)}</Text>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.primary900, width: '20%', textAlign: 'right' }}>100%</Text>
                 </View>
-              ))}
-            </View>
+                {/* Per-gallery rows */}
+                {perGalleryValues && [...perGalleryValues].sort((a, b) => b.value - a.value).map((g, idx) => (
+                  <View key={g.name} style={{ flexDirection: 'row', paddingVertical: 4, paddingHorizontal: 8, borderBottomWidth: 0.5, borderBottomColor: PDF_COLORS.border, backgroundColor: idx % 2 === 0 ? PDF_COLORS.white : '#fafafa' }}>
+                    <Text style={{ fontFamily: 'AnzianoPro', fontSize: 9, color: PDF_COLORS.primary700, width: '50%' }}>{g.name}</Text>
+                    <Text style={{ fontFamily: 'AnzianoPro', fontSize: 9, color: PDF_COLORS.accent, width: '30%', textAlign: 'right' }}>{fmtCHF(g.value)}</Text>
+                    <Text style={{ fontFamily: 'AnzianoPro', fontSize: 9, color: PDF_COLORS.primary400, width: '20%', textAlign: 'right' }}>{(totalValueCHF > 0 ? ((g.value / totalValueCHF) * 100).toFixed(1) : '0.0')}%</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
             {/* Analysis: categories & dimensions */}
             <View style={{ flexDirection: 'row', gap: 40, marginTop: 4 }}>
@@ -498,7 +500,7 @@ export function ProductionOrdersOverviewPDF({
         {/* Footer */}
         <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
-            {`\u00a9 ${COMPANY_NAME}`}
+            {`\u00a9 ${ARTIST_NAME}`}
           </Text>
           <Text
             style={styles.pageNumber}

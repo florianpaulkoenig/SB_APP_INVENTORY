@@ -3,12 +3,13 @@
 // All monetary values converted to CHF using daily exchange rates
 // ---------------------------------------------------------------------------
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { useExchangeRates } from '../hooks/useExchangeRates';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { Card } from '../components/ui/Card';
 
 interface DashboardStats {
   total: number;
@@ -93,6 +94,19 @@ interface GalleryPerformance {
   revenue: number; // CHF
   commission: number; // CHF
   avgDaysToSell: number | null;
+}
+
+// Unified gallery ranking row
+interface GalleryRanking {
+  id: string;
+  name: string;
+  totalRevenue: number;
+  ordersRevenue: number;
+  potentialRevenue: number;
+  artworksSold: number;
+  artworksConsigned: number;
+  sellThroughRate: number;
+  commissionSplit: string; // e.g. "50/25/25"
 }
 
 export function DashboardPage() {
@@ -501,6 +515,56 @@ export function DashboardPage() {
       ]
     : [];
 
+  // ---- Unified Gallery Ranking (merged from all gallery data) ---------------
+
+  const chfFmt = useMemo(
+    () => new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF', minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+    [],
+  );
+
+  const galleryRankings: GalleryRanking[] = useMemo(() => {
+    // Collect every gallery id that appears in any dataset
+    const allIds = new Set<string>();
+    for (const g of galleryCounts) allIds.add(g.id);
+    for (const g of galleryRevenues) allIds.add(g.id);
+    for (const g of galleryOrderRevenues) allIds.add(g.id);
+    for (const g of galleryPotentials) allIds.add(g.id);
+    for (const g of galleryPerformance) allIds.add(g.id);
+
+    // Build lookup maps for O(1) access
+    const revenueMap = new Map(galleryRevenues.map((g) => [g.id, g.revenue]));
+    const orderRevMap = new Map(galleryOrderRevenues.map((g) => [g.id, g.revenue]));
+    const potentialMap = new Map(galleryPotentials.map((g) => [g.id, g.potential]));
+    const countMap = new Map(galleryCounts.map((g) => [g.id, g]));
+    const perfMap = new Map(galleryPerformance.map((g) => [g.id, g]));
+
+    return Array.from(allIds)
+      .map((gId) => {
+        const counts = countMap.get(gId);
+        const perf = perfMap.get(gId);
+        const sold = counts?.sold ?? perf?.sold ?? 0;
+        const consigned = counts?.onConsignment ?? perf?.onConsignment ?? 0;
+        const engaged = sold + consigned;
+        const split = galleryCommissionSplits[gId];
+        const commissionSplit = split
+          ? `${split.gallery}/${split.noa}/${split.artist}`
+          : '—';
+
+        return {
+          id: gId,
+          name: galleryNameMap[gId] || 'Unknown',
+          totalRevenue: revenueMap.get(gId) ?? 0,
+          ordersRevenue: orderRevMap.get(gId) ?? 0,
+          potentialRevenue: potentialMap.get(gId) ?? 0,
+          artworksSold: sold,
+          artworksConsigned: consigned,
+          sellThroughRate: engaged > 0 ? (sold / engaged) * 100 : 0,
+          commissionSplit,
+        };
+      })
+      .sort((a, b) => b.totalRevenue - a.totalRevenue);
+  }, [galleryCounts, galleryRevenues, galleryOrderRevenues, galleryPotentials, galleryPerformance, galleryCommissionSplits, galleryNameMap]);
+
   return (
     <div>
       {/* Header */}
@@ -538,375 +602,265 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Revenue Summary Cards */}
+      {/* Revenue Overview — summary cards + split table in one Card */}
       {!loading && (
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-lg border border-primary-100 bg-white p-6">
-            <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-              Total Revenue (Sales)
-            </p>
-            <p className="mt-2 font-display text-3xl font-bold text-emerald-600">
-              {formatCurrency(totalRevenue, 'CHF')}
-            </p>
-          </div>
-          <div className="rounded-lg border border-primary-100 bg-white p-6">
-            <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-              Total Potential Revenue
-            </p>
-            <p className="mt-2 font-display text-3xl font-bold text-accent">
-              {formatCurrency(totalPotential, 'CHF')}
-            </p>
-            <p className="mt-1 text-xs text-primary-400">
-              Unsold artworks with prices
-            </p>
-          </div>
-          <div
-            className="cursor-pointer rounded-lg border border-primary-100 bg-white p-6 transition-shadow hover:shadow-md"
-            onClick={() => navigate('/production')}
-          >
-            <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-              Confirmed Orders Revenue
-            </p>
-            <p className="mt-2 font-display text-3xl font-bold text-blue-600">
-              {formatCurrency(confirmedOrdersRevenue, 'CHF')}
-            </p>
-            <p className="mt-1 text-xs text-primary-400">
-              Active production orders
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Revenue Splits (Gallery / NOA / Artist) — Sales, Potential, Orders */}
-      {!loading && (revenueSplit.total > 0 || potentialSplit.total > 0 || ordersSplit.total > 0) && (
-        <div className="mt-10">
-          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
-            Revenue Split
+        <Card className="mt-10 p-6">
+          <h2 className="mb-5 font-display text-lg font-semibold text-primary-900">
+            Revenue Overview
           </h2>
 
-          {/* Split table — compact overview of all three categories */}
-          <div className="overflow-x-auto rounded-lg border border-primary-100 bg-white">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-primary-100 bg-primary-50/50">
-                  <th className="px-4 py-3 font-medium text-primary-500">Revenue Type</th>
-                  <th className="px-4 py-3 text-right font-medium text-sky-600">Gallery</th>
-                  <th className="px-4 py-3 text-right font-medium text-amber-600">NOA</th>
-                  <th className="px-4 py-3 text-right font-medium text-emerald-600">Artist</th>
-                  <th className="px-4 py-3 text-right font-medium text-primary-500">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-primary-50">
-                {/* Sales Revenue Split */}
-                {revenueSplit.total > 0 && (
-                  <tr>
-                    <td className="px-4 py-3 font-semibold text-primary-900">
-                      Sales Revenue
-                      <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
-                        <div className="bg-sky-500" style={{ width: `${(revenueSplit.gallery / revenueSplit.total) * 100}%` }} />
-                        <div className="bg-amber-500" style={{ width: `${(revenueSplit.noa / revenueSplit.total) * 100}%` }} />
-                        <div className="bg-emerald-500" style={{ width: `${(revenueSplit.artist / revenueSplit.total) * 100}%` }} />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right text-sky-600">
-                      {formatCurrency(revenueSplit.gallery, 'CHF')}
-                      <span className="ml-1 text-xs text-primary-400">
-                        ({((revenueSplit.gallery / revenueSplit.total) * 100).toFixed(0)}%)
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-amber-600">
-                      {formatCurrency(revenueSplit.noa, 'CHF')}
-                      <span className="ml-1 text-xs text-primary-400">
-                        ({((revenueSplit.noa / revenueSplit.total) * 100).toFixed(0)}%)
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-emerald-600">
-                      {formatCurrency(revenueSplit.artist, 'CHF')}
-                      <span className="ml-1 text-xs text-primary-400">
-                        ({((revenueSplit.artist / revenueSplit.total) * 100).toFixed(0)}%)
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-primary-900">
-                      {formatCurrency(revenueSplit.total, 'CHF')}
-                    </td>
-                  </tr>
-                )}
-
-                {/* Potential Revenue Split */}
-                {potentialSplit.total > 0 && (
-                  <tr>
-                    <td className="px-4 py-3 font-semibold text-primary-900">
-                      Potential Revenue
-                      <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
-                        <div className="bg-sky-500" style={{ width: `${(potentialSplit.gallery / potentialSplit.total) * 100}%` }} />
-                        <div className="bg-amber-500" style={{ width: `${(potentialSplit.noa / potentialSplit.total) * 100}%` }} />
-                        <div className="bg-emerald-500" style={{ width: `${(potentialSplit.artist / potentialSplit.total) * 100}%` }} />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right text-sky-600">
-                      {formatCurrency(potentialSplit.gallery, 'CHF')}
-                      <span className="ml-1 text-xs text-primary-400">
-                        ({((potentialSplit.gallery / potentialSplit.total) * 100).toFixed(0)}%)
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-amber-600">
-                      {formatCurrency(potentialSplit.noa, 'CHF')}
-                      <span className="ml-1 text-xs text-primary-400">
-                        ({((potentialSplit.noa / potentialSplit.total) * 100).toFixed(0)}%)
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-emerald-600">
-                      {formatCurrency(potentialSplit.artist, 'CHF')}
-                      <span className="ml-1 text-xs text-primary-400">
-                        ({((potentialSplit.artist / potentialSplit.total) * 100).toFixed(0)}%)
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-primary-900">
-                      {formatCurrency(potentialSplit.total, 'CHF')}
-                    </td>
-                  </tr>
-                )}
-
-                {/* Confirmed Orders Revenue Split */}
-                {ordersSplit.total > 0 && (
-                  <tr>
-                    <td className="px-4 py-3 font-semibold text-primary-900">
-                      Confirmed Orders
-                      <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
-                        <div className="bg-sky-500" style={{ width: `${(ordersSplit.gallery / ordersSplit.total) * 100}%` }} />
-                        <div className="bg-amber-500" style={{ width: `${(ordersSplit.noa / ordersSplit.total) * 100}%` }} />
-                        <div className="bg-emerald-500" style={{ width: `${(ordersSplit.artist / ordersSplit.total) * 100}%` }} />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right text-sky-600">
-                      {formatCurrency(ordersSplit.gallery, 'CHF')}
-                      <span className="ml-1 text-xs text-primary-400">
-                        ({((ordersSplit.gallery / ordersSplit.total) * 100).toFixed(0)}%)
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-amber-600">
-                      {formatCurrency(ordersSplit.noa, 'CHF')}
-                      <span className="ml-1 text-xs text-primary-400">
-                        ({((ordersSplit.noa / ordersSplit.total) * 100).toFixed(0)}%)
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-emerald-600">
-                      {formatCurrency(ordersSplit.artist, 'CHF')}
-                      <span className="ml-1 text-xs text-primary-400">
-                        ({((ordersSplit.artist / ordersSplit.total) * 100).toFixed(0)}%)
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-primary-900">
-                      {formatCurrency(ordersSplit.total, 'CHF')}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          {/* Revenue Summary Cards */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-lg border border-primary-100 bg-primary-50/30 p-5">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                Total Revenue (Sales)
+              </p>
+              <p className="mt-2 font-display text-3xl font-bold text-emerald-600">
+                {formatCurrency(totalRevenue, 'CHF')}
+              </p>
+            </div>
+            <div className="rounded-lg border border-primary-100 bg-primary-50/30 p-5">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                Total Potential Revenue
+              </p>
+              <p className="mt-2 font-display text-3xl font-bold text-accent">
+                {formatCurrency(totalPotential, 'CHF')}
+              </p>
+              <p className="mt-1 text-xs text-primary-400">
+                Unsold artworks with prices
+              </p>
+            </div>
+            <div
+              className="cursor-pointer rounded-lg border border-primary-100 bg-primary-50/30 p-5 transition-shadow hover:shadow-md"
+              onClick={() => navigate('/production')}
+            >
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                Confirmed Orders Revenue
+              </p>
+              <p className="mt-2 font-display text-3xl font-bold text-blue-600">
+                {formatCurrency(confirmedOrdersRevenue, 'CHF')}
+              </p>
+              <p className="mt-1 text-xs text-primary-400">
+                Active production orders
+              </p>
+            </div>
           </div>
-          <div className="mt-2 flex items-center gap-4 text-xs text-primary-400">
-            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-sky-500" /> Gallery</span>
-            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-amber-500" /> NOA</span>
-            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Artist</span>
-            <span className="ml-auto">Based on commission splits per gallery profile</span>
-          </div>
-        </div>
+
+          {/* Revenue Split Table */}
+          {(revenueSplit.total > 0 || potentialSplit.total > 0 || ordersSplit.total > 0) && (
+            <>
+              <h3 className="mb-3 mt-6 font-display text-sm font-semibold text-primary-700">
+                Revenue Split
+              </h3>
+
+              <div className="overflow-x-auto rounded-lg border border-primary-100">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-primary-100 bg-primary-50/50">
+                      <th className="px-4 py-3 font-medium text-primary-500">Revenue Type</th>
+                      <th className="px-4 py-3 text-right font-medium text-sky-600">Gallery</th>
+                      <th className="px-4 py-3 text-right font-medium text-amber-600">NOA</th>
+                      <th className="px-4 py-3 text-right font-medium text-emerald-600">Artist</th>
+                      <th className="px-4 py-3 text-right font-medium text-primary-500">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-primary-50">
+                    {/* Sales Revenue Split */}
+                    {revenueSplit.total > 0 && (
+                      <tr>
+                        <td className="px-4 py-3 font-semibold text-primary-900">
+                          Sales Revenue
+                          <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
+                            <div className="bg-sky-500" style={{ width: `${(revenueSplit.gallery / revenueSplit.total) * 100}%` }} />
+                            <div className="bg-amber-500" style={{ width: `${(revenueSplit.noa / revenueSplit.total) * 100}%` }} />
+                            <div className="bg-emerald-500" style={{ width: `${(revenueSplit.artist / revenueSplit.total) * 100}%` }} />
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right text-sky-600">
+                          {formatCurrency(revenueSplit.gallery, 'CHF')}
+                          <span className="ml-1 text-xs text-primary-400">
+                            ({((revenueSplit.gallery / revenueSplit.total) * 100).toFixed(0)}%)
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-amber-600">
+                          {formatCurrency(revenueSplit.noa, 'CHF')}
+                          <span className="ml-1 text-xs text-primary-400">
+                            ({((revenueSplit.noa / revenueSplit.total) * 100).toFixed(0)}%)
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-emerald-600">
+                          {formatCurrency(revenueSplit.artist, 'CHF')}
+                          <span className="ml-1 text-xs text-primary-400">
+                            ({((revenueSplit.artist / revenueSplit.total) * 100).toFixed(0)}%)
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-primary-900">
+                          {formatCurrency(revenueSplit.total, 'CHF')}
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Potential Revenue Split */}
+                    {potentialSplit.total > 0 && (
+                      <tr>
+                        <td className="px-4 py-3 font-semibold text-primary-900">
+                          Potential Revenue
+                          <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
+                            <div className="bg-sky-500" style={{ width: `${(potentialSplit.gallery / potentialSplit.total) * 100}%` }} />
+                            <div className="bg-amber-500" style={{ width: `${(potentialSplit.noa / potentialSplit.total) * 100}%` }} />
+                            <div className="bg-emerald-500" style={{ width: `${(potentialSplit.artist / potentialSplit.total) * 100}%` }} />
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right text-sky-600">
+                          {formatCurrency(potentialSplit.gallery, 'CHF')}
+                          <span className="ml-1 text-xs text-primary-400">
+                            ({((potentialSplit.gallery / potentialSplit.total) * 100).toFixed(0)}%)
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-amber-600">
+                          {formatCurrency(potentialSplit.noa, 'CHF')}
+                          <span className="ml-1 text-xs text-primary-400">
+                            ({((potentialSplit.noa / potentialSplit.total) * 100).toFixed(0)}%)
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-emerald-600">
+                          {formatCurrency(potentialSplit.artist, 'CHF')}
+                          <span className="ml-1 text-xs text-primary-400">
+                            ({((potentialSplit.artist / potentialSplit.total) * 100).toFixed(0)}%)
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-primary-900">
+                          {formatCurrency(potentialSplit.total, 'CHF')}
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Confirmed Orders Revenue Split */}
+                    {ordersSplit.total > 0 && (
+                      <tr>
+                        <td className="px-4 py-3 font-semibold text-primary-900">
+                          Confirmed Orders
+                          <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
+                            <div className="bg-sky-500" style={{ width: `${(ordersSplit.gallery / ordersSplit.total) * 100}%` }} />
+                            <div className="bg-amber-500" style={{ width: `${(ordersSplit.noa / ordersSplit.total) * 100}%` }} />
+                            <div className="bg-emerald-500" style={{ width: `${(ordersSplit.artist / ordersSplit.total) * 100}%` }} />
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right text-sky-600">
+                          {formatCurrency(ordersSplit.gallery, 'CHF')}
+                          <span className="ml-1 text-xs text-primary-400">
+                            ({((ordersSplit.gallery / ordersSplit.total) * 100).toFixed(0)}%)
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-amber-600">
+                          {formatCurrency(ordersSplit.noa, 'CHF')}
+                          <span className="ml-1 text-xs text-primary-400">
+                            ({((ordersSplit.noa / ordersSplit.total) * 100).toFixed(0)}%)
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-emerald-600">
+                          {formatCurrency(ordersSplit.artist, 'CHF')}
+                          <span className="ml-1 text-xs text-primary-400">
+                            ({((ordersSplit.artist / ordersSplit.total) * 100).toFixed(0)}%)
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-primary-900">
+                          {formatCurrency(ordersSplit.total, 'CHF')}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-2 flex items-center gap-4 text-xs text-primary-400">
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-sky-500" /> Gallery</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-amber-500" /> NOA</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Artist</span>
+                <span className="ml-auto">Based on commission splits per gallery profile</span>
+              </div>
+            </>
+          )}
+        </Card>
       )}
 
-      {/* Artworks per Gallery */}
-      {!loading && galleryCounts.length > 0 && (
+      {/* Gallery Ranking */}
+      {!loading && galleryRankings.length > 0 && (
         <div className="mt-10">
           <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
-            Artworks per Gallery
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {galleryCounts.map((gc) => (
-              <button
-                key={gc.id}
-                type="button"
-                onClick={() => navigate(`/galleries/${gc.id}`)}
-                className="rounded-lg border border-primary-100 bg-white px-5 py-4 text-left transition-shadow hover:shadow-md"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="truncate font-display text-sm font-semibold text-primary-900">
-                    {gc.name}
-                  </span>
-                  <span className="ml-3 flex-shrink-0 rounded-full bg-sky-50 px-3 py-1 font-display text-lg font-bold text-sky-600">
-                    {gc.count}
-                  </span>
-                </div>
-                <div className="mt-2 flex gap-3 text-xs">
-                  {gc.onConsignment > 0 && (
-                    <span className="rounded-full bg-sky-50 px-2 py-0.5 text-sky-700">
-                      {gc.onConsignment} consignment
-                    </span>
-                  )}
-                  {gc.sold > 0 && (
-                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-red-700">
-                      {gc.sold} sold
-                    </span>
-                  )}
-                  {gc.available > 0 && (
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
-                      {gc.available} available
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Revenue per Gallery */}
-      {!loading && galleryRevenues.length > 0 && (
-        <div className="mt-10">
-          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
-            Revenue per Gallery
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {galleryRevenues.map((gr) => (
-              <button
-                key={gr.id}
-                type="button"
-                onClick={() => navigate(`/galleries/${gr.id}`)}
-                className="flex items-center justify-between rounded-lg border border-primary-100 bg-white px-5 py-4 text-left transition-shadow hover:shadow-md"
-              >
-                <span className="truncate font-display text-sm font-semibold text-primary-900">
-                  {gr.name}
-                </span>
-                <span className="ml-3 flex-shrink-0 rounded-full bg-emerald-50 px-3 py-1 font-display text-sm font-bold text-emerald-600">
-                  {formatCurrency(gr.revenue, 'CHF')}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Orders Revenue per Gallery */}
-      {!loading && galleryOrderRevenues.length > 0 && (
-        <div className="mt-10">
-          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
-            Orders Revenue per Gallery
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {galleryOrderRevenues.map((go) => (
-              <button
-                key={go.id}
-                type="button"
-                onClick={() => navigate(`/galleries/${go.id}`)}
-                className="rounded-lg border border-primary-100 bg-white px-5 py-4 text-left transition-shadow hover:shadow-md"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="truncate font-display text-sm font-semibold text-primary-900">
-                    {go.name}
-                  </span>
-                  <span className="ml-3 flex-shrink-0 rounded-full bg-blue-50 px-3 py-1 font-display text-sm font-bold text-blue-600">
-                    {formatCurrency(go.revenue, 'CHF')}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-primary-400">
-                  {go.orderCount} active order{go.orderCount !== 1 ? 's' : ''}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Potential Revenue per Gallery */}
-      {!loading && galleryPotentials.length > 0 && (
-        <div className="mt-10">
-          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
-            Potential Revenue per Gallery
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {galleryPotentials.map((gp) => (
-              <button
-                key={gp.id}
-                type="button"
-                onClick={() => navigate(`/galleries/${gp.id}`)}
-                className="flex items-center justify-between rounded-lg border border-primary-100 bg-white px-5 py-4 text-left transition-shadow hover:shadow-md"
-              >
-                <span className="truncate font-display text-sm font-semibold text-primary-900">
-                  {gp.name}
-                </span>
-                <span className="ml-3 flex-shrink-0 rounded-full bg-amber-50 px-3 py-1 font-display text-sm font-bold text-amber-600">
-                  {formatCurrency(gp.potential, 'CHF')}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Gallery Performance Analysis */}
-      {!loading && galleryPerformance.length > 0 && (
-        <div className="mt-10">
-          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
-            Gallery Performance Analysis
+            Gallery Ranking
           </h2>
           <div className="overflow-x-auto rounded-lg border border-primary-100 bg-white">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-primary-100 bg-primary-50/50">
-                  <th className="px-4 py-3 font-medium text-primary-500">Gallery</th>
-                  <th className="px-4 py-3 text-center font-medium text-primary-500">Artworks</th>
+                  <th className="px-4 py-3 text-center font-medium text-primary-500">#</th>
+                  <th className="px-4 py-3 font-medium text-primary-500">Gallery Name</th>
+                  <th className="px-4 py-3 text-right font-medium text-primary-500">Total Revenue</th>
+                  <th className="hidden px-4 py-3 text-right font-medium text-primary-500 sm:table-cell">Orders Revenue</th>
+                  <th className="hidden px-4 py-3 text-right font-medium text-primary-500 md:table-cell">Potential Revenue</th>
                   <th className="px-4 py-3 text-center font-medium text-primary-500">Sold</th>
-                  <th className="px-4 py-3 text-center font-medium text-primary-500">Consigned</th>
+                  <th className="hidden px-4 py-3 text-center font-medium text-primary-500 sm:table-cell">Consigned</th>
                   <th className="px-4 py-3 font-medium text-primary-500">Sell-Through</th>
-                  <th className="hidden px-4 py-3 text-center font-medium text-primary-500 sm:table-cell">Avg Days</th>
-                  <th className="px-4 py-3 text-right font-medium text-primary-500">Revenue</th>
-                  <th className="hidden px-4 py-3 text-right font-medium text-primary-500 sm:table-cell">Commission</th>
+                  <th className="hidden px-4 py-3 text-center font-medium text-primary-500 md:table-cell">Commission Split</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary-50">
-                {galleryPerformance.map((gp) => (
+                {galleryRankings.map((gr, idx) => (
                   <tr
-                    key={gp.id}
-                    className="cursor-pointer transition-colors hover:bg-primary-50/50"
-                    onClick={() => navigate(`/galleries/${gp.id}`)}
+                    key={gr.id}
+                    className={`cursor-pointer transition-colors hover:bg-primary-50/50 ${idx % 2 === 1 ? 'bg-primary-50/25' : ''}`}
+                    onClick={() => navigate(`/galleries/${gr.id}`)}
                   >
+                    <td className="px-4 py-3 text-center font-bold text-primary-400">
+                      {idx + 1}
+                    </td>
                     <td className="px-4 py-3 font-semibold text-primary-900">
-                      {gp.name}
+                      {gr.name}
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium text-emerald-600">
+                      {gr.totalRevenue > 0 ? chfFmt.format(gr.totalRevenue) : '—'}
+                    </td>
+                    <td className="hidden px-4 py-3 text-right font-medium text-blue-600 sm:table-cell">
+                      {gr.ordersRevenue > 0 ? chfFmt.format(gr.ordersRevenue) : '—'}
+                    </td>
+                    <td className="hidden px-4 py-3 text-right font-medium text-amber-600 md:table-cell">
+                      {gr.potentialRevenue > 0 ? chfFmt.format(gr.potentialRevenue) : '—'}
                     </td>
                     <td className="px-4 py-3 text-center text-primary-600">
-                      {gp.totalArtworks}
+                      {gr.artworksSold}
                     </td>
-                    <td className="px-4 py-3 text-center text-primary-600">
-                      {gp.sold}
-                    </td>
-                    <td className="px-4 py-3 text-center text-primary-600">
-                      {gp.onConsignment}
+                    <td className="hidden px-4 py-3 text-center text-primary-600 sm:table-cell">
+                      {gr.artworksConsigned}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="h-2 w-16 overflow-hidden rounded-full bg-primary-100">
                           <div
                             className={`h-full rounded-full ${
-                              gp.sellThroughRate >= 60
+                              gr.sellThroughRate >= 60
                                 ? 'bg-emerald-500'
-                                : gp.sellThroughRate >= 30
+                                : gr.sellThroughRate >= 30
                                   ? 'bg-amber-500'
                                   : 'bg-red-400'
                             }`}
-                            style={{ width: `${Math.min(gp.sellThroughRate, 100)}%` }}
+                            style={{ width: `${Math.min(gr.sellThroughRate, 100)}%` }}
                           />
                         </div>
                         <span className="text-xs font-medium text-primary-600">
-                          {gp.sellThroughRate.toFixed(0)}%
+                          {gr.sellThroughRate.toFixed(0)}%
                         </span>
                       </div>
                     </td>
-                    <td className="hidden px-4 py-3 text-center text-primary-600 sm:table-cell">
-                      {gp.avgDaysToSell != null ? `${gp.avgDaysToSell}d` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-emerald-600">
-                      {gp.revenue > 0 ? formatCurrency(gp.revenue, 'CHF') : '—'}
-                    </td>
-                    <td className="hidden px-4 py-3 text-right font-medium text-primary-500 sm:table-cell">
-                      {gp.commission > 0 ? formatCurrency(gp.commission, 'CHF') : '—'}
+                    <td className="hidden px-4 py-3 text-center text-xs text-primary-500 md:table-cell">
+                      {gr.commissionSplit !== '—' ? (
+                        <span className="inline-flex items-center gap-0.5">
+                          <span className="font-medium text-sky-600">G</span>{gr.commissionSplit.split('/')[0]}%
+                          <span className="mx-0.5 text-primary-300">/</span>
+                          <span className="font-medium text-amber-600">N</span>{gr.commissionSplit.split('/')[1]}%
+                          <span className="mx-0.5 text-primary-300">/</span>
+                          <span className="font-medium text-emerald-600">A</span>{gr.commissionSplit.split('/')[2]}%
+                        </span>
+                      ) : '—'}
                     </td>
                   </tr>
                 ))}
@@ -914,7 +868,7 @@ export function DashboardPage() {
             </table>
           </div>
           <p className="mt-2 text-xs text-primary-400">
-            Sell-through = Sold ÷ (Sold + Consigned). Avg Days = consignment to sale date.
+            Sorted by total revenue. Sell-through = Sold / (Sold + Consigned). Commission Split = Gallery / NOA / Artist.
           </p>
         </div>
       )}

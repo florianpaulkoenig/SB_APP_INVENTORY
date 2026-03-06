@@ -22,12 +22,13 @@ interface PDFHeaderProps {
   title: string;
   subtitle?: string;
   language?: 'en' | 'de' | 'fr';
+  companyName?: string;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
-export function PDFHeader({ title, subtitle, language = 'en' }: PDFHeaderProps) {
+export function PDFHeader({ title, subtitle, language = 'en', companyName }: PDFHeaderProps) {
   // Use the provided title directly; caller may pass the translated certificate
   // title or any custom heading.  The `language` prop is available if the caller
   // wants automatic translation via the helper below.
@@ -35,7 +36,7 @@ export function PDFHeader({ title, subtitle, language = 'en' }: PDFHeaderProps) 
 
   return (
     <View style={styles.header}>
-      <Text style={styles.companyName}>{COMPANY_NAME}</Text>
+      <Text style={styles.companyName}>{companyName ?? COMPANY_NAME}</Text>
       <Text style={styles.headerTitle}>{title}</Text>
       {subtitle && <Text style={styles.headerSubtitle}>{subtitle}</Text>}
       <View style={styles.accentLine} />

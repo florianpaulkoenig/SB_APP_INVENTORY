@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { sanitizeStoragePath } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -98,7 +99,8 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
     }
 
     for (const file of validFiles) {
-      const storagePath = `${session.user.id}/production-orders/${productionOrderId}/${file.name}`;
+      const safeName = sanitizeStoragePath(file.name);
+      const storagePath = `${session.user.id}/production-orders/${productionOrderId}/${safeName}`;
       const { error } = await supabase.storage
         .from(BUCKET)
         .upload(storagePath, file, { upsert: true });

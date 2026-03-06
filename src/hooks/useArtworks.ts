@@ -24,6 +24,12 @@ export interface ArtworkFilters {
   series?: ArtworkSeries;
   gallery_id?: string;
   year?: number;
+  color?: string;
+  medium?: string;
+  minHeight?: number;
+  maxHeight?: number;
+  minWidth?: number;
+  maxWidth?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
@@ -73,11 +79,12 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
           { count: 'exact' },
         );
 
-      // Search filter: match title, inventory_number, reference_code, or medium
+      // Search filter: match across all text fields + year
       if (filters.search) {
         const term = `%${sanitizeFilterTerm(filters.search)}%`;
+        const yearCondition = /^\d{4}$/.test(filters.search.trim()) ? `,year.eq.${Number(filters.search.trim())}` : '';
         query = query.or(
-          `title.ilike.${term},inventory_number.ilike.${term},reference_code.ilike.${term},medium.ilike.${term}`,
+          `title.ilike.${term},inventory_number.ilike.${term},reference_code.ilike.${term},medium.ilike.${term},notes.ilike.${term},current_location.ilike.${term},category.ilike.${term},motif.ilike.${term},series.ilike.${term},color.ilike.${term},edition_type.ilike.${term}${yearCondition}`,
         );
       }
 
@@ -109,6 +116,32 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       // Year filter
       if (filters.year) {
         query = query.eq('year', filters.year);
+      }
+
+      // Color filter
+      if (filters.color) {
+        query = query.eq('color', filters.color);
+      }
+
+      // Medium filter (partial match)
+      if (filters.medium) {
+        query = query.ilike('medium', `%${sanitizeFilterTerm(filters.medium)}%`);
+      }
+
+      // Height range filter
+      if (filters.minHeight != null) {
+        query = query.gte('height', filters.minHeight);
+      }
+      if (filters.maxHeight != null) {
+        query = query.lte('height', filters.maxHeight);
+      }
+
+      // Width range filter
+      if (filters.minWidth != null) {
+        query = query.gte('width', filters.minWidth);
+      }
+      if (filters.maxWidth != null) {
+        query = query.lte('width', filters.maxWidth);
       }
 
       // Sorting
@@ -143,6 +176,12 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
     filters.series,
     filters.gallery_id,
     filters.year,
+    filters.color,
+    filters.medium,
+    filters.minHeight,
+    filters.maxHeight,
+    filters.minWidth,
+    filters.maxWidth,
     filters.sortBy,
     filters.sortOrder,
     page,

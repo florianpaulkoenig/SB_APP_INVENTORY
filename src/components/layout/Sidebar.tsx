@@ -240,8 +240,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           <span className="font-display text-lg font-bold text-primary-900">N</span>
         ) : (
           <div>
-            <span className="font-display text-xl font-bold text-primary-900">NOA</span>
-            <p className="text-[10px] font-medium tracking-widest text-primary-400">INVENTORY</p>
+            <span className="font-display text-base font-bold text-primary-900">NOA x Simon Berger</span>
+            <p className="text-[10px] font-medium tracking-widest text-primary-400">MANAGEMENT</p>
           </div>
         )}
       </div>

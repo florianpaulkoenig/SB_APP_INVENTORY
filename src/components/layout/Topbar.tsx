@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useUnreadNews } from '../../hooks/useUnreadNews';
 import { getInitials } from '../../lib/utils';
+import { GlobalSearchOverlay } from './GlobalSearchOverlay';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -20,7 +21,20 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
   const { user, signOut, role } = useAuth();
   const { unreadCount } = useUnreadNews();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Cmd+K / Ctrl+K keyboard shortcut to open search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -38,6 +52,7 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
   const initials = userEmail ? getInitials(userEmail.split('@')[0].replace(/[._-]/g, ' ')) : '?';
 
   return (
+    <>
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-primary-100 bg-white px-4 lg:px-6">
       {/* Left side */}
       <div className="flex items-center gap-3">
@@ -64,7 +79,7 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
         {/* Search button */}
         <button
           type="button"
-          onClick={() => navigate('/artworks?search=1')}
+          onClick={() => setSearchOpen(true)}
           className="rounded-md p-2 text-primary-400 transition-colors hover:bg-primary-50 hover:text-primary-700"
           aria-label="Search"
         >
@@ -128,5 +143,7 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
         </div>
       </div>
     </header>
+    <GlobalSearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+    </>
   );
 }

@@ -6,7 +6,7 @@
 import { Document, Page, View, Text } from '@react-pdf/renderer';
 import styles, { PDF_COLORS } from './PDFStyles';
 import { PDFHeader } from './PDFHeader';
-import { COMPANY_NAME } from '../../lib/constants';
+import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 import type { OverviewOrder } from './ProductionOrdersOverviewPDF';
 
 // ---------------------------------------------------------------------------
@@ -60,6 +60,7 @@ const COL_CATEGORY = '25%';
 export interface ProductionOrdersArtistPDFProps {
   orders: OverviewOrder[];
   language: 'en' | 'de' | 'fr';
+  dateRange?: { from?: string; to?: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -68,11 +69,19 @@ export interface ProductionOrdersArtistPDFProps {
 export function ProductionOrdersArtistPDF({
   orders,
   language,
+  dateRange,
 }: ProductionOrdersArtistPDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
   const today = new Date().toLocaleDateString(
     language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : 'en-GB',
   );
+
+  let subtitle = `${t.generatedOn} ${today}`;
+  if (dateRange) {
+    const fromStr = dateRange.from || '...';
+    const toStr = dateRange.to || '...';
+    subtitle += ` | ${fromStr} \u2192 ${toStr}`;
+  }
 
   let totalPieces = 0;
   for (const o of orders) {
@@ -86,8 +95,9 @@ export function ProductionOrdersArtistPDF({
       <Page size="A4" style={styles.page}>
         <PDFHeader
           title={t.title}
-          subtitle={`${t.generatedOn} ${today}`}
+          subtitle={subtitle}
           language={language}
+          companyName={ARTIST_NAME}
         />
 
         {orders.map((order, orderIdx) => (
@@ -106,7 +116,7 @@ export function ProductionOrdersArtistPDF({
                 {order.title}
               </Text>
               {order.deadline && (
-                <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.accent }}>
+                <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.white }}>
                   {t.deadline}: {order.deadline}
                 </Text>
               )}
@@ -184,7 +194,7 @@ export function ProductionOrdersArtistPDF({
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>{`\u00a9 ${COMPANY_NAME}`}</Text>
+          <Text style={styles.footerText}>{`\u00a9 ${ARTIST_NAME}`}</Text>
           <Text
             style={styles.pageNumber}
             render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}

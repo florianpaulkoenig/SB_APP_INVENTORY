@@ -328,7 +328,7 @@ export function ProductionOrderPDF({
         {/* ----- Footer -------------------------------------------------- */}
         <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
-            {`\u00a9 ${COMPANY_NAME}`}
+            {`\u00a9 ${ARTIST_NAME}`}
           </Text>
           <Text
             style={styles.pageNumber}

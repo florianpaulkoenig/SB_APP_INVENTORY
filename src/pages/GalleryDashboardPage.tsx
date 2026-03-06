@@ -29,6 +29,8 @@ const STATUS_BADGE_VARIANT: Record<string, 'default' | 'success' | 'warning' | '
   on_consignment: 'info',
   paid: 'success',
   pending_sale: 'warning',
+  archived: 'default',
+  destroyed: 'default',
 };
 
 // ---------------------------------------------------------------------------

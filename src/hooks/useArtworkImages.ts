@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { sanitizeStoragePath } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { ArtworkImageRow, ImageType } from '../types/database';
@@ -76,7 +77,8 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
         }
 
         const userId = session.user.id;
-        const storagePath = `${userId}/${artworkId}/${file.name}`;
+        const safeName = sanitizeStoragePath(file.name);
+        const storagePath = `${userId}/${artworkId}/${safeName}`;
 
         // Upload file to Supabase Storage
         console.log('[uploadImage] Uploading to storage:', { bucket: 'artwork-images', storagePath, fileSize: file.size, fileType: file.type });
