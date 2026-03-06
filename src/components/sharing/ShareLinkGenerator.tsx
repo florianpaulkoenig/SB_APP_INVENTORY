@@ -1,13 +1,18 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+// ---------------------------------------------------------------------------
+// NOA Inventory -- Share Link Generator
+// Modal wizard: select artworks (reuses CatalogueArtworkPicker) → choose
+// image types & expiry → create share link → copy URL.
+// ---------------------------------------------------------------------------
+
+import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { supabase } from '../../lib/supabase';
-import { sanitizeFilterTerm } from '../../lib/utils';
 import { IMAGE_TYPES } from '../../lib/constants';
 import { generateShareToken } from '../../hooks/useShareLinks';
-import type { ShareLinkRow, ArtworkRow } from '../../types/database';
+import { CatalogueArtworkPicker } from '../catalogues/CatalogueArtworkPicker';
+import type { ShareLinkRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -49,6 +54,12 @@ function computeExpiry(value: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
+// Steps
+// ---------------------------------------------------------------------------
+
+type Step = 'artworks' | 'settings' | 'success';
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -60,10 +71,8 @@ export function ShareLinkGenerator({
 }: ShareLinkGeneratorProps) {
   // ---- State ---------------------------------------------------------------
 
-  const [search, setSearch] = useState('');
-  const [searchResults, setSearchResults] = useState<ArtworkRow[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [step, setStep] = useState<Step>('artworks');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedImageTypes, setSelectedImageTypes] = useState<Set<string>>(
     new Set(IMAGE_TYPES.map((t) => t.value)),
   );
@@ -74,101 +83,20 @@ export function ShareLinkGenerator({
   const [createdLink, setCreatedLink] = useState<ShareLinkRow | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // ---- Pre-select artworks on open -----------------------------------------
+  // ---- Reset on open -------------------------------------------------------
 
   useEffect(() => {
     if (open) {
-      setSelectedIds(new Set(preselectedArtworkIds));
+      setStep('artworks');
+      setSelectedIds(preselectedArtworkIds);
       setCreatedLink(null);
       setCopied(false);
-      setSearch('');
-      setSearchResults([]);
       setExpiry('7d');
       setSelectedImageTypes(new Set(IMAGE_TYPES.map((t) => t.value)));
     }
   }, [open, preselectedArtworkIds]);
 
-  // ---- Artwork search ------------------------------------------------------
-
-  const searchArtworks = useCallback(async (term: string) => {
-    if (!term.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    setSearchLoading(true);
-
-    try {
-      const wildcard = `%${sanitizeFilterTerm(term)}%`;
-      const { data, error } = await supabase
-        .from('artworks')
-        .select('*')
-        .or(
-          `title.ilike.${wildcard},reference_code.ilike.${wildcard},inventory_number.ilike.${wildcard}`,
-        )
-        .order('title', { ascending: true })
-        .limit(20);
-
-      if (error) throw error;
-
-      setSearchResults((data as ArtworkRow[]) ?? []);
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setSearchLoading(false);
-    }
-  }, []);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      searchArtworks(search);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [search, searchArtworks]);
-
-  // ---- Preselected artworks display ----------------------------------------
-
-  const [preselectedArtworks, setPreselectedArtworks] = useState<ArtworkRow[]>([]);
-
-  useEffect(() => {
-    if (preselectedArtworkIds.length === 0) {
-      setPreselectedArtworks([]);
-      return;
-    }
-
-    const fetchPreselected = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('artworks')
-          .select('*')
-          .in('id', preselectedArtworkIds);
-
-        if (error) throw error;
-
-        setPreselectedArtworks((data as ArtworkRow[]) ?? []);
-      } catch {
-        setPreselectedArtworks([]);
-      }
-    };
-
-    fetchPreselected();
-  }, [preselectedArtworkIds]);
-
-  // ---- Selection helpers ---------------------------------------------------
-
-  const toggleArtwork = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
+  // ---- Image type toggle ---------------------------------------------------
 
   const toggleImageType = useCallback((type: string) => {
     setSelectedImageTypes((prev) => {
@@ -182,24 +110,6 @@ export function ShareLinkGenerator({
     });
   }, []);
 
-  // ---- Combined list of artworks to show -----------------------------------
-
-  const displayedArtworks = useMemo(() => {
-    const map = new Map<string, ArtworkRow>();
-
-    // Add preselected artworks first
-    for (const artwork of preselectedArtworks) {
-      map.set(artwork.id, artwork);
-    }
-
-    // Add search results
-    for (const artwork of searchResults) {
-      map.set(artwork.id, artwork);
-    }
-
-    return Array.from(map.values());
-  }, [preselectedArtworks, searchResults]);
-
   // ---- Submit --------------------------------------------------------------
 
   const shareUrl = createdLink
@@ -207,7 +117,7 @@ export function ShareLinkGenerator({
     : '';
 
   const handleSubmit = async () => {
-    if (selectedIds.size === 0 || selectedImageTypes.size === 0) return;
+    if (selectedIds.length === 0 || selectedImageTypes.size === 0) return;
 
     setSubmitting(true);
 
@@ -225,7 +135,7 @@ export function ShareLinkGenerator({
         .from('share_links')
         .insert({
           token,
-          artwork_ids: Array.from(selectedIds),
+          artwork_ids: selectedIds,
           image_types: Array.from(selectedImageTypes),
           expiry: expiryDate,
           user_id: session.user.id,
@@ -237,6 +147,7 @@ export function ShareLinkGenerator({
 
       const link = created as ShareLinkRow;
       setCreatedLink(link);
+      setStep('success');
       onCreated(link);
     } catch {
       // Error is handled silently; the modal stays open so user can retry
@@ -253,18 +164,17 @@ export function ShareLinkGenerator({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback: select input text
+      // Fallback: user can select the input manually
     }
   };
 
-  // ---- Render --------------------------------------------------------------
+  // ---- Render: Success step ------------------------------------------------
 
-  // Success state
-  if (createdLink) {
+  if (step === 'success' && createdLink) {
     return (
       <Modal isOpen={open} onClose={onClose} title="Link Created" size="md">
         <div className="space-y-4">
-          <div className="flex items-center justify-center rounded-full bg-emerald-50 p-3 mx-auto w-12 h-12">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 p-3">
             <svg
               className="h-6 w-6 text-emerald-600"
               fill="none"
@@ -301,9 +211,9 @@ export function ShareLinkGenerator({
             </Button>
           </div>
 
-          <div className="text-xs text-primary-400 text-center">
-            {selectedIds.size} artwork{selectedIds.size !== 1 ? 's' : ''} &middot;{' '}
-            {Array.from(selectedImageTypes).join(', ')} &middot;{' '}
+          <div className="text-center text-xs text-primary-400">
+            {selectedIds.length} artwork{selectedIds.length !== 1 ? 's' : ''}{' '}
+            &middot; {Array.from(selectedImageTypes).join(', ')} &middot;{' '}
             {expiry === 'none'
               ? 'No expiry'
               : `Expires in ${EXPIRY_OPTIONS.find((o) => o.value === expiry)?.label}`}
@@ -319,114 +229,101 @@ export function ShareLinkGenerator({
     );
   }
 
-  // Form state
-  return (
-    <Modal isOpen={open} onClose={onClose} title="Create Share Link" size="lg">
-      <div className="space-y-5">
-        {/* ---- Artwork picker ---- */}
-        <div>
-          <label className="mb-1 block text-sm font-medium text-primary-700">
-            Select Artworks
-          </label>
+  // ---- Render: Settings step (image types + expiry) ------------------------
 
-          <Input
-            placeholder="Search artworks by title or reference..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+  if (step === 'settings') {
+    return (
+      <Modal
+        isOpen={open}
+        onClose={onClose}
+        title="Share Link Settings"
+        size="md"
+      >
+        <div className="space-y-5">
+          {/* Summary */}
+          <div className="rounded-lg bg-primary-50 px-4 py-3">
+            <p className="text-sm text-primary-700">
+              <span className="font-medium">{selectedIds.length}</span> artwork
+              {selectedIds.length !== 1 ? 's' : ''} selected
+            </p>
+          </div>
+
+          {/* Image type selector */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-primary-700">
+              Image Types to Share
+            </label>
+            <div className="flex gap-4">
+              {IMAGE_TYPES.map((type) => (
+                <label
+                  key={type.value}
+                  className="flex cursor-pointer items-center gap-2"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedImageTypes.has(type.value)}
+                    onChange={() => toggleImageType(type.value)}
+                    className="h-4 w-4 rounded border-primary-300 text-accent focus:ring-accent"
+                  />
+                  <span className="text-sm text-primary-700">{type.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Expiry selector */}
+          <Select
+            label="Link Expiry"
+            value={expiry}
+            onChange={(e) => setExpiry(e.target.value)}
+            options={EXPIRY_OPTIONS}
           />
 
-          {/* Selected count */}
-          <p className="mt-1.5 text-xs text-primary-500">
-            {selectedIds.size} artwork{selectedIds.size !== 1 ? 's' : ''} selected
-          </p>
-
-          {/* Results list */}
-          <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-primary-100">
-            {searchLoading && (
-              <div className="px-3 py-4 text-center text-sm text-primary-400">
-                Searching...
-              </div>
-            )}
-
-            {!searchLoading && displayedArtworks.length === 0 && search.trim() !== '' && (
-              <div className="px-3 py-4 text-center text-sm text-primary-400">
-                No artworks found
-              </div>
-            )}
-
-            {!searchLoading && displayedArtworks.length === 0 && search.trim() === '' && preselectedArtworks.length === 0 && (
-              <div className="px-3 py-4 text-center text-sm text-primary-400">
-                Type to search for artworks
-              </div>
-            )}
-
-            {displayedArtworks.map((artwork) => (
-              <label
-                key={artwork.id}
-                className="flex items-center gap-3 px-3 py-2 hover:bg-primary-50 cursor-pointer transition-colors border-b border-primary-50 last:border-b-0"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(artwork.id)}
-                  onChange={() => toggleArtwork(artwork.id)}
-                  className="h-4 w-4 rounded border-primary-300 text-accent focus:ring-accent"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-primary-900 truncate">
-                    {artwork.title}
-                  </p>
-                  <p className="text-xs text-primary-400">
-                    {artwork.reference_code}
-                  </p>
-                </div>
-              </label>
-            ))}
+          {/* Actions */}
+          <div className="flex items-center justify-between border-t border-primary-100 pt-4">
+            <Button variant="outline" onClick={() => setStep('artworks')}>
+              Back
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              loading={submitting}
+              disabled={selectedImageTypes.size === 0}
+            >
+              Create Link
+            </Button>
           </div>
         </div>
+      </Modal>
+    );
+  }
 
-        {/* ---- Image type selector ---- */}
-        <div>
-          <label className="mb-1 block text-sm font-medium text-primary-700">
-            Image Types
-          </label>
-          <div className="flex gap-4">
-            {IMAGE_TYPES.map((type) => (
-              <label
-                key={type.value}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedImageTypes.has(type.value)}
-                  onChange={() => toggleImageType(type.value)}
-                  className="h-4 w-4 rounded border-primary-300 text-accent focus:ring-accent"
-                />
-                <span className="text-sm text-primary-700">{type.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
+  // ---- Render: Artworks step (uses CatalogueArtworkPicker) -----------------
 
-        {/* ---- Expiry selector ---- */}
-        <Select
-          label="Link Expiry"
-          value={expiry}
-          onChange={(e) => setExpiry(e.target.value)}
-          options={EXPIRY_OPTIONS}
+  return (
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title="Select Artworks to Share"
+      size="xl"
+    >
+      <div className="space-y-4">
+        <CatalogueArtworkPicker
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
         />
 
-        {/* ---- Actions ---- */}
-        <div className="flex justify-end gap-3 pt-2 border-t border-primary-100">
+        {/* Navigation */}
+        <div className="flex items-center justify-between border-t border-primary-100 pt-4">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button
             variant="primary"
-            onClick={handleSubmit}
-            loading={submitting}
-            disabled={selectedIds.size === 0 || selectedImageTypes.size === 0}
+            onClick={() => setStep('settings')}
+            disabled={selectedIds.length === 0}
           >
-            Create Link
+            Next: Image Types & Expiry
           </Button>
         </div>
       </div>
