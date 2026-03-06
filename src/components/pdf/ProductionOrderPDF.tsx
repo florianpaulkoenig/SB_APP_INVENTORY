@@ -17,6 +17,9 @@ interface TranslationStrings {
   status: string;
   orderDate: string;
   deadline: string;
+  gallery: string;
+  client: string;
+  price: string;
   description: string;
   item: string;
   medium: string;
@@ -34,6 +37,9 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     status: 'Status',
     orderDate: 'Order Date',
     deadline: 'Deadline',
+    gallery: 'Gallery / Agent',
+    client: 'Client',
+    price: 'Price',
     description: 'Description',
     item: 'Item',
     medium: 'Medium',
@@ -49,6 +55,9 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     status: 'Status',
     orderDate: 'Auftragsdatum',
     deadline: 'Frist',
+    gallery: 'Galerie / Agent',
+    client: 'Kunde',
+    price: 'Preis',
     description: 'Beschreibung',
     item: 'Position',
     medium: 'Medium',
@@ -64,6 +73,9 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     status: 'Statut',
     orderDate: 'Date de commande',
     deadline: 'D\u00e9lai',
+    gallery: 'Galerie / Agent',
+    client: 'Client',
+    price: 'Prix',
     description: 'Description',
     item: 'Article',
     medium: 'M\u00e9dium',
@@ -121,6 +133,8 @@ export interface ProductionOrderPDFProps {
     ordered_date: string | null;
     deadline: string | null;
     notes: string | null;
+    price?: number | null;
+    currency?: string;
   };
   items: Array<{
     description: string;
@@ -129,6 +143,8 @@ export interface ProductionOrderPDFProps {
     quantity: number;
     notes: string | null;
   }>;
+  galleryName?: string | null;
+  contactName?: string | null;
   language: 'en' | 'de' | 'fr';
 }
 
@@ -158,6 +174,8 @@ function translateStatus(status: string, language: string): string {
 export function ProductionOrderPDF({
   order,
   items,
+  galleryName,
+  contactName,
   language,
 }: ProductionOrderPDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
@@ -175,6 +193,23 @@ export function ProductionOrderPDF({
 
   if (order.deadline) {
     infoRows.push({ label: t.deadline, value: order.deadline });
+  }
+
+  if (galleryName) {
+    infoRows.push({ label: t.gallery, value: galleryName });
+  }
+
+  if (contactName) {
+    infoRows.push({ label: t.client, value: contactName });
+  }
+
+  if (order.price != null && order.price > 0) {
+    const formatted = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: order.currency ?? 'EUR',
+      minimumFractionDigits: 2,
+    }).format(order.price);
+    infoRows.push({ label: t.price, value: formatted });
   }
 
   // Total quantity across all items

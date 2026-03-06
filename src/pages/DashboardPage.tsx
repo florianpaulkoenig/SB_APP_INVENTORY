@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { formatCurrency } from '../lib/utils';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 interface DashboardStats {
@@ -23,17 +24,35 @@ interface GalleryCount {
   count: number;
 }
 
+interface GalleryRevenue {
+  id: string;
+  name: string;
+  revenue: number;
+  currency: string;
+}
+
+interface GalleryPotential {
+  id: string;
+  name: string;
+  potential: number;
+  currency: string;
+}
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [galleryCounts, setGalleryCounts] = useState<GalleryCount[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalPotential, setTotalPotential] = useState(0);
+  const [galleryRevenues, setGalleryRevenues] = useState<GalleryRevenue[]>([]);
+  const [galleryPotentials, setGalleryPotentials] = useState<GalleryPotential[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = useCallback(async () => {
-    // Fetch artworks with gallery_id
+    // Fetch artworks with gallery_id, price, currency, status
     const { data, error } = await supabase
       .from('artworks')
-      .select('status, gallery_id');
+      .select('status, gallery_id, price, currency');
 
     if (error || !data) {
       setLoading(false);
@@ -58,8 +77,44 @@ export function DashboardPage() {
       }
     }
 
+    // ---- Total potential revenue (unsold artworks with prices) ----
+    const unsold = data.filter((a) => a.status !== 'sold' && a.price != null && a.price > 0);
+    const potentialTotal = unsold.reduce((sum, a) => sum + (a.price ?? 0), 0);
+    setTotalPotential(potentialTotal);
+
+    // Potential revenue per gallery
+    const galleryPotentialMap: Record<string, number> = {};
+    for (const row of unsold) {
+      if (row.gallery_id) {
+        galleryPotentialMap[row.gallery_id] = (galleryPotentialMap[row.gallery_id] || 0) + (row.price ?? 0);
+      }
+    }
+
+    // ---- Fetch sales for revenue ----
+    const { data: sales } = await supabase
+      .from('sales')
+      .select('sale_price, currency, gallery_id');
+
+    const revenueTotal = (sales ?? []).reduce((sum, s) => sum + (s.sale_price ?? 0), 0);
+    setTotalRevenue(revenueTotal);
+
+    // Revenue per gallery
+    const galleryRevenueMap: Record<string, number> = {};
+    for (const sale of sales ?? []) {
+      if (sale.gallery_id) {
+        galleryRevenueMap[sale.gallery_id] = (galleryRevenueMap[sale.gallery_id] || 0) + (sale.sale_price ?? 0);
+      }
+    }
+
+    // Collect all gallery IDs from counts, revenue, and potential
+    const allGalleryIds = new Set([
+      ...Object.keys(galleryIdCounts),
+      ...Object.keys(galleryRevenueMap),
+      ...Object.keys(galleryPotentialMap),
+    ]);
+
     // Fetch gallery names
-    const galleryIds = Object.keys(galleryIdCounts);
+    const galleryIds = Array.from(allGalleryIds);
     if (galleryIds.length > 0) {
       const { data: galleries } = await supabase
         .from('galleries')
@@ -67,7 +122,14 @@ export function DashboardPage() {
         .in('id', galleryIds);
 
       if (galleries) {
+        const galleryNameMap: Record<string, string> = {};
+        for (const g of galleries) {
+          galleryNameMap[g.id] = g.name;
+        }
+
+        // Artwork counts
         const counts: GalleryCount[] = galleries
+          .filter((g) => galleryIdCounts[g.id])
           .map((g) => ({
             id: g.id,
             name: g.name,
@@ -75,6 +137,28 @@ export function DashboardPage() {
           }))
           .sort((a, b) => b.count - a.count);
         setGalleryCounts(counts);
+
+        // Revenue per gallery
+        const revenues: GalleryRevenue[] = Object.entries(galleryRevenueMap)
+          .map(([gId, rev]) => ({
+            id: gId,
+            name: galleryNameMap[gId] || 'Unknown',
+            revenue: rev,
+            currency: 'EUR',
+          }))
+          .sort((a, b) => b.revenue - a.revenue);
+        setGalleryRevenues(revenues);
+
+        // Potential revenue per gallery
+        const potentials: GalleryPotential[] = Object.entries(galleryPotentialMap)
+          .map(([gId, pot]) => ({
+            id: gId,
+            name: galleryNameMap[gId] || 'Unknown',
+            potential: pot,
+            currency: 'EUR',
+          }))
+          .sort((a, b) => b.potential - a.potential);
+        setGalleryPotentials(potentials);
       }
     }
 
@@ -133,6 +217,31 @@ export function DashboardPage() {
         </div>
       )}
 
+      {/* Revenue Summary Cards */}
+      {!loading && (
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-lg border border-primary-100 bg-white p-6">
+            <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+              Total Revenue (Sales)
+            </p>
+            <p className="mt-2 font-display text-3xl font-bold text-emerald-600">
+              {formatCurrency(totalRevenue, 'EUR')}
+            </p>
+          </div>
+          <div className="rounded-lg border border-primary-100 bg-white p-6">
+            <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+              Total Potential Revenue
+            </p>
+            <p className="mt-2 font-display text-3xl font-bold text-accent">
+              {formatCurrency(totalPotential, 'EUR')}
+            </p>
+            <p className="mt-1 text-xs text-primary-400">
+              Unsold artworks with prices
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Artworks per Gallery */}
       {!loading && galleryCounts.length > 0 && (
         <div className="mt-10">
@@ -152,6 +261,58 @@ export function DashboardPage() {
                 </span>
                 <span className="ml-3 flex-shrink-0 rounded-full bg-sky-50 px-3 py-1 font-display text-lg font-bold text-sky-600">
                   {gc.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Revenue per Gallery */}
+      {!loading && galleryRevenues.length > 0 && (
+        <div className="mt-10">
+          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
+            Revenue per Gallery
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {galleryRevenues.map((gr) => (
+              <button
+                key={gr.id}
+                type="button"
+                onClick={() => navigate(`/galleries/${gr.id}`)}
+                className="flex items-center justify-between rounded-lg border border-primary-100 bg-white px-5 py-4 text-left transition-shadow hover:shadow-md"
+              >
+                <span className="truncate font-display text-sm font-semibold text-primary-900">
+                  {gr.name}
+                </span>
+                <span className="ml-3 flex-shrink-0 rounded-full bg-emerald-50 px-3 py-1 font-display text-sm font-bold text-emerald-600">
+                  {formatCurrency(gr.revenue, gr.currency)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Potential Revenue per Gallery */}
+      {!loading && galleryPotentials.length > 0 && (
+        <div className="mt-10">
+          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
+            Potential Revenue per Gallery
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {galleryPotentials.map((gp) => (
+              <button
+                key={gp.id}
+                type="button"
+                onClick={() => navigate(`/galleries/${gp.id}`)}
+                className="flex items-center justify-between rounded-lg border border-primary-100 bg-white px-5 py-4 text-left transition-shadow hover:shadow-md"
+              >
+                <span className="truncate font-display text-sm font-semibold text-primary-900">
+                  {gp.name}
+                </span>
+                <span className="ml-3 flex-shrink-0 rounded-full bg-amber-50 px-3 py-1 font-display text-sm font-bold text-amber-600">
+                  {formatCurrency(gp.potential, gp.currency)}
                 </span>
               </button>
             ))}

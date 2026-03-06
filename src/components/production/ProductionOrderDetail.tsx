@@ -177,6 +177,8 @@ export function ProductionOrderDetail({
         <ProductionOrderPDF
           order={order}
           items={pdfItems}
+          galleryName={galleryName}
+          contactName={contactName}
           language={language}
         />,
       ).toBlob();
