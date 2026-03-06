@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useCallback, useRef, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
@@ -262,6 +263,117 @@ export function ExcelImporter({
     handleClose();
   }, [onImportComplete, handleClose]);
 
+  // ---- Download template ----------------------------------------------------
+
+  const handleDownloadTemplate = useCallback(() => {
+    const exampleRows = [
+      {
+        Title: 'Shattered Portrait #1',
+        Medium: 'Laminated glass, hammer',
+        Year: 2024,
+        Height: 100,
+        Width: 80,
+        Depth: 5,
+        'Dimension Unit': 'cm',
+        'Framed Height': 110,
+        'Framed Width': 90,
+        'Framed Depth': 8,
+        Weight: 25,
+        'Edition Type': 'unique',
+        'Edition Number': '',
+        'Edition Total': '',
+        Price: 18000,
+        Currency: 'EUR',
+        Status: 'available',
+        'Current Location': 'Studio Bern',
+        Category: 'sculpture',
+        Motif: 'portrait',
+        Series: 'specific_portrait',
+        Notes: 'Commission for Gallery XYZ',
+      },
+      {
+        Title: 'Fractured Landscape #3',
+        Medium: 'Laminated glass, hammer',
+        Year: 2024,
+        Height: 120,
+        Width: 160,
+        Depth: 4,
+        'Dimension Unit': 'cm',
+        'Framed Height': '',
+        'Framed Width': '',
+        'Framed Depth': '',
+        Weight: 35,
+        'Edition Type': 'numbered',
+        'Edition Number': 1,
+        'Edition Total': 3,
+        Price: 24000,
+        Currency: 'CHF',
+        Status: 'available',
+        'Current Location': 'NOA Gallery Zurich',
+        Category: 'sculpture',
+        Motif: 'landscape',
+        Series: 'landscape',
+        Notes: '',
+      },
+      {
+        Title: 'Abstract Study VII',
+        Medium: 'Float glass, UV-print',
+        Year: 2023,
+        Height: 60,
+        Width: 60,
+        Depth: 3,
+        'Dimension Unit': 'cm',
+        'Framed Height': 70,
+        'Framed Width': 70,
+        'Framed Depth': 6,
+        Weight: 8,
+        'Edition Type': 'AP',
+        'Edition Number': '',
+        'Edition Total': '',
+        Price: 8500,
+        Currency: 'EUR',
+        Status: 'on_consignment',
+        'Current Location': 'Galerie Berlin',
+        Category: 'mixed_media',
+        Motif: 'abstract',
+        Series: 'abstract',
+        Notes: 'Artist proof, not for sale',
+      },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(exampleRows);
+
+    // Set column widths for readability
+    ws['!cols'] = [
+      { wch: 28 }, // Title
+      { wch: 26 }, // Medium
+      { wch: 6 },  // Year
+      { wch: 8 },  // Height
+      { wch: 8 },  // Width
+      { wch: 8 },  // Depth
+      { wch: 16 }, // Dimension Unit
+      { wch: 14 }, // Framed Height
+      { wch: 14 }, // Framed Width
+      { wch: 14 }, // Framed Depth
+      { wch: 8 },  // Weight
+      { wch: 14 }, // Edition Type
+      { wch: 16 }, // Edition Number
+      { wch: 14 }, // Edition Total
+      { wch: 10 }, // Price
+      { wch: 10 }, // Currency
+      { wch: 16 }, // Status
+      { wch: 22 }, // Current Location
+      { wch: 14 }, // Category
+      { wch: 12 }, // Motif
+      { wch: 18 }, // Series
+      { wch: 30 }, // Notes
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Artworks');
+    XLSX.writeFile(wb, 'NOA_Artwork_Import_Template.xlsx');
+  }, []);
+
   // ---- Step titles ---------------------------------------------------------
 
   const stepTitles: Record<ImportStep, string> = {
@@ -391,6 +503,33 @@ export function ExcelImporter({
           {parseError}
         </div>
       )}
+
+      {/* Download template link */}
+      <div className="mt-4 flex items-center justify-center">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDownloadTemplate();
+          }}
+          className="inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent/80 transition-colors"
+        >
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="2"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+            />
+          </svg>
+          Download Example Template (.xlsx)
+        </button>
+      </div>
     </div>
   );
 
