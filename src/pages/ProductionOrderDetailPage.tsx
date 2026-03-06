@@ -251,7 +251,7 @@ export function ProductionOrderDetailPage() {
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         title="Edit Production Order"
-        size="lg"
+        size="2xl"
       >
         <ProductionOrderForm
           productionOrder={productionOrder}

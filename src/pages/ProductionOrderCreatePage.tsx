@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProductionOrders } from '../hooks/useProductionOrders';
-import { useDocumentNumber } from '../hooks/useDocumentNumber';
 import { ProductionOrderForm } from '../components/production/ProductionOrderForm';
 import { Button } from '../components/ui/Button';
 import type { ProductionOrderInsert } from '../types/database';
@@ -13,33 +12,15 @@ import type { ProductionOrderInsert } from '../types/database';
 export function ProductionOrderCreatePage() {
   const navigate = useNavigate();
   const { createProductionOrder } = useProductionOrders();
-  const { generateNumber } = useDocumentNumber();
 
   const [loading, setLoading] = useState(false);
-  const [orderNumber, setOrderNumber] = useState('');
-
-  // ---- Auto-generate order number on mount --------------------------------
-
-  useEffect(() => {
-    async function generate() {
-      const num = await generateNumber('PO');
-      if (num) {
-        setOrderNumber(num);
-      }
-    }
-
-    generate();
-  }, [generateNumber]);
 
   // ---- Submit handler -----------------------------------------------------
 
   async function handleSubmit(data: ProductionOrderInsert) {
     setLoading(true);
 
-    const created = await createProductionOrder({
-      ...data,
-      order_number: orderNumber || data.order_number,
-    });
+    const created = await createProductionOrder(data);
 
     setLoading(false);
 
@@ -85,11 +66,9 @@ export function ProductionOrderCreatePage() {
       </div>
 
       {/* Form */}
-      <div className="mx-auto max-w-2xl rounded-lg border border-primary-100 bg-white p-6">
+      <div className="mx-auto max-w-3xl rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
         <ProductionOrderForm
-          orderNumber={orderNumber}
           onSubmit={handleSubmit}
-          onCancel={() => navigate('/production')}
           loading={loading}
         />
       </div>

@@ -191,7 +191,7 @@ export function DeliveryDetailPage() {
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         title="Edit Delivery"
-        size="lg"
+        size="2xl"
       >
         <DeliveryForm
           deliveryNumber={delivery.delivery_number}

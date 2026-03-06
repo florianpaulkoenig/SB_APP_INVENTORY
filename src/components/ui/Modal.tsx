@@ -7,6 +7,9 @@ const sizeStyles = {
   md: 'max-w-md',
   lg: 'max-w-lg',
   xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
+  '3xl': 'max-w-3xl',
+  '4xl': 'max-w-4xl',
 } as const;
 
 export interface ModalProps {
@@ -55,14 +58,14 @@ export function Modal({
       {/* Dialog */}
       <div
         className={cn(
-          'relative w-full rounded-lg bg-white shadow-xl transition-all',
+          'relative flex max-h-[calc(100vh-2rem)] w-full flex-col rounded-lg bg-white shadow-xl transition-all',
           'animate-in fade-in zoom-in-95 duration-200',
           sizeStyles[size],
         )}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between border-b border-primary-100 px-6 py-4">
+          <div className="flex shrink-0 items-center justify-between border-b border-primary-100 px-6 py-4">
             <h2 className="font-display text-lg font-semibold text-primary-900">
               {title}
             </h2>
@@ -112,7 +115,7 @@ export function Modal({
         )}
 
         {/* Body */}
-        <div className="px-6 py-4">{children}</div>
+        <div className="overflow-y-auto overscroll-contain px-6 py-4">{children}</div>
       </div>
     </div>,
     document.body,

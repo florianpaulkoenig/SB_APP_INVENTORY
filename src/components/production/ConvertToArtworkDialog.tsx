@@ -206,7 +206,7 @@ export function ConvertToArtworkDialog({
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Convert to Artwork" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="Convert to Artwork" size="2xl">
       <form onSubmit={handleSubmit} className="space-y-4">
         {errors.submit && (
           <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">

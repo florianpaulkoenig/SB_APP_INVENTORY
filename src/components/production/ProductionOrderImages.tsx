@@ -148,7 +148,7 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
   // ---- Render --------------------------------------------------------------
 
   return (
-    <section className="rounded-lg border border-primary-100 bg-white p-6">
+    <section className="rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
       <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
         Reference Images
       </h2>
@@ -189,7 +189,7 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={`
-          cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors
+          cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors sm:p-6
           ${isDragging
             ? 'border-accent bg-accent/5'
             : 'border-primary-200 hover:border-primary-300'

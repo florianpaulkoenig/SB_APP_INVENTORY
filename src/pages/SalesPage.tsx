@@ -268,7 +268,7 @@ export function SalesPage() {
           setShowModal(false);
         }}
         title="Record Sale"
-        size="lg"
+        size="2xl"
       >
         <form onSubmit={handleRecordSale} className="space-y-4">
           <Select

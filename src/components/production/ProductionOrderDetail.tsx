@@ -89,7 +89,7 @@ function ProductionStatusFlow({
   const currentIndex = steps.findIndex((s) => s.value === currentStatus);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {steps.map((step, index) => {
         const isActive = index === currentIndex;
         const isCompleted = index < currentIndex;
@@ -98,7 +98,7 @@ function ProductionStatusFlow({
         return (
           <div key={step.value} className="flex items-center gap-2">
             {index > 0 && (
-              <svg className="h-4 w-4 text-primary-300" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+              <svg className="hidden h-4 w-4 text-primary-300 sm:block" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
               </svg>
             )}
@@ -107,7 +107,7 @@ function ProductionStatusFlow({
               onClick={() => isNext ? onStatusChange(step.value) : undefined}
               disabled={!isNext}
               className={`
-                rounded-md px-3 py-1.5 text-xs font-medium transition-colors
+                rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap
                 ${isActive
                   ? 'bg-primary-900 text-white'
                   : isCompleted
@@ -232,7 +232,7 @@ export function ProductionOrderDetail({
       {/* ----------------------------------------------------------------- */}
       {/* Status Flow                                                       */}
       {/* ----------------------------------------------------------------- */}
-      <section className="rounded-lg border border-primary-100 bg-white p-6">
+      <section className="rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
         <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
           Status
         </h2>
@@ -245,7 +245,7 @@ export function ProductionOrderDetail({
       {/* ----------------------------------------------------------------- */}
       {/* Overview                                                          */}
       {/* ----------------------------------------------------------------- */}
-      <section className="rounded-lg border border-primary-100 bg-white p-6">
+      <section className="rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
         <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
           Overview
         </h2>
@@ -281,7 +281,7 @@ export function ProductionOrderDetail({
       {/* ----------------------------------------------------------------- */}
       {/* Items                                                             */}
       {/* ----------------------------------------------------------------- */}
-      <section className="rounded-lg border border-primary-100 bg-white p-6">
+      <section className="rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-base font-semibold text-primary-900">
             Items
@@ -381,7 +381,7 @@ export function ProductionOrderDetail({
       {/* ----------------------------------------------------------------- */}
       {/* PDF Download                                                      */}
       {/* ----------------------------------------------------------------- */}
-      <section className="rounded-lg border border-primary-100 bg-white p-6">
+      <section className="rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
         <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
           Production Order PDF
         </h2>
@@ -417,7 +417,7 @@ export function ProductionOrderDetail({
       {/* Notes                                                             */}
       {/* ----------------------------------------------------------------- */}
       {order.notes && (
-        <section className="rounded-lg border border-primary-100 bg-white p-6">
+        <section className="rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
           <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
             Notes
           </h2>

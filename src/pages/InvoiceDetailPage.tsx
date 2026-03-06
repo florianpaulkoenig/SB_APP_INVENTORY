@@ -168,7 +168,7 @@ export function InvoiceDetailPage() {
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         title="Edit Invoice"
-        size="lg"
+        size="2xl"
       >
         <InvoiceForm
           invoiceNumber={invoice.invoice_number}
