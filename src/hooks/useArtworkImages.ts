@@ -79,11 +79,16 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
         const storagePath = `${userId}/${artworkId}/${file.name}`;
 
         // Upload file to Supabase Storage
-        const { error: uploadError } = await supabase.storage
+        console.log('[uploadImage] Uploading to storage:', { bucket: 'artwork-images', storagePath, fileSize: file.size, fileType: file.type });
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('artwork-images')
           .upload(storagePath, file, { upsert: true });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('[uploadImage] Storage upload failed:', JSON.stringify(uploadError));
+          throw uploadError;
+        }
+        console.log('[uploadImage] Storage upload success:', uploadData);
 
         // Determine sort_order (append after last existing image)
         const nextSortOrder = images.length > 0
@@ -108,7 +113,11 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
           .select()
           .single();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('[uploadImage] DB insert failed:', JSON.stringify(insertError));
+          throw insertError;
+        }
+        console.log('[uploadImage] DB insert success:', created);
 
         toast({ title: 'Image uploaded', description: `"${file.name}" has been added.`, variant: 'success' });
 
