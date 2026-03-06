@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type { CertificateRow, CertificateInsert, CertificateUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -95,7 +96,7 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
       // Search filter: match certificate_number
       if (filters.search) {
-        const term = `%${filters.search}%`;
+        const term = `%${sanitizeFilterTerm(filters.search)}%`;
         query = query.ilike('certificate_number', term);
       }
 

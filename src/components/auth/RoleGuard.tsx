@@ -14,10 +14,8 @@ export function RoleGuard({ children, allowed, fallback = '/' }: RoleGuardProps)
 
   if (loading) return null;
 
-  // Default to admin if no profile exists yet
-  const currentRole = role ?? 'admin';
-
-  if (!allowed.includes(currentRole)) {
+  // If role is null (no profile or unauthenticated), deny access
+  if (!role || !allowed.includes(role)) {
     return <Navigate to={fallback} replace />;
   }
 

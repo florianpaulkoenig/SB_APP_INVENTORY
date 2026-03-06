@@ -37,9 +37,10 @@ export function useAuth(): UseAuthReturn {
   const [profile, setProfile] = useState<UserProfileRow | null>(null);
   const loadingResolved = useRef(false);
 
-  // Derive role -- default to 'admin' for backward compatibility when no
-  // profile row exists yet (e.g. florian.koenig@noacontemporary.com).
-  const role: UserRole | null = user ? (profile?.role ?? 'admin') : null;
+  // Derive role -- require a valid profile row.  If no profile exists,
+  // role remains null and the user is treated as unauthenticated / no-access.
+  // The admin account MUST have a user_profiles row with role = 'admin'.
+  const role: UserRole | null = user ? (profile?.role ?? null) : null;
 
   useEffect(() => {
     let mounted = true;

@@ -10,6 +10,15 @@ export function cn(...inputs: ClassValue[]): string {
 }
 
 // ---------------------------------------------------------------------------
+// PostgREST filter term sanitisation
+// Strips characters that could inject additional filter clauses in .or() /
+// .ilike() calls (commas, parentheses, dots preceded by identifier chars).
+// ---------------------------------------------------------------------------
+export function sanitizeFilterTerm(input: string): string {
+  return input.replace(/[,()]/g, '').trim();
+}
+
+// ---------------------------------------------------------------------------
 // Currency formatting
 // ---------------------------------------------------------------------------
 export function formatCurrency(amount: number, currency: string): string {

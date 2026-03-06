@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { supabase } from '../../lib/supabase';
+import { sanitizeFilterTerm } from '../../lib/utils';
 import { IMAGE_TYPES } from '../../lib/constants';
 import { generateShareToken } from '../../hooks/useShareLinks';
 import type { ShareLinkRow, ArtworkRow } from '../../types/database';
@@ -98,7 +99,7 @@ export function ShareLinkGenerator({
     setSearchLoading(true);
 
     try {
-      const wildcard = `%${term}%`;
+      const wildcard = `%${sanitizeFilterTerm(term)}%`;
       const { data, error } = await supabase
         .from('artworks')
         .select('*')

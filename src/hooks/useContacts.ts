@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type { ContactRow, ContactInsert, ContactUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -59,7 +60,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
 
       // Search filter: match first_name, last_name, company, or email
       if (filters.search) {
-        const term = `%${filters.search}%`;
+        const term = `%${sanitizeFilterTerm(filters.search)}%`;
         query = query.or(
           `first_name.ilike.${term},last_name.ilike.${term},company.ilike.${term},email.ilike.${term}`,
         );

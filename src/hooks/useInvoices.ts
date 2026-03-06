@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type {
   InvoiceRow,
   InvoiceInsert,
@@ -99,7 +100,7 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
 
       // Search filter: match invoice_number
       if (filters.search) {
-        const term = `%${filters.search}%`;
+        const term = `%${sanitizeFilterTerm(filters.search)}%`;
         query = query.ilike('invoice_number', term);
       }
 

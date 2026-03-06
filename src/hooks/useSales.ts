@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type { SaleRow, SaleInsert, SaleUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -88,7 +89,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
 
       // Search filter: match buyer_name
       if (filters.search) {
-        const term = `%${filters.search}%`;
+        const term = `%${sanitizeFilterTerm(filters.search)}%`;
         query = query.ilike('buyer_name', term);
       }
 

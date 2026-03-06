@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type { GalleryRow, GalleryInsert, GalleryUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -58,7 +59,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
 
       // Search filter: match name, city, or country
       if (filters.search) {
-        const term = `%${filters.search}%`;
+        const term = `%${sanitizeFilterTerm(filters.search)}%`;
         query = query.or(
           `name.ilike.${term},city.ilike.${term},country.ilike.${term}`,
         );

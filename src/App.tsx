@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { ToastProvider } from './components/ui/Toast';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { RoleGuard } from './components/auth/RoleGuard';
 import { AppLayout } from './components/layout/AppLayout';
 
 // ---------------------------------------------------------------------------
@@ -508,89 +509,107 @@ const router = createBrowserRouter(
           ),
         },
 
-        // Analytics
+        // Analytics (admin only)
         {
           path: 'analytics',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <AnalyticsPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <AnalyticsPage />
+              </Suspense>
+            </RoleGuard>
           ),
         },
 
-        // Email Log
+        // Email Log (admin only)
         {
           path: 'email-log',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <EmailLogPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <EmailLogPage />
+              </Suspense>
+            </RoleGuard>
           ),
         },
 
-        // Activity Log
+        // Activity Log (admin only)
         {
           path: 'activity-log',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ActivityLogPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <ActivityLogPage />
+              </Suspense>
+            </RoleGuard>
           ),
         },
 
-        // Settings
+        // Settings (admin only)
         {
           path: 'settings',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <SettingsPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <SettingsPage />
+              </Suspense>
+            </RoleGuard>
           ),
         },
 
-        // Users (admin)
+        // Users (admin only)
         {
           path: 'users',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <UserManagementPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <UserManagementPage />
+              </Suspense>
+            </RoleGuard>
           ),
         },
 
-        // Gallery portal routes
+        // Gallery portal routes (admin + gallery)
         {
           path: 'gallery/dashboard',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <GalleryDashboardPage />
-            </Suspense>
+            <RoleGuard allowed={['admin', 'gallery']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <GalleryDashboardPage />
+              </Suspense>
+            </RoleGuard>
           ),
         },
         {
           path: 'gallery/artworks',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <GalleryArtworksPage />
-            </Suspense>
+            <RoleGuard allowed={['admin', 'gallery']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <GalleryArtworksPage />
+              </Suspense>
+            </RoleGuard>
           ),
         },
 
-        // Collector portal routes
+        // Collector portal routes (admin + collector)
         {
           path: 'collector/dashboard',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <CollectorDashboardPage />
-            </Suspense>
+            <RoleGuard allowed={['admin', 'collector']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <CollectorDashboardPage />
+              </Suspense>
+            </RoleGuard>
           ),
         },
         {
           path: 'collector/certificates',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <CollectorCertificatesPage />
-            </Suspense>
+            <RoleGuard allowed={['admin', 'collector']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <CollectorCertificatesPage />
+              </Suspense>
+            </RoleGuard>
           ),
         },
 

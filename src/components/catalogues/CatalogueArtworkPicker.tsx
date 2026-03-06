@@ -11,7 +11,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { GallerySelect } from '../galleries/GallerySelect';
 import { ARTWORK_CATEGORIES, ARTWORK_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, sanitizeFilterTerm } from '../../lib/utils';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -69,8 +69,9 @@ export function CatalogueArtworkPicker({
       .order('title', { ascending: true });
 
     if (search) {
+      const term = `%${sanitizeFilterTerm(search)}%`;
       query = query.or(
-        `title.ilike.%${search}%,reference_code.ilike.%${search}%`,
+        `title.ilike.${term},reference_code.ilike.${term}`,
       );
     }
 

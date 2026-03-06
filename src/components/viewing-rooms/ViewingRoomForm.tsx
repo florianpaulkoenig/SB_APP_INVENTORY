@@ -8,6 +8,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { supabase } from '../../lib/supabase';
+import { sanitizeFilterTerm } from '../../lib/utils';
 import { generateSlug } from '../../hooks/useViewingRooms';
 import type {
   ViewingRoomRow,
@@ -176,7 +177,7 @@ export function ViewingRoomForm({
     setSearchLoading(true);
 
     try {
-      const wildcard = `%${term}%`;
+      const wildcard = `%${sanitizeFilterTerm(term)}%`;
       const { data, error } = await supabase
         .from('artworks')
         .select('id, title, reference_code, medium, year')

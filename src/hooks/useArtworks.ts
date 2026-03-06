@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type {
   ArtworkRow,
   ArtworkInsert,
@@ -71,7 +72,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
 
       // Search filter: match title, inventory_number, reference_code, or medium
       if (filters.search) {
-        const term = `%${filters.search}%`;
+        const term = `%${sanitizeFilterTerm(filters.search)}%`;
         query = query.or(
           `title.ilike.${term},inventory_number.ilike.${term},reference_code.ilike.${term},medium.ilike.${term}`,
         );

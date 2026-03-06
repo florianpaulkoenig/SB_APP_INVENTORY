@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type {
   DeliveryRow,
   DeliveryInsert,
@@ -110,7 +111,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
 
       // Search filter: match delivery_number or recipient_name
       if (filters.search) {
-        const term = `%${filters.search}%`;
+        const term = `%${sanitizeFilterTerm(filters.search)}%`;
         query = query.or(`delivery_number.ilike.${term},recipient_name.ilike.${term}`);
       }
 

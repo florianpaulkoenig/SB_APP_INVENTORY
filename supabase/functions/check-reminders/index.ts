@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
 // NOA Inventory -- Supabase Edge Function: check-reminders
 // Cron job that checks for due reminders and sends email alerts.
+// SECURITY: Requires CRON_SECRET header or valid admin JWT.
 // ---------------------------------------------------------------------------
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -215,6 +216,48 @@ async function sendReminderEmail(
 
 Deno.serve(async (req: Request) => {
   try {
+    // ---- Verify caller authorization ----------------------------------------
+    // Accept either a CRON_SECRET header (for scheduled invocations) or
+    // a valid admin JWT (for manual triggers).
+    const cronSecret = Deno.env.get('CRON_SECRET');
+    const reqSecret = req.headers.get('x-cron-secret');
+    const authHeader = req.headers.get('Authorization');
+
+    let authorized = false;
+
+    // Method 1: shared CRON_SECRET
+    if (cronSecret && reqSecret && cronSecret === reqSecret) {
+      authorized = true;
+    }
+
+    // Method 2: valid admin JWT
+    if (!authorized && authHeader) {
+      const supabaseUrl_ = Deno.env.get('SUPABASE_URL');
+      const anonKey_ = Deno.env.get('SUPABASE_ANON_KEY');
+      if (supabaseUrl_ && anonKey_) {
+        const callerClient = createClient(supabaseUrl_, anonKey_, {
+          global: { headers: { Authorization: authHeader } },
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const { data: { user } } = await callerClient.auth.getUser();
+        if (user) {
+          const { data: profile } = await callerClient
+            .from('user_profiles')
+            .select('role')
+            .eq('user_id', user.id)
+            .single();
+          if (profile?.role === 'admin') authorized = true;
+        }
+      }
+    }
+
+    if (!authorized) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: provide x-cron-secret header or admin JWT' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
     // ---- Create Supabase admin client ---------------------------------------
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');

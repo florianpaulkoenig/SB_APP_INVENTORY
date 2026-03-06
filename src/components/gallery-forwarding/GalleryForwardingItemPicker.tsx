@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { StatusBadge } from '../ui/StatusBadge';
 import { supabase } from '../../lib/supabase';
+import { sanitizeFilterTerm } from '../../lib/utils';
 
 // ---------------------------------------------------------------------------
 // Lightweight artwork record for the picker
@@ -54,8 +55,9 @@ export function GalleryForwardingItemPicker({
         .limit(100);
 
       if (search.trim()) {
+        const term = `%${sanitizeFilterTerm(search)}%`;
         query = query.or(
-          `title.ilike.%${search.trim()}%,reference_code.ilike.%${search.trim()}%`,
+          `title.ilike.${term},reference_code.ilike.${term}`,
         );
       }
 

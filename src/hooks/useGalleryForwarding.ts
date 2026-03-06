@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type {
   GalleryForwardingOrderRow,
   GalleryForwardingOrderInsert,
@@ -89,7 +90,7 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
       }
 
       if (filters.search) {
-        const term = `%${filters.search}%`;
+        const term = `%${sanitizeFilterTerm(filters.search)}%`;
         query = query.or(`forwarding_number.ilike.${term},title.ilike.${term}`);
       }
 

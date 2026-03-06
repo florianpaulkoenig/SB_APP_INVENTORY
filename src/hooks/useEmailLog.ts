@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type { EmailLogRow, EmailStatus } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -64,7 +65,7 @@ export function useEmailLog(options: UseEmailLogOptions = {}): UseEmailLogReturn
 
       // Search filter: match subject or to_email
       if (filters.search) {
-        const term = `%${filters.search}%`;
+        const term = `%${sanitizeFilterTerm(filters.search)}%`;
         query = query.or(
           `subject.ilike.${term},to_email.ilike.${term}`,
         );

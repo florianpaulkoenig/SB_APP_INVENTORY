@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type {
   ProductionOrderRow,
   ProductionOrderInsert,
@@ -91,7 +92,7 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
 
       // Search filter: match order_number, title, or gallery
       if (filters.search) {
-        const term = `%${filters.search}%`;
+        const term = `%${sanitizeFilterTerm(filters.search)}%`;
         const orParts = [`order_number.ilike.${term}`, `title.ilike.${term}`];
         if (filters.galleryIds && filters.galleryIds.length > 0) {
           orParts.push(`gallery_id.in.(${filters.galleryIds.join(',')})`);
