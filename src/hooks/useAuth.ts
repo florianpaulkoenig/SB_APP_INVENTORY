@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { UserRole, UserProfileRow } from '../types/database';
@@ -17,12 +17,17 @@ export interface UseAuthReturn {
 }
 
 async function fetchProfile(userId: string): Promise<UserProfileRow | null> {
-  const { data } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-  return data;
+  try {
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    return data;
+  } catch {
+    // Profile may not exist yet — not an error
+    return null;
+  }
 }
 
 export function useAuth(): UseAuthReturn {
@@ -30,43 +35,77 @@ export function useAuth(): UseAuthReturn {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfileRow | null>(null);
+  const loadingResolved = useRef(false);
 
   // Derive role -- default to 'admin' for backward compatibility when no
   // profile row exists yet (e.g. florian.koenig@noacontemporary.com).
   const role: UserRole | null = user ? (profile?.role ?? 'admin') : null;
 
   useEffect(() => {
-    // Fetch the current session on mount
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+    let mounted = true;
 
-      if (currentSession?.user) {
-        const profileData = await fetchProfile(currentSession.user.id);
-        setProfile(profileData);
+    // Safety timeout: if auth never resolves within 5 seconds, stop loading
+    // so the user can at least see the login page instead of an infinite spinner.
+    const timeout = setTimeout(() => {
+      if (mounted && !loadingResolved.current) {
+        console.warn('[useAuth] Session check timed out after 5s — forcing loading=false');
+        loadingResolved.current = true;
+        setLoading(false);
       }
+    }, 5000);
 
-      setLoading(false);
-    });
+    // Fetch the current session on mount
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session: currentSession } }) => {
+        if (!mounted) return;
+
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+
+        if (currentSession?.user) {
+          const profileData = await fetchProfile(currentSession.user.id);
+          if (mounted) setProfile(profileData);
+        }
+
+        if (mounted && !loadingResolved.current) {
+          loadingResolved.current = true;
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error('[useAuth] getSession failed:', err);
+        if (mounted && !loadingResolved.current) {
+          loadingResolved.current = true;
+          setLoading(false);
+        }
+      });
 
     // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      if (!mounted) return;
+
       setSession(newSession);
       setUser(newSession?.user ?? null);
 
       if (newSession?.user) {
         const profileData = await fetchProfile(newSession.user.id);
-        setProfile(profileData);
+        if (mounted) setProfile(profileData);
       } else {
         setProfile(null);
       }
 
-      setLoading(false);
+      if (!loadingResolved.current) {
+        loadingResolved.current = true;
+        setLoading(false);
+      }
     });
 
     return () => {
+      mounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
