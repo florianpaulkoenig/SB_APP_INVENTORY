@@ -39,9 +39,8 @@ export function ArtworkFilters({ filters, onChange, onClear }: ArtworkFiltersPro
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
+    <div className="flex flex-wrap items-center gap-2">
       <Select
-        label="Status"
         options={[
           { value: '', label: 'All Statuses' },
           ...ARTWORK_STATUSES.map((s) => ({ value: s.value, label: s.label })),
@@ -51,7 +50,6 @@ export function ArtworkFilters({ filters, onChange, onClear }: ArtworkFiltersPro
       />
 
       <Select
-        label="Category"
         options={[
           { value: '', label: 'All Categories' },
           ...ARTWORK_CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
@@ -61,7 +59,6 @@ export function ArtworkFilters({ filters, onChange, onClear }: ArtworkFiltersPro
       />
 
       <Select
-        label="Motif"
         options={[
           { value: '', label: 'All Motifs' },
           ...ARTWORK_MOTIFS.map((m) => ({ value: m.value, label: m.label })),
@@ -71,7 +68,6 @@ export function ArtworkFilters({ filters, onChange, onClear }: ArtworkFiltersPro
       />
 
       <Select
-        label="Series"
         options={[
           { value: '', label: 'All Series' },
           ...ARTWORK_SERIES.map((s) => ({ value: s.value, label: s.label })),
@@ -81,7 +77,7 @@ export function ArtworkFilters({ filters, onChange, onClear }: ArtworkFiltersPro
       />
 
       <GallerySelect
-        label="Gallery"
+        label=""
         value={filters.gallery_id ?? null}
         onChange={(galleryId) => updateFilter('gallery_id', galleryId ?? '')}
       />

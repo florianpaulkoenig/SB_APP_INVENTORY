@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
 // NOA Inventory -- Viewing Room Public Page
 // Public-facing gallery-style viewing room. No auth required.
+// Minimal, gallery-worthy design with generous whitespace.
 // ---------------------------------------------------------------------------
 
 import { useState } from 'react';
@@ -9,14 +10,6 @@ import { usePublicViewingRoom } from '../../hooks/useViewingRooms';
 import { COMPANY_NAME, ARTIST_NAME } from '../../lib/constants';
 import { formatDimensions } from '../../lib/utils';
 import type { PublicArtwork } from '../../hooks/useViewingRooms';
-
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
-
-interface ViewingRoomPublicPageProps {
-  slug: string;
-}
 
 // ---------------------------------------------------------------------------
 // Edition display helper
@@ -43,10 +36,16 @@ function formatEdition(artwork: PublicArtwork): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Artwork Card (internal)
+// Artwork Card — minimal gallery style with hover overlay
 // ---------------------------------------------------------------------------
 
-function ArtworkCard({ artwork }: { artwork: PublicArtwork }) {
+function ArtworkCard({
+  artwork,
+  large,
+}: {
+  artwork: PublicArtwork;
+  large?: boolean;
+}) {
   const dimensions = formatDimensions(
     artwork.height,
     artwork.width,
@@ -55,20 +54,27 @@ function ArtworkCard({ artwork }: { artwork: PublicArtwork }) {
   );
   const edition = formatEdition(artwork);
 
+  const mediumYear = [artwork.medium, artwork.year?.toString()]
+    .filter(Boolean)
+    .join(', ');
+
   return (
-    <div className="group">
-      {/* Image */}
-      <div className="aspect-[4/5] w-full overflow-hidden rounded-sm bg-primary-100">
+    <div className={`group ${large ? 'mx-auto max-w-4xl' : ''}`}>
+      {/* Image with hover overlay */}
+      <div className="relative w-full overflow-hidden bg-neutral-50">
         {artwork.imageUrl ? (
           <img
             src={artwork.imageUrl}
             alt={artwork.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            loading="lazy"
+            className={`w-full object-contain transition-all duration-700 ${
+              large ? 'max-h-[80vh]' : 'aspect-[3/4] object-cover'
+            }`}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
+          <div className="flex aspect-[3/4] w-full items-center justify-center bg-neutral-50">
             <svg
-              className="h-12 w-12 text-primary-200"
+              className="h-16 w-16 text-neutral-200"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth="0.5"
@@ -82,27 +88,27 @@ function ArtworkCard({ artwork }: { artwork: PublicArtwork }) {
             </svg>
           </div>
         )}
+
+        {/* Hover overlay with details */}
+        <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/60 to-transparent p-6 pt-16 transition-transform duration-300 group-hover:translate-y-0">
+          <p className="text-sm font-medium text-white/90">{artwork.title}</p>
+          {mediumYear && (
+            <p className="mt-0.5 text-xs text-white/70">{mediumYear}</p>
+          )}
+          {dimensions && (
+            <p className="mt-0.5 text-xs text-white/60">{dimensions}</p>
+          )}
+          {edition && (
+            <p className="mt-0.5 text-xs text-white/60">{edition}</p>
+          )}
+        </div>
       </div>
 
-      {/* Info */}
-      <div className="mt-4 space-y-1">
-        <h3 className="font-display text-sm font-semibold text-primary-900">
-          {artwork.title}
-        </h3>
-        {artwork.medium && (
-          <p className="text-xs text-primary-500">
-            {artwork.medium}
-            {artwork.year ? `, ${artwork.year}` : ''}
-          </p>
-        )}
-        {!artwork.medium && artwork.year && (
-          <p className="text-xs text-primary-500">{artwork.year}</p>
-        )}
-        {dimensions && (
-          <p className="text-xs text-primary-400">{dimensions}</p>
-        )}
-        {edition && (
-          <p className="text-xs text-primary-400">{edition}</p>
+      {/* Minimal caption below — always visible */}
+      <div className="mt-3 space-y-0.5">
+        <p className="text-[13px] font-light text-neutral-800">{artwork.title}</p>
+        {mediumYear && (
+          <p className="text-[11px] font-light text-neutral-400">{mediumYear}</p>
         )}
       </div>
     </div>
@@ -110,10 +116,14 @@ function ArtworkCard({ artwork }: { artwork: PublicArtwork }) {
 }
 
 // ---------------------------------------------------------------------------
-// Password Gate (internal)
+// Password Gate
 // ---------------------------------------------------------------------------
 
-function PasswordGate({ onUnlock }: { onUnlock: (password: string) => boolean }) {
+function PasswordGate({
+  onUnlock,
+}: {
+  onUnlock: (password: string) => boolean;
+}) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
@@ -129,14 +139,13 @@ function PasswordGate({ onUnlock }: { onUnlock: (password: string) => boolean })
   return (
     <div className="flex min-h-screen items-center justify-center bg-white px-4">
       <div className="w-full max-w-sm text-center">
-        {/* Branding */}
         <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]">
           {COMPANY_NAME}
         </p>
 
-        <div className="mt-8">
+        <div className="mt-10">
           <svg
-            className="mx-auto h-10 w-10 text-primary-300"
+            className="mx-auto h-8 w-8 text-neutral-300"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth="1"
@@ -148,15 +157,12 @@ function PasswordGate({ onUnlock }: { onUnlock: (password: string) => boolean })
               d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
             />
           </svg>
-          <h2 className="mt-4 font-display text-lg font-semibold text-primary-900">
+          <p className="mt-4 text-sm font-light text-neutral-600">
             This viewing room is protected
-          </h2>
-          <p className="mt-2 text-sm text-primary-500">
-            Please enter the password to view the artworks.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <input
             type="password"
             placeholder="Enter password"
@@ -165,18 +171,18 @@ function PasswordGate({ onUnlock }: { onUnlock: (password: string) => boolean })
               setPassword(e.target.value);
               setError(false);
             }}
-            className="w-full rounded-md border border-primary-200 bg-white px-4 py-2.5 text-sm text-primary-900 placeholder:text-primary-400 transition-colors focus:border-[#c9a96e] focus:ring-1 focus:ring-[#c9a96e] focus:outline-none"
+            className="w-full border-b border-neutral-200 bg-transparent px-1 py-2 text-center text-sm text-neutral-900 placeholder:text-neutral-300 transition-colors focus:border-neutral-900 focus:outline-none"
             autoFocus
           />
           {error && (
-            <p className="text-xs text-red-600">
+            <p className="text-xs text-red-500">
               Incorrect password. Please try again.
             </p>
           )}
           <button
             type="submit"
             disabled={!password}
-            className="w-full rounded-md bg-primary-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-none bg-neutral-900 px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-30"
           >
             Enter
           </button>
@@ -187,11 +193,20 @@ function PasswordGate({ onUnlock }: { onUnlock: (password: string) => boolean })
 }
 
 // ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+interface ViewingRoomPublicPageProps {
+  slug: string;
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
 export function ViewingRoomPublicPage({ slug }: ViewingRoomPublicPageProps) {
-  const { room, artworks, loading, error, checkPassword } = usePublicViewingRoom(slug);
+  const { room, artworks, loading, error, checkPassword } =
+    usePublicViewingRoom(slug);
   const [unlocked, setUnlocked] = useState(false);
 
   // ---- Loading state --------------------------------------------------------
@@ -213,12 +228,11 @@ export function ViewingRoomPublicPage({ slug }: ViewingRoomPublicPageProps) {
           <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]">
             {COMPANY_NAME}
           </p>
-          <h1 className="mt-6 font-display text-xl font-semibold text-primary-900">
+          <h1 className="mt-8 text-lg font-light text-neutral-800">
             This viewing room is not available
           </h1>
-          <p className="mt-2 text-sm text-primary-500">
-            The viewing room you are looking for may have been removed or is not
-            currently published.
+          <p className="mt-2 text-sm font-light text-neutral-400">
+            It may have been removed or is not currently published.
           </p>
         </div>
       </div>
@@ -239,40 +253,53 @@ export function ViewingRoomPublicPage({ slug }: ViewingRoomPublicPageProps) {
     );
   }
 
+  // ---- Layout: single-column for ≤4 artworks, 2-column grid for more --------
+
+  const useSingleColumn = artworks.length <= 4;
+
   // ---- Visible room ---------------------------------------------------------
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b border-primary-100">
-        <div className="mx-auto max-w-6xl px-6 py-8 md:py-12">
-          <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]">
-            {COMPANY_NAME}
+      {/* Header — generous spacing, minimal typography */}
+      <header className="mx-auto max-w-6xl px-6 pt-12 pb-10 md:px-12 md:pt-20 md:pb-16">
+        <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]">
+          {COMPANY_NAME}
+        </p>
+        <h1 className="mt-6 font-display text-3xl font-light text-neutral-900 md:text-4xl lg:text-5xl">
+          {room.title}
+        </h1>
+        {room.description && (
+          <p className="mt-4 max-w-2xl text-sm font-light leading-relaxed text-neutral-500 md:text-base">
+            {room.description}
           </p>
-          <h1 className="mt-4 font-display text-2xl font-semibold text-primary-900 md:text-3xl lg:text-4xl">
-            {room.title}
-          </h1>
-          {room.description && (
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-primary-500 md:text-base">
-              {room.description}
-            </p>
-          )}
-          <p className="mt-4 text-xs text-primary-400">
-            {ARTIST_NAME}
-          </p>
-        </div>
+        )}
+        <p className="mt-5 text-[11px] font-light uppercase tracking-widest text-neutral-400">
+          {ARTIST_NAME}
+        </p>
+
+        {/* Subtle divider */}
+        <div className="mt-10 h-px w-16 bg-neutral-200" />
       </header>
 
-      {/* Artwork grid */}
-      <main className="mx-auto max-w-6xl px-6 py-10 md:py-16">
+      {/* Artworks */}
+      <main className="mx-auto max-w-6xl px-6 pb-20 md:px-12 md:pb-32">
         {artworks.length === 0 ? (
           <div className="py-20 text-center">
-            <p className="text-sm text-primary-400">
+            <p className="text-sm font-light text-neutral-400">
               No artworks in this viewing room yet.
             </p>
           </div>
+        ) : useSingleColumn ? (
+          /* Single-column: large images, centered, generous vertical spacing */
+          <div className="space-y-20 md:space-y-28">
+            {artworks.map((artwork) => (
+              <ArtworkCard key={artwork.id} artwork={artwork} large />
+            ))}
+          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+          /* 2-column grid for larger collections */
+          <div className="grid grid-cols-1 gap-x-10 gap-y-16 sm:grid-cols-2 md:gap-x-14 md:gap-y-20">
             {artworks.map((artwork) => (
               <ArtworkCard key={artwork.id} artwork={artwork} />
             ))}
@@ -280,14 +307,14 @@ export function ViewingRoomPublicPage({ slug }: ViewingRoomPublicPageProps) {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-primary-100">
-        <div className="mx-auto max-w-6xl px-6 py-8">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]">
+      {/* Footer — ultra-minimal */}
+      <footer className="border-t border-neutral-100">
+        <div className="mx-auto max-w-6xl px-6 py-10 md:px-12">
+          <div className="flex flex-col items-center gap-1.5 text-center">
+            <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-[#c9a96e]">
               {COMPANY_NAME}
             </p>
-            <p className="text-xs text-primary-400">
+            <p className="text-[10px] font-light text-neutral-400">
               {ARTIST_NAME}
             </p>
           </div>

@@ -3,8 +3,13 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Base path: controlled by VITE_BASE_PATH env var.
+// - GitHub Pages repo deploy: '/SB_APP_INVENTORY/' (default)
+// - Custom domain (app.noacontemporary.com): '/'
+const basePath = process.env.VITE_BASE_PATH || '/SB_APP_INVENTORY/'
+
 export default defineConfig({
-  base: '/SB_APP_INVENTORY/',
+  base: basePath,
   build: {
     rollupOptions: {
       output: {
@@ -37,8 +42,8 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         icons: [
-          { src: '/SB_APP_INVENTORY/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/SB_APP_INVENTORY/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: `${basePath}icon-192x192.png`, sizes: '192x192', type: 'image/png' },
+          { src: `${basePath}icon-512x512.png`, sizes: '512x512', type: 'image/png' },
         ],
       },
     }),

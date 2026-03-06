@@ -113,7 +113,7 @@ export function ShareLinkGenerator({
   // ---- Submit --------------------------------------------------------------
 
   const shareUrl = createdLink
-    ? `${window.location.origin}/SB_APP_INVENTORY/share/${createdLink.token}`
+    ? `${window.location.origin}${import.meta.env.BASE_URL}share/${createdLink.token}`
     : '';
 
   const handleSubmit = async () => {

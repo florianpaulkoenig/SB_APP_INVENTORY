@@ -25,7 +25,7 @@ import { OpenInvoicesTable } from '../components/analytics/OpenInvoicesTable';
 export function AnalyticsPage() {
   // ---- State ----------------------------------------------------------------
 
-  const { loading, setDateRange } = useAnalytics();
+  const { data, loading, setDateRange } = useAnalytics();
 
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -113,37 +113,45 @@ export function AnalyticsPage() {
       )}
 
       {/* Dashboard content */}
-      {!loading && (
+      {!loading && data && (
         <div className="space-y-6">
           {/* Summary Cards Row */}
-          <DashboardSummaryCards />
+          <DashboardSummaryCards
+            totalArtworks={data.totalArtworks}
+            totalSold={data.totalSold}
+            totalRevenue={data.totalRevenue}
+            totalExpenses={data.totalExpenses}
+            openInvoicesCount={data.openInvoicesCount}
+            openInvoicesTotal={data.openInvoicesTotal}
+            avgTimeToSell={data.avgTimeToSell}
+          />
 
           {/* Charts Row 1 -- Sales over time + Category breakdown */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
-              <SalesOverTimeChart />
+              <SalesOverTimeChart data={data.salesByMonth} />
             </div>
             <div>
-              <CategoryBreakdownChart />
+              <CategoryBreakdownChart data={data.categoryBreakdown} />
             </div>
           </div>
 
           {/* Charts Row 2 -- Gallery performance + Status overview */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <GalleryPerformanceChart />
-            <StatusOverviewChart />
+            <GalleryPerformanceChart data={data.revenueByGallery} />
+            <StatusOverviewChart data={data.statusOverview} />
           </div>
 
           {/* Charts Row 3 -- Revenue by country */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <RevenueByCountryChart />
+            <RevenueByCountryChart data={data.revenueByCountry} />
             <div>{/* Spacer */}</div>
           </div>
 
           {/* Tables Row -- Recent sales + Open invoices */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <RecentSalesTable />
-            <OpenInvoicesTable />
+            <RecentSalesTable data={data.recentSales} />
+            <OpenInvoicesTable data={data.openInvoices} />
           </div>
         </div>
       )}

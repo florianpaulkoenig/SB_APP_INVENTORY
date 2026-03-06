@@ -80,16 +80,21 @@ export function ArtworksPage() {
       return;
     }
 
-    // Generate signed URLs
-    const urlMap: Record<string, string> = {};
-    for (const img of imageData) {
-      const { data: signedData } = await supabase.storage
-        .from('artwork-images')
-        .createSignedUrl(img.storage_path, 3600);
+    // Generate signed URLs in parallel (with thumbnail transform for speed)
+    const results = await Promise.all(
+      imageData.map(async (img) => {
+        const { data: signedData } = await supabase.storage
+          .from('artwork-images')
+          .createSignedUrl(img.storage_path, 3600, {
+            transform: { width: 400, height: 400, resize: 'cover' },
+          });
+        return { artworkId: img.artwork_id, url: signedData?.signedUrl ?? null };
+      }),
+    );
 
-      if (signedData?.signedUrl) {
-        urlMap[img.artwork_id] = signedData.signedUrl;
-      }
+    const urlMap: Record<string, string> = {};
+    for (const { artworkId, url } of results) {
+      if (url) urlMap[artworkId] = url;
     }
 
     setImageUrls(urlMap);

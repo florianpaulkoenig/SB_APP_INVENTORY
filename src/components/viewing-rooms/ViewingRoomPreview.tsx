@@ -53,7 +53,7 @@ export function ViewingRoomPreview({
     variant: 'default' as const,
   };
 
-  const viewUrl = `${window.location.origin}/SB_APP_INVENTORY/view/${room.slug}`;
+  const viewUrl = `${window.location.origin}${import.meta.env.BASE_URL}view/${room.slug}`;
 
   // ---- Copy link handler ----------------------------------------------------
 

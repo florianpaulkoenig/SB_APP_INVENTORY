@@ -37,6 +37,7 @@ export function ArtworkCard({ artwork, imageUrl, onClick }: ArtworkCardProps) {
           <img
             src={imageUrl}
             alt={artwork.title}
+            loading="lazy"
             className="h-full w-full object-cover"
           />
         ) : (

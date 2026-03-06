@@ -646,7 +646,7 @@ const router = createBrowserRouter(
     },
   ],
   {
-    basename: '/SB_APP_INVENTORY',
+    basename: import.meta.env.BASE_URL.replace(/\/$/, ''),
   },
 );
 

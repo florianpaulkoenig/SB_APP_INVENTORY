@@ -20,7 +20,7 @@ import { formatDate } from '../lib/utils';
 
 /** Build the public share URL from a token. */
 function buildShareUrl(token: string): string {
-  return `${window.location.origin}/SB_APP_INVENTORY/share/${token}`;
+  return `${window.location.origin}${import.meta.env.BASE_URL}share/${token}`;
 }
 
 /** Determine the display state for an expiry date. */
