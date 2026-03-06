@@ -177,6 +177,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
 
         return created as ArtworkRow;
       } catch (err: unknown) {
+        console.error('[createArtwork] Full error:', err);
         const message =
           err instanceof Error ? err.message : 'Failed to create artwork';
         toast({ title: 'Error', description: message, variant: 'error' });
