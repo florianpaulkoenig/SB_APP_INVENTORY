@@ -59,6 +59,14 @@ interface RawProdOrder {
   price: number | null;
   currency: string | null;
   status: string;
+  gallery_id: string | null;
+}
+
+interface GalleryOrderRevenue {
+  id: string;
+  name: string;
+  revenue: number; // in CHF
+  orderCount: number;
 }
 
 export function DashboardPage() {
@@ -71,6 +79,7 @@ export function DashboardPage() {
   const [confirmedOrdersRevenue, setConfirmedOrdersRevenue] = useState(0);
   const [galleryRevenues, setGalleryRevenues] = useState<GalleryRevenue[]>([]);
   const [galleryPotentials, setGalleryPotentials] = useState<GalleryPotential[]>([]);
+  const [galleryOrderRevenues, setGalleryOrderRevenues] = useState<GalleryOrderRevenue[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Store raw data so we can re-compute when exchange rates arrive
@@ -123,10 +132,10 @@ export function DashboardPage() {
       }
     }
 
-    // Fetch production orders
+    // Fetch production orders (include gallery_id for per-gallery breakdown)
     const { data: prodOrders } = await supabase
       .from('production_orders')
-      .select('price, currency, status')
+      .select('price, currency, status, gallery_id')
       .not('status', 'in', '("draft","completed")');
     setRawProdOrders(prodOrders ?? []);
 
@@ -136,13 +145,16 @@ export function DashboardPage() {
       .select('sale_price, currency, gallery_id');
     setRawSales(sales ?? []);
 
-    // Collect all gallery IDs
+    // Collect all gallery IDs (artworks, sales, AND production orders)
     const allGalleryIds = new Set<string>();
     for (const row of artworks) {
       if (row.gallery_id) allGalleryIds.add(row.gallery_id);
     }
     for (const sale of sales ?? []) {
       if (sale.gallery_id) allGalleryIds.add(sale.gallery_id);
+    }
+    for (const po of prodOrders ?? []) {
+      if (po.gallery_id) allGalleryIds.add(po.gallery_id);
     }
 
     // Fetch gallery names
@@ -211,12 +223,34 @@ export function DashboardPage() {
       .sort((a, b) => b.potential - a.potential);
     setGalleryPotentials(potentials);
 
-    // ---- Confirmed production orders revenue (CHF) ----
+    // ---- Confirmed production orders revenue (CHF) — total + per gallery ----
     const confirmedTotal = rawProdOrders.reduce(
       (sum, o) => sum + (o.price != null && o.price > 0 ? toCHF(o.price, o.currency ?? 'EUR') : 0),
       0,
     );
     setConfirmedOrdersRevenue(confirmedTotal);
+
+    // Orders revenue per gallery (CHF)
+    const galleryOrderMap: Record<string, { revenue: number; count: number }> = {};
+    for (const po of rawProdOrders) {
+      if (po.gallery_id && po.price != null && po.price > 0) {
+        const chfVal = toCHF(po.price, po.currency ?? 'EUR');
+        if (!galleryOrderMap[po.gallery_id]) {
+          galleryOrderMap[po.gallery_id] = { revenue: 0, count: 0 };
+        }
+        galleryOrderMap[po.gallery_id].revenue += chfVal;
+        galleryOrderMap[po.gallery_id].count += 1;
+      }
+    }
+    const orderRevs: GalleryOrderRevenue[] = Object.entries(galleryOrderMap)
+      .map(([gId, data]) => ({
+        id: gId,
+        name: galleryNameMap[gId] || 'Unknown',
+        revenue: data.revenue,
+        orderCount: data.count,
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+    setGalleryOrderRevenues(orderRevs);
 
     // ---- Sales revenue (CHF) ----
     const revenueTotal = rawSales.reduce(
@@ -398,6 +432,37 @@ export function DashboardPage() {
                 <span className="ml-3 flex-shrink-0 rounded-full bg-emerald-50 px-3 py-1 font-display text-sm font-bold text-emerald-600">
                   {formatCurrency(gr.revenue, 'CHF')}
                 </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Orders Revenue per Gallery */}
+      {!loading && galleryOrderRevenues.length > 0 && (
+        <div className="mt-10">
+          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
+            Orders Revenue per Gallery
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {galleryOrderRevenues.map((go) => (
+              <button
+                key={go.id}
+                type="button"
+                onClick={() => navigate(`/galleries/${go.id}`)}
+                className="rounded-lg border border-primary-100 bg-white px-5 py-4 text-left transition-shadow hover:shadow-md"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="truncate font-display text-sm font-semibold text-primary-900">
+                    {go.name}
+                  </span>
+                  <span className="ml-3 flex-shrink-0 rounded-full bg-blue-50 px-3 py-1 font-display text-sm font-bold text-blue-600">
+                    {formatCurrency(go.revenue, 'CHF')}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-primary-400">
+                  {go.orderCount} active order{go.orderCount !== 1 ? 's' : ''}
+                </p>
               </button>
             ))}
           </div>
