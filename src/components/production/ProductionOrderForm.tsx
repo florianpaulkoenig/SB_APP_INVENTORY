@@ -139,9 +139,10 @@ export function ProductionOrderForm({
       deadline: deadline || null,
       gallery_id: galleryId,
       contact_id: contactId,
-      price: price !== '' ? parseFloat(price) : null,
       currency: currency as Currency,
       notes: notes.trim() || null,
+      // Only set price on create; when editing it's auto-calculated from items
+      ...(isEdit ? {} : { price: price !== '' ? parseFloat(price) : null }),
     };
 
     await onSubmit(data);
@@ -251,6 +252,9 @@ export function ProductionOrderForm({
             placeholder="0.00"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
+            readOnly={isEdit}
+            disabled={isEdit}
+            helperText={isEdit ? 'Auto-calculated from item prices' : undefined}
           />
           <Select
             label="Currency"

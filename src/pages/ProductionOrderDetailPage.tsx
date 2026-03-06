@@ -100,12 +100,40 @@ export function ProductionOrderDetailPage() {
   const [editingItem, setEditingItem] = useState<ProductionOrderItemWithJoins | null>(null);
   const [convertItem, setConvertItem] = useState<ProductionOrderItemWithJoins | null>(null);
 
+  // ---- Auto-sync order price from items ------------------------------------
+
+  async function syncOrderPrice(currentItems: ProductionOrderItemWithJoins[]) {
+    if (!id) return;
+
+    let total = 0;
+    let currency = 'EUR';
+    for (const item of currentItems) {
+      if (item.price != null && item.price > 0) {
+        const qty = item.quantity ?? 1;
+        total += item.price * qty;
+        if (item.currency) currency = item.currency;
+      }
+    }
+
+    await supabase
+      .from('production_orders')
+      .update({ price: total, currency } as never)
+      .eq('id', id);
+  }
+
   // ---- Handlers -----------------------------------------------------------
 
   async function handleAddItem(data: ProductionOrderItemInsert) {
     const created = await addItem(data);
     if (created) {
       setShowAddItem(false);
+      // Refetch items first, then sync price with new items list
+      await refetchItems();
+      const { data: freshItems } = await supabase
+        .from('production_order_items')
+        .select('*')
+        .eq('production_order_id', id!);
+      if (freshItems) await syncOrderPrice(freshItems as ProductionOrderItemWithJoins[]);
       await refetchOrder();
     }
   }
@@ -115,6 +143,12 @@ export function ProductionOrderDetailPage() {
     const updated = await updateItem(editingItem.id, data);
     if (updated) {
       setEditingItem(null);
+      await refetchItems();
+      const { data: freshItems } = await supabase
+        .from('production_order_items')
+        .select('*')
+        .eq('production_order_id', id!);
+      if (freshItems) await syncOrderPrice(freshItems as ProductionOrderItemWithJoins[]);
       await refetchOrder();
     }
   }
@@ -150,6 +184,12 @@ export function ProductionOrderDetailPage() {
 
     const created = await addItem(duplicateData);
     if (created) {
+      await refetchItems();
+      const { data: freshItems } = await supabase
+        .from('production_order_items')
+        .select('*')
+        .eq('production_order_id', id!);
+      if (freshItems) await syncOrderPrice(freshItems as ProductionOrderItemWithJoins[]);
       await refetchOrder();
     }
   }
@@ -157,6 +197,12 @@ export function ProductionOrderDetailPage() {
   async function handleRemoveItem(itemId: string) {
     const success = await removeItem(itemId);
     if (success) {
+      await refetchItems();
+      const { data: freshItems } = await supabase
+        .from('production_order_items')
+        .select('*')
+        .eq('production_order_id', id!);
+      if (freshItems) await syncOrderPrice(freshItems as ProductionOrderItemWithJoins[]);
       await refetchOrder();
     }
   }
