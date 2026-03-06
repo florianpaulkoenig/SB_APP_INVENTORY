@@ -45,11 +45,38 @@ export function ProductionOrdersPage() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadingOverview, setDownloadingOverview] = useState(false);
   const [downloadingArtist, setDownloadingArtist] = useState(false);
+  const [matchingGalleryIds, setMatchingGalleryIds] = useState<string[]>([]);
+
+  // ---- Resolve gallery IDs matching search term ----------------------------
+
+  useEffect(() => {
+    if (!search) {
+      setMatchingGalleryIds([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function lookupGalleries() {
+      const { data } = await supabase
+        .from('galleries')
+        .select('id')
+        .ilike('name', `%${search}%`);
+
+      if (!cancelled) {
+        setMatchingGalleryIds((data ?? []).map((g) => g.id));
+      }
+    }
+
+    lookupGalleries();
+    return () => { cancelled = true; };
+  }, [search]);
 
   const { productionOrders, loading } = useProductionOrders({
     filters: {
       search: search || undefined,
       status: (statusFilter || undefined) as ProductionStatus | undefined,
+      galleryIds: search && matchingGalleryIds.length > 0 ? matchingGalleryIds : undefined,
     },
   });
 
@@ -496,7 +523,7 @@ export function ProductionOrdersPage() {
         <SearchInput
           value={search}
           onChange={handleSearchChange}
-          placeholder="Search by order number or title..."
+          placeholder="Search by order number, title, or gallery..."
           className="max-w-md"
         />
 

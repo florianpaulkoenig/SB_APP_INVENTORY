@@ -30,6 +30,7 @@ export interface ProductionOrderItemWithJoins extends ProductionOrderItemRow {
 export interface ProductionOrderFilters {
   status?: ProductionStatus;
   search?: string; // searches order_number or title
+  galleryIds?: string[]; // gallery IDs matching search (resolved from gallery name)
 }
 
 export interface UseProductionOrdersOptions {
@@ -88,10 +89,14 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
         query = query.eq('status', filters.status);
       }
 
-      // Search filter: match order_number or title
+      // Search filter: match order_number, title, or gallery
       if (filters.search) {
         const term = `%${filters.search}%`;
-        query = query.or(`order_number.ilike.${term},title.ilike.${term}`);
+        const orParts = [`order_number.ilike.${term}`, `title.ilike.${term}`];
+        if (filters.galleryIds && filters.galleryIds.length > 0) {
+          orParts.push(`gallery_id.in.(${filters.galleryIds.join(',')})`);
+        }
+        query = query.or(orParts.join(','));
       }
 
       // Default ordering: deadline (nulls last), then created_at desc
@@ -117,7 +122,8 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
     } finally {
       setLoading(false);
     }
-  }, [filters.status, filters.search, page, pageSize, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.status, filters.search, JSON.stringify(filters.galleryIds), page, pageSize, toast]);
 
   useEffect(() => {
     fetchProductionOrders();
