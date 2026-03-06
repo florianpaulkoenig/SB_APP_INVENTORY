@@ -98,6 +98,15 @@ const ProductionOrderCreatePage = React.lazy(() =>
 const ProductionOrderDetailPage = React.lazy(() =>
   import('./pages/ProductionOrderDetailPage').then((m) => ({ default: m.ProductionOrderDetailPage })),
 );
+const GalleryForwardingOrdersPage = React.lazy(() =>
+  import('./pages/GalleryForwardingOrdersPage').then((m) => ({ default: m.GalleryForwardingOrdersPage })),
+);
+const GalleryForwardingCreatePage = React.lazy(() =>
+  import('./pages/GalleryForwardingCreatePage').then((m) => ({ default: m.GalleryForwardingCreatePage })),
+);
+const GalleryForwardingDetailPage = React.lazy(() =>
+  import('./pages/GalleryForwardingDetailPage').then((m) => ({ default: m.GalleryForwardingDetailPage })),
+);
 const EmailLogPage = React.lazy(() =>
   import('./pages/EmailLogPage').then((m) => ({ default: m.EmailLogPage })),
 );
@@ -333,6 +342,32 @@ const router = createBrowserRouter(
           element: (
             <Suspense fallback={<SuspenseFallback />}>
               <ProductionOrderDetailPage />
+            </Suspense>
+          ),
+        },
+
+        // Gallery Forwarding
+        {
+          path: 'forwarding',
+          element: (
+            <Suspense fallback={<SuspenseFallback />}>
+              <GalleryForwardingOrdersPage />
+            </Suspense>
+          ),
+        },
+        {
+          path: 'forwarding/new',
+          element: (
+            <Suspense fallback={<SuspenseFallback />}>
+              <GalleryForwardingCreatePage />
+            </Suspense>
+          ),
+        },
+        {
+          path: 'forwarding/:id',
+          element: (
+            <Suspense fallback={<SuspenseFallback />}>
+              <GalleryForwardingDetailPage />
             </Suspense>
           ),
         },

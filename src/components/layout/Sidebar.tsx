@@ -63,6 +63,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M4 3h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zM3 7h14M8 3v4" />
     </svg>
   ),
+  forwarding: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 14l-4-4 4-4M13 6l4 4-4 4M3 10h14" />
+    </svg>
+  ),
   catalogue: (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M4 2.5h12a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5H4A1.5 1.5 0 012.5 16V4A1.5 1.5 0 014 2.5zM6 2.5v15M9.5 6.5h4M9.5 9.5h4M9.5 12.5h2" />
@@ -151,6 +156,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Certificates', to: '/certificates', icon: icons.certificate, roles: ['admin', 'collector'] },
       { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin', 'gallery'] },
+      { label: 'Forwarding', to: '/forwarding', icon: icons.forwarding, roles: ['admin'] },
       { label: 'Packing Lists', to: '/packing-lists', icon: icons.packingList, roles: ['admin'] },
       { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
     ],

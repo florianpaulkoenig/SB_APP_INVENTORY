@@ -50,6 +50,13 @@ export type Currency = 'EUR' | 'USD' | 'CHF' | 'GBP';
 
 export type DeliveryStatus = 'draft' | 'shipped' | 'delivered';
 
+export type ForwardingStatus =
+  | 'draft'
+  | 'prepared'
+  | 'shipped'
+  | 'in_transit'
+  | 'received';
+
 export type ProductionStatus =
   | 'draft'
   | 'ordered'
@@ -494,6 +501,76 @@ export interface ProductionOrderItemInsert {
 }
 
 export type ProductionOrderItemUpdate = Partial<ProductionOrderItemInsert>;
+
+// -- gallery_forwarding_orders -----------------------------------------------
+
+export interface GalleryForwardingOrderRow {
+  id: string;
+  user_id: string;
+  forwarding_number: string;
+  title: string;
+  description: string | null;
+  status: ForwardingStatus;
+  from_gallery_id: string | null;
+  to_gallery_id: string | null;
+  contact_id: string | null;
+  shipping_date: string | null;
+  estimated_arrival: string | null;
+  tracking_number: string | null;
+  shipping_method: string | null;
+  insurance_value: number | null;
+  currency: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GalleryForwardingOrderInsert {
+  id?: string;
+  user_id?: string;
+  forwarding_number: string;
+  title: string;
+  description?: string | null;
+  status?: ForwardingStatus;
+  from_gallery_id?: string | null;
+  to_gallery_id?: string | null;
+  contact_id?: string | null;
+  shipping_date?: string | null;
+  estimated_arrival?: string | null;
+  tracking_number?: string | null;
+  shipping_method?: string | null;
+  insurance_value?: number | null;
+  currency?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type GalleryForwardingOrderUpdate = Partial<GalleryForwardingOrderInsert>;
+
+// -- gallery_forwarding_items ------------------------------------------------
+
+export interface GalleryForwardingItemRow {
+  id: string;
+  user_id: string;
+  forwarding_order_id: string;
+  artwork_id: string;
+  sort_order: number;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface GalleryForwardingItemInsert {
+  id?: string;
+  user_id?: string;
+  forwarding_order_id: string;
+  artwork_id: string;
+  sort_order?: number;
+  notes?: string | null;
+  created_at?: string;
+}
+
+export type GalleryForwardingItemUpdate = Partial<GalleryForwardingItemInsert>;
 
 // -- certificates ------------------------------------------------------------
 
@@ -1254,6 +1331,16 @@ export interface Database {
         Row: ProductionOrderItemRow;
         Insert: ProductionOrderItemInsert;
         Update: ProductionOrderItemUpdate;
+      };
+      gallery_forwarding_orders: {
+        Row: GalleryForwardingOrderRow;
+        Insert: GalleryForwardingOrderInsert;
+        Update: GalleryForwardingOrderUpdate;
+      };
+      gallery_forwarding_items: {
+        Row: GalleryForwardingItemRow;
+        Insert: GalleryForwardingItemInsert;
+        Update: GalleryForwardingItemUpdate;
       };
       certificates: {
         Row: CertificateRow;

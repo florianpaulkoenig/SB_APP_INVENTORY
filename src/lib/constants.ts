@@ -22,6 +22,7 @@ export const DOC_PREFIXES = {
   production: 'PO',
   certificate: 'COA',
   invoice: 'INV',
+  forwarding: 'GF',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -127,6 +128,17 @@ export const PRODUCTION_STATUSES = [
   { value: 'in_production', label: 'In Production', color: 'bg-blue-100 text-blue-800' },
   { value: 'quality_check', label: 'Quality Check', color: 'bg-purple-100 text-purple-800' },
   { value: 'completed', label: 'Completed', color: 'bg-emerald-100 text-emerald-800' },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Gallery forwarding statuses
+// ---------------------------------------------------------------------------
+export const FORWARDING_STATUSES = [
+  { value: 'draft', label: 'Draft', color: 'bg-gray-100 text-gray-800' },
+  { value: 'prepared', label: 'Prepared', color: 'bg-amber-100 text-amber-800' },
+  { value: 'shipped', label: 'Shipped', color: 'bg-blue-100 text-blue-800' },
+  { value: 'in_transit', label: 'In Transit', color: 'bg-purple-100 text-purple-800' },
+  { value: 'received', label: 'Received', color: 'bg-emerald-100 text-emerald-800' },
 ] as const;
 
 // ---------------------------------------------------------------------------
