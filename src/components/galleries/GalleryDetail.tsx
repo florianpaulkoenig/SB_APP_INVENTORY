@@ -5,8 +5,8 @@ import { Button } from '../ui/Button';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { StatusBadge } from '../ui/StatusBadge';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { formatCurrency, formatDimensions } from '../../lib/utils';
-import type { GalleryRow, ArtworkRow } from '../../types/database';
+import { formatCurrency, formatDimensions, formatDate } from '../../lib/utils';
+import type { GalleryRow, ArtworkRow, ProductionOrderRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -89,6 +89,27 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
   useEffect(() => {
     fetchConsignmentArtworks();
   }, [fetchConsignmentArtworks]);
+
+  // ---- Production orders linked to this gallery ----------------------------
+  const [productionOrders, setProductionOrders] = useState<ProductionOrderRow[]>([]);
+  const [productionLoading, setProductionLoading] = useState(true);
+
+  const fetchProductionOrders = useCallback(async () => {
+    setProductionLoading(true);
+
+    const { data } = await supabase
+      .from('production_orders')
+      .select('*')
+      .eq('gallery_id', gallery.id)
+      .order('created_at', { ascending: false });
+
+    setProductionOrders((data as ProductionOrderRow[]) ?? []);
+    setProductionLoading(false);
+  }, [gallery.id]);
+
+  useEffect(() => {
+    fetchProductionOrders();
+  }, [fetchProductionOrders]);
 
   // ---- Helpers ------------------------------------------------------------
 
@@ -271,6 +292,71 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
                 </button>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      {/* Production Orders */}
+      <section className="rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
+        <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
+          Production Orders
+          {!productionLoading && productionOrders.length > 0 && (
+            <span className="ml-2 text-sm font-normal text-primary-400">
+              ({productionOrders.length})
+            </span>
+          )}
+        </h2>
+
+        {productionLoading ? (
+          <div className="flex justify-center py-6">
+            <LoadingSpinner />
+          </div>
+        ) : productionOrders.length === 0 ? (
+          <p className="text-sm text-primary-400">
+            No production orders linked to this gallery.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {productionOrders.map((po) => (
+              <button
+                key={po.id}
+                type="button"
+                onClick={() => navigate(`/production/${po.id}`)}
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-primary-100 bg-primary-50/50 p-3 text-left transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-primary-900">
+                    {po.title}
+                  </p>
+                  <p className="mt-0.5 font-mono text-[10px] text-primary-400">
+                    {po.order_number}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <StatusBadge status={po.status} />
+                    {po.ordered_date && (
+                      <span className="text-xs text-primary-500">
+                        {formatDate(po.ordered_date)}
+                      </span>
+                    )}
+                    {po.price != null && (
+                      <span className="text-xs font-medium text-primary-700">
+                        {formatCurrency(po.price, po.currency)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <svg
+                  className="h-4 w-4 flex-shrink-0 text-primary-300"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
+              </button>
+            ))}
           </div>
         )}
       </section>

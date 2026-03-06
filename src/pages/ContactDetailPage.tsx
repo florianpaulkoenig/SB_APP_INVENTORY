@@ -1,4 +1,6 @@
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { useContact } from '../hooks/useContacts';
 import { useContacts } from '../hooks/useContacts';
 import { useContactDeals } from '../hooks/useDeals';
@@ -9,6 +11,9 @@ import { WishListView } from '../components/crm/WishListView';
 import { DealCard } from '../components/crm/DealCard';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { StatusBadge } from '../components/ui/StatusBadge';
+import { formatDate, formatCurrency } from '../lib/utils';
+import type { ProductionOrderRow } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Page
@@ -26,6 +31,28 @@ export function ContactDetailPage() {
     updateDeal,
     deleteDeal,
   } = useContactDeals(id!);
+
+  // ---- Production orders linked to this contact ----------------------------
+  const [productionOrders, setProductionOrders] = useState<ProductionOrderRow[]>([]);
+  const [productionLoading, setProductionLoading] = useState(true);
+
+  const fetchProductionOrders = useCallback(async () => {
+    if (!id) return;
+    setProductionLoading(true);
+
+    const { data } = await supabase
+      .from('production_orders')
+      .select('*')
+      .eq('contact_id', id)
+      .order('created_at', { ascending: false });
+
+    setProductionOrders((data as ProductionOrderRow[]) ?? []);
+    setProductionLoading(false);
+  }, [id]);
+
+  useEffect(() => {
+    fetchProductionOrders();
+  }, [fetchProductionOrders]);
 
   // ---- Delete handler -----------------------------------------------------
 
@@ -162,6 +189,75 @@ export function ContactDetailPage() {
                     await updateDeal(deal.id, { stage: newStage as any });
                   }}
                 />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Production Orders */}
+        <section>
+          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
+            Production Orders
+            {!productionLoading && productionOrders.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-primary-400">
+                ({productionOrders.length})
+              </span>
+            )}
+          </h2>
+
+          {productionLoading && (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner />
+            </div>
+          )}
+
+          {!productionLoading && productionOrders.length === 0 && (
+            <p className="text-sm text-primary-400">
+              No production orders linked to this contact.
+            </p>
+          )}
+
+          {!productionLoading && productionOrders.length > 0 && (
+            <div className="space-y-3">
+              {productionOrders.map((po) => (
+                <button
+                  key={po.id}
+                  type="button"
+                  onClick={() => navigate(`/production/${po.id}`)}
+                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-primary-100 bg-white p-3 text-left transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-primary-900">
+                      {po.title}
+                    </p>
+                    <p className="mt-0.5 font-mono text-[10px] text-primary-400">
+                      {po.order_number}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <StatusBadge status={po.status} />
+                      {po.ordered_date && (
+                        <span className="text-xs text-primary-500">
+                          {formatDate(po.ordered_date)}
+                        </span>
+                      )}
+                      {po.price != null && (
+                        <span className="text-xs font-medium text-primary-700">
+                          {formatCurrency(po.price, po.currency)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <svg
+                    className="h-4 w-4 flex-shrink-0 text-primary-300"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </button>
               ))}
             </div>
           )}
