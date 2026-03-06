@@ -13,11 +13,22 @@ import { ConvertToArtworkDialog } from '../components/production/ConvertToArtwor
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Modal } from '../components/ui/Modal';
+import { useToast } from '../components/ui/Toast';
 import { supabase } from '../lib/supabase';
+import { generateArtworkRefCode } from '../lib/utils';
+import { DOC_PREFIXES } from '../lib/constants';
 import type {
   ProductionOrderUpdate,
   ProductionOrderItemInsert,
+  ProductionOrderItemRow,
   ProductionStatus,
+  ArtworkStatus,
+  Currency,
+  DimensionUnit,
+  EditionType,
+  ArtworkCategory,
+  ArtworkMotif,
+  ArtworkSeries,
 } from '../types/database';
 import type { ProductionOrderItemWithJoins } from '../hooks/useProductionOrders';
 
@@ -38,6 +49,7 @@ export function ProductionOrderDetailPage() {
     refetch: refetchItems,
   } = useProductionOrderItems(id!);
   const { deleteProductionOrder, updateProductionOrder } = useProductionOrders();
+  const { toast } = useToast();
 
   // ---- Resolve gallery & contact names -------------------------------------
   const [galleryName, setGalleryName] = useState<string | null>(null);
@@ -131,8 +143,141 @@ export function ProductionOrderDetailPage() {
     const updated = await updateProductionOrder(id, { status: newStatus });
 
     if (updated) {
+      // Auto-convert all unconverted items to artworks when completing
+      if (newStatus === 'completed') {
+        await autoConvertItems();
+      }
+
       await refetchOrder();
       await refetchItems();
+    }
+  }
+
+  // ---- Auto-convert all items to artworks ----------------------------------
+
+  async function autoConvertItems() {
+    const unconverted = items.filter((item) => !item.artwork_id);
+    if (unconverted.length === 0) return;
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+      toast({ title: 'Error', description: 'You must be logged in', variant: 'error' });
+      return;
+    }
+
+    const userId = session.user.id;
+    let totalCreated = 0;
+
+    for (const item of unconverted) {
+      try {
+        const qty = item.quantity || 1;
+        let lastArtworkId: string | null = null;
+
+        for (let i = 0; i < qty; i++) {
+          // Generate inventory number
+          const { data: invNumber } = await supabase.rpc('generate_document_number', {
+            p_user_id: userId,
+            p_prefix: DOC_PREFIXES.artwork,
+          });
+
+          if (!invNumber) continue;
+
+          const refCode = generateArtworkRefCode();
+
+          // Determine edition numbering for multi-quantity items
+          let editionType = (item.edition_type ?? 'unique') as EditionType;
+          let editionNumber = item.edition_number;
+          let editionTotal = item.edition_total;
+
+          if (qty > 1) {
+            editionType = 'numbered';
+            editionNumber = i + 1;
+            editionTotal = qty;
+          }
+
+          // Create the artwork
+          const { data: artwork, error: artworkError } = await supabase
+            .from('artworks')
+            .insert({
+              user_id: userId,
+              inventory_number: invNumber,
+              reference_code: refCode,
+              title: item.description,
+              medium: item.medium,
+              year: item.year ?? new Date().getFullYear(),
+              height: item.height,
+              width: item.width,
+              depth: item.depth,
+              dimension_unit: (item.dimension_unit ?? 'cm') as DimensionUnit,
+              framed_height: item.framed_height,
+              framed_width: item.framed_width,
+              framed_depth: item.framed_depth,
+              weight: item.weight,
+              edition_type: editionType,
+              edition_number: editionNumber,
+              edition_total: editionTotal,
+              price: item.price,
+              currency: (item.currency ?? 'EUR') as Currency,
+              category: (item.category ?? null) as ArtworkCategory | null,
+              motif: (item.motif ?? null) as ArtworkMotif | null,
+              series: (item.series ?? null) as ArtworkSeries | null,
+              status: 'available' as ArtworkStatus,
+              gallery_id: productionOrder?.gallery_id ?? null,
+            } as never)
+            .select('id')
+            .single();
+
+          if (artworkError) {
+            console.error('[autoConvert] Failed to create artwork:', artworkError);
+            continue;
+          }
+
+          lastArtworkId = artwork.id;
+          totalCreated++;
+
+          // Auto-create certificate (best-effort)
+          try {
+            const { data: certNumber } = await supabase.rpc('generate_document_number', {
+              p_user_id: userId,
+              p_prefix: DOC_PREFIXES.certificate,
+            });
+
+            if (certNumber) {
+              await supabase
+                .from('certificates')
+                .insert({
+                  user_id: userId,
+                  artwork_id: artwork.id,
+                  certificate_number: certNumber,
+                  issue_date: new Date().toISOString().split('T')[0],
+                } as never);
+            }
+          } catch {
+            console.warn('[autoConvert] Auto-certificate failed for', artwork.id);
+          }
+        }
+
+        // Link the last created artwork_id back to the item
+        if (lastArtworkId) {
+          await supabase
+            .from('production_order_items')
+            .update({ artwork_id: lastArtworkId })
+            .eq('id', item.id);
+        }
+      } catch (err) {
+        console.error('[autoConvert] Error converting item:', item.id, err);
+      }
+    }
+
+    if (totalCreated > 0) {
+      toast({
+        title: 'Artworks created',
+        description: `${totalCreated} artwork${totalCreated > 1 ? 's' : ''} created from ${unconverted.length} item${unconverted.length > 1 ? 's' : ''}.`,
+        variant: 'success',
+      });
     }
   }
 
@@ -237,7 +382,7 @@ export function ProductionOrderDetailPage() {
         isOpen={showAddItem}
         onClose={() => setShowAddItem(false)}
         title="Add Production Item"
-        size="lg"
+        size="3xl"
       >
         <ProductionItemEditor
           productionOrderId={id!}

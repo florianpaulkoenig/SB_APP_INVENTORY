@@ -8,6 +8,9 @@ import { useDocumentNumber } from '../../hooks/useDocumentNumber';
 import { supabase } from '../../lib/supabase';
 import {
   ARTWORK_CATEGORIES,
+  ARTWORK_MOTIFS,
+  ARTWORK_SERIES,
+  EDITION_TYPES,
   CURRENCIES,
   DOC_PREFIXES,
 } from '../../lib/constants';
@@ -15,6 +18,9 @@ import type {
   ProductionOrderItemRow,
   ArtworkStatus,
   ArtworkCategory,
+  ArtworkMotif,
+  ArtworkSeries,
+  EditionType,
   Currency,
   DimensionUnit,
 } from '../../types/database';
@@ -58,6 +64,11 @@ export function ConvertToArtworkDialog({
   const [referenceCode, setReferenceCode] = useState('');
   const [title, setTitle] = useState(item.description);
   const [medium, setMedium] = useState(item.medium ?? '');
+  const [year, setYear] = useState(
+    item.year != null ? String(item.year) : String(new Date().getFullYear()),
+  );
+
+  // Dimensions
   const [height, setHeight] = useState(
     item.height != null ? String(item.height) : '',
   );
@@ -70,10 +81,43 @@ export function ConvertToArtworkDialog({
   const [dimensionUnit, setDimensionUnit] = useState<string>(
     item.dimension_unit ?? 'cm',
   );
-  const [year, setYear] = useState(String(new Date().getFullYear()));
-  const [price, setPrice] = useState('');
-  const [currency, setCurrency] = useState('EUR');
-  const [category, setCategory] = useState('');
+
+  // Framed dimensions
+  const [framedHeight, setFramedHeight] = useState(
+    item.framed_height != null ? String(item.framed_height) : '',
+  );
+  const [framedWidth, setFramedWidth] = useState(
+    item.framed_width != null ? String(item.framed_width) : '',
+  );
+  const [framedDepth, setFramedDepth] = useState(
+    item.framed_depth != null ? String(item.framed_depth) : '',
+  );
+  const [weight, setWeight] = useState(
+    item.weight != null ? String(item.weight) : '',
+  );
+
+  // Edition
+  const [editionType, setEditionType] = useState<string>(
+    item.edition_type ?? 'unique',
+  );
+  const [editionNumber, setEditionNumber] = useState(
+    item.edition_number != null ? String(item.edition_number) : '',
+  );
+  const [editionTotal, setEditionTotal] = useState(
+    item.edition_total != null ? String(item.edition_total) : '',
+  );
+
+  // Price
+  const [price, setPrice] = useState(
+    item.price != null ? String(item.price) : '',
+  );
+  const [currency, setCurrency] = useState(item.currency ?? 'EUR');
+
+  // Classification
+  const [category, setCategory] = useState(item.category ?? '');
+  const [motif, setMotif] = useState(item.motif ?? '');
+  const [series, setSeries] = useState(item.series ?? '');
+
   const [status, setStatus] = useState<string>('available');
 
   const [loading, setLoading] = useState(false);
@@ -87,14 +131,23 @@ export function ConvertToArtworkDialog({
     // Reset form when dialog opens with new item
     setTitle(item.description);
     setMedium(item.medium ?? '');
+    setYear(item.year != null ? String(item.year) : String(new Date().getFullYear()));
     setHeight(item.height != null ? String(item.height) : '');
     setWidth(item.width != null ? String(item.width) : '');
     setDepth(item.depth != null ? String(item.depth) : '');
     setDimensionUnit(item.dimension_unit ?? 'cm');
-    setYear(String(new Date().getFullYear()));
-    setPrice('');
-    setCurrency('EUR');
-    setCategory('');
+    setFramedHeight(item.framed_height != null ? String(item.framed_height) : '');
+    setFramedWidth(item.framed_width != null ? String(item.framed_width) : '');
+    setFramedDepth(item.framed_depth != null ? String(item.framed_depth) : '');
+    setWeight(item.weight != null ? String(item.weight) : '');
+    setEditionType(item.edition_type ?? 'unique');
+    setEditionNumber(item.edition_number != null ? String(item.edition_number) : '');
+    setEditionTotal(item.edition_total != null ? String(item.edition_total) : '');
+    setPrice(item.price != null ? String(item.price) : '');
+    setCurrency(item.currency ?? 'EUR');
+    setCategory(item.category ?? '');
+    setMotif(item.motif ?? '');
+    setSeries(item.series ?? '');
     setStatus('available');
     setErrors({});
 
@@ -149,11 +202,8 @@ export function ConvertToArtworkDialog({
         return;
       }
 
-      const parsedHeight = height ? parseFloat(height) : null;
-      const parsedWidth = width ? parseFloat(width) : null;
-      const parsedDepth = depth ? parseFloat(depth) : null;
-      const parsedYear = year ? parseInt(year, 10) : null;
-      const parsedPrice = price ? parseFloat(price) : null;
+      const parseNum = (v: string) => (v ? parseFloat(v) : null);
+      const parseInt_ = (v: string) => (v ? parseInt(v, 10) : null);
 
       // 1. Create the artwork
       const { data: artwork, error: artworkError } = await supabase
@@ -164,16 +214,25 @@ export function ConvertToArtworkDialog({
           reference_code: referenceCode.trim(),
           title: title.trim(),
           medium: medium.trim() || null,
-          height: parsedHeight,
-          width: parsedWidth,
-          depth: parsedDepth,
+          height: parseNum(height),
+          width: parseNum(width),
+          depth: parseNum(depth),
           dimension_unit: dimensionUnit as DimensionUnit,
-          year: parsedYear,
-          price: parsedPrice,
+          framed_height: parseNum(framedHeight),
+          framed_width: parseNum(framedWidth),
+          framed_depth: parseNum(framedDepth),
+          weight: parseNum(weight),
+          year: parseInt_(year),
+          edition_type: editionType as EditionType,
+          edition_number: parseInt_(editionNumber),
+          edition_total: parseInt_(editionTotal),
+          price: parseNum(price),
           currency: currency as Currency,
           category: (category || null) as ArtworkCategory | null,
+          motif: (motif || null) as ArtworkMotif | null,
+          series: (series || null) as ArtworkSeries | null,
           status: status as ArtworkStatus,
-        })
+        } as never)
         .select('id')
         .single();
 
@@ -226,10 +285,18 @@ export function ConvertToArtworkDialog({
     { value: '', label: 'Select category...' },
     ...ARTWORK_CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
   ];
+  const motifOptions = [
+    { value: '', label: 'Select motif...' },
+    ...ARTWORK_MOTIFS.map((m) => ({ value: m.value, label: m.label })),
+  ];
+  const seriesOptions = [
+    { value: '', label: 'Select series...' },
+    ...ARTWORK_SERIES.map((s) => ({ value: s.value, label: s.label })),
+  ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Convert to Artwork" size="2xl">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal isOpen={isOpen} onClose={onClose} title="Convert to Artwork" size="3xl">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {errors.submit && (
           <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
             {errors.submit}
@@ -258,7 +325,7 @@ export function ConvertToArtworkDialog({
           />
         </div>
 
-        {/* Title & Medium */}
+        {/* Title & Medium & Year */}
         <Input
           label="Title *"
           value={title}
@@ -267,52 +334,13 @@ export function ConvertToArtworkDialog({
           placeholder="Artwork title"
         />
 
-        <Input
-          label="Medium"
-          value={medium}
-          onChange={(e) => setMedium(e.target.value)}
-          placeholder="e.g. Glass, acrylic"
-        />
-
-        {/* Dimensions */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Height"
-            type="number"
-            min="0"
-            step="0.1"
-            value={height}
-            onChange={(e) => setHeight(e.target.value)}
+            label="Medium"
+            value={medium}
+            onChange={(e) => setMedium(e.target.value)}
+            placeholder="e.g. Glass, acrylic"
           />
-          <Input
-            label="Width"
-            type="number"
-            min="0"
-            step="0.1"
-            value={width}
-            onChange={(e) => setWidth(e.target.value)}
-          />
-          <Input
-            label="Depth"
-            type="number"
-            min="0"
-            step="0.1"
-            value={depth}
-            onChange={(e) => setDepth(e.target.value)}
-          />
-          <Select
-            label="Unit"
-            options={[
-              { value: 'cm', label: 'cm' },
-              { value: 'inches', label: 'inches' },
-            ]}
-            value={dimensionUnit}
-            onChange={(e) => setDimensionUnit(e.target.value)}
-          />
-        </div>
-
-        {/* Year, Price, Currency */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Input
             label="Year"
             type="number"
@@ -321,15 +349,48 @@ export function ConvertToArtworkDialog({
             value={year}
             onChange={(e) => setYear(e.target.value)}
           />
-          <Input
-            label="Price"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="0.00"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
+        </div>
+
+        {/* Dimensions (Unframed) */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <Input label="Height" type="number" min="0" step="0.1" value={height} onChange={(e) => setHeight(e.target.value)} />
+          <Input label="Width" type="number" min="0" step="0.1" value={width} onChange={(e) => setWidth(e.target.value)} />
+          <Input label="Depth" type="number" min="0" step="0.1" value={depth} onChange={(e) => setDepth(e.target.value)} />
+          <Select
+            label="Unit"
+            options={[{ value: 'cm', label: 'cm' }, { value: 'inches', label: 'inches' }]}
+            value={dimensionUnit}
+            onChange={(e) => setDimensionUnit(e.target.value)}
           />
+        </div>
+
+        {/* Dimensions (Framed) */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <Input label="Framed H" type="number" min="0" step="0.1" value={framedHeight} onChange={(e) => setFramedHeight(e.target.value)} />
+          <Input label="Framed W" type="number" min="0" step="0.1" value={framedWidth} onChange={(e) => setFramedWidth(e.target.value)} />
+          <Input label="Framed D" type="number" min="0" step="0.1" value={framedDepth} onChange={(e) => setFramedDepth(e.target.value)} />
+          <Input label="Weight (kg)" type="number" min="0" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
+        </div>
+
+        {/* Edition */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Select
+            label="Edition Type"
+            options={EDITION_TYPES.map((e) => ({ value: e.value, label: e.label }))}
+            value={editionType}
+            onChange={(e) => setEditionType(e.target.value)}
+          />
+          {editionType === 'numbered' && (
+            <>
+              <Input label="Edition #" type="number" min="1" step="1" value={editionNumber} onChange={(e) => setEditionNumber(e.target.value)} />
+              <Input label="Edition Total" type="number" min="1" step="1" value={editionTotal} onChange={(e) => setEditionTotal(e.target.value)} />
+            </>
+          )}
+        </div>
+
+        {/* Price & Currency */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Input label="Price" type="number" min="0" step="0.01" placeholder="0.00" value={price} onChange={(e) => setPrice(e.target.value)} />
           <Select
             label="Currency"
             options={CURRENCIES.map((c) => ({ value: c.value, label: c.label }))}
@@ -338,21 +399,20 @@ export function ConvertToArtworkDialog({
           />
         </div>
 
-        {/* Category & Status */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Select
-            label="Category"
-            options={categoryOptions}
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          />
-          <Select
-            label="Status"
-            options={[...ARTWORK_STATUS_OPTIONS]}
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          />
+        {/* Classification */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Select label="Category" options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value)} />
+          <Select label="Motif" options={motifOptions} value={motif} onChange={(e) => setMotif(e.target.value)} />
+          <Select label="Series" options={seriesOptions} value={series} onChange={(e) => setSeries(e.target.value)} />
         </div>
+
+        {/* Status */}
+        <Select
+          label="Artwork Status"
+          options={[...ARTWORK_STATUS_OPTIONS]}
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        />
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3 border-t border-primary-100 pt-4">
