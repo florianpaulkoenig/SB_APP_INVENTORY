@@ -165,9 +165,16 @@ export interface OverviewOrder {
   items: OverviewItem[];
 }
 
+export interface GalleryValueSummary {
+  name: string;
+  value: number;
+}
+
 export interface ProductionOrdersOverviewPDFProps {
   orders: OverviewOrder[];
   language: 'en' | 'de' | 'fr';
+  totalValueCHF?: number;
+  perGalleryValues?: GalleryValueSummary[];
 }
 
 // ---------------------------------------------------------------------------
@@ -209,6 +216,8 @@ function formatEdition(
 export function ProductionOrdersOverviewPDF({
   orders,
   language,
+  totalValueCHF,
+  perGalleryValues,
 }: ProductionOrdersOverviewPDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
   const today = new Date().toLocaleDateString(
@@ -220,6 +229,22 @@ export function ProductionOrdersOverviewPDF({
     0,
   );
 
+  // Analysis: count per category & dimensions breakdown
+  const categoryCounts: Record<string, number> = {};
+  const dimsCounts: Record<string, number> = {};
+  for (const o of orders) {
+    for (const item of o.items) {
+      const cat = item.category || 'Uncategorized';
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + (item.quantity ?? 1);
+      if (item.dimensions) {
+        dimsCounts[item.dimensions] = (dimsCounts[item.dimensions] || 0) + (item.quantity ?? 1);
+      }
+    }
+  }
+
+  const fmtCHF = (v: number) =>
+    new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF', minimumFractionDigits: 0 }).format(v);
+
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={styles.page}>
@@ -229,6 +254,70 @@ export function ProductionOrdersOverviewPDF({
           subtitle={`${t.generatedOn} ${today}`}
           language={language}
         />
+
+        {/* Revenue Summary & Analysis */}
+        {(totalValueCHF != null || (perGalleryValues && perGalleryValues.length > 0) || Object.keys(categoryCounts).length > 0) && (
+          <View style={{ marginBottom: 16, borderWidth: 0.5, borderColor: PDF_COLORS.border, padding: 10 }}>
+            <View style={{ flexDirection: 'row', gap: 40, marginBottom: 8 }}>
+              {/* Revenue */}
+              {totalValueCHF != null && totalValueCHF > 0 && (
+                <View>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 8, color: PDF_COLORS.primary400, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Total Revenue
+                  </Text>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 14, color: PDF_COLORS.primary900, marginTop: 2 }}>
+                    {fmtCHF(totalValueCHF)}
+                  </Text>
+                </View>
+              )}
+              {/* Per gallery */}
+              {perGalleryValues && perGalleryValues.map((g) => (
+                <View key={g.name}>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 8, color: PDF_COLORS.primary400, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    {g.name}
+                  </Text>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 12, color: PDF_COLORS.accent, marginTop: 2 }}>
+                    {fmtCHF(g.value)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Analysis: categories & dimensions */}
+            <View style={{ flexDirection: 'row', gap: 40, marginTop: 4 }}>
+              {/* Categories */}
+              {Object.keys(categoryCounts).length > 0 && (
+                <View>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 8, color: PDF_COLORS.primary400, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>
+                    By Category
+                  </Text>
+                  {Object.entries(categoryCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([cat, count]) => (
+                      <Text key={cat} style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: PDF_COLORS.primary700, marginBottom: 1 }}>
+                        {cat}: {count}
+                      </Text>
+                    ))}
+                </View>
+              )}
+              {/* Dimensions */}
+              {Object.keys(dimsCounts).length > 0 && (
+                <View>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 8, color: PDF_COLORS.primary400, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>
+                    By Dimensions
+                  </Text>
+                  {Object.entries(dimsCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([dims, count]) => (
+                      <Text key={dims} style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: PDF_COLORS.primary700, marginBottom: 1 }}>
+                        {dims}: {count}
+                      </Text>
+                    ))}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Orders with items */}
         {orders.map((order, orderIdx) => (
@@ -246,7 +335,7 @@ export function ProductionOrdersOverviewPDF({
               <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
                 <Text
                   style={{
-                    fontFamily: 'Helvetica-Bold',
+                    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
                     fontSize: 9,
                     color: PDF_COLORS.white,
                   }}
@@ -255,7 +344,7 @@ export function ProductionOrdersOverviewPDF({
                 </Text>
                 <Text
                   style={{
-                    fontFamily: 'Helvetica-Bold',
+                    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
                     fontSize: 9,
                     color: PDF_COLORS.white,
                   }}
@@ -264,7 +353,7 @@ export function ProductionOrdersOverviewPDF({
                 </Text>
                 <Text
                   style={{
-                    fontFamily: 'Helvetica',
+                    fontFamily: 'AnzianoPro',
                     fontSize: 8,
                     color: PDF_COLORS.accent,
                   }}
@@ -274,22 +363,22 @@ export function ProductionOrdersOverviewPDF({
               </View>
               <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
                 {order.gallery_name && (
-                  <Text style={{ fontFamily: 'Helvetica', fontSize: 8, color: '#cccccc' }}>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: '#cccccc' }}>
                     {order.gallery_name}
                   </Text>
                 )}
                 {order.contact_name && (
-                  <Text style={{ fontFamily: 'Helvetica', fontSize: 8, color: '#cccccc' }}>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: '#cccccc' }}>
                     {order.contact_name}
                   </Text>
                 )}
                 {order.ordered_date && (
-                  <Text style={{ fontFamily: 'Helvetica', fontSize: 8, color: '#cccccc' }}>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: '#cccccc' }}>
                     {order.ordered_date}
                   </Text>
                 )}
                 {order.deadline && (
-                  <Text style={{ fontFamily: 'Helvetica', fontSize: 8, color: '#cccccc' }}>
+                  <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: '#cccccc' }}>
                     {'\u2192'} {order.deadline}
                   </Text>
                 )}
@@ -343,7 +432,7 @@ export function ProductionOrdersOverviewPDF({
                   borderBottomColor: PDF_COLORS.border,
                 }}
               >
-                <Text style={{ fontFamily: 'Helvetica', fontSize: 8, color: PDF_COLORS.primary400, fontStyle: 'italic' }}>
+                <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: PDF_COLORS.primary400, fontStyle: 'italic' }}>
                   {t.noItems}
                 </Text>
               </View>
@@ -398,10 +487,10 @@ export function ProductionOrdersOverviewPDF({
 
         {/* Summary */}
         <View style={{ marginTop: 8, flexDirection: 'row', gap: 24 }}>
-          <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 10, color: PDF_COLORS.primary900 }}>
+          <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.primary900 }}>
             {t.totalOrders}: {orders.length}
           </Text>
-          <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 10, color: PDF_COLORS.primary900 }}>
+          <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.primary900 }}>
             {t.totalItems}: {totalItems}
           </Text>
         </View>

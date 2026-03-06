@@ -2,8 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pdf } from '@react-pdf/renderer';
 import { supabase } from '../lib/supabase';
-import { useArtwork } from '../hooks/useArtworks';
-import { useArtworks } from '../hooks/useArtworks';
+import { useArtwork, useArtworks } from '../hooks/useArtworks';
 import { useArtworkImages } from '../hooks/useArtworkImages';
 import { useToast } from '../components/ui/Toast';
 import { ArtworkDetail } from '../components/artworks/ArtworkDetail';
@@ -52,7 +51,7 @@ export function ArtworkDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { artwork, loading, refetch: refetchArtwork } = useArtwork(id!);
-  const { deleteArtwork } = useArtworks();
+  const { createArtwork, deleteArtwork } = useArtworks();
   const { uploadImage, deleteImage, setPrimaryImage } = useArtworkImages(id!);
   const { toast } = useToast();
 
@@ -269,6 +268,53 @@ export function ArtworkDetailPage() {
     [id, artwork, toast, refetchArtwork],
   );
 
+  // ---- Duplicate handler ---------------------------------------------------
+
+  const handleDuplicate = useCallback(async () => {
+    if (!artwork) return;
+
+    try {
+      // Copy all artwork data except: id, reference_code, inventory_number, images, status
+      const duplicateData = {
+        title: `${artwork.title} (Copy)`,
+        medium: artwork.medium,
+        year: artwork.year,
+        height: artwork.height,
+        width: artwork.width,
+        depth: artwork.depth,
+        dimension_unit: artwork.dimension_unit,
+        framed_height: artwork.framed_height,
+        framed_width: artwork.framed_width,
+        framed_depth: artwork.framed_depth,
+        weight: artwork.weight,
+        edition_type: artwork.edition_type,
+        edition_number: artwork.edition_number,
+        edition_total: artwork.edition_total,
+        price: artwork.price,
+        currency: artwork.currency,
+        category: artwork.category,
+        motif: artwork.motif,
+        series: artwork.series,
+        gallery_id: artwork.gallery_id,
+        notes: artwork.notes,
+        status: 'available',
+      };
+
+      const created = await createArtwork(duplicateData as never);
+      if (created) {
+        toast({
+          title: 'Artwork duplicated',
+          description: `Created "${duplicateData.title}" with new reference code.`,
+          variant: 'success',
+        });
+        navigate(`/artworks/${created.id}`);
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to duplicate artwork';
+      toast({ title: 'Error', description: message, variant: 'error' });
+    }
+  }, [artwork, createArtwork, toast, navigate]);
+
   // ---- Delete handler -----------------------------------------------------
 
   async function handleDelete() {
@@ -346,6 +392,7 @@ export function ArtworkDetailPage() {
         onEdit={() => navigate(`/artworks/${id}/edit`)}
         onDelete={handleDelete}
         onMarkSold={handleMarkSold}
+        onDuplicate={handleDuplicate}
       />
 
       {/* Certificate PDF download */}

@@ -94,6 +94,16 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
 };
 
 // ---------------------------------------------------------------------------
+// Month names for formatted issue date
+// ---------------------------------------------------------------------------
+
+const MONTH_NAMES: Record<string, string[]> = {
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+  de: ['Januar', 'Februar', 'M\u00e4rz', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+  fr: ['Janvier', 'F\u00e9vrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Ao\u00fbt', 'Septembre', 'Octobre', 'Novembre', 'D\u00e9cembre'],
+};
+
+// ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 export interface CertificatePDFProps {
@@ -166,6 +176,19 @@ function formatEdition(
   }
 }
 
+/** Format issue date with full month name: "6 March 2026" */
+function formatIssueDateFull(dateStr: string, language: string): string {
+  try {
+    const d = new Date(dateStr);
+    const day = d.getDate();
+    const month = (MONTH_NAMES[language] ?? MONTH_NAMES.en)[d.getMonth()];
+    const year = d.getFullYear();
+    return `${day} ${month} ${year}`;
+  } catch {
+    return dateStr;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -199,6 +222,8 @@ export function CertificatePDF({
     t,
   );
 
+  const formattedIssueDate = formatIssueDateFull(certificate.issue_date, language);
+
   // Build detail rows -- only include rows that have a value
   const detailRows: { label: string; value: string }[] = [
     { label: t.artist, value: ARTIST_NAME },
@@ -223,17 +248,23 @@ export function CertificatePDF({
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* ----- Header -------------------------------------------------- */}
+        {/* ----- Header (no subtitle = no certificate code shown) --------- */}
         <PDFHeader
           title={getCertificateTitle(language)}
-          subtitle={certificate.certificate_number}
           language={language}
         />
 
-        {/* ----- Artwork Image ------------------------------------------- */}
+        {/* ----- Artwork Image (full width, matching info grid width) ----- */}
         {artworkImageUrl && (
-          <View style={styles.artworkImageContainer}>
-            <Image src={artworkImageUrl} style={styles.artworkImage} />
+          <View style={{ marginBottom: 20 }}>
+            <Image
+              src={artworkImageUrl}
+              style={{
+                width: '100%',
+                maxHeight: 280,
+                objectFit: 'contain',
+              }}
+            />
           </View>
         )}
 
@@ -247,15 +278,11 @@ export function CertificatePDF({
           ))}
         </View>
 
-        {/* ----- Certificate Info ---------------------------------------- */}
+        {/* ----- Issue Date (no certificate number shown) ---------------- */}
         <View style={styles.infoGrid}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t.certificateNo}</Text>
-            <Text style={styles.infoValue}>{certificate.certificate_number}</Text>
-          </View>
-          <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t.issueDate}</Text>
-            <Text style={styles.infoValue}>{certificate.issue_date}</Text>
+            <Text style={styles.infoValue}>{formattedIssueDate}</Text>
           </View>
         </View>
 
@@ -277,14 +304,14 @@ export function CertificatePDF({
             <View />
           )}
 
-          {/* Signature area */}
+          {/* Signature area — artist name below signature */}
           <View style={styles.signatureArea}>
             {signatureUrl ? (
               <Image src={signatureUrl} style={styles.signatureImage} />
             ) : (
               <View style={styles.signatureLine} />
             )}
-            <Text style={styles.signatureLabel}>{COMPANY_NAME}</Text>
+            <Text style={styles.signatureLabel}>{ARTIST_NAME}</Text>
           </View>
         </View>
 

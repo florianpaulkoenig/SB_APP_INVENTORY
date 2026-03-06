@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Select } from '../ui/Select';
@@ -7,8 +7,10 @@ import { Textarea } from '../ui/Textarea';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { EmptyState } from '../ui/EmptyState';
+import { GallerySelect } from '../galleries/GallerySelect';
 import { useArtworkExhibitions } from '../../hooks/useExhibitions';
 import { useExhibitions } from '../../hooks/useExhibitions';
+import { supabase } from '../../lib/supabase';
 import { formatDate } from '../../lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -44,16 +46,51 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [catalogueReference, setCatalogueReference] = useState('');
+  const [galleryId, setGalleryId] = useState<string | null>(null);
+  const [contactId, setContactId] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
+
+  // Contacts for dropdown
+  const [contacts, setContacts] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    async function fetchContacts() {
+      const { data } = await supabase
+        .from('contacts')
+        .select('id, first_name, last_name, company')
+        .order('last_name', { ascending: true });
+      if (data) {
+        setContacts(
+          data.map((c) => ({
+            id: c.id,
+            name: [c.first_name, c.last_name, c.company ? `(${c.company})` : '']
+              .filter(Boolean)
+              .join(' '),
+          })),
+        );
+      }
+    }
+    fetchContacts();
+  }, []);
 
   // Unlink confirm state
   const [unlinkId, setUnlinkId] = useState<string | null>(null);
 
   // -- Derived data ---------------------------------------------------------
 
-  const linkedExhibitionIds = useMemo(
-    () => new Set(exhibitions.map((e) => e.id)),
+  // Flatten exhibition_artworks join data: each row has nested `exhibitions` object
+  const displayExhibitions = useMemo(
+    () =>
+      exhibitions.map((ea: Record<string, unknown>) => ({
+        ...(ea.exhibitions as Record<string, unknown> ?? {}),
+        _linkId: ea.id as string, // exhibition_artwork ID for unlinking
+      })),
     [exhibitions],
+  );
+
+  const linkedExhibitionIds = useMemo(
+    () => new Set(displayExhibitions.map((e) => e.id as string)),
+    [displayExhibitions],
   );
 
   const availableExhibitions = useMemo(
@@ -72,6 +109,8 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
     setStartDate('');
     setEndDate('');
     setCatalogueReference('');
+    setGalleryId(null);
+    setContactId(null);
     setNotes('');
     setMode('link');
   }
@@ -107,6 +146,8 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
         start_date: startDate || null,
         end_date: endDate || null,
         catalogue_reference: catalogueReference || null,
+        gallery_id: galleryId,
+        contact_id: contactId,
         notes: notes || null,
       });
       resetForm();
@@ -149,7 +190,7 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
       </div>
 
       {/* Content */}
-      {exhibitions.length === 0 ? (
+      {displayExhibitions.length === 0 ? (
         <EmptyState
           title="No exhibition history"
           description="Link this artwork to exhibitions it has been shown in."
@@ -171,16 +212,16 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
         />
       ) : (
         <ul className="divide-y divide-primary-100">
-          {exhibitions.map((exhibition) => (
+          {displayExhibitions.map((exhibition) => (
             <li
-              key={exhibition.id}
+              key={exhibition._linkId}
               className="py-4 first:pt-0 last:pb-0"
             >
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   {/* Title */}
                   <p className="text-sm font-semibold text-primary-900">
-                    {exhibition.title}
+                    {exhibition.title as string}
                   </p>
 
                   {/* Venue, City, Country */}
@@ -196,11 +237,11 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
                   {(exhibition.start_date || exhibition.end_date) && (
                     <p className="text-xs text-primary-500">
                       {exhibition.start_date
-                        ? formatDate(exhibition.start_date)
+                        ? formatDate(exhibition.start_date as string)
                         : '...'}{' '}
                       &ndash;{' '}
                       {exhibition.end_date
-                        ? formatDate(exhibition.end_date)
+                        ? formatDate(exhibition.end_date as string)
                         : '...'}
                     </p>
                   )}
@@ -208,7 +249,7 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
                   {/* Catalogue reference */}
                   {exhibition.catalogue_reference && (
                     <p className="text-xs text-primary-400">
-                      Catalogue: {exhibition.catalogue_reference}
+                      Catalogue: {exhibition.catalogue_reference as string}
                     </p>
                   )}
                 </div>
@@ -216,7 +257,7 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
                 {/* Unlink button */}
                 <button
                   type="button"
-                  onClick={() => setUnlinkId(exhibition.id)}
+                  onClick={() => setUnlinkId(exhibition._linkId)}
                   className="ml-4 shrink-0 text-xs text-primary-400 hover:text-danger transition-colors"
                 >
                   Unlink
@@ -360,6 +401,23 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
               onChange={(e) => setCatalogueReference(e.target.value)}
               placeholder="e.g., Cat. No. 42, p. 78"
             />
+
+            <div className="grid grid-cols-2 gap-4">
+              <GallerySelect
+                value={galleryId}
+                onChange={setGalleryId}
+                label="Gallery"
+              />
+              <Select
+                label="Contact"
+                options={[
+                  { value: '', label: 'No contact' },
+                  ...contacts.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                value={contactId ?? ''}
+                onChange={(e) => setContactId(e.target.value === '' ? null : e.target.value)}
+              />
+            </div>
 
             <Textarea
               label="Notes"

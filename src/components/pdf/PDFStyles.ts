@@ -3,7 +3,21 @@
 // Uses @react-pdf/renderer StyleSheet for all PDF documents.
 // ---------------------------------------------------------------------------
 
-import { StyleSheet } from '@react-pdf/renderer';
+import { StyleSheet, Font } from '@react-pdf/renderer';
+
+// ---------------------------------------------------------------------------
+// Register Anziano Pro font for all PDF exports
+// Uses the same Regular weight for both normal and bold (only weight available)
+// ---------------------------------------------------------------------------
+const FONT_URL = `${import.meta.env.BASE_URL}fonts/AnzianoPro-Regular.otf`;
+
+Font.register({
+  family: 'AnzianoPro',
+  fonts: [
+    { src: FONT_URL, fontWeight: 'normal' },
+    { src: FONT_URL, fontWeight: 'bold' },
+  ],
+});
 
 // ---------------------------------------------------------------------------
 // Color palette -- NOA Contemporary gallery aesthetic
@@ -24,7 +38,7 @@ export const PDF_COLORS = {
 const styles = StyleSheet.create({
   // ---- Page ---------------------------------------------------------------
   page: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 10,
     color: PDF_COLORS.primary900,
     backgroundColor: PDF_COLORS.white,
@@ -38,21 +52,21 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   companyName: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
     fontSize: 22,
     color: PDF_COLORS.primary900,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
   headerTitle: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 14,
     color: PDF_COLORS.primary700,
     marginTop: 4,
     letterSpacing: 1,
   },
   headerSubtitle: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 10,
     color: PDF_COLORS.primary400,
     marginTop: 2,
@@ -70,7 +84,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
     fontSize: 11,
     color: PDF_COLORS.primary900,
     marginBottom: 8,
@@ -78,7 +92,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   bodyText: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 10,
     color: PDF_COLORS.primary700,
     lineHeight: 1.5,
@@ -95,7 +109,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   infoLabel: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
     fontSize: 9,
     color: PDF_COLORS.primary400,
     width: 140,
@@ -103,7 +117,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   infoValue: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 10,
     color: PDF_COLORS.primary900,
     flex: 1,
@@ -120,7 +134,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   tableHeaderCell: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
     fontSize: 8,
     color: PDF_COLORS.white,
     textTransform: 'uppercase',
@@ -142,7 +156,7 @@ const styles = StyleSheet.create({
     backgroundColor: PDF_COLORS.backgroundLight,
   },
   tableCell: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 9,
     color: PDF_COLORS.primary700,
   },
@@ -161,12 +175,12 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   footerText: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary400,
   },
   pageNumber: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary400,
   },
@@ -205,14 +219,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   signatureLabel: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 8,
     color: PDF_COLORS.primary400,
   },
 
   // ---- Disclaimer / fine print --------------------------------------------
   disclaimer: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary400,
     lineHeight: 1.4,

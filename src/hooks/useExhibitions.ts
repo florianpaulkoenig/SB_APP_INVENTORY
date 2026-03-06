@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
-import type { ExhibitionRow, ExhibitionInsert, ExhibitionUpdate } from '../types/database';
+import type { ExhibitionRow, ExhibitionInsert, ExhibitionUpdate, ExhibitionArtworkInsert } from '../types/database';
 
 export function useExhibitions() {
   const [exhibitions, setExhibitions] = useState<ExhibitionRow[]>([]);
@@ -124,16 +124,38 @@ export function useArtworkExhibitions(artworkId: string) {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const linkArtwork = useCallback(async (exhibitionId: string): Promise<boolean> => {
+  const linkArtwork = useCallback(async (
+    exhibitionId: string | null,
+    newExhibitionData?: ExhibitionInsert,
+  ): Promise<boolean> => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         toast({ title: 'Error', description: 'You must be logged in', variant: 'error' });
         return false;
       }
+
+      let linkId = exhibitionId;
+
+      // If no exhibitionId, create a new exhibition first
+      if (!linkId && newExhibitionData) {
+        const { data: created, error: createError } = await supabase
+          .from('exhibitions')
+          .insert({ ...newExhibitionData, user_id: session.user.id } as never)
+          .select('id')
+          .single();
+        if (createError) throw createError;
+        linkId = created.id;
+      }
+
+      if (!linkId) {
+        toast({ title: 'Error', description: 'No exhibition to link', variant: 'error' });
+        return false;
+      }
+
       const { error: insertError } = await supabase
         .from('exhibition_artworks')
-        .insert({ artwork_id: artworkId, exhibition_id: exhibitionId, user_id: session.user.id });
+        .insert({ artwork_id: artworkId, exhibition_id: linkId, user_id: session.user.id } as never);
       if (insertError) throw insertError;
       toast({ title: 'Artwork linked to exhibition', variant: 'success' });
       await fetch();

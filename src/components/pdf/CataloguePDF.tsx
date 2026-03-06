@@ -202,7 +202,7 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 const catStyles = StyleSheet.create({
   // ---- Cover page --------------------------------------------------------
   coverPage: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     backgroundColor: PDF_COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
@@ -220,7 +220,7 @@ const catStyles = StyleSheet.create({
     objectFit: 'contain',
   },
   coverTitle: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
     fontSize: 32,
     color: PDF_COLORS.primary900,
     textTransform: 'uppercase',
@@ -229,7 +229,7 @@ const catStyles = StyleSheet.create({
     marginBottom: 12,
   },
   coverSubtitle: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 14,
     color: PDF_COLORS.primary700,
     textAlign: 'center',
@@ -243,7 +243,7 @@ const catStyles = StyleSheet.create({
     marginBottom: 24,
   },
   coverArtist: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 16,
     color: PDF_COLORS.primary700,
     letterSpacing: 2,
@@ -251,7 +251,7 @@ const catStyles = StyleSheet.create({
     marginBottom: 8,
   },
   coverCompany: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 10,
     color: PDF_COLORS.primary400,
     letterSpacing: 1.5,
@@ -260,7 +260,7 @@ const catStyles = StyleSheet.create({
 
   // ---- Artwork pages (shared) --------------------------------------------
   artworkPage: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 10,
     color: PDF_COLORS.primary900,
     backgroundColor: PDF_COLORS.white,
@@ -287,13 +287,13 @@ const catStyles = StyleSheet.create({
     paddingTop: 16,
   },
   fullPageTitle: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
     fontSize: 18,
     color: PDF_COLORS.primary900,
     marginBottom: 4,
   },
   fullPageRefCode: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 8,
     color: PDF_COLORS.primary400,
     marginBottom: 12,
@@ -304,7 +304,7 @@ const catStyles = StyleSheet.create({
     marginBottom: 4,
   },
   fullPageLabel: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
     fontSize: 9,
     color: PDF_COLORS.primary400,
     width: 100,
@@ -312,7 +312,7 @@ const catStyles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   fullPageValue: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 10,
     color: PDF_COLORS.primary900,
     flex: 1,
@@ -343,13 +343,13 @@ const catStyles = StyleSheet.create({
     paddingTop: 10,
   },
   grid2Title: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
     fontSize: 12,
     color: PDF_COLORS.primary900,
     marginBottom: 2,
   },
   grid2RefCode: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary400,
     marginBottom: 6,
@@ -360,7 +360,7 @@ const catStyles = StyleSheet.create({
     marginBottom: 2,
   },
   grid2Label: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
     fontSize: 8,
     color: PDF_COLORS.primary400,
     width: 80,
@@ -368,7 +368,7 @@ const catStyles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   grid2Value: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 9,
     color: PDF_COLORS.primary900,
     flex: 1,
@@ -403,26 +403,26 @@ const catStyles = StyleSheet.create({
     objectFit: 'contain',
   },
   grid4Title: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
     fontSize: 9,
     color: PDF_COLORS.primary900,
     marginBottom: 1,
   },
   grid4RefCode: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 6,
     color: PDF_COLORS.primary400,
     marginBottom: 4,
     letterSpacing: 0.3,
   },
   grid4DetailText: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary700,
     lineHeight: 1.4,
   },
   grid4PriceText: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
     fontSize: 8,
     color: PDF_COLORS.primary900,
     marginTop: 3,
@@ -442,12 +442,12 @@ const catStyles = StyleSheet.create({
     paddingTop: 8,
   },
   footerText: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary400,
   },
   pageNumber: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary400,
   },
@@ -461,7 +461,7 @@ const catStyles = StyleSheet.create({
     alignItems: 'center',
   },
   imagePlaceholderText: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'AnzianoPro',
     fontSize: 9,
     color: PDF_COLORS.primary400,
   },

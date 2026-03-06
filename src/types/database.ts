@@ -880,6 +880,8 @@ export interface ExhibitionRow {
   start_date: string | null;
   end_date: string | null;
   catalogue_reference: string | null;
+  gallery_id: string | null;
+  contact_id: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -895,6 +897,8 @@ export interface ExhibitionInsert {
   start_date?: string | null;
   end_date?: string | null;
   catalogue_reference?: string | null;
+  gallery_id?: string | null;
+  contact_id?: string | null;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -1272,6 +1276,58 @@ export interface ReminderInsert {
 
 export type ReminderUpdate = Partial<ReminderInsert>;
 
+// ---- Artwork Templates (predefined artworks) --------------------------------
+
+export interface ArtworkTemplateRow {
+  id: string;
+  user_id: string;
+  name: string;
+  medium: string | null;
+  height: number | null;
+  width: number | null;
+  depth: number | null;
+  dimension_unit: DimensionUnit;
+  framed_height: number | null;
+  framed_width: number | null;
+  framed_depth: number | null;
+  weight: number | null;
+  edition_type: EditionType;
+  price: number | null;
+  currency: Currency;
+  category: ArtworkCategory | null;
+  motif: ArtworkMotif | null;
+  series: ArtworkSeries | null;
+  notes: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface ArtworkTemplateInsert {
+  id?: string;
+  user_id?: string;
+  name: string;
+  medium?: string | null;
+  height?: number | null;
+  width?: number | null;
+  depth?: number | null;
+  dimension_unit?: DimensionUnit;
+  framed_height?: number | null;
+  framed_width?: number | null;
+  framed_depth?: number | null;
+  weight?: number | null;
+  edition_type?: EditionType;
+  price?: number | null;
+  currency?: Currency;
+  category?: ArtworkCategory | null;
+  motif?: ArtworkMotif | null;
+  series?: ArtworkSeries | null;
+  notes?: string | null;
+  sort_order?: number;
+  created_at?: string;
+}
+
+export type ArtworkTemplateUpdate = Partial<ArtworkTemplateInsert>;
+
 // ---- Supabase Database type (standard pattern) -----------------------------
 
 export interface Database {
@@ -1456,6 +1512,11 @@ export interface Database {
         Row: ReminderRow;
         Insert: ReminderInsert;
         Update: ReminderUpdate;
+      };
+      artwork_templates: {
+        Row: ArtworkTemplateRow;
+        Insert: ArtworkTemplateInsert;
+        Update: ArtworkTemplateUpdate;
       };
     };
     Views: Record<string, never>;

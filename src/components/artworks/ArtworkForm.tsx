@@ -32,6 +32,8 @@ import type {
 export interface ArtworkFormProps {
   /** Pass an existing artwork to pre-fill for editing */
   artwork?: ArtworkRow;
+  /** Pre-fill from a template (does NOT enable edit mode) */
+  defaultValues?: Partial<ArtworkInsert>;
   /** Pre-generated inventory number for new artworks */
   inventoryNumber?: string;
   /** Pre-generated reference code for new artworks */
@@ -59,6 +61,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 
 export function ArtworkForm({
   artwork,
+  defaultValues: dv,
   inventoryNumber,
   referenceCode,
   onSubmit,
@@ -67,54 +70,57 @@ export function ArtworkForm({
 }: ArtworkFormProps) {
   const isEdit = Boolean(artwork);
 
+  // Helper: pick from artwork first, then defaultValues, then fallback
+  const v = artwork ?? dv;
+
   // ---- Form state -----------------------------------------------------------
 
   // Basic info
-  const [title, setTitle] = useState(artwork?.title ?? '');
-  const [year, setYear] = useState(artwork?.year != null ? String(artwork.year) : '');
-  const [medium, setMedium] = useState(artwork?.medium ?? '');
+  const [title, setTitle] = useState(v?.title ?? '');
+  const [year, setYear] = useState(v?.year != null ? String(v.year) : '');
+  const [medium, setMedium] = useState(v?.medium ?? '');
 
   // Classification
-  const [category, setCategory] = useState(artwork?.category ?? '');
-  const [motif, setMotif] = useState(artwork?.motif ?? '');
-  const [series, setSeries] = useState(artwork?.series ?? '');
+  const [category, setCategory] = useState(v?.category ?? '');
+  const [motif, setMotif] = useState(v?.motif ?? '');
+  const [series, setSeries] = useState(v?.series ?? '');
 
   // Dimensions (unframed)
-  const [height, setHeight] = useState(artwork?.height != null ? String(artwork.height) : '');
-  const [width, setWidth] = useState(artwork?.width != null ? String(artwork.width) : '');
-  const [depth, setDepth] = useState(artwork?.depth != null ? String(artwork.depth) : '');
-  const [dimensionUnit, setDimensionUnit] = useState<string>(artwork?.dimension_unit ?? 'cm');
+  const [height, setHeight] = useState(v?.height != null ? String(v.height) : '');
+  const [width, setWidth] = useState(v?.width != null ? String(v.width) : '');
+  const [depth, setDepth] = useState(v?.depth != null ? String(v.depth) : '');
+  const [dimensionUnit, setDimensionUnit] = useState<string>(v?.dimension_unit ?? 'cm');
 
   // Dimensions (framed)
   const [framedHeight, setFramedHeight] = useState(
-    artwork?.framed_height != null ? String(artwork.framed_height) : '',
+    v?.framed_height != null ? String(v.framed_height) : '',
   );
   const [framedWidth, setFramedWidth] = useState(
-    artwork?.framed_width != null ? String(artwork.framed_width) : '',
+    v?.framed_width != null ? String(v.framed_width) : '',
   );
   const [framedDepth, setFramedDepth] = useState(
-    artwork?.framed_depth != null ? String(artwork.framed_depth) : '',
+    v?.framed_depth != null ? String(v.framed_depth) : '',
   );
-  const [weight, setWeight] = useState(artwork?.weight != null ? String(artwork.weight) : '');
+  const [weight, setWeight] = useState(v?.weight != null ? String(v.weight) : '');
 
   // Edition
-  const [editionType, setEditionType] = useState<string>(artwork?.edition_type ?? 'unique');
+  const [editionType, setEditionType] = useState<string>(v?.edition_type ?? 'unique');
   const [editionNumber, setEditionNumber] = useState(
-    artwork?.edition_number != null ? String(artwork.edition_number) : '',
+    v?.edition_number != null ? String(v.edition_number) : '',
   );
   const [editionTotal, setEditionTotal] = useState(
-    artwork?.edition_total != null ? String(artwork.edition_total) : '',
+    v?.edition_total != null ? String(v.edition_total) : '',
   );
-  const [isUnique, setIsUnique] = useState(artwork?.is_unique ?? true);
+  const [isUnique, setIsUnique] = useState(artwork?.is_unique ?? (v?.edition_type === 'unique' || v?.edition_type == null));
 
   // Price & status
-  const [price, setPrice] = useState(artwork?.price != null ? String(artwork.price) : '');
-  const [currency, setCurrency] = useState<string>(artwork?.currency ?? 'EUR');
-  const [status, setStatus] = useState<string>(artwork?.status ?? 'available');
+  const [price, setPrice] = useState(v?.price != null ? String(v.price) : '');
+  const [currency, setCurrency] = useState<string>(v?.currency ?? 'EUR');
+  const [status, setStatus] = useState<string>(v?.status ?? 'available');
 
   // Location & gallery
   const [currentLocation, setCurrentLocation] = useState(artwork?.current_location ?? '');
-  const [galleryId, setGalleryId] = useState<string | null>(artwork?.gallery_id ?? null);
+  const [galleryId, setGalleryId] = useState<string | null>(v?.gallery_id ?? null);
 
   // Commission split
   const [commissionGallery, setCommissionGallery] = useState(
@@ -128,7 +134,7 @@ export function ArtworkForm({
   );
 
   // Notes
-  const [notes, setNotes] = useState(artwork?.notes ?? '');
+  const [notes, setNotes] = useState(v?.notes ?? '');
 
   // Resolved inventory number & reference code
   const displayInventoryNumber = artwork?.inventory_number ?? inventoryNumber ?? '';

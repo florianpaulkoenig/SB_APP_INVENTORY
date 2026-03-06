@@ -25,6 +25,7 @@ export interface ArtworkDetailProps {
   onEdit: () => void;
   onDelete: () => Promise<void>;
   onMarkSold?: (salePrice: number, currency: string, saleDate: string) => Promise<void>;
+  onDuplicate?: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -65,9 +66,11 @@ export function ArtworkDetail({
   onEdit,
   onDelete,
   onMarkSold,
+  onDuplicate,
 }: ArtworkDetailProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   // ---- Sold dialog state ----
   const [showSoldDialog, setShowSoldDialog] = useState(false);
@@ -153,6 +156,22 @@ export function ArtworkDetail({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
               </svg>
               Mark as Sold
+            </Button>
+          )}
+          {onDuplicate && (
+            <Button
+              variant="outline"
+              loading={duplicating}
+              onClick={async () => {
+                setDuplicating(true);
+                await onDuplicate();
+                setDuplicating(false);
+              }}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.5a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+              </svg>
+              Duplicate
             </Button>
           )}
           <Button variant="outline" onClick={onEdit}>
