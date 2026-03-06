@@ -171,15 +171,17 @@ export function ProductionOrderDetailPage() {
 
       {/* Production order detail */}
       <ProductionOrderDetail
-        productionOrder={productionOrder}
+        order={productionOrder}
         items={items}
-        itemsLoading={itemsLoading}
         onEdit={() => setShowEditModal(true)}
         onDelete={handleDelete}
         onAddItem={() => setShowAddItem(true)}
         onRemoveItem={handleRemoveItem}
         onStatusChange={handleStatusChange}
-        onConvertToArtwork={(item) => setConvertItem(item)}
+        onConvertItem={(itemId) => {
+          const found = items.find((i) => i.id === itemId);
+          if (found) setConvertItem(found);
+        }}
       />
 
       {/* Add Item Modal */}
