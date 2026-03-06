@@ -100,6 +100,9 @@ export interface GalleryRow {
   city: string | null;
   country: string | null;
   commission_rate: number | null;
+  commission_gallery: number | null;
+  commission_noa: number | null;
+  commission_artist: number | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -116,6 +119,9 @@ export interface GalleryInsert {
   city?: string | null;
   country?: string | null;
   commission_rate?: number | null;
+  commission_gallery?: number | null;
+  commission_noa?: number | null;
+  commission_artist?: number | null;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;

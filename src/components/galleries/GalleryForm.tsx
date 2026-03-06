@@ -40,6 +40,15 @@ export function GalleryForm({
   const [commissionRate, setCommissionRate] = useState(
     gallery?.commission_rate != null ? String(gallery.commission_rate) : '',
   );
+  const [commissionGallery, setCommissionGallery] = useState(
+    gallery?.commission_gallery != null ? String(gallery.commission_gallery) : '',
+  );
+  const [commissionNoa, setCommissionNoa] = useState(
+    gallery?.commission_noa != null ? String(gallery.commission_noa) : '',
+  );
+  const [commissionArtist, setCommissionArtist] = useState(
+    gallery?.commission_artist != null ? String(gallery.commission_artist) : '',
+  );
   const [notes, setNotes] = useState(gallery?.notes ?? '');
 
   // ---- Validation ---------------------------------------------------------
@@ -64,6 +73,18 @@ export function GalleryForm({
       next.email = 'Please enter a valid email address';
     }
 
+    // Commission split validation (must total 100% if any field is set)
+    const cg = commissionGallery !== '' ? parseFloat(commissionGallery) : null;
+    const cn = commissionNoa !== '' ? parseFloat(commissionNoa) : null;
+    const ca = commissionArtist !== '' ? parseFloat(commissionArtist) : null;
+    const anySet = cg != null || cn != null || ca != null;
+    if (anySet) {
+      const total = (cg ?? 0) + (cn ?? 0) + (ca ?? 0);
+      if (Math.abs(total - 100) > 0.01) {
+        next.commission = `Commission split must total 100% (currently ${total.toFixed(1)}%)`;
+      }
+    }
+
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -83,6 +104,9 @@ export function GalleryForm({
       city: city.trim() || null,
       country: country.trim() || null,
       commission_rate: commissionRate !== '' ? parseFloat(commissionRate) : null,
+      commission_gallery: commissionGallery !== '' ? parseFloat(commissionGallery) : null,
+      commission_noa: commissionNoa !== '' ? parseFloat(commissionNoa) : null,
+      commission_artist: commissionArtist !== '' ? parseFloat(commissionArtist) : null,
       notes: notes.trim() || null,
     };
 
@@ -164,6 +188,55 @@ export function GalleryForm({
         error={errors.commissionRate}
         helperText="Percentage the gallery takes on sales"
       />
+
+      {/* Commission split */}
+      <div>
+        <label className="mb-2 block text-sm font-medium text-primary-700">
+          Commission Split
+        </label>
+
+        {errors.commission && (
+          <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-800">
+            {errors.commission}
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-4">
+          <Input
+            label="Gallery %"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="0"
+            value={commissionGallery}
+            onChange={(e) => setCommissionGallery(e.target.value)}
+          />
+          <Input
+            label="NOA %"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="0"
+            value={commissionNoa}
+            onChange={(e) => setCommissionNoa(e.target.value)}
+          />
+          <Input
+            label="Artist %"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="0"
+            value={commissionArtist}
+            onChange={(e) => setCommissionArtist(e.target.value)}
+          />
+        </div>
+        <p className="mt-2 text-xs text-primary-400">
+          Must total 100%. Leave all empty if not applicable.
+        </p>
+      </div>
 
       {/* Notes */}
       <Textarea

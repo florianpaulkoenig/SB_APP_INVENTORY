@@ -204,18 +204,7 @@ export function ArtworkForm({
       }
     }
 
-    // Commission split validation: if any field is filled, all must add to 100
-    const cg = commissionGallery !== '' ? parseFloat(commissionGallery) : null;
-    const cn = commissionNoa !== '' ? parseFloat(commissionNoa) : null;
-    const ca = commissionArtist !== '' ? parseFloat(commissionArtist) : null;
-
-    const anyFilled = cg !== null || cn !== null || ca !== null;
-    if (anyFilled) {
-      const total = (cg ?? 0) + (cn ?? 0) + (ca ?? 0);
-      if (Math.abs(total - 100) > 0.01) {
-        next.commission = `Commission split must total 100% (currently ${total.toFixed(1)}%)`;
-      }
-    }
+    // Commission split is now read-only (defined on gallery profile)
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -547,52 +536,40 @@ export function ArtworkForm({
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Section 7: Commission Split                                        */}
+      {/* Section 7: Commission Split (read-only, defined on gallery)        */}
       {/* ------------------------------------------------------------------ */}
       <section>
         <SectionHeader>Commission Split</SectionHeader>
-
-        {errors.commission && (
-          <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-800">
-            {errors.commission}
-          </div>
-        )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Input
             label="Gallery / Agent %"
             type="number"
-            min="0"
-            max="100"
-            step="0.1"
-            placeholder="0"
+            placeholder="—"
             value={commissionGallery}
-            onChange={(e) => setCommissionGallery(e.target.value)}
+            onChange={() => {}}
+            disabled
           />
           <Input
             label="NOA %"
             type="number"
-            min="0"
-            max="100"
-            step="0.1"
-            placeholder="0"
+            placeholder="—"
             value={commissionNoa}
-            onChange={(e) => setCommissionNoa(e.target.value)}
+            onChange={() => {}}
+            disabled
           />
           <Input
             label="Artist %"
             type="number"
-            min="0"
-            max="100"
-            step="0.1"
-            placeholder="0"
+            placeholder="—"
             value={commissionArtist}
-            onChange={(e) => setCommissionArtist(e.target.value)}
+            onChange={() => {}}
+            disabled
           />
         </div>
 
         <p className="mt-2 text-xs text-primary-400">
-          Must total 100%. Leave all empty if not applicable.
+          Commission split is defined on the gallery profile.
         </p>
       </section>
 

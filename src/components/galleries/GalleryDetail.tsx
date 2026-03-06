@@ -180,17 +180,53 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
         )}
       </section>
 
-      {/* Commission Rate */}
+      {/* Commission */}
       <section className="rounded-lg border border-primary-100 bg-white p-6">
         <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
-          Commission Rate
+          Commission
         </h2>
         {gallery.commission_rate != null ? (
-          <p className="text-2xl font-semibold text-accent">
-            {gallery.commission_rate}%
-          </p>
+          <div className="mb-4">
+            <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+              Commission Rate
+            </p>
+            <p className="mt-1 text-2xl font-semibold text-accent">
+              {gallery.commission_rate}%
+            </p>
+          </div>
         ) : (
-          <p className="text-sm text-primary-400">No commission rate set.</p>
+          <p className="mb-4 text-sm text-primary-400">No commission rate set.</p>
+        )}
+
+        {/* Commission Split */}
+        {(gallery.commission_gallery != null ||
+          gallery.commission_noa != null ||
+          gallery.commission_artist != null) && (
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-primary-400">
+              Commission Split
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="rounded-lg bg-primary-50 p-3 text-center">
+                <p className="text-xs text-primary-500">Gallery</p>
+                <p className="mt-1 text-lg font-semibold text-primary-900">
+                  {gallery.commission_gallery ?? 0}%
+                </p>
+              </div>
+              <div className="rounded-lg bg-primary-50 p-3 text-center">
+                <p className="text-xs text-primary-500">NOA</p>
+                <p className="mt-1 text-lg font-semibold text-primary-900">
+                  {gallery.commission_noa ?? 0}%
+                </p>
+              </div>
+              <div className="rounded-lg bg-primary-50 p-3 text-center">
+                <p className="text-xs text-primary-500">Artist</p>
+                <p className="mt-1 text-lg font-semibold text-primary-900">
+                  {gallery.commission_artist ?? 0}%
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </section>
 
