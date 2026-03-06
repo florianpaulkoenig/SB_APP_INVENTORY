@@ -16,6 +16,9 @@ import { ExhibitionHistory } from '../components/artworks/ExhibitionHistory';
 import { LoanPanel } from '../components/artworks/LoanPanel';
 import { ExpenseTracker } from '../components/artworks/ExpenseTracker';
 import { CertificatePDF } from '../components/pdf/CertificatePDF';
+import { useDocumentNumber } from '../hooks/useDocumentNumber';
+import { generateArtworkRefCode } from '../lib/utils';
+import { DOC_PREFIXES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -52,6 +55,7 @@ export function ArtworkDetailPage() {
   const navigate = useNavigate();
   const { artwork, loading, refetch: refetchArtwork } = useArtwork(id!);
   const { createArtwork, deleteArtwork } = useArtworks();
+  const { generateNumber } = useDocumentNumber();
   const { uploadImage, deleteImage, setPrimaryImage } = useArtworkImages(id!);
   const { toast } = useToast();
 
@@ -274,9 +278,17 @@ export function ArtworkDetailPage() {
     if (!artwork) return;
 
     try {
+      // Generate new inventory number and reference code
+      const [inventoryNumber, referenceCode] = await Promise.all([
+        generateNumber(DOC_PREFIXES.artwork),
+        Promise.resolve(generateArtworkRefCode()),
+      ]);
+
       // Copy all artwork data except: id, reference_code, inventory_number, images, status
       const duplicateData = {
         title: `${artwork.title} (Copy)`,
+        inventory_number: inventoryNumber,
+        reference_code: referenceCode,
         medium: artwork.medium,
         year: artwork.year,
         height: artwork.height,
@@ -313,7 +325,7 @@ export function ArtworkDetailPage() {
       const message = err instanceof Error ? err.message : 'Failed to duplicate artwork';
       toast({ title: 'Error', description: message, variant: 'error' });
     }
-  }, [artwork, createArtwork, toast, navigate]);
+  }, [artwork, createArtwork, generateNumber, toast, navigate]);
 
   // ---- Delete handler -----------------------------------------------------
 
