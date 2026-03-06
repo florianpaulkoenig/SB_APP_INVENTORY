@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // NOA Inventory -- Production Orders Overview PDF
-// A single-document overview listing all production orders in a table.
+// Landscape overview listing all production orders with their items.
 // ---------------------------------------------------------------------------
 
 import { Document, Page, View, Text } from '@react-pdf/renderer';
@@ -22,7 +22,16 @@ interface TranslationStrings {
   client: string;
   price: string;
   totalOrders: string;
+  totalItems: string;
   generatedOn: string;
+  item: string;
+  medium: string;
+  dimensions: string;
+  qty: string;
+  edition: string;
+  year: string;
+  category: string;
+  noItems: string;
 }
 
 const TRANSLATIONS: Record<string, TranslationStrings> = {
@@ -37,7 +46,16 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     client: 'Client',
     price: 'Price',
     totalOrders: 'Total Orders',
+    totalItems: 'Total Items',
     generatedOn: 'Generated on',
+    item: 'Item',
+    medium: 'Medium',
+    dimensions: 'Dimensions',
+    qty: 'Qty',
+    edition: 'Edition',
+    year: 'Year',
+    category: 'Category',
+    noItems: 'No items',
   },
   de: {
     overviewTitle: 'Produktionsaufträge Übersicht',
@@ -50,7 +68,16 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     client: 'Kunde',
     price: 'Preis',
     totalOrders: 'Aufträge gesamt',
+    totalItems: 'Positionen gesamt',
     generatedOn: 'Erstellt am',
+    item: 'Position',
+    medium: 'Medium',
+    dimensions: 'Masse',
+    qty: 'Anz.',
+    edition: 'Auflage',
+    year: 'Jahr',
+    category: 'Kategorie',
+    noItems: 'Keine Positionen',
   },
   fr: {
     overviewTitle: 'Aperçu des ordres de production',
@@ -63,7 +90,16 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     client: 'Client',
     price: 'Prix',
     totalOrders: 'Total commandes',
+    totalItems: 'Total articles',
     generatedOn: 'Généré le',
+    item: 'Article',
+    medium: 'Technique',
+    dimensions: 'Dimensions',
+    qty: 'Qté',
+    edition: 'Édition',
+    year: 'Année',
+    category: 'Catégorie',
+    noItems: 'Aucun article',
   },
 };
 
@@ -101,32 +137,71 @@ function translateStatus(status: string, language: string): string {
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
+
+export interface OverviewItem {
+  description: string;
+  medium: string | null;
+  dimensions: string;
+  quantity: number | null;
+  year: number | null;
+  edition_type: string | null;
+  edition_number: number | null;
+  edition_total: number | null;
+  price: number | null;
+  currency: string | null;
+  category: string | null;
+}
+
+export interface OverviewOrder {
+  order_number: string;
+  title: string;
+  status: string;
+  ordered_date: string | null;
+  deadline: string | null;
+  gallery_name: string | null;
+  contact_name: string | null;
+  price: number | null;
+  currency: string;
+  items: OverviewItem[];
+}
+
 export interface ProductionOrdersOverviewPDFProps {
-  orders: Array<{
-    order_number: string;
-    title: string;
-    status: string;
-    ordered_date: string | null;
-    deadline: string | null;
-    gallery_name: string | null;
-    contact_name: string | null;
-    price: number | null;
-    currency: string;
-  }>;
+  orders: OverviewOrder[];
   language: 'en' | 'de' | 'fr';
 }
 
 // ---------------------------------------------------------------------------
-// Table column widths
+// Item table column widths
 // ---------------------------------------------------------------------------
-const COL_NUM = '12%';
-const COL_TITLE = '18%';
-const COL_STATUS = '13%';
-const COL_DATE = '11%';
-const COL_DEADLINE = '11%';
-const COL_GALLERY = '14%';
-const COL_CLIENT = '12%';
-const COL_PRICE = '9%';
+const ITEM_COL_DESC = '28%';
+const ITEM_COL_MEDIUM = '16%';
+const ITEM_COL_DIMS = '16%';
+const ITEM_COL_YEAR = '7%';
+const ITEM_COL_EDITION = '10%';
+const ITEM_COL_QTY = '6%';
+const ITEM_COL_CATEGORY = '9%';
+const ITEM_COL_PRICE = '8%';
+
+// ---------------------------------------------------------------------------
+// Helper: format edition
+// ---------------------------------------------------------------------------
+function formatEdition(
+  editionType: string | null,
+  editionNumber: number | null,
+  editionTotal: number | null,
+): string {
+  if (!editionType || editionType === 'unique') return 'Unique';
+  if (editionType === 'ap') return 'AP';
+  if (editionType === 'hc') return 'HC';
+  if (editionType === 'ea') return 'EA';
+  if (editionType === 'numbered') {
+    if (editionNumber != null && editionTotal != null) {
+      return `${editionNumber}/${editionTotal}`;
+    }
+    return 'Numbered';
+  }
+  return editionType;
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -136,7 +211,14 @@ export function ProductionOrdersOverviewPDF({
   language,
 }: ProductionOrdersOverviewPDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
-  const today = new Date().toLocaleDateString(language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : 'en-GB');
+  const today = new Date().toLocaleDateString(
+    language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : 'en-GB',
+  );
+
+  const totalItems = orders.reduce(
+    (sum, o) => sum + o.items.reduce((s, i) => s + (i.quantity ?? 1), 0),
+    0,
+  );
 
   return (
     <Document>
@@ -148,81 +230,179 @@ export function ProductionOrdersOverviewPDF({
           language={language}
         />
 
-        {/* Table */}
-        <View style={styles.table}>
-          {/* Table header */}
-          <View style={styles.tableHeaderRow}>
-            <Text style={[styles.tableHeaderCell, { width: COL_NUM }]}>
-              {t.orderNo}
-            </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_TITLE }]}>
-              {t.title}
-            </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_STATUS }]}>
-              {t.status}
-            </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_DATE }]}>
-              {t.orderDate}
-            </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_DEADLINE }]}>
-              {t.deadline}
-            </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_GALLERY }]}>
-              {t.gallery}
-            </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_CLIENT }]}>
-              {t.client}
-            </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_PRICE, textAlign: 'right' }]}>
-              {t.price}
-            </Text>
-          </View>
-
-          {/* Table body */}
-          {orders.map((order, index) => (
+        {/* Orders with items */}
+        {orders.map((order, orderIdx) => (
+          <View key={`${order.order_number}-${orderIdx}`} wrap={false} style={{ marginBottom: 12 }}>
+            {/* Order header bar */}
             <View
-              style={index % 2 === 1 ? styles.tableBodyRowAlt : styles.tableBodyRow}
-              key={`${order.order_number}-${index}`}
-              wrap={false}
+              style={{
+                flexDirection: 'row',
+                backgroundColor: PDF_COLORS.primary900,
+                paddingVertical: 5,
+                paddingHorizontal: 8,
+                justifyContent: 'space-between',
+              }}
             >
-              <Text style={[styles.tableCell, { width: COL_NUM, fontFamily: 'Helvetica-Bold' }]}>
-                {order.order_number}
+              <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+                <Text
+                  style={{
+                    fontFamily: 'Helvetica-Bold',
+                    fontSize: 9,
+                    color: PDF_COLORS.white,
+                  }}
+                >
+                  {order.order_number}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: 'Helvetica-Bold',
+                    fontSize: 9,
+                    color: PDF_COLORS.white,
+                  }}
+                >
+                  {order.title}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: 'Helvetica',
+                    fontSize: 8,
+                    color: PDF_COLORS.accent,
+                  }}
+                >
+                  {translateStatus(order.status, language)}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                {order.gallery_name && (
+                  <Text style={{ fontFamily: 'Helvetica', fontSize: 8, color: '#cccccc' }}>
+                    {order.gallery_name}
+                  </Text>
+                )}
+                {order.contact_name && (
+                  <Text style={{ fontFamily: 'Helvetica', fontSize: 8, color: '#cccccc' }}>
+                    {order.contact_name}
+                  </Text>
+                )}
+                {order.ordered_date && (
+                  <Text style={{ fontFamily: 'Helvetica', fontSize: 8, color: '#cccccc' }}>
+                    {order.ordered_date}
+                  </Text>
+                )}
+                {order.deadline && (
+                  <Text style={{ fontFamily: 'Helvetica', fontSize: 8, color: '#cccccc' }}>
+                    {'\u2192'} {order.deadline}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* Item table header */}
+            <View
+              style={{
+                flexDirection: 'row',
+                backgroundColor: PDF_COLORS.backgroundLight,
+                paddingVertical: 4,
+                paddingHorizontal: 8,
+                borderBottomWidth: 0.5,
+                borderBottomColor: PDF_COLORS.border,
+              }}
+            >
+              <Text style={[styles.tableHeaderCell, { width: ITEM_COL_DESC, color: PDF_COLORS.primary400 }]}>
+                {t.item}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_TITLE }]}>
-                {order.title}
+              <Text style={[styles.tableHeaderCell, { width: ITEM_COL_MEDIUM, color: PDF_COLORS.primary400 }]}>
+                {t.medium}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_STATUS }]}>
-                {translateStatus(order.status, language)}
+              <Text style={[styles.tableHeaderCell, { width: ITEM_COL_DIMS, color: PDF_COLORS.primary400 }]}>
+                {t.dimensions}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_DATE }]}>
-                {order.ordered_date ?? '\u2014'}
+              <Text style={[styles.tableHeaderCell, { width: ITEM_COL_YEAR, color: PDF_COLORS.primary400 }]}>
+                {t.year}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_DEADLINE }]}>
-                {order.deadline ?? '\u2014'}
+              <Text style={[styles.tableHeaderCell, { width: ITEM_COL_EDITION, color: PDF_COLORS.primary400 }]}>
+                {t.edition}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_GALLERY }]}>
-                {order.gallery_name ?? '\u2014'}
+              <Text style={[styles.tableHeaderCell, { width: ITEM_COL_QTY, color: PDF_COLORS.primary400, textAlign: 'center' }]}>
+                {t.qty}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_CLIENT }]}>
-                {order.contact_name ?? '\u2014'}
+              <Text style={[styles.tableHeaderCell, { width: ITEM_COL_CATEGORY, color: PDF_COLORS.primary400 }]}>
+                {t.category}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_PRICE, textAlign: 'right' }]}>
-                {order.price != null && order.price > 0
-                  ? new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: order.currency ?? 'EUR',
-                      minimumFractionDigits: 0,
-                    }).format(order.price)
-                  : '\u2014'}
+              <Text style={[styles.tableHeaderCell, { width: ITEM_COL_PRICE, color: PDF_COLORS.primary400, textAlign: 'right' }]}>
+                {t.price}
               </Text>
             </View>
-          ))}
-        </View>
+
+            {/* Item rows */}
+            {order.items.length === 0 ? (
+              <View
+                style={{
+                  paddingVertical: 6,
+                  paddingHorizontal: 8,
+                  borderBottomWidth: 0.5,
+                  borderBottomColor: PDF_COLORS.border,
+                }}
+              >
+                <Text style={{ fontFamily: 'Helvetica', fontSize: 8, color: PDF_COLORS.primary400, fontStyle: 'italic' }}>
+                  {t.noItems}
+                </Text>
+              </View>
+            ) : (
+              order.items.map((item, itemIdx) => (
+                <View
+                  key={`item-${orderIdx}-${itemIdx}`}
+                  style={{
+                    flexDirection: 'row',
+                    paddingVertical: 5,
+                    paddingHorizontal: 8,
+                    borderBottomWidth: 0.5,
+                    borderBottomColor: PDF_COLORS.border,
+                    backgroundColor: itemIdx % 2 === 1 ? '#fafafa' : PDF_COLORS.white,
+                  }}
+                >
+                  <Text style={[styles.tableCell, { width: ITEM_COL_DESC }]}>
+                    {item.description}
+                  </Text>
+                  <Text style={[styles.tableCell, { width: ITEM_COL_MEDIUM }]}>
+                    {item.medium ?? '\u2014'}
+                  </Text>
+                  <Text style={[styles.tableCell, { width: ITEM_COL_DIMS }]}>
+                    {item.dimensions || '\u2014'}
+                  </Text>
+                  <Text style={[styles.tableCell, { width: ITEM_COL_YEAR }]}>
+                    {item.year != null ? String(item.year) : '\u2014'}
+                  </Text>
+                  <Text style={[styles.tableCell, { width: ITEM_COL_EDITION }]}>
+                    {formatEdition(item.edition_type, item.edition_number, item.edition_total)}
+                  </Text>
+                  <Text style={[styles.tableCell, { width: ITEM_COL_QTY, textAlign: 'center' }]}>
+                    {item.quantity ?? 1}
+                  </Text>
+                  <Text style={[styles.tableCell, { width: ITEM_COL_CATEGORY }]}>
+                    {item.category ?? '\u2014'}
+                  </Text>
+                  <Text style={[styles.tableCell, { width: ITEM_COL_PRICE, textAlign: 'right' }]}>
+                    {item.price != null && item.price > 0
+                      ? new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: item.currency ?? 'EUR',
+                          minimumFractionDigits: 0,
+                        }).format(item.price)
+                      : '\u2014'}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        ))}
 
         {/* Summary */}
-        <View style={{ marginTop: 8 }}>
+        <View style={{ marginTop: 8, flexDirection: 'row', gap: 24 }}>
           <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 10, color: PDF_COLORS.primary900 }}>
             {t.totalOrders}: {orders.length}
+          </Text>
+          <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 10, color: PDF_COLORS.primary900 }}>
+            {t.totalItems}: {totalItems}
           </Text>
         </View>
 

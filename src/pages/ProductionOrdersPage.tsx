@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useProductionOrders } from '../hooks/useProductionOrders';
 import { ProductionOrderPDF } from '../components/pdf/ProductionOrderPDF';
 import { ProductionOrdersOverviewPDF } from '../components/pdf/ProductionOrdersOverviewPDF';
+import type { OverviewOrder, OverviewItem } from '../components/pdf/ProductionOrdersOverviewPDF';
 import { Button } from '../components/ui/Button';
 import { SearchInput } from '../components/ui/SearchInput';
 import { Select } from '../components/ui/Select';
@@ -167,7 +168,42 @@ export function ProductionOrdersPage() {
         }
       }
 
-      const overviewOrders = productionOrders.map((order) => ({
+      // Batch-fetch all items for all orders
+      const orderIds = productionOrders.map((o) => o.id);
+      const itemsByOrder: Record<string, OverviewItem[]> = {};
+
+      if (orderIds.length > 0) {
+        const { data: allItems } = await supabase
+          .from('production_order_items')
+          .select('*')
+          .in('production_order_id', orderIds)
+          .order('sort_order', { ascending: true });
+
+        for (const item of allItems ?? []) {
+          const orderId = item.production_order_id;
+          if (!itemsByOrder[orderId]) itemsByOrder[orderId] = [];
+          itemsByOrder[orderId].push({
+            description: item.description,
+            medium: item.medium,
+            dimensions: formatDimensions(
+              item.height,
+              item.width,
+              item.depth,
+              item.dimension_unit ?? 'cm',
+            ),
+            quantity: item.quantity,
+            year: item.year ?? null,
+            edition_type: item.edition_type ?? null,
+            edition_number: item.edition_number ?? null,
+            edition_total: item.edition_total ?? null,
+            price: item.price ?? null,
+            currency: item.currency ?? null,
+            category: item.category ?? null,
+          });
+        }
+      }
+
+      const overviewOrders: OverviewOrder[] = productionOrders.map((order) => ({
         order_number: order.order_number,
         title: order.title,
         status: order.status,
@@ -177,6 +213,7 @@ export function ProductionOrdersPage() {
         contact_name: order.contact_id ? contactNameMap[order.contact_id] ?? null : null,
         price: order.price,
         currency: order.currency ?? 'EUR',
+        items: itemsByOrder[order.id] ?? [],
       }));
 
       const blob = await pdf(
