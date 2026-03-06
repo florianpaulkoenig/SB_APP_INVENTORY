@@ -32,7 +32,7 @@ export function ArtworkCard({ artwork, imageUrl, onClick }: ArtworkCardProps) {
   return (
     <Card hoverable onClick={onClick} className="overflow-hidden">
       {/* Image area */}
-      <div className="aspect-[4/3] bg-primary-100">
+      <div className="aspect-square bg-primary-100">
         {imageUrl ? (
           <img
             src={imageUrl}
