@@ -130,7 +130,7 @@ const navSections: NavSection[] = [
       { label: 'Dashboard', to: '/', icon: icons.dashboard, roles: ['admin', 'gallery', 'collector'] },
       { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin', 'gallery', 'collector'] },
       { label: 'Galleries', to: '/galleries', icon: icons.galleries, roles: ['admin'] },
-      { label: 'Production Orders', to: '/production-orders', icon: icons.production, roles: ['admin'] },
+      { label: 'Production Orders', to: '/production', icon: icons.production, roles: ['admin'] },
     ],
   },
   {
