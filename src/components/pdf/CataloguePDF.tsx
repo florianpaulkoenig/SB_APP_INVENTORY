@@ -7,6 +7,9 @@ import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/render
 import { PDF_COLORS } from './PDFStyles';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 
+// Ensure AnzianoPro font is registered (side-effect import)
+import './PDFStyles';
+
 // ---------------------------------------------------------------------------
 // Multi-language translations
 // ---------------------------------------------------------------------------
@@ -135,7 +138,6 @@ export interface CataloguePDFProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Format dimensions as "H x W x D unit", skipping null parts. */
 function formatDimensions(
   h: number | null,
   w: number | null,
@@ -147,7 +149,6 @@ function formatDimensions(
   return `${parts.join(' \u00d7 ')} ${unit}`;
 }
 
-/** Format edition string according to type and language. */
 function formatEdition(
   editionType: string,
   editionNumber: number | null,
@@ -174,20 +175,17 @@ function formatEdition(
   }
 }
 
-/** Format price with currency symbol. */
 function formatPrice(price: number, currency: string): string {
   const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
   const formatted = price.toLocaleString('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
-  // Place symbol before or after depending on currency
   if (currency === 'EUR') return `${formatted} ${symbol}`;
   if (currency === 'CHF') return `${symbol} ${formatted}`;
   return `${symbol}${formatted}`;
 }
 
-/** Chunk an array into groups of N. */
 function chunkArray<T>(arr: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < arr.length; i += size) {
@@ -197,10 +195,10 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 }
 
 // ---------------------------------------------------------------------------
-// Internal styles (catalogue-specific, extending shared PDF_COLORS)
+// Styles
 // ---------------------------------------------------------------------------
-const catStyles = StyleSheet.create({
-  // ---- Cover page --------------------------------------------------------
+const s = StyleSheet.create({
+  // ---- Cover page ----------------------------------------------------------
   coverPage: {
     fontFamily: 'AnzianoPro',
     backgroundColor: PDF_COLORS.white,
@@ -220,7 +218,8 @@ const catStyles = StyleSheet.create({
     objectFit: 'contain',
   },
   coverTitle: {
-    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
     fontSize: 32,
     color: PDF_COLORS.primary900,
     textTransform: 'uppercase',
@@ -258,7 +257,7 @@ const catStyles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
-  // ---- Artwork pages (shared) --------------------------------------------
+  // ---- Artwork page (shared base) ------------------------------------------
   artworkPage: {
     fontFamily: 'AnzianoPro',
     fontSize: 10,
@@ -269,174 +268,189 @@ const catStyles = StyleSheet.create({
     paddingHorizontal: 50,
   },
 
-  // ---- Full-page layout --------------------------------------------------
-  fullPageImageContainer: {
+  // ---- Full-page layout ----------------------------------------------------
+  fullImageWrap: {
     alignItems: 'center',
-    marginBottom: 24,
-    flex: 1,
     justifyContent: 'center',
+    marginBottom: 24,
   },
-  fullPageImage: {
-    maxHeight: 420,
+  fullImage: {
+    maxHeight: 440,
     maxWidth: '100%',
     objectFit: 'contain',
   },
-  fullPageDetails: {
+  fullDivider: {
     borderTopWidth: 0.5,
     borderTopColor: PDF_COLORS.border,
     paddingTop: 16,
   },
-  fullPageTitle: {
-    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
+  fullTitle: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
     fontSize: 18,
     color: PDF_COLORS.primary900,
     marginBottom: 4,
   },
-  fullPageRefCode: {
+  fullRefCode: {
     fontFamily: 'AnzianoPro',
     fontSize: 8,
     color: PDF_COLORS.primary400,
     marginBottom: 12,
     letterSpacing: 0.5,
   },
-  fullPageInfoRow: {
-    flexDirection: 'row',
-    marginBottom: 4,
+  fullInfoRow: {
+    flexDirection: 'row' as const,
+    paddingVertical: 3,
   },
-  fullPageLabel: {
-    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
+  fullLabel: {
+    fontFamily: 'AnzianoPro',
     fontSize: 9,
     color: PDF_COLORS.primary400,
     width: 100,
-    textTransform: 'uppercase',
+    textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
   },
-  fullPageValue: {
+  fullValue: {
     fontFamily: 'AnzianoPro',
     fontSize: 10,
     color: PDF_COLORS.primary900,
-    flex: 1,
   },
 
-  // ---- Grid-2 layout -----------------------------------------------------
-  grid2Container: {
-    flex: 1,
+  // ---- Grid-2 layout (2 artworks per page, stacked vertically) -------------
+  g2Block: {
+    marginBottom: 16,
   },
-  grid2Item: {
-    flex: 1,
-    marginBottom: 20,
-  },
-  grid2ImageContainer: {
-    alignItems: 'center',
+  g2ImageWrap: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     marginBottom: 12,
-    height: 220,
-    justifyContent: 'center',
   },
-  grid2Image: {
-    maxHeight: 220,
+  g2Image: {
+    maxHeight: 240,
     maxWidth: '100%',
-    objectFit: 'contain',
+    objectFit: 'contain' as const,
   },
-  grid2Details: {
+  g2Divider: {
     borderTopWidth: 0.5,
     borderTopColor: PDF_COLORS.border,
-    paddingTop: 10,
+    paddingTop: 8,
   },
-  grid2Title: {
-    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
+  g2Title: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
     fontSize: 12,
     color: PDF_COLORS.primary900,
     marginBottom: 2,
   },
-  grid2RefCode: {
+  g2RefCode: {
     fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary400,
     marginBottom: 6,
     letterSpacing: 0.5,
   },
-  grid2InfoRow: {
-    flexDirection: 'row',
-    marginBottom: 2,
+  g2InfoRow: {
+    flexDirection: 'row' as const,
+    paddingVertical: 2,
   },
-  grid2Label: {
-    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
+  g2Label: {
+    fontFamily: 'AnzianoPro',
     fontSize: 8,
     color: PDF_COLORS.primary400,
-    width: 80,
-    textTransform: 'uppercase',
+    width: 90,
+    textTransform: 'uppercase' as const,
     letterSpacing: 0.4,
   },
-  grid2Value: {
+  g2Value: {
     fontFamily: 'AnzianoPro',
     fontSize: 9,
     color: PDF_COLORS.primary900,
-    flex: 1,
   },
-  grid2Separator: {
+  g2Separator: {
     borderBottomWidth: 0.5,
     borderBottomColor: PDF_COLORS.border,
-    marginVertical: 10,
-  },
-
-  // ---- Grid-4 layout -----------------------------------------------------
-  grid4Row: {
-    flexDirection: 'row',
+    marginTop: 8,
     marginBottom: 16,
   },
-  grid4Item: {
+
+  // ---- Grid-4 layout (4 artworks per page, 2x2 grid) ----------------------
+  g4Row: {
+    flexDirection: 'row' as const,
+    marginBottom: 16,
+  },
+  g4ItemLeft: {
     width: '48%',
     marginRight: '4%',
   },
-  grid4ItemRight: {
+  g4ItemRight: {
     width: '48%',
   },
-  grid4ImageContainer: {
-    alignItems: 'center',
+  g4ImageWrap: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     marginBottom: 8,
-    height: 140,
-    justifyContent: 'center',
   },
-  grid4Image: {
-    maxHeight: 140,
+  g4Image: {
+    maxHeight: 160,
     maxWidth: '100%',
-    objectFit: 'contain',
+    objectFit: 'contain' as const,
   },
-  grid4Title: {
-    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
+  g4Title: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
     fontSize: 9,
     color: PDF_COLORS.primary900,
     marginBottom: 1,
   },
-  grid4RefCode: {
+  g4RefCode: {
     fontFamily: 'AnzianoPro',
     fontSize: 6,
     color: PDF_COLORS.primary400,
     marginBottom: 4,
     letterSpacing: 0.3,
   },
-  grid4DetailText: {
+  g4DetailText: {
     fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary700,
     lineHeight: 1.4,
   },
-  grid4PriceText: {
-    fontFamily: 'AnzianoPro', fontWeight: 'bold' as const,
+  g4PriceText: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
     fontSize: 8,
     color: PDF_COLORS.primary900,
     marginTop: 3,
   },
 
-  // ---- Footer ------------------------------------------------------------
+  // ---- Placeholder when no image -------------------------------------------
+  placeholder: {
+    backgroundColor: PDF_COLORS.backgroundLight,
+    paddingVertical: 30,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  placeholderSmall: {
+    backgroundColor: PDF_COLORS.backgroundLight,
+    paddingVertical: 20,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  placeholderText: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 9,
+    color: PDF_COLORS.primary400,
+  },
+
+  // ---- Footer --------------------------------------------------------------
   footer: {
-    position: 'absolute',
+    position: 'absolute' as const,
     bottom: 30,
     left: 50,
     right: 50,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
     borderTopWidth: 0.5,
     borderTopColor: PDF_COLORS.border,
     paddingTop: 8,
@@ -451,44 +465,24 @@ const catStyles = StyleSheet.create({
     fontSize: 7,
     color: PDF_COLORS.primary400,
   },
-
-  // ---- No-image placeholder -----------------------------------------------
-  imagePlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: PDF_COLORS.backgroundLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imagePlaceholderText: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 9,
-    color: PDF_COLORS.primary400,
-  },
 });
 
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
-/** Page footer with copyright and page number (render prop skips cover). */
 function CatalogueFooter() {
   return (
-    <View style={catStyles.footer} fixed>
-      <Text style={catStyles.footerText}>
-        {`\u00a9 ${COMPANY_NAME}`}
-      </Text>
+    <View style={s.footer} fixed>
+      <Text style={s.footerText}>{`\u00a9 ${COMPANY_NAME}`}</Text>
       <Text
-        style={catStyles.pageNumber}
-        render={({ pageNumber }) =>
-          pageNumber > 1 ? `${pageNumber - 1}` : ''
-        }
+        style={s.pageNumber}
+        render={({ pageNumber }) => (pageNumber > 1 ? `${pageNumber - 1}` : '')}
       />
     </View>
   );
 }
 
-/** Cover page for the catalogue. */
 function CoverPage({
   title,
   subtitle,
@@ -499,33 +493,25 @@ function CoverPage({
   coverImageUrl?: string | null;
 }) {
   return (
-    <Page size="A4" style={catStyles.coverPage}>
-      {/* Cover image */}
+    <Page size="A4" style={s.coverPage}>
       {coverImageUrl && (
-        <View style={catStyles.coverImageContainer}>
-          <Image src={coverImageUrl} style={catStyles.coverImage} />
+        <View style={s.coverImageContainer}>
+          <Image src={coverImageUrl} style={s.coverImage} />
         </View>
       )}
-
-      {/* Title block */}
-      <Text style={catStyles.coverTitle}>{title}</Text>
-      {subtitle && <Text style={catStyles.coverSubtitle}>{subtitle}</Text>}
-
-      {/* Gold accent line */}
-      <View style={catStyles.coverAccentLine} />
-
-      {/* Artist + branding */}
-      <Text style={catStyles.coverArtist}>{ARTIST_NAME}</Text>
-      <Text style={catStyles.coverCompany}>{COMPANY_NAME}</Text>
+      <Text style={s.coverTitle}>{title}</Text>
+      {subtitle && <Text style={s.coverSubtitle}>{subtitle}</Text>}
+      <View style={s.coverAccentLine} />
+      <Text style={s.coverArtist}>{ARTIST_NAME}</Text>
+      <Text style={s.coverCompany}>{COMPANY_NAME}</Text>
     </Page>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Artwork detail renderers per layout
+// Detail rows builder
 // ---------------------------------------------------------------------------
 
-/** Build the common detail lines for an artwork. */
 function buildDetailRows(
   artwork: CatalogueArtwork,
   t: CatalogueTranslations,
@@ -555,14 +541,17 @@ function buildDetailRows(
     value: formatEdition(artwork.edition_type, artwork.edition_number, artwork.edition_total, t),
   });
 
-  if (showPrices && artwork.price != null) {
+  if (showPrices && artwork.price != null && artwork.price > 0) {
     rows.push({ label: t.price, value: formatPrice(artwork.price, artwork.currency) });
   }
 
   return rows;
 }
 
-/** Full-page layout: one artwork per page with large image. */
+// ---------------------------------------------------------------------------
+// Full-page layout: one artwork per page
+// ---------------------------------------------------------------------------
+
 function FullPageArtwork({
   artwork,
   t,
@@ -575,26 +564,26 @@ function FullPageArtwork({
   const rows = buildDetailRows(artwork, t, showPrices);
 
   return (
-    <Page size="A4" style={catStyles.artworkPage}>
+    <Page size="A4" style={s.artworkPage}>
       {/* Image */}
-      <View style={catStyles.fullPageImageContainer}>
+      <View style={s.fullImageWrap}>
         {artwork.imageUrl ? (
-          <Image src={artwork.imageUrl} style={catStyles.fullPageImage} />
+          <Image src={artwork.imageUrl} style={s.fullImage} />
         ) : (
-          <View style={catStyles.imagePlaceholder}>
-            <Text style={catStyles.imagePlaceholderText}>{artwork.title}</Text>
+          <View style={s.placeholder}>
+            <Text style={s.placeholderText}>{artwork.title}</Text>
           </View>
         )}
       </View>
 
       {/* Details */}
-      <View style={catStyles.fullPageDetails}>
-        <Text style={catStyles.fullPageTitle}>{artwork.title}</Text>
-        <Text style={catStyles.fullPageRefCode}>{artwork.reference_code}</Text>
+      <View style={s.fullDivider}>
+        <Text style={s.fullTitle}>{artwork.title}</Text>
+        <Text style={s.fullRefCode}>{artwork.reference_code}</Text>
         {rows.map((row) => (
-          <View style={catStyles.fullPageInfoRow} key={row.label}>
-            <Text style={catStyles.fullPageLabel}>{row.label}</Text>
-            <Text style={catStyles.fullPageValue}>{row.value}</Text>
+          <View style={s.fullInfoRow} key={row.label}>
+            <Text style={s.fullLabel}>{row.label}</Text>
+            <Text style={s.fullValue}>{row.value}</Text>
           </View>
         ))}
       </View>
@@ -604,7 +593,10 @@ function FullPageArtwork({
   );
 }
 
-/** Grid-2 layout: two artworks per page. */
+// ---------------------------------------------------------------------------
+// Grid-2 layout: two artworks per page (stacked vertically)
+// ---------------------------------------------------------------------------
+
 function Grid2Page({
   artworks,
   t,
@@ -615,48 +607,49 @@ function Grid2Page({
   showPrices: boolean;
 }) {
   return (
-    <Page size="A4" style={catStyles.artworkPage}>
-      <View style={catStyles.grid2Container}>
-        {artworks.map((artwork, index) => {
-          const rows = buildDetailRows(artwork, t, showPrices);
-          return (
-            <View key={artwork.reference_code}>
-              {index > 0 && <View style={catStyles.grid2Separator} />}
-              <View style={catStyles.grid2Item}>
-                {/* Image */}
-                <View style={catStyles.grid2ImageContainer}>
-                  {artwork.imageUrl ? (
-                    <Image src={artwork.imageUrl} style={catStyles.grid2Image} />
-                  ) : (
-                    <View style={catStyles.imagePlaceholder}>
-                      <Text style={catStyles.imagePlaceholderText}>{artwork.title}</Text>
-                    </View>
-                  )}
-                </View>
+    <Page size="A4" style={s.artworkPage}>
+      {artworks.map((artwork, index) => {
+        const rows = buildDetailRows(artwork, t, showPrices);
+        return (
+          <View key={artwork.reference_code} style={s.g2Block}>
+            {/* Separator between artworks */}
+            {index > 0 && <View style={s.g2Separator} />}
 
-                {/* Details */}
-                <View style={catStyles.grid2Details}>
-                  <Text style={catStyles.grid2Title}>{artwork.title}</Text>
-                  <Text style={catStyles.grid2RefCode}>{artwork.reference_code}</Text>
-                  {rows.map((row) => (
-                    <View style={catStyles.grid2InfoRow} key={row.label}>
-                      <Text style={catStyles.grid2Label}>{row.label}</Text>
-                      <Text style={catStyles.grid2Value}>{row.value}</Text>
-                    </View>
-                  ))}
+            {/* Image */}
+            <View style={s.g2ImageWrap}>
+              {artwork.imageUrl ? (
+                <Image src={artwork.imageUrl} style={s.g2Image} />
+              ) : (
+                <View style={s.placeholder}>
+                  <Text style={s.placeholderText}>{artwork.title}</Text>
                 </View>
-              </View>
+              )}
             </View>
-          );
-        })}
-      </View>
+
+            {/* Details */}
+            <View style={s.g2Divider}>
+              <Text style={s.g2Title}>{artwork.title}</Text>
+              <Text style={s.g2RefCode}>{artwork.reference_code}</Text>
+              {rows.map((row) => (
+                <View style={s.g2InfoRow} key={row.label}>
+                  <Text style={s.g2Label}>{row.label}</Text>
+                  <Text style={s.g2Value}>{row.value}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        );
+      })}
 
       <CatalogueFooter />
     </Page>
   );
 }
 
-/** Grid-4 layout: four artworks per page in a 2x2 grid. */
+// ---------------------------------------------------------------------------
+// Grid-4 layout: four artworks per page (2x2)
+// ---------------------------------------------------------------------------
+
 function Grid4Page({
   artworks,
   t,
@@ -666,7 +659,6 @@ function Grid4Page({
   t: CatalogueTranslations;
   showPrices: boolean;
 }) {
-  // Pad to exactly 4 slots (or fewer on the last page)
   const topRow = artworks.slice(0, 2);
   const bottomRow = artworks.slice(2, 4);
 
@@ -684,7 +676,6 @@ function Grid4Page({
       t,
     );
 
-    // Build a compact text block for grid-4
     const lines: string[] = [];
     if (artwork.medium) lines.push(artwork.medium);
     if (artwork.year != null) lines.push(String(artwork.year));
@@ -692,24 +683,27 @@ function Grid4Page({
     lines.push(editionText);
 
     return (
-      <View style={isRight ? catStyles.grid4ItemRight : catStyles.grid4Item} key={artwork.reference_code}>
+      <View
+        style={isRight ? s.g4ItemRight : s.g4ItemLeft}
+        key={artwork.reference_code}
+      >
         {/* Image */}
-        <View style={catStyles.grid4ImageContainer}>
+        <View style={s.g4ImageWrap}>
           {artwork.imageUrl ? (
-            <Image src={artwork.imageUrl} style={catStyles.grid4Image} />
+            <Image src={artwork.imageUrl} style={s.g4Image} />
           ) : (
-            <View style={catStyles.imagePlaceholder}>
-              <Text style={catStyles.imagePlaceholderText}>{artwork.title}</Text>
+            <View style={s.placeholderSmall}>
+              <Text style={s.placeholderText}>{artwork.title}</Text>
             </View>
           )}
         </View>
 
         {/* Details */}
-        <Text style={catStyles.grid4Title}>{artwork.title}</Text>
-        <Text style={catStyles.grid4RefCode}>{artwork.reference_code}</Text>
-        <Text style={catStyles.grid4DetailText}>{lines.join('  |  ')}</Text>
-        {showPrices && artwork.price != null && (
-          <Text style={catStyles.grid4PriceText}>
+        <Text style={s.g4Title}>{artwork.title}</Text>
+        <Text style={s.g4RefCode}>{artwork.reference_code}</Text>
+        <Text style={s.g4DetailText}>{lines.join('  |  ')}</Text>
+        {showPrices && artwork.price != null && artwork.price > 0 && (
+          <Text style={s.g4PriceText}>
             {formatPrice(artwork.price, artwork.currency)}
           </Text>
         )}
@@ -718,15 +712,15 @@ function Grid4Page({
   };
 
   return (
-    <Page size="A4" style={catStyles.artworkPage}>
+    <Page size="A4" style={s.artworkPage}>
       {/* Top row */}
-      <View style={catStyles.grid4Row}>
+      <View style={s.g4Row}>
         {topRow.map((aw, i) => renderItem(aw, i === 1))}
       </View>
 
       {/* Bottom row */}
       {bottomRow.length > 0 && (
-        <View style={catStyles.grid4Row}>
+        <View style={s.g4Row}>
           {bottomRow.map((aw, i) => renderItem(aw, i === 1))}
         </View>
       )}
@@ -750,20 +744,14 @@ export function CataloguePDF({
   coverImageUrl,
 }: CataloguePDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
-
-  // Use the catalogueType label as subtitle fallback
-  void catalogueType; // type is reflected in the title/subtitle by the caller
+  void catalogueType;
 
   return (
     <Document>
-      {/* ----- Cover page ------------------------------------------------ */}
-      <CoverPage
-        title={title}
-        subtitle={subtitle}
-        coverImageUrl={coverImageUrl}
-      />
+      {/* Cover page */}
+      <CoverPage title={title} subtitle={subtitle} coverImageUrl={coverImageUrl} />
 
-      {/* ----- Artwork pages --------------------------------------------- */}
+      {/* Artwork pages */}
       {layout === 'full-page' &&
         artworks.map((artwork) => (
           <FullPageArtwork
