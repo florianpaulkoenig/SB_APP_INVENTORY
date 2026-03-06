@@ -1,7 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import type { GalleryRow } from '../../types/database';
+import { StatusBadge } from '../ui/StatusBadge';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { formatCurrency, formatDimensions } from '../../lib/utils';
+import type { GalleryRow, ArtworkRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -34,8 +39,58 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
 // ---------------------------------------------------------------------------
 
 export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps) {
+  const navigate = useNavigate();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // ---- Consignment artworks -----------------------------------------------
+  const [consignmentArtworks, setConsignmentArtworks] = useState<ArtworkRow[]>([]);
+  const [consignmentLoading, setConsignmentLoading] = useState(true);
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+
+  const fetchConsignmentArtworks = useCallback(async () => {
+    setConsignmentLoading(true);
+
+    const { data } = await supabase
+      .from('artworks')
+      .select('*')
+      .eq('gallery_id', gallery.id)
+      .order('created_at', { ascending: false });
+
+    const artworks = (data as ArtworkRow[]) ?? [];
+    setConsignmentArtworks(artworks);
+
+    // Fetch primary images for these artworks
+    if (artworks.length > 0) {
+      const ids = artworks.map((a) => a.id);
+      const { data: imgData } = await supabase
+        .from('artwork_images')
+        .select('artwork_id, storage_path')
+        .in('artwork_id', ids)
+        .eq('is_primary', true);
+
+      if (imgData && imgData.length > 0) {
+        const urlMap: Record<string, string> = {};
+        for (const img of imgData) {
+          const { data: signed } = await supabase.storage
+            .from('artwork-images')
+            .createSignedUrl(img.storage_path, 3600);
+          if (signed?.signedUrl) {
+            urlMap[img.artwork_id] = signed.signedUrl;
+          }
+        }
+        setImageUrls(urlMap);
+      }
+    }
+
+    setConsignmentLoading(false);
+  }, [gallery.id]);
+
+  useEffect(() => {
+    fetchConsignmentArtworks();
+  }, [fetchConsignmentArtworks]);
+
+  // ---- Helpers ------------------------------------------------------------
 
   const location = [gallery.address, gallery.city, gallery.country]
     .filter(Boolean)
@@ -130,14 +185,94 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
         </section>
       )}
 
-      {/* Linked Artworks placeholder */}
+      {/* Artworks on Consignment */}
       <section className="rounded-lg border border-primary-100 bg-white p-6">
         <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
           Artworks on Consignment
+          {!consignmentLoading && consignmentArtworks.length > 0 && (
+            <span className="ml-2 text-sm font-normal text-primary-400">
+              ({consignmentArtworks.length})
+            </span>
+          )}
         </h2>
-        <p className="text-sm text-primary-400">
-          Artworks on consignment will appear here.
-        </p>
+
+        {consignmentLoading ? (
+          <div className="flex justify-center py-6">
+            <LoadingSpinner />
+          </div>
+        ) : consignmentArtworks.length === 0 ? (
+          <p className="text-sm text-primary-400">
+            No artworks assigned to this gallery yet.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {consignmentArtworks.map((artwork) => {
+              const dims = formatDimensions(
+                artwork.height,
+                artwork.width,
+                artwork.depth,
+                artwork.dimension_unit,
+              );
+
+              return (
+                <button
+                  key={artwork.id}
+                  type="button"
+                  onClick={() => navigate(`/artworks/${artwork.id}`)}
+                  className="flex gap-3 rounded-lg border border-primary-100 bg-primary-50/50 p-3 text-left transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
+                >
+                  {/* Thumbnail */}
+                  <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-primary-100">
+                    {imageUrls[artwork.id] ? (
+                      <img
+                        src={imageUrls[artwork.id]}
+                        alt={artwork.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <svg
+                          className="h-6 w-6 text-primary-300"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth="1"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-primary-900">
+                      {artwork.title}
+                    </p>
+                    <p className="mt-0.5 font-mono text-[10px] text-primary-400">
+                      {artwork.reference_code}
+                    </p>
+                    {dims && (
+                      <p className="mt-0.5 text-xs text-primary-500">{dims}</p>
+                    )}
+                    <div className="mt-1 flex items-center gap-2">
+                      <StatusBadge status={artwork.status} />
+                      {artwork.price != null && (
+                        <span className="text-xs font-medium text-primary-700">
+                          {formatCurrency(artwork.price, artwork.currency)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* Confirm delete dialog */}
