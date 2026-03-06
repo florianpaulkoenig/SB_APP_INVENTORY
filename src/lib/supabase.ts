@@ -10,4 +10,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Bypass navigator.locks which can cause getSession() to hang indefinitely
+    // in certain browser environments. Safe for single-tab usage.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => {
+      return await fn();
+    },
+  },
+});
