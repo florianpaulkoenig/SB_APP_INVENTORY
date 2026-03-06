@@ -68,7 +68,7 @@ CREATE TABLE artworks (
   gallery_id UUID REFERENCES galleries(id) ON DELETE SET NULL,
   category TEXT CHECK (category IN ('painting', 'sculpture', 'drawing', 'mixed_media', 'print', 'photography', 'installation', 'digital', 'other')),
   motif TEXT CHECK (motif IN ('portrait', 'landscape', 'abstract', 'figurative', 'still_life', 'architectural', 'conceptual', 'other')),
-  series TEXT CHECK (series IN ('animal', 'untitled_portrait', 'specific_portrait', 'god', 'personal_commission', 'landscape', 'abstract', 'figurative', 'other')),
+  series TEXT CHECK (series IN ('animal', 'untitled_portrait', 'specific_portrait', 'god', 'personal_commission', 'landscape', 'abstract', 'figurative', 'skull', 'sphere', 'half_sphere', 'other')),
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

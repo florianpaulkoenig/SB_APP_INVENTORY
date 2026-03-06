@@ -20,16 +20,16 @@ Font.register({
 });
 
 // ---------------------------------------------------------------------------
-// Color palette -- NOA Contemporary gallery aesthetic
+// Color palette -- Black & white gallery aesthetic with grey lines
 // ---------------------------------------------------------------------------
 export const PDF_COLORS = {
   primary900: '#1a1a1a',
   primary700: '#404040',
   primary400: '#999999',
-  accent: '#c9a96e',
+  accent: '#666666',        // neutral grey (was gold #c9a96e)
   white: '#ffffff',
-  backgroundLight: '#f5f5f5',
-  border: '#e0e0e0',
+  backgroundLight: '#f7f7f7',
+  border: '#cccccc',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -73,8 +73,8 @@ const styles = StyleSheet.create({
   },
   accentLine: {
     width: 60,
-    height: 2,
-    backgroundColor: PDF_COLORS.accent,
+    height: 1,
+    backgroundColor: PDF_COLORS.border,
     marginTop: 12,
     marginBottom: 20,
   },

@@ -11,13 +11,15 @@ export interface ArtworkCardProps {
   artwork: ArtworkRow;
   imageUrl?: string | null;
   onClick?: () => void;
+  onDownloadCertificate?: (artworkId: string) => void;
+  downloadingCertificate?: boolean;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function ArtworkCard({ artwork, imageUrl, onClick }: ArtworkCardProps) {
+export function ArtworkCard({ artwork, imageUrl, onClick, onDownloadCertificate, downloadingCertificate }: ArtworkCardProps) {
   const dimensions = formatDimensions(
     artwork.height,
     artwork.width,
@@ -30,7 +32,7 @@ export function ArtworkCard({ artwork, imageUrl, onClick }: ArtworkCardProps) {
     .join(', ');
 
   return (
-    <Card hoverable onClick={onClick} className="overflow-hidden">
+    <Card hoverable onClick={onClick} className="group relative overflow-hidden">
       {/* Image area */}
       <div className="aspect-square bg-primary-100">
         {imageUrl ? (
@@ -56,6 +58,41 @@ export function ArtworkCard({ artwork, imageUrl, onClick }: ArtworkCardProps) {
               />
             </svg>
           </div>
+        )}
+
+        {/* Certificate download icon — top-right corner */}
+        {onDownloadCertificate && (
+          <button
+            type="button"
+            title="Download Certificate"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownloadCertificate(artwork.id);
+            }}
+            disabled={downloadingCertificate}
+            className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 text-primary-600 opacity-0 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:text-primary-900 group-hover:opacity-100 disabled:opacity-50"
+          >
+            {downloadingCertificate ? (
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : (
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                />
+              </svg>
+            )}
+          </button>
         )}
       </div>
 

@@ -108,6 +108,8 @@ export function DashboardPage() {
   const [galleryOrderRevenues, setGalleryOrderRevenues] = useState<GalleryOrderRevenue[]>([]);
   const [galleryPerformance, setGalleryPerformance] = useState<GalleryPerformance[]>([]);
   const [revenueSplit, setRevenueSplit] = useState<RevenueSplit>({ gallery: 0, noa: 0, artist: 0, total: 0 });
+  const [potentialSplit, setPotentialSplit] = useState<RevenueSplit>({ gallery: 0, noa: 0, artist: 0, total: 0 });
+  const [ordersSplit, setOrdersSplit] = useState<RevenueSplit>({ gallery: 0, noa: 0, artist: 0, total: 0 });
   const [loading, setLoading] = useState(true);
 
   // Store raw data so we can re-compute when exchange rates arrive
@@ -374,6 +376,41 @@ export function DashboardPage() {
     }
     setRevenueSplit({ gallery: splitGallery, noa: splitNoa, artist: splitArtist, total: revenueTotal });
 
+    // ---- Potential Revenue Split: Gallery / NOA / Artist (CHF) ----
+    let potSplitGallery = 0;
+    let potSplitNoa = 0;
+    let potSplitArtist = 0;
+    for (const row of unsold) {
+      const chfPrice = toCHF(row.price ?? 0, row.currency ?? 'EUR');
+      if (row.gallery_id && galleryCommissionSplits[row.gallery_id]) {
+        const split = galleryCommissionSplits[row.gallery_id];
+        potSplitGallery += chfPrice * (split.gallery / 100);
+        potSplitNoa += chfPrice * (split.noa / 100);
+        potSplitArtist += chfPrice * (split.artist / 100);
+      } else {
+        potSplitArtist += chfPrice;
+      }
+    }
+    setPotentialSplit({ gallery: potSplitGallery, noa: potSplitNoa, artist: potSplitArtist, total: potentialTotal });
+
+    // ---- Confirmed Orders Revenue Split: Gallery / NOA / Artist (CHF) ----
+    let ordSplitGallery = 0;
+    let ordSplitNoa = 0;
+    let ordSplitArtist = 0;
+    for (const po of rawProdOrders) {
+      if (po.price == null || po.price <= 0) continue;
+      const chfPrice = toCHF(po.price, po.currency ?? 'EUR');
+      if (po.gallery_id && galleryCommissionSplits[po.gallery_id]) {
+        const split = galleryCommissionSplits[po.gallery_id];
+        ordSplitGallery += chfPrice * (split.gallery / 100);
+        ordSplitNoa += chfPrice * (split.noa / 100);
+        ordSplitArtist += chfPrice * (split.artist / 100);
+      } else {
+        ordSplitArtist += chfPrice;
+      }
+    }
+    setOrdersSplit({ gallery: ordSplitGallery, noa: ordSplitNoa, artist: ordSplitArtist, total: confirmedTotal });
+
     // ---- Gallery Performance Analysis ----
     // Collect per-gallery: sell-through rate, revenue, commission, avg days to sell
     const allGalleryIds = new Set<string>();
@@ -540,73 +577,139 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Revenue Split (Gallery / NOA / Artist) */}
-      {!loading && revenueSplit.total > 0 && (
+      {/* Revenue Splits (Gallery / NOA / Artist) — Sales, Potential, Orders */}
+      {!loading && (revenueSplit.total > 0 || potentialSplit.total > 0 || ordersSplit.total > 0) && (
         <div className="mt-10">
           <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
             Revenue Split
           </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border border-primary-100 bg-white p-6">
-              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-                Gallery Share
-              </p>
-              <p className="mt-2 font-display text-2xl font-bold text-sky-600">
-                {formatCurrency(revenueSplit.gallery, 'CHF')}
-              </p>
-              {revenueSplit.total > 0 && (
-                <p className="mt-1 text-xs text-primary-400">
-                  {((revenueSplit.gallery / revenueSplit.total) * 100).toFixed(1)}% of revenue
-                </p>
-              )}
-            </div>
-            <div className="rounded-lg border border-primary-100 bg-white p-6">
-              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-                NOA Share
-              </p>
-              <p className="mt-2 font-display text-2xl font-bold text-accent">
-                {formatCurrency(revenueSplit.noa, 'CHF')}
-              </p>
-              {revenueSplit.total > 0 && (
-                <p className="mt-1 text-xs text-primary-400">
-                  {((revenueSplit.noa / revenueSplit.total) * 100).toFixed(1)}% of revenue
-                </p>
-              )}
-            </div>
-            <div className="rounded-lg border border-primary-100 bg-white p-6">
-              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-                Artist Share (Simon Berger)
-              </p>
-              <p className="mt-2 font-display text-2xl font-bold text-emerald-600">
-                {formatCurrency(revenueSplit.artist, 'CHF')}
-              </p>
-              {revenueSplit.total > 0 && (
-                <p className="mt-1 text-xs text-primary-400">
-                  {((revenueSplit.artist / revenueSplit.total) * 100).toFixed(1)}% of revenue
-                </p>
-              )}
-            </div>
+
+          {/* Split table — compact overview of all three categories */}
+          <div className="overflow-x-auto rounded-lg border border-primary-100 bg-white">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-primary-100 bg-primary-50/50">
+                  <th className="px-4 py-3 font-medium text-primary-500">Revenue Type</th>
+                  <th className="px-4 py-3 text-right font-medium text-sky-600">Gallery</th>
+                  <th className="px-4 py-3 text-right font-medium text-amber-600">NOA</th>
+                  <th className="px-4 py-3 text-right font-medium text-emerald-600">Artist</th>
+                  <th className="px-4 py-3 text-right font-medium text-primary-500">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-primary-50">
+                {/* Sales Revenue Split */}
+                {revenueSplit.total > 0 && (
+                  <tr>
+                    <td className="px-4 py-3 font-semibold text-primary-900">
+                      Sales Revenue
+                      <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
+                        <div className="bg-sky-500" style={{ width: `${(revenueSplit.gallery / revenueSplit.total) * 100}%` }} />
+                        <div className="bg-amber-500" style={{ width: `${(revenueSplit.noa / revenueSplit.total) * 100}%` }} />
+                        <div className="bg-emerald-500" style={{ width: `${(revenueSplit.artist / revenueSplit.total) * 100}%` }} />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right text-sky-600">
+                      {formatCurrency(revenueSplit.gallery, 'CHF')}
+                      <span className="ml-1 text-xs text-primary-400">
+                        ({((revenueSplit.gallery / revenueSplit.total) * 100).toFixed(0)}%)
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-amber-600">
+                      {formatCurrency(revenueSplit.noa, 'CHF')}
+                      <span className="ml-1 text-xs text-primary-400">
+                        ({((revenueSplit.noa / revenueSplit.total) * 100).toFixed(0)}%)
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-emerald-600">
+                      {formatCurrency(revenueSplit.artist, 'CHF')}
+                      <span className="ml-1 text-xs text-primary-400">
+                        ({((revenueSplit.artist / revenueSplit.total) * 100).toFixed(0)}%)
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-primary-900">
+                      {formatCurrency(revenueSplit.total, 'CHF')}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Potential Revenue Split */}
+                {potentialSplit.total > 0 && (
+                  <tr>
+                    <td className="px-4 py-3 font-semibold text-primary-900">
+                      Potential Revenue
+                      <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
+                        <div className="bg-sky-500" style={{ width: `${(potentialSplit.gallery / potentialSplit.total) * 100}%` }} />
+                        <div className="bg-amber-500" style={{ width: `${(potentialSplit.noa / potentialSplit.total) * 100}%` }} />
+                        <div className="bg-emerald-500" style={{ width: `${(potentialSplit.artist / potentialSplit.total) * 100}%` }} />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right text-sky-600">
+                      {formatCurrency(potentialSplit.gallery, 'CHF')}
+                      <span className="ml-1 text-xs text-primary-400">
+                        ({((potentialSplit.gallery / potentialSplit.total) * 100).toFixed(0)}%)
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-amber-600">
+                      {formatCurrency(potentialSplit.noa, 'CHF')}
+                      <span className="ml-1 text-xs text-primary-400">
+                        ({((potentialSplit.noa / potentialSplit.total) * 100).toFixed(0)}%)
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-emerald-600">
+                      {formatCurrency(potentialSplit.artist, 'CHF')}
+                      <span className="ml-1 text-xs text-primary-400">
+                        ({((potentialSplit.artist / potentialSplit.total) * 100).toFixed(0)}%)
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-primary-900">
+                      {formatCurrency(potentialSplit.total, 'CHF')}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Confirmed Orders Revenue Split */}
+                {ordersSplit.total > 0 && (
+                  <tr>
+                    <td className="px-4 py-3 font-semibold text-primary-900">
+                      Confirmed Orders
+                      <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
+                        <div className="bg-sky-500" style={{ width: `${(ordersSplit.gallery / ordersSplit.total) * 100}%` }} />
+                        <div className="bg-amber-500" style={{ width: `${(ordersSplit.noa / ordersSplit.total) * 100}%` }} />
+                        <div className="bg-emerald-500" style={{ width: `${(ordersSplit.artist / ordersSplit.total) * 100}%` }} />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right text-sky-600">
+                      {formatCurrency(ordersSplit.gallery, 'CHF')}
+                      <span className="ml-1 text-xs text-primary-400">
+                        ({((ordersSplit.gallery / ordersSplit.total) * 100).toFixed(0)}%)
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-amber-600">
+                      {formatCurrency(ordersSplit.noa, 'CHF')}
+                      <span className="ml-1 text-xs text-primary-400">
+                        ({((ordersSplit.noa / ordersSplit.total) * 100).toFixed(0)}%)
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-emerald-600">
+                      {formatCurrency(ordersSplit.artist, 'CHF')}
+                      <span className="ml-1 text-xs text-primary-400">
+                        ({((ordersSplit.artist / ordersSplit.total) * 100).toFixed(0)}%)
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-primary-900">
+                      {formatCurrency(ordersSplit.total, 'CHF')}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-          {/* Visual bar */}
-          {revenueSplit.total > 0 && (
-            <div className="mt-3 flex h-3 overflow-hidden rounded-full">
-              <div
-                className="bg-sky-500 transition-all"
-                style={{ width: `${(revenueSplit.gallery / revenueSplit.total) * 100}%` }}
-              />
-              <div
-                className="bg-amber-500 transition-all"
-                style={{ width: `${(revenueSplit.noa / revenueSplit.total) * 100}%` }}
-              />
-              <div
-                className="bg-emerald-500 transition-all"
-                style={{ width: `${(revenueSplit.artist / revenueSplit.total) * 100}%` }}
-              />
-            </div>
-          )}
-          <p className="mt-2 text-xs text-primary-400">
-            Based on commission split percentages defined per gallery profile. Revenue without a gallery split is attributed to the artist.
-          </p>
+          <div className="mt-2 flex items-center gap-4 text-xs text-primary-400">
+            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-sky-500" /> Gallery</span>
+            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-amber-500" /> NOA</span>
+            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Artist</span>
+            <span className="ml-auto">Based on commission splits per gallery profile</span>
+          </div>
         </div>
       )}
 

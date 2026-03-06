@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, createElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useArtworks } from '../hooks/useArtworks';
@@ -13,12 +13,18 @@ import { SearchInput } from '../components/ui/SearchInput';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Pagination } from '../components/ui/Pagination';
+import { useToast } from '../components/ui/Toast';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const PAGE_SIZE = 24;
+
+// Module-level signed URL cache – persists across re-renders / page changes.
+// Key = artwork_id, value = { url, expiresAt } (1 hour TTL).
+const urlCache = new Map<string, { url: string; expiresAt: number }>();
+const URL_TTL = 55 * 60 * 1000; // 55 minutes (URLs expire at 60)
 
 const SORT_OPTIONS = [
   { value: 'created_at:desc', label: 'Newest First' },
@@ -66,6 +72,7 @@ export function ArtworksPage() {
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   // ---- Fetch primary image URLs for displayed artworks --------------------
+  // Uses a module-level cache to avoid re-signing URLs on sort/filter changes.
 
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
 
@@ -76,20 +83,40 @@ export function ArtworksPage() {
     }
 
     const artworkIds = artworks.map((a) => a.id);
+    const now = Date.now();
 
-    // Fetch primary images for all artworks in one query
+    // Serve already-cached URLs immediately
+    const cached: Record<string, string> = {};
+    const uncachedIds: string[] = [];
+    for (const id of artworkIds) {
+      const entry = urlCache.get(id);
+      if (entry && entry.expiresAt > now) {
+        cached[id] = entry.url;
+      } else {
+        uncachedIds.push(id);
+      }
+    }
+
+    // Show cached URLs immediately (non-blocking)
+    if (Object.keys(cached).length > 0) {
+      setImageUrls(cached);
+    }
+
+    // Fetch only uncached image paths
+    if (uncachedIds.length === 0) return;
+
     const { data: imageData } = await supabase
       .from('artwork_images')
       .select('artwork_id, storage_path')
-      .in('artwork_id', artworkIds)
+      .in('artwork_id', uncachedIds)
       .eq('is_primary', true);
 
     if (!imageData || imageData.length === 0) {
-      setImageUrls({});
+      setImageUrls(cached);
       return;
     }
 
-    // Generate signed URLs in parallel (with thumbnail transform for speed)
+    // Generate signed URLs in parallel (thumbnail size for speed)
     const results = await Promise.all(
       imageData.map(async (img) => {
         const { data: signedData } = await supabase.storage
@@ -101,9 +128,14 @@ export function ArtworksPage() {
       }),
     );
 
-    const urlMap: Record<string, string> = {};
+    // Merge new URLs into cache and state
+    const urlMap = { ...cached };
+    const expiresAt = now + URL_TTL;
     for (const { artworkId, url } of results) {
-      if (url) urlMap[artworkId] = url;
+      if (url) {
+        urlMap[artworkId] = url;
+        urlCache.set(artworkId, { url, expiresAt });
+      }
     }
 
     setImageUrls(urlMap);
@@ -112,6 +144,114 @@ export function ArtworksPage() {
   useEffect(() => {
     fetchPrimaryImages();
   }, [fetchPrimaryImages]);
+
+  // ---- Certificate download -----------------------------------------------
+
+  const { toast } = useToast();
+  const [downloadingCertId, setDownloadingCertId] = useState<string | null>(null);
+
+  const handleDownloadCertificate = useCallback(async (artworkId: string) => {
+    setDownloadingCertId(artworkId);
+
+    try {
+      // Find the artwork data
+      const artwork = artworks.find((a) => a.id === artworkId);
+      if (!artwork) return;
+
+      // Fetch certificate for this artwork
+      const { data: cert } = await supabase
+        .from('certificates')
+        .select('certificate_number, issue_date, qr_code_url')
+        .eq('artwork_id', artworkId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!cert) {
+        toast({ title: 'No certificate', description: 'No certificate found for this artwork.', variant: 'error' });
+        return;
+      }
+
+      // Get signed URL for primary artwork image
+      let artworkImageUrl: string | null = null;
+      const { data: primaryImage } = await supabase
+        .from('artwork_images')
+        .select('storage_path')
+        .eq('artwork_id', artworkId)
+        .eq('is_primary', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (primaryImage?.storage_path) {
+        const { data: urlData } = await supabase.storage
+          .from('artwork-images')
+          .createSignedUrl(primaryImage.storage_path, 3600);
+        if (urlData) artworkImageUrl = urlData.signedUrl;
+      }
+
+      // Get signature URL
+      let signatureUrl: string | null = null;
+      try {
+        const { data: sigData } = await supabase.storage
+          .from('assets')
+          .createSignedUrl('signature.png', 3600);
+        if (sigData) signatureUrl = sigData.signedUrl;
+      } catch {
+        // Signature is optional
+      }
+
+      // Lazy import PDF renderer and certificate component (keeps bundle small)
+      const [{ pdf: pdfRenderer }, { CertificatePDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('../components/pdf/CertificatePDF'),
+      ]);
+
+      // Generate PDF blob
+      const blob = await pdfRenderer(
+        createElement(CertificatePDF, {
+          artwork: {
+            title: artwork.title,
+            reference_code: artwork.reference_code,
+            medium: artwork.medium,
+            year: artwork.year,
+            height: artwork.height,
+            width: artwork.width,
+            depth: artwork.depth,
+            dimension_unit: artwork.dimension_unit,
+            framed_height: (artwork as Record<string, unknown>).framed_height as number | null ?? null,
+            framed_width: (artwork as Record<string, unknown>).framed_width as number | null ?? null,
+            framed_depth: (artwork as Record<string, unknown>).framed_depth as number | null ?? null,
+            edition_type: artwork.edition_type ?? 'unique',
+            edition_number: artwork.edition_number ?? null,
+            edition_total: artwork.edition_total ?? null,
+          },
+          certificate: {
+            certificate_number: cert.certificate_number,
+            issue_date: cert.issue_date,
+            qr_code_url: cert.qr_code_url,
+          },
+          artworkImageUrl,
+          signatureUrl,
+          language: 'en',
+        }),
+      ).toBlob();
+
+      // Download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${cert.certificate_number}_certificate.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Certificate download failed:', err);
+      toast({ title: 'Error', description: 'Failed to download certificate.', variant: 'error' });
+    } finally {
+      setDownloadingCertId(null);
+    }
+  }, [artworks, toast]);
 
   // Reset to page 1 when search or filters change
   function handleSearchChange(value: string) {
@@ -321,6 +461,8 @@ export function ArtworksPage() {
                 artwork={artwork}
                 imageUrl={imageUrls[artwork.id]}
                 onClick={() => navigate(`/artworks/${artwork.id}`)}
+                onDownloadCertificate={handleDownloadCertificate}
+                downloadingCertificate={downloadingCertId === artwork.id}
               />
             ))}
           </div>

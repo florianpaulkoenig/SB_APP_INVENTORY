@@ -8,7 +8,7 @@ import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Modal } from '../components/ui/Modal';
 import { supabase } from '../lib/supabase';
-import type { DeliveryUpdate, DeliveryItemInsert, DeliveryStatus } from '../types/database';
+import type { DeliveryUpdate, DeliveryStatus } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Page
@@ -30,11 +30,19 @@ export function DeliveryDetailPage() {
 
   // ---- Handlers -----------------------------------------------------------
 
-  async function handleAddItem(data: DeliveryItemInsert) {
-    const created = await addItem(data);
-    if (created) {
+  async function handleAddItems(artworkIds: string[]) {
+    let anyCreated = false;
+    for (const artworkId of artworkIds) {
+      const created = await addItem({
+        delivery_id: id!,
+        artwork_id: artworkId,
+      } as never);
+      if (created) anyCreated = true;
+    }
+    if (anyCreated) {
       setShowAddItem(false);
       await refetchDelivery();
+      await refetchItems();
     }
   }
 
@@ -181,7 +189,7 @@ export function DeliveryDetailPage() {
         <DeliveryItemPicker
           deliveryId={id!}
           existingItemIds={items.map((item) => item.artwork_id)}
-          onSubmit={handleAddItem}
+          onSubmit={handleAddItems}
           onCancel={() => setShowAddItem(false)}
         />
       </Modal>
