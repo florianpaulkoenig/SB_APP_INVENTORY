@@ -50,43 +50,86 @@ export function ProductionOrdersPage() {
     },
   });
 
-  // ---- Gallery name resolution for summary --------------------------------
+  // ---- Fetch item-level values & gallery names for all visible orders ------
 
   const [galleryNameMap, setGalleryNameMap] = useState<Record<string, string>>({});
+  const [orderValueMap, setOrderValueMap] = useState<Record<string, number>>({});
 
-  const fetchGalleryNames = useCallback(async () => {
+  const fetchOrderMeta = useCallback(async () => {
+    if (productionOrders.length === 0) {
+      setGalleryNameMap({});
+      setOrderValueMap({});
+      return;
+    }
+
+    // Fetch gallery names
     const galleryIds = [
       ...new Set(productionOrders.map((o) => o.gallery_id).filter(Boolean)),
     ] as string[];
-    if (galleryIds.length === 0) {
-      setGalleryNameMap({});
-      return;
+
+    const gMap: Record<string, string> = {};
+    if (galleryIds.length > 0) {
+      const { data: galleries } = await supabase
+        .from('galleries')
+        .select('id, name')
+        .in('id', galleryIds);
+      for (const g of galleries ?? []) gMap[g.id] = g.name;
     }
-    const { data: galleries } = await supabase
-      .from('galleries')
-      .select('id, name')
-      .in('id', galleryIds);
-    const map: Record<string, string> = {};
-    for (const g of galleries ?? []) map[g.id] = g.name;
-    setGalleryNameMap(map);
+    setGalleryNameMap(gMap);
+
+    // Fetch ALL items for displayed orders to compute values from items
+    const orderIds = productionOrders.map((o) => o.id);
+    const { data: allItems } = await supabase
+      .from('production_order_items')
+      .select('production_order_id, price, currency, quantity')
+      .in('production_order_id', orderIds);
+
+    const valMap: Record<string, number> = {};
+    const currMap: Record<string, string> = {};
+    for (const item of allItems ?? []) {
+      if (item.price != null && item.price > 0) {
+        const qty = item.quantity ?? 1;
+        valMap[item.production_order_id] = (valMap[item.production_order_id] || 0) + item.price * qty;
+        if (item.currency) currMap[item.production_order_id] = item.currency;
+      }
+    }
+    setOrderValueMap(valMap);
+
+    // Backfill: update any order whose DB price doesn't match item total
+    for (const order of productionOrders) {
+      const itemTotal = valMap[order.id] ?? 0;
+      const dbPrice = order.price ?? 0;
+      if (Math.abs(itemTotal - dbPrice) > 0.001 && itemTotal > 0) {
+        await supabase
+          .from('production_orders')
+          .update({ price: itemTotal, currency: currMap[order.id] ?? order.currency ?? 'EUR' } as never)
+          .eq('id', order.id);
+      }
+    }
   }, [productionOrders]);
 
   useEffect(() => {
-    fetchGalleryNames();
-  }, [fetchGalleryNames]);
+    fetchOrderMeta();
+  }, [fetchOrderMeta]);
 
-  // ---- Revenue summary computations ---------------------------------------
+  // ---- Revenue summary computations (use item-calculated values) ----------
+
+  function getOrderValue(order: ProductionOrderRow): number {
+    // Prefer item-calculated value, fall back to order.price
+    return orderValueMap[order.id] ?? (order.price != null && order.price > 0 ? order.price : 0);
+  }
 
   const totalOrderValue = productionOrders.reduce(
-    (sum, o) => sum + (o.price != null && o.price > 0 ? o.price : 0),
+    (sum, o) => sum + getOrderValue(o),
     0,
   );
 
   const perGalleryValue: Array<{ id: string; name: string; value: number }> = (() => {
     const map: Record<string, number> = {};
     for (const o of productionOrders) {
-      if (o.gallery_id && o.price != null && o.price > 0) {
-        map[o.gallery_id] = (map[o.gallery_id] || 0) + o.price;
+      const val = getOrderValue(o);
+      if (o.gallery_id && val > 0) {
+        map[o.gallery_id] = (map[o.gallery_id] || 0) + val;
       }
     }
     return Object.entries(map)
@@ -481,8 +524,8 @@ export function ProductionOrdersPage() {
                     {order.deadline ? formatDate(order.deadline) : '-'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-primary-800">
-                    {order.price != null && order.price > 0
-                      ? formatCurrency(order.price, order.currency ?? 'EUR')
+                    {getOrderValue(order) > 0
+                      ? formatCurrency(getOrderValue(order), order.currency ?? 'EUR')
                       : '-'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">
