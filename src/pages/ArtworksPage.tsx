@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { useArtworks } from '../hooks/useArtworks';
 import type { ArtworkFilters as ArtworkFiltersType } from '../hooks/useArtworks';
 import { ArtworkCard } from '../components/artworks/ArtworkCard';
@@ -52,6 +53,49 @@ export function ArtworksPage() {
   });
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // ---- Fetch primary image URLs for displayed artworks --------------------
+
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+
+  const fetchPrimaryImages = useCallback(async () => {
+    if (artworks.length === 0) {
+      setImageUrls({});
+      return;
+    }
+
+    const artworkIds = artworks.map((a) => a.id);
+
+    // Fetch primary images for all artworks in one query
+    const { data: imageData } = await supabase
+      .from('artwork_images')
+      .select('artwork_id, storage_path')
+      .in('artwork_id', artworkIds)
+      .eq('is_primary', true);
+
+    if (!imageData || imageData.length === 0) {
+      setImageUrls({});
+      return;
+    }
+
+    // Generate signed URLs
+    const urlMap: Record<string, string> = {};
+    for (const img of imageData) {
+      const { data: signedData } = await supabase.storage
+        .from('artwork-images')
+        .createSignedUrl(img.storage_path, 3600);
+
+      if (signedData?.signedUrl) {
+        urlMap[img.artwork_id] = signedData.signedUrl;
+      }
+    }
+
+    setImageUrls(urlMap);
+  }, [artworks]);
+
+  useEffect(() => {
+    fetchPrimaryImages();
+  }, [fetchPrimaryImages]);
 
   // Reset to page 1 when search or filters change
   function handleSearchChange(value: string) {
@@ -240,6 +284,7 @@ export function ArtworksPage() {
               <ArtworkCard
                 key={artwork.id}
                 artwork={artwork}
+                imageUrl={imageUrls[artwork.id]}
                 onClick={() => navigate(`/artworks/${artwork.id}`)}
               />
             ))}
