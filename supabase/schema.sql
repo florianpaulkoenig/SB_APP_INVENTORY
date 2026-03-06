@@ -797,3 +797,120 @@ CREATE POLICY "Public can view published viewing rooms" ON viewing_rooms FOR SEL
 
 -- Storage RLS for artwork-images
 -- Files stored as: {user_id}/{artwork_id}/{filename}
+
+-- ============================================================================
+-- SALE REQUESTS (gallery marks artwork as sold, admin approves)
+-- ============================================================================
+CREATE TABLE sale_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  artwork_id UUID NOT NULL REFERENCES artworks(id) ON DELETE CASCADE,
+  gallery_id UUID NOT NULL REFERENCES galleries(id) ON DELETE CASCADE,
+  requested_by UUID NOT NULL REFERENCES auth.users(id),
+  realized_price NUMERIC(12,2) NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'EUR',
+  buyer_name TEXT,
+  notes TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  admin_notes TEXT,
+  reviewed_by UUID REFERENCES auth.users(id),
+  reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE sale_requests ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admin full access to sale_requests" ON sale_requests FOR ALL TO authenticated USING (get_user_role() = 'admin') WITH CHECK (get_user_role() = 'admin');
+CREATE POLICY "Gallery can insert own sale_requests" ON sale_requests FOR INSERT TO authenticated WITH CHECK (get_user_role() = 'gallery' AND gallery_id = get_user_gallery_id());
+CREATE POLICY "Gallery can view own sale_requests" ON sale_requests FOR SELECT TO authenticated USING (get_user_role() = 'gallery' AND gallery_id = get_user_gallery_id());
+
+-- ============================================================================
+-- MEDIA FILES (shared file library)
+-- ============================================================================
+CREATE TABLE media_files (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  category TEXT NOT NULL CHECK (category IN (
+    'press', 'videos', 'photos', 'texts', 'interviews', 'social_media',
+    'portrait', 'cv', 'technical_docs', 'instruction_manuals', 'catalogues', 'publications'
+  )),
+  title TEXT NOT NULL,
+  description TEXT,
+  file_name TEXT NOT NULL,
+  storage_path TEXT NOT NULL,
+  file_size BIGINT,
+  mime_type TEXT,
+  uploaded_by UUID NOT NULL REFERENCES auth.users(id),
+  status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'pending_review', 'rejected')),
+  submitted_by_gallery UUID REFERENCES galleries(id),
+  review_notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE media_files ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admin full access to media_files" ON media_files FOR ALL TO authenticated USING (get_user_role() = 'admin') WITH CHECK (get_user_role() = 'admin');
+CREATE POLICY "Gallery can view published media_files" ON media_files FOR SELECT TO authenticated USING (get_user_role() = 'gallery' AND (status = 'published' OR submitted_by_gallery = get_user_gallery_id()));
+CREATE POLICY "Gallery can insert media_files" ON media_files FOR INSERT TO authenticated WITH CHECK (get_user_role() = 'gallery' AND submitted_by_gallery = get_user_gallery_id());
+
+-- ============================================================================
+-- CV ENTRIES (structured curriculum vitae)
+-- ============================================================================
+CREATE TABLE cv_entries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  year INTEGER,
+  category TEXT NOT NULL CHECK (category IN (
+    'education', 'solo_exhibition', 'group_exhibition', 'award',
+    'publication', 'residency', 'collection', 'other'
+  )),
+  title TEXT NOT NULL,
+  location TEXT,
+  description TEXT,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE cv_entries ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admin full access to cv_entries" ON cv_entries FOR ALL TO authenticated USING (get_user_role() = 'admin') WITH CHECK (get_user_role() = 'admin');
+CREATE POLICY "Anyone can view cv_entries" ON cv_entries FOR SELECT TO authenticated USING (true);
+
+-- ============================================================================
+-- NEWS POSTS (internal newsletter)
+-- ============================================================================
+CREATE TABLE news_posts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  image_url TEXT,
+  external_link TEXT,
+  published BOOLEAN NOT NULL DEFAULT false,
+  published_at TIMESTAMPTZ,
+  created_by UUID NOT NULL REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE news_posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admin full access to news_posts" ON news_posts FOR ALL TO authenticated USING (get_user_role() = 'admin') WITH CHECK (get_user_role() = 'admin');
+CREATE POLICY "Gallery can view published news" ON news_posts FOR SELECT TO authenticated USING (get_user_role() = 'gallery' AND published = true);
+
+-- News read status tracking
+CREATE TABLE news_read_status (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  news_id UUID NOT NULL REFERENCES news_posts(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(news_id, user_id)
+);
+
+ALTER TABLE news_read_status ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own read status" ON news_read_status FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- ============================================================================
+-- Additional storage buckets:
+-- 3. media-files (private) -- for Media Library uploads
+-- ============================================================================
+
+-- Update artworks status CHECK to include new statuses:
+-- ALTER TABLE artworks DROP CONSTRAINT artworks_status_check;
+-- ALTER TABLE artworks ADD CONSTRAINT artworks_status_check
+--   CHECK (status IN ('available','sold','reserved','in_production','in_transit','on_consignment','paid','pending_sale'));

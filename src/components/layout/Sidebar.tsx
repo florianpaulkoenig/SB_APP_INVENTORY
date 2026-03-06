@@ -183,6 +183,26 @@ const navSections: NavSection[] = [
       { label: 'Analytics', to: '/analytics', icon: icons.analytics, roles: ['admin'] },
     ],
   },
+  {
+    title: 'GALLERY PORTAL',
+    items: [
+      { label: 'Gallery Dashboard', to: '/gallery/dashboard', icon: icons.dashboard, roles: ['gallery'] },
+      { label: 'My Artworks', to: '/gallery/artworks', icon: icons.artworks, roles: ['gallery'] },
+      { label: 'My Deliveries', to: '/gallery/deliveries', icon: icons.delivery, roles: ['gallery'] },
+      { label: 'Certificates', to: '/gallery/certificates', icon: icons.certificate, roles: ['gallery'] },
+      { label: 'Media Library', to: '/gallery/media', icon: icons.imageSharing, roles: ['gallery'] },
+      { label: 'News', to: '/gallery/news', icon: icons.emailLog, roles: ['gallery'] },
+    ],
+  },
+  {
+    title: 'ADMIN',
+    items: [
+      { label: 'Sale Requests', to: '/admin/sale-requests', icon: icons.sales, roles: ['admin'] },
+      { label: 'Media Library', to: '/media', icon: icons.imageSharing, roles: ['admin'] },
+      { label: 'CV Editor', to: '/cv', icon: icons.catalogue, roles: ['admin'] },
+      { label: 'News', to: '/news', icon: icons.emailLog, roles: ['admin'] },
+    ],
+  },
 ];
 
 const bottomItems: NavItem[] = [

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useUnreadNews } from '../../hooks/useUnreadNews';
 import { getInitials } from '../../lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -16,7 +17,8 @@ interface TopbarProps {
 // ---------------------------------------------------------------------------
 export function Topbar({ onMenuToggle, title }: TopbarProps) {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, role } = useAuth();
+  const { unreadCount } = useUnreadNews();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -75,12 +77,18 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
         {/* Notification bell */}
         <button
           type="button"
-          className="rounded-md p-2 text-primary-400 transition-colors hover:bg-primary-50 hover:text-primary-700"
+          onClick={() => navigate(role === 'gallery' ? '/gallery/news' : '/news')}
+          className="relative rounded-md p-2 text-primary-400 transition-colors hover:bg-primary-50 hover:text-primary-700"
           aria-label="Notifications"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10 2a5 5 0 00-5 5v3l-1.5 2.5h13L15 10V7a5 5 0 00-5-5zM8 15.5a2 2 0 004 0" />
           </svg>
+          {unreadCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </button>
 
         {/* User avatar dropdown */}

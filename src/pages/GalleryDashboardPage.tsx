@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
 // NOA Inventory -- Gallery Dashboard Page
-// Dashboard view for gallery-role users showing consigned artworks overview.
+// Dashboard view for gallery-role users showing consigned artworks overview,
+// revenue stats, and recent activity.
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect } from 'react';
@@ -12,6 +13,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { formatCurrency } from '../lib/utils';
 import type { ArtworkRow, GalleryRow, DeliveryRow } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -25,6 +27,8 @@ const STATUS_BADGE_VARIANT: Record<string, 'default' | 'success' | 'warning' | '
   in_production: 'info',
   in_transit: 'info',
   on_consignment: 'info',
+  paid: 'success',
+  pending_sale: 'warning',
 };
 
 // ---------------------------------------------------------------------------
@@ -38,6 +42,10 @@ export function GalleryDashboardPage() {
   const [artworks, setArtworks] = useState<ArtworkRow[]>([]);
   const [deliveries, setDeliveries] = useState<DeliveryRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Revenue data
+  const [salesRevenue, setSalesRevenue] = useState(0);
+  const [pendingSaleRequests, setPendingSaleRequests] = useState(0);
 
   const galleryId = profile?.gallery_id;
 
@@ -80,6 +88,26 @@ export function GalleryDashboardPage() {
 
       if (deliveryData) setDeliveries(deliveryData as DeliveryRow[]);
 
+      // Fetch sales revenue for this gallery
+      const { data: salesData } = await supabase
+        .from('sales')
+        .select('sale_price, currency')
+        .eq('gallery_id', galleryId!);
+
+      if (salesData) {
+        const total = salesData.reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0);
+        setSalesRevenue(total);
+      }
+
+      // Fetch pending sale requests count
+      const { count } = await supabase
+        .from('sale_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('gallery_id', galleryId!)
+        .eq('status', 'pending');
+
+      setPendingSaleRequests(count ?? 0);
+
       setLoading(false);
     }
 
@@ -89,8 +117,13 @@ export function GalleryDashboardPage() {
   // ---- Derived stats ------------------------------------------------------
 
   const totalConsigned = artworks.length;
-  const totalSold = artworks.filter((a) => a.status === 'sold').length;
+  const totalSold = artworks.filter((a) => a.status === 'sold' || a.status === 'paid').length;
   const activeDeliveries = deliveries.length;
+
+  // Potential revenue: price of unsold artworks
+  const potentialRevenue = artworks
+    .filter((a) => a.status !== 'sold' && a.status !== 'paid')
+    .reduce((sum, a) => sum + (Number(a.price) || 0), 0);
 
   const recentArtworks = artworks.slice(0, 6);
 
@@ -152,33 +185,79 @@ export function GalleryDashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-primary-100 bg-white p-6">
+      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="rounded-lg border border-primary-100 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-            Total Consigned
+            Consigned
           </p>
-          <p className="mt-2 font-display text-3xl font-bold text-primary-900">
+          <p className="mt-1 font-display text-2xl font-bold text-primary-900">
             {totalConsigned}
           </p>
         </div>
 
-        <div className="rounded-lg border border-primary-100 bg-white p-6">
+        <div className="rounded-lg border border-primary-100 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-            Artworks Sold
+            Sold
           </p>
-          <p className="mt-2 font-display text-3xl font-bold text-primary-900">
+          <p className="mt-1 font-display text-2xl font-bold text-primary-900">
             {totalSold}
           </p>
         </div>
 
-        <div className="rounded-lg border border-primary-100 bg-white p-6">
+        <div className="rounded-lg border border-primary-100 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-            Active Deliveries
+            Deliveries
           </p>
-          <p className="mt-2 font-display text-3xl font-bold text-primary-900">
+          <p className="mt-1 font-display text-2xl font-bold text-primary-900">
             {activeDeliveries}
           </p>
         </div>
+
+        <div className="rounded-lg border border-primary-100 bg-white p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-emerald-600">
+            Sales Revenue
+          </p>
+          <p className="mt-1 font-display text-2xl font-bold text-emerald-700">
+            {formatCurrency(salesRevenue, 'EUR')}
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-primary-100 bg-white p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
+            Potential Revenue
+          </p>
+          <p className="mt-1 font-display text-2xl font-bold text-blue-700">
+            {formatCurrency(potentialRevenue, 'EUR')}
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-primary-100 bg-white p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-amber-600">
+            Pending Sales
+          </p>
+          <p className="mt-1 font-display text-2xl font-bold text-amber-700">
+            {pendingSaleRequests}
+          </p>
+        </div>
+      </div>
+
+      {/* Quick links */}
+      <div className="mb-8 flex flex-wrap gap-3">
+        <Link to="/gallery/artworks">
+          <Button variant="outline" size="sm">My Artworks</Button>
+        </Link>
+        <Link to="/gallery/deliveries">
+          <Button variant="outline" size="sm">Deliveries</Button>
+        </Link>
+        <Link to="/gallery/certificates">
+          <Button variant="outline" size="sm">Certificates</Button>
+        </Link>
+        <Link to="/gallery/media">
+          <Button variant="outline" size="sm">Media Library</Button>
+        </Link>
+        <Link to="/gallery/news">
+          <Button variant="outline" size="sm">News</Button>
+        </Link>
       </div>
 
       {/* Recent artworks */}
@@ -224,10 +303,15 @@ export function GalleryDashboardPage() {
                 <h3 className="text-sm font-medium text-primary-900 truncate">
                   {artwork.title}
                 </h3>
-                <div className="mt-2">
+                <div className="mt-1 flex items-center justify-between">
                   <Badge variant={STATUS_BADGE_VARIANT[artwork.status] ?? 'default'}>
                     {artwork.status.replace(/_/g, ' ')}
                   </Badge>
+                  {artwork.price != null && (
+                    <span className="text-xs text-primary-500">
+                      {formatCurrency(Number(artwork.price), artwork.currency ?? 'EUR')}
+                    </span>
+                  )}
                 </div>
               </div>
             </Card>

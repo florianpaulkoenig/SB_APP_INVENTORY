@@ -27,6 +27,8 @@ const STATUS_COLOR_MAP: Record<string, string> = {
   in_production: '#3b82f6', // blue / info
   in_transit: '#a855f7',    // purple
   on_consignment: '#0ea5e9', // sky
+  paid: '#10b981',            // emerald
+  pending_sale: '#f97316',    // orange
 };
 
 const FALLBACK_COLOR = '#a3a3a3';

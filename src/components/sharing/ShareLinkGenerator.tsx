@@ -305,7 +305,7 @@ export function ShareLinkGenerator({
       isOpen={open}
       onClose={onClose}
       title="Select Artworks to Share"
-      size="xl"
+      size="4xl"
     >
       <div className="space-y-4">
         <CatalogueArtworkPicker

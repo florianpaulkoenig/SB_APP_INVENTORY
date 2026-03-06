@@ -35,6 +35,8 @@ export const ARTWORK_STATUSES = [
   { value: 'in_production', label: 'In Production', color: 'bg-blue-100 text-blue-800' },
   { value: 'in_transit', label: 'In Transit', color: 'bg-purple-100 text-purple-800' },
   { value: 'on_consignment', label: 'On Consignment', color: 'bg-sky-100 text-sky-800' },
+  { value: 'paid', label: 'Paid', color: 'bg-emerald-100 text-emerald-800' },
+  { value: 'pending_sale', label: 'Pending Sale', color: 'bg-orange-100 text-orange-800' },
 ] as const;
 
 // ---------------------------------------------------------------------------

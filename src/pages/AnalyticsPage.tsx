@@ -150,8 +150,8 @@ export function AnalyticsPage() {
 
           {/* Tables Row -- Recent sales + Open invoices */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <RecentSalesTable data={data.recentSales} />
-            <OpenInvoicesTable data={data.openInvoices} />
+            <RecentSalesTable sales={data.recentSales} />
+            <OpenInvoicesTable invoices={data.openInvoices} />
           </div>
         </div>
       )}

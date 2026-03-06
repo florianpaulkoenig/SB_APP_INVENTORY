@@ -1,0 +1,288 @@
+import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './useAuth';
+import { useToast } from '../components/ui/Toast';
+
+interface MediaFile {
+  id: string;
+  category: string;
+  title: string;
+  description: string | null;
+  file_name: string;
+  storage_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  uploaded_by: string;
+  status: 'published' | 'pending_review' | 'rejected';
+  submitted_by_gallery: string | null;
+  review_notes: string | null;
+  created_at: string;
+  galleries?: { name: string } | null;
+}
+
+interface UseMediaFilesOptions {
+  category?: string;
+  status?: string;
+  galleryOnly?: boolean;
+}
+
+export function useMediaFiles(options?: UseMediaFilesOptions) {
+  const [files, setFiles] = useState<MediaFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { profile, isAdmin, isGallery } = useAuth();
+  const { toast } = useToast();
+
+  const fetchFiles = useCallback(async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('media_files')
+        .select('*, galleries:submitted_by_gallery(name)')
+        .order('created_at', { ascending: false });
+
+      if (options?.category) {
+        query = query.eq('category', options.category);
+      }
+
+      if (options?.status) {
+        query = query.eq('status', options.status);
+      }
+
+      if (options?.galleryOnly && isGallery && profile?.gallery_id) {
+        // Gallery users see published files + their own submissions regardless of status
+        query = query.or(
+          `status.eq.published,submitted_by_gallery.eq.${profile.gallery_id}`
+        );
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setFiles((data as MediaFile[]) || []);
+    } catch (err) {
+      console.error('Error fetching media files:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to load media files.',
+        variant: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [options?.category, options?.status, options?.galleryOnly, isGallery, profile?.gallery_id, toast]);
+
+  useEffect(() => {
+    fetchFiles();
+  }, [fetchFiles]);
+
+  const uploadFile = useCallback(
+    async (
+      file: File,
+      category: string,
+      title: string,
+      description?: string
+    ): Promise<MediaFile | null> => {
+      try {
+        if (!profile?.id) {
+          toast({ title: 'Error', description: 'You must be logged in.', variant: 'error' });
+          return null;
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const storagePath = `${category}/${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('media-files')
+          .upload(storagePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const status = isAdmin ? 'published' : 'pending_review';
+        const submittedByGallery = isGallery ? profile.gallery_id : null;
+
+        const { data, error } = await supabase
+          .from('media_files')
+          .insert({
+            category,
+            title,
+            description: description || null,
+            file_name: file.name,
+            storage_path: storagePath,
+            file_size: file.size,
+            mime_type: file.type || null,
+            uploaded_by: profile.id,
+            status,
+            submitted_by_gallery: submittedByGallery,
+          } as never)
+          .select('*, galleries:submitted_by_gallery(name)')
+          .single();
+
+        if (error) throw error;
+
+        toast({
+          title: 'File Uploaded',
+          description: isAdmin
+            ? 'File has been published.'
+            : 'File submitted for review.',
+          variant: 'success',
+        });
+
+        await fetchFiles();
+        return data as MediaFile;
+      } catch (err) {
+        console.error('Error uploading file:', err);
+        toast({
+          title: 'Upload Failed',
+          description: 'Could not upload the file. Please try again.',
+          variant: 'error',
+        });
+        return null;
+      }
+    },
+    [profile, isAdmin, isGallery, toast, fetchFiles]
+  );
+
+  const deleteFile = useCallback(
+    async (id: string): Promise<boolean> => {
+      try {
+        const file = files.find((f) => f.id === id);
+        if (!file) return false;
+
+        const { error: storageError } = await supabase.storage
+          .from('media-files')
+          .remove([file.storage_path]);
+
+        if (storageError) {
+          console.error('Storage deletion error:', storageError);
+        }
+
+        const { error } = await supabase.from('media_files').delete().eq('id', id);
+
+        if (error) throw error;
+
+        toast({
+          title: 'File Deleted',
+          description: 'The file has been removed.',
+          variant: 'success',
+        });
+
+        await fetchFiles();
+        return true;
+      } catch (err) {
+        console.error('Error deleting file:', err);
+        toast({
+          title: 'Error',
+          description: 'Failed to delete the file.',
+          variant: 'error',
+        });
+        return false;
+      }
+    },
+    [files, toast, fetchFiles]
+  );
+
+  const approveFile = useCallback(
+    async (id: string): Promise<boolean> => {
+      try {
+        const { error } = await supabase
+          .from('media_files')
+          .update({ status: 'published', review_notes: null } as never)
+          .eq('id', id);
+
+        if (error) throw error;
+
+        toast({
+          title: 'File Approved',
+          description: 'The file is now published.',
+          variant: 'success',
+        });
+
+        await fetchFiles();
+        return true;
+      } catch (err) {
+        console.error('Error approving file:', err);
+        toast({
+          title: 'Error',
+          description: 'Failed to approve the file.',
+          variant: 'error',
+        });
+        return false;
+      }
+    },
+    [toast, fetchFiles]
+  );
+
+  const rejectFile = useCallback(
+    async (id: string, notes: string): Promise<boolean> => {
+      try {
+        const { error } = await supabase
+          .from('media_files')
+          .update({ status: 'rejected', review_notes: notes } as never)
+          .eq('id', id);
+
+        if (error) throw error;
+
+        toast({
+          title: 'File Rejected',
+          description: 'The submission has been rejected.',
+          variant: 'success',
+        });
+
+        await fetchFiles();
+        return true;
+      } catch (err) {
+        console.error('Error rejecting file:', err);
+        toast({
+          title: 'Error',
+          description: 'Failed to reject the file.',
+          variant: 'error',
+        });
+        return false;
+      }
+    },
+    [toast, fetchFiles]
+  );
+
+  const downloadFile = useCallback(
+    async (storagePath: string, fileName: string): Promise<void> => {
+      try {
+        const { data, error } = await supabase.storage
+          .from('media-files')
+          .createSignedUrl(storagePath, 60);
+
+        if (error) throw error;
+
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (err) {
+        console.error('Error downloading file:', err);
+        toast({
+          title: 'Download Failed',
+          description: 'Could not download the file.',
+          variant: 'error',
+        });
+      }
+    },
+    [toast]
+  );
+
+  const refetch = useCallback(async () => {
+    await fetchFiles();
+  }, [fetchFiles]);
+
+  return {
+    files,
+    loading,
+    uploadFile,
+    deleteFile,
+    approveFile,
+    rejectFile,
+    downloadFile,
+    refetch,
+  };
+}

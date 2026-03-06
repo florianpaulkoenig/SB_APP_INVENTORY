@@ -156,6 +156,33 @@ const ActivityLogPage = React.lazy(() =>
 const SettingsPage = React.lazy(() =>
   import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
+const GalleryDeliveriesPage = React.lazy(() =>
+  import('./pages/GalleryDeliveriesPage').then((m) => ({ default: m.GalleryDeliveriesPage })),
+);
+const GalleryDeliveryDetailPage = React.lazy(() =>
+  import('./pages/GalleryDeliveryDetailPage').then((m) => ({ default: m.GalleryDeliveryDetailPage })),
+);
+const GalleryCertificatesPage = React.lazy(() =>
+  import('./pages/GalleryCertificatesPage').then((m) => ({ default: m.GalleryCertificatesPage })),
+);
+const SaleRequestsPage = React.lazy(() =>
+  import('./pages/SaleRequestsPage').then((m) => ({ default: m.SaleRequestsPage })),
+);
+const MediaLibraryPage = React.lazy(() =>
+  import('./pages/MediaLibraryPage').then((m) => ({ default: m.MediaLibraryPage })),
+);
+const CVEditorPage = React.lazy(() =>
+  import('./pages/CVEditorPage').then((m) => ({ default: m.CVEditorPage })),
+);
+const GalleryMediaPage = React.lazy(() =>
+  import('./pages/GalleryMediaPage').then((m) => ({ default: m.GalleryMediaPage })),
+);
+const NewsPage = React.lazy(() =>
+  import('./pages/NewsPage').then((m) => ({ default: m.NewsPage })),
+);
+const GalleryNewsPage = React.lazy(() =>
+  import('./pages/GalleryNewsPage').then((m) => ({ default: m.GalleryNewsPage })),
+);
 
 // ---------------------------------------------------------------------------
 // Suspense fallback
@@ -586,6 +613,98 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin', 'gallery']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <GalleryArtworksPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'gallery/deliveries',
+          element: (
+            <RoleGuard allowed={['admin', 'gallery']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <GalleryDeliveriesPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'gallery/deliveries/:id',
+          element: (
+            <RoleGuard allowed={['admin', 'gallery']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <GalleryDeliveryDetailPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'gallery/certificates',
+          element: (
+            <RoleGuard allowed={['admin', 'gallery']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <GalleryCertificatesPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'gallery/media',
+          element: (
+            <RoleGuard allowed={['admin', 'gallery']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <GalleryMediaPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'gallery/news',
+          element: (
+            <RoleGuard allowed={['admin', 'gallery']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <GalleryNewsPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+
+        // Admin routes
+        {
+          path: 'admin/sale-requests',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <SaleRequestsPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'media',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <MediaLibraryPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'cv',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <CVEditorPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'news',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <NewsPage />
               </Suspense>
             </RoleGuard>
           ),

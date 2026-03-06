@@ -1,16 +1,21 @@
 // ---------------------------------------------------------------------------
 // NOA Inventory -- Gallery Artworks Page
 // Full list of artworks consigned to the gallery user's gallery.
+// Includes "Mark as Sold" functionality with admin approval flow.
 // ---------------------------------------------------------------------------
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useSaleRequests } from '../hooks/useSaleRequests';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { SearchInput } from '../components/ui/SearchInput';
+import { SaleRequestModal } from '../components/galleries/SaleRequestModal';
+import { useToast } from '../components/ui/Toast';
 import type { ArtworkRow } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -24,7 +29,12 @@ const STATUS_BADGE_VARIANT: Record<string, 'default' | 'success' | 'warning' | '
   in_production: 'info',
   in_transit: 'info',
   on_consignment: 'info',
+  paid: 'success',
+  pending_sale: 'warning',
 };
+
+// Statuses that allow "Mark as Sold"
+const SELLABLE_STATUSES = new Set(['available', 'on_consignment']);
 
 // ---------------------------------------------------------------------------
 // Page
@@ -32,36 +42,70 @@ const STATUS_BADGE_VARIANT: Record<string, 'default' | 'success' | 'warning' | '
 
 export function GalleryArtworksPage() {
   const { profile } = useAuth();
+  const { toast } = useToast();
 
   const [artworks, setArtworks] = useState<ArtworkRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
+  // Sale request state
+  const [saleModalOpen, setSaleModalOpen] = useState(false);
+  const [saleArtwork, setSaleArtwork] = useState<{ id: string; title: string } | null>(null);
+
   const galleryId = profile?.gallery_id;
+  const { createRequest } = useSaleRequests({ galleryId: galleryId ?? undefined });
 
   // ---- Fetch artworks -----------------------------------------------------
 
-  useEffect(() => {
+  const fetchArtworks = useCallback(async () => {
     if (!galleryId) {
       setLoading(false);
       return;
     }
 
-    async function fetchArtworks() {
-      setLoading(true);
+    setLoading(true);
 
-      const { data } = await supabase
-        .from('artworks')
-        .select('*')
-        .eq('gallery_id', galleryId!)
-        .order('created_at', { ascending: false });
+    const { data } = await supabase
+      .from('artworks')
+      .select('*')
+      .eq('gallery_id', galleryId!)
+      .order('created_at', { ascending: false });
 
-      if (data) setArtworks(data as ArtworkRow[]);
-      setLoading(false);
-    }
-
-    fetchArtworks();
+    if (data) setArtworks(data as ArtworkRow[]);
+    setLoading(false);
   }, [galleryId]);
+
+  useEffect(() => {
+    fetchArtworks();
+  }, [fetchArtworks]);
+
+  // ---- Mark as Sold handler -----------------------------------------------
+
+  function handleMarkAsSold(artwork: ArtworkRow) {
+    setSaleArtwork({ id: artwork.id, title: artwork.title });
+    setSaleModalOpen(true);
+  }
+
+  async function handleSaleSubmit(data: {
+    artwork_id: string;
+    realized_price: number;
+    currency: string;
+    buyer_name?: string;
+    notes?: string;
+  }) {
+    const result = await createRequest(data);
+    if (result) {
+      setSaleModalOpen(false);
+      setSaleArtwork(null);
+      toast({
+        title: 'Sale Request Submitted',
+        description: 'An admin will review and approve your sale request.',
+        variant: 'success',
+      });
+      // Refresh artworks to show updated status
+      await fetchArtworks();
+    }
+  }
 
   // ---- Filter by search ---------------------------------------------------
 
@@ -168,6 +212,9 @@ export function GalleryArtworksPage() {
                 <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
                   Price
                 </th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-primary-50 bg-white">
@@ -201,11 +248,42 @@ export function GalleryArtworksPage() {
                       ? formatCurrency(artwork.price, artwork.currency)
                       : '\u2014'}
                   </td>
+
+                  {/* Actions */}
+                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                    {SELLABLE_STATUSES.has(artwork.status) ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleMarkAsSold(artwork)}
+                      >
+                        Mark as Sold
+                      </Button>
+                    ) : artwork.status === 'pending_sale' ? (
+                      <span className="text-xs text-amber-600 font-medium">
+                        Pending Approval
+                      </span>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Sale Request Modal */}
+      {saleArtwork && (
+        <SaleRequestModal
+          isOpen={saleModalOpen}
+          onClose={() => {
+            setSaleModalOpen(false);
+            setSaleArtwork(null);
+          }}
+          artworkId={saleArtwork.id}
+          artworkTitle={saleArtwork.title}
+          onSubmit={handleSaleSubmit}
+        />
       )}
     </div>
   );
