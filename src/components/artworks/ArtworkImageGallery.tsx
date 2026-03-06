@@ -11,6 +11,11 @@ import type { ArtworkImageRow, ImageType } from '../../types/database';
 
 export interface ArtworkImageGalleryProps {
   artworkId: string;
+  /** When provided, delete & set-primary buttons are shown. */
+  onDeleteImage?: (imageId: string, storagePath: string) => Promise<boolean>;
+  onSetPrimaryImage?: (imageId: string) => Promise<boolean>;
+  /** Incremented by the parent after an upload to trigger a refetch. */
+  refreshKey?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -34,12 +39,19 @@ const IMAGE_TABS = IMAGE_TYPES.map((t) => ({
 // Component
 // ---------------------------------------------------------------------------
 
-export function ArtworkImageGallery({ artworkId }: ArtworkImageGalleryProps) {
+export function ArtworkImageGallery({
+  artworkId,
+  onDeleteImage,
+  onSetPrimaryImage,
+  refreshKey,
+}: ArtworkImageGalleryProps) {
   const [images, setImages] = useState<ImageWithUrl[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('raw');
   const [selectedImage, setSelectedImage] = useState<ImageWithUrl | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   // -- Fetch images and generate signed URLs --------------------------------
   const fetchImages = useCallback(async () => {
@@ -83,7 +95,35 @@ export function ArtworkImageGallery({ artworkId }: ArtworkImageGalleryProps) {
 
   useEffect(() => {
     fetchImages();
-  }, [fetchImages]);
+  }, [fetchImages, refreshKey]);
+
+  // -- Action handlers ------------------------------------------------------
+
+  const handleSetPrimary = useCallback(
+    async (imageId: string) => {
+      if (!onSetPrimaryImage) return;
+      setActionLoading(imageId);
+      const success = await onSetPrimaryImage(imageId);
+      if (success) await fetchImages();
+      setActionLoading(null);
+    },
+    [onSetPrimaryImage, fetchImages],
+  );
+
+  const handleDelete = useCallback(
+    async (imageId: string, storagePath: string) => {
+      if (!onDeleteImage) return;
+      setActionLoading(imageId);
+      const success = await onDeleteImage(imageId, storagePath);
+      if (success) {
+        setSelectedImage(null);
+        await fetchImages();
+      }
+      setConfirmDelete(null);
+      setActionLoading(null);
+    },
+    [onDeleteImage, fetchImages],
+  );
 
   // -- Filter images by active tab ------------------------------------------
   const filteredImages = images.filter(
@@ -142,23 +182,111 @@ export function ArtworkImageGallery({ artworkId }: ArtworkImageGalleryProps) {
       {filteredImages.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {filteredImages.map((img) => (
-            <button
-              key={img.id}
-              type="button"
-              onClick={() => setSelectedImage(img)}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-primary-100 bg-primary-50 transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
-            >
-              <img
-                src={img.signedUrl}
-                alt={img.file_name}
-                className="h-full w-full object-cover transition-transform group-hover:scale-105"
-              />
-              {img.is_primary && (
-                <span className="absolute top-2 left-2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
-                  Primary
-                </span>
+            <div key={img.id} className="group relative">
+              <button
+                type="button"
+                onClick={() => setSelectedImage(img)}
+                className="relative aspect-square w-full overflow-hidden rounded-lg border border-primary-100 bg-primary-50 transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
+              >
+                <img
+                  src={img.signedUrl}
+                  alt={img.file_name}
+                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                />
+                {img.is_primary && (
+                  <span className="absolute top-2 left-2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                    Primary
+                  </span>
+                )}
+              </button>
+
+              {/* Action buttons overlay */}
+              {(onDeleteImage || onSetPrimaryImage) && (
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  {/* Set primary button */}
+                  {onSetPrimaryImage && !img.is_primary && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSetPrimary(img.id);
+                      }}
+                      disabled={actionLoading === img.id}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-primary-600 shadow-sm transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
+                      title="Set as primary"
+                    >
+                      <svg
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+                        />
+                      </svg>
+                    </button>
+                  )}
+
+                  {/* Delete button */}
+                  {onDeleteImage && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDelete(img.id);
+                      }}
+                      disabled={actionLoading === img.id}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-primary-600 shadow-sm transition-colors hover:bg-red-500 hover:text-white disabled:opacity-50"
+                      title="Delete image"
+                    >
+                      <svg
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               )}
-            </button>
+
+              {/* Delete confirmation overlay */}
+              {confirmDelete === img.id && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-black/60 p-2">
+                  <p className="mb-2 text-center text-xs font-medium text-white">
+                    Delete this image?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(null)}
+                      className="rounded-md bg-white/20 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-white/30"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(img.id, img.storage_path)}
+                      disabled={actionLoading === img.id}
+                      className="rounded-md bg-red-500 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                    >
+                      {actionLoading === img.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       ) : (
@@ -202,6 +330,60 @@ export function ArtworkImageGallery({ artworkId }: ArtworkImageGalleryProps) {
                 />
               </svg>
             </button>
+
+            {/* Lightbox action buttons */}
+            {(onDeleteImage || onSetPrimaryImage) && (
+              <div className="absolute -bottom-12 left-1/2 flex -translate-x-1/2 gap-2">
+                {onSetPrimaryImage && !selectedImage.is_primary && (
+                  <button
+                    type="button"
+                    onClick={() => handleSetPrimary(selectedImage.id)}
+                    disabled={actionLoading === selectedImage.id}
+                    className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-primary-700 shadow transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
+                  >
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+                      />
+                    </svg>
+                    Set Primary
+                  </button>
+                )}
+                {onDeleteImage && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDelete(selectedImage.id, selectedImage.storage_path);
+                    }}
+                    disabled={actionLoading === selectedImage.id}
+                    className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-primary-700 shadow transition-colors hover:bg-red-500 hover:text-white disabled:opacity-50"
+                  >
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                      />
+                    </svg>
+                    Delete
+                  </button>
+                )}
+              </div>
+            )}
 
             <img
               src={selectedImage.signedUrl}

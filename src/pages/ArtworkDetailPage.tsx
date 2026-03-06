@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useArtwork } from '../hooks/useArtworks';
 import { useArtworks } from '../hooks/useArtworks';
+import { useArtworkImages } from '../hooks/useArtworkImages';
 import { ArtworkDetail } from '../components/artworks/ArtworkDetail';
 import { ArtworkImageGallery } from '../components/artworks/ArtworkImageGallery';
+import { ArtworkImageUpload } from '../components/artworks/ArtworkImageUpload';
 import { ArtworkMovementHistory } from '../components/artworks/ArtworkMovementHistory';
 import { ConditionReportPanel } from '../components/artworks/ConditionReportPanel';
 import { InsurancePanel } from '../components/artworks/InsurancePanel';
@@ -24,8 +26,10 @@ export function ArtworkDetailPage() {
   const navigate = useNavigate();
   const { artwork, loading } = useArtwork(id!);
   const { deleteArtwork } = useArtworks();
+  const { uploadImage, deleteImage, setPrimaryImage } = useArtworkImages(id!);
 
   const [galleryName, setGalleryName] = useState<string | null>(null);
+  const [imageRefreshKey, setImageRefreshKey] = useState(0);
 
   // ---- Fetch gallery name if gallery_id is set ----------------------------
 
@@ -49,6 +53,41 @@ export function ArtworkDetailPage() {
 
     fetchGalleryName();
   }, [artwork?.gallery_id]);
+
+  // ---- Image upload handler ------------------------------------------------
+
+  const handleImageUpload = useCallback(
+    async (file: File, imageType: import('../types/database').ImageType) => {
+      const result = await uploadImage(file, imageType);
+      if (result) {
+        setImageRefreshKey((k) => k + 1);
+      }
+      return result;
+    },
+    [uploadImage],
+  );
+
+  const handleDeleteImage = useCallback(
+    async (imageId: string, storagePath: string) => {
+      const success = await deleteImage(imageId, storagePath);
+      if (success) {
+        setImageRefreshKey((k) => k + 1);
+      }
+      return success;
+    },
+    [deleteImage],
+  );
+
+  const handleSetPrimaryImage = useCallback(
+    async (imageId: string) => {
+      const success = await setPrimaryImage(imageId);
+      if (success) {
+        setImageRefreshKey((k) => k + 1);
+      }
+      return success;
+    },
+    [setPrimaryImage],
+  );
 
   // ---- Delete handler -----------------------------------------------------
 
@@ -128,9 +167,15 @@ export function ArtworkDetailPage() {
         onDelete={handleDelete}
       />
 
-      {/* Image gallery */}
-      <div className="mt-8">
-        <ArtworkImageGallery artworkId={id!} />
+      {/* Image gallery + upload */}
+      <div className="mt-8 space-y-6">
+        <ArtworkImageGallery
+          artworkId={id!}
+          onDeleteImage={handleDeleteImage}
+          onSetPrimaryImage={handleSetPrimaryImage}
+          refreshKey={imageRefreshKey}
+        />
+        <ArtworkImageUpload onUpload={handleImageUpload} />
       </div>
 
       {/* Condition reports */}
