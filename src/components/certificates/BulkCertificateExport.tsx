@@ -146,7 +146,7 @@ export default function BulkCertificateExport({
     <div className="flex flex-col gap-4">
       {/* Controls row */}
       <div className="flex flex-wrap items-end gap-4">
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             label="Language"
             options={[...LANGUAGE_OPTIONS]}

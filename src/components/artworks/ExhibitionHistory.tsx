@@ -367,7 +367,7 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
               placeholder="Gallery or museum name"
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input
                 label="City"
                 value={city}
@@ -380,7 +380,7 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input
                 label="Start Date"
                 type="date"
@@ -402,7 +402,7 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
               placeholder="e.g., Cat. No. 42, p. 78"
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <GallerySelect
                 value={galleryId}
                 onChange={setGalleryId}

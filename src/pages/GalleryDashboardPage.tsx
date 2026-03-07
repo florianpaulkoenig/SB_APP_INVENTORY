@@ -135,7 +135,7 @@ export function GalleryDashboardPage() {
     return (
       <div>
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold text-primary-900">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-primary-900">
             Gallery Dashboard
           </h1>
         </div>
@@ -178,7 +178,7 @@ export function GalleryDashboardPage() {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-primary-900">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-primary-900">
           Gallery Dashboard
         </h1>
         <p className="mt-1 text-sm text-primary-500">
@@ -188,56 +188,56 @@ export function GalleryDashboardPage() {
 
       {/* Stat cards */}
       <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <div className="rounded-lg border border-primary-100 bg-white p-4">
+        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
             Consigned
           </p>
-          <p className="mt-1 font-display text-2xl font-bold text-primary-900">
+          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-primary-900">
             {totalConsigned}
           </p>
         </div>
 
-        <div className="rounded-lg border border-primary-100 bg-white p-4">
+        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
             Sold
           </p>
-          <p className="mt-1 font-display text-2xl font-bold text-primary-900">
+          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-primary-900">
             {totalSold}
           </p>
         </div>
 
-        <div className="rounded-lg border border-primary-100 bg-white p-4">
+        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
             Deliveries
           </p>
-          <p className="mt-1 font-display text-2xl font-bold text-primary-900">
+          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-primary-900">
             {activeDeliveries}
           </p>
         </div>
 
-        <div className="rounded-lg border border-primary-100 bg-white p-4">
+        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-emerald-600">
             Sales Revenue
           </p>
-          <p className="mt-1 font-display text-2xl font-bold text-emerald-700">
+          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-emerald-700">
             {formatCurrency(salesRevenue, 'EUR')}
           </p>
         </div>
 
-        <div className="rounded-lg border border-primary-100 bg-white p-4">
+        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
             Potential Revenue
           </p>
-          <p className="mt-1 font-display text-2xl font-bold text-blue-700">
+          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-blue-700">
             {formatCurrency(potentialRevenue, 'EUR')}
           </p>
         </div>
 
-        <div className="rounded-lg border border-primary-100 bg-white p-4">
+        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-amber-600">
             Pending Sales
           </p>
-          <p className="mt-1 font-display text-2xl font-bold text-amber-700">
+          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-amber-700">
             {pendingSaleRequests}
           </p>
         </div>

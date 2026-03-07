@@ -72,7 +72,7 @@ export function EmailTemplateSelector({
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {EMAIL_TEMPLATES.map((template) => (
         <button
           key={template.value}

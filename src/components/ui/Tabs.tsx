@@ -15,7 +15,7 @@ export interface TabsProps {
 export function Tabs({ tabs, activeTab, onChange, className }: TabsProps) {
   return (
     <div
-      className={cn('flex border-b border-primary-200', className)}
+      className={cn('flex overflow-x-auto border-b border-primary-200', className)}
       role="tablist"
     >
       {tabs.map((tab) => {
@@ -28,7 +28,7 @@ export function Tabs({ tabs, activeTab, onChange, className }: TabsProps) {
             aria-selected={isActive}
             onClick={() => onChange(tab.key)}
             className={cn(
-              'relative px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none',
+              'relative shrink-0 whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none sm:px-4',
               isActive
                 ? 'text-primary-900'
                 : 'text-primary-400 hover:text-primary-600',

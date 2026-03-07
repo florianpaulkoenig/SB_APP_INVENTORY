@@ -117,7 +117,7 @@ export function EmailLogPage() {
           className="max-w-md"
         />
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             options={[...EMAIL_TEMPLATES]}
             value={templateFilter}
@@ -126,7 +126,7 @@ export function EmailLogPage() {
           />
         </div>
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             options={[...EMAIL_STATUSES]}
             value={statusFilter}

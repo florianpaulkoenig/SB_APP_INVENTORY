@@ -492,13 +492,13 @@ export function ProductionOrdersPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <input
               type="date"
               value={artistDateFrom}
               onChange={(e) => setArtistDateFrom(e.target.value)}
-              className="rounded-md border border-primary-200 bg-white px-2 py-1.5 text-sm text-primary-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full sm:w-auto rounded-md border border-primary-200 bg-white px-2 py-1.5 text-sm text-primary-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               title="From date"
             />
             <span className="text-xs text-primary-400">to</span>
@@ -506,11 +506,12 @@ export function ProductionOrdersPage() {
               type="date"
               value={artistDateTo}
               onChange={(e) => setArtistDateTo(e.target.value)}
-              className="rounded-md border border-primary-200 bg-white px-2 py-1.5 text-sm text-primary-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full sm:w-auto rounded-md border border-primary-200 bg-white px-2 py-1.5 text-sm text-primary-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               title="To date"
             />
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={handleDownloadArtistExport}
               loading={downloadingArtist}
               disabled={productionOrders.length === 0}
@@ -534,6 +535,7 @@ export function ProductionOrdersPage() {
           </div>
           <Button
             variant="outline"
+            className="w-full sm:w-auto"
             onClick={handleDownloadOverview}
             loading={downloadingOverview}
             disabled={productionOrders.length === 0}
@@ -554,7 +556,7 @@ export function ProductionOrdersPage() {
             </svg>
             Export: Complete
           </Button>
-          <Button onClick={() => navigate('/production/new')}>
+          <Button className="w-full sm:w-auto" onClick={() => navigate('/production/new')}>
             New Production Order
           </Button>
         </div>
@@ -569,7 +571,7 @@ export function ProductionOrdersPage() {
           className="max-w-md"
         />
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             options={[...PRODUCTION_STATUSES]}
             value={statusFilter}
@@ -578,7 +580,7 @@ export function ProductionOrdersPage() {
           />
         </div>
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             label="PDF Language"
             options={[...LANGUAGE_OPTIONS]}
@@ -593,11 +595,11 @@ export function ProductionOrdersPage() {
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-4">
             {/* Total */}
-            <div className="rounded-lg border border-primary-100 bg-white px-5 py-3">
+            <div className="rounded-lg border border-primary-100 bg-white px-3 py-2 sm:px-5 sm:py-3">
               <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
                 Total Order Value
               </p>
-              <p className="mt-1 font-display text-xl font-bold text-primary-900">
+              <p className="mt-1 font-display text-lg sm:text-xl font-bold text-primary-900">
                 {formatCurrency(totalOrderValue, 'CHF')}
               </p>
             </div>
@@ -605,13 +607,13 @@ export function ProductionOrdersPage() {
             {perGalleryValue.map((g) => (
               <div
                 key={g.id}
-                className="cursor-pointer rounded-lg border border-primary-100 bg-white px-5 py-3 transition-shadow hover:shadow-md"
+                className="cursor-pointer rounded-lg border border-primary-100 bg-white px-3 py-2 sm:px-5 sm:py-3 transition-shadow hover:shadow-md"
                 onClick={() => navigate(`/galleries/${g.id}`)}
               >
                 <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
                   {g.name}
                 </p>
-                <p className="mt-1 font-display text-xl font-bold text-accent">
+                <p className="mt-1 font-display text-lg sm:text-xl font-bold text-accent">
                   {formatCurrency(g.value, 'CHF')}
                 </p>
               </div>
@@ -672,25 +674,25 @@ export function ProductionOrdersPage() {
           <table className="min-w-full divide-y divide-primary-100">
             <thead className="bg-primary-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Order #
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Title
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="hidden md:table-cell px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Gallery
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Deadline
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="hidden sm:table-cell px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
                   Value
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
                   Action
                 </th>
               </tr>
@@ -702,21 +704,21 @@ export function ProductionOrdersPage() {
                   className="cursor-pointer hover:bg-primary-50 transition-colors"
                   onClick={() => navigate(`/production/${order.id}`)}
                 >
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-primary-900">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm font-medium text-primary-900">
                     {order.order_number}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-600">
                     {order.title}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                  <td className="hidden md:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-600">
                     {order.gallery_id && galleryNameMap[order.gallery_id]
                       ? galleryNameMap[order.gallery_id]
                       : <span className="text-primary-300">—</span>}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3">
                     <StatusBadge status={order.status} />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3">
                     {order.deadline ? (() => {
                       const deadlineDate = new Date(order.deadline);
                       const today = new Date();
@@ -761,12 +763,12 @@ export function ProductionOrdersPage() {
                       <span className="text-sm text-primary-400">No deadline</span>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-primary-800">
+                  <td className="hidden sm:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right text-sm font-medium text-primary-800">
                     {getOrderValueCHF(order) > 0
                       ? formatCurrency(getOrderValueCHF(order), 'CHF')
                       : '-'}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Button
                         variant="ghost"

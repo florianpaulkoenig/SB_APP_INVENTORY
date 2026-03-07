@@ -143,7 +143,7 @@ export function SalesPage() {
           className="max-w-md"
         />
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <GallerySelect
             value={galleryFilter}
             onChange={setGalleryFilter}
@@ -199,22 +199,22 @@ export function SalesPage() {
           <table className="min-w-full divide-y divide-primary-100">
             <thead className="bg-primary-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Artwork
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="hidden md:table-cell px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Gallery
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Buyer
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Date
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
                   Price
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="hidden sm:table-cell px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
                   Commission
                 </th>
               </tr>
@@ -226,7 +226,7 @@ export function SalesPage() {
                   className="cursor-pointer hover:bg-primary-50 transition-colors"
                   onClick={() => navigate(`/artworks/${sale.artwork_id}`)}
                 >
-                  <td className="whitespace-nowrap px-4 py-3">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3">
                     <div className="text-sm font-medium text-primary-900">
                       {sale.artworks?.title ?? 'Unknown Artwork'}
                     </div>
@@ -234,21 +234,21 @@ export function SalesPage() {
                       {sale.artworks?.reference_code ?? ''}
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                  <td className="hidden md:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-600">
                     {sale.galleries?.name ?? '-'}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-600">
                     {sale.contacts
                       ? `${sale.contacts.first_name} ${sale.contacts.last_name}`
                       : sale.buyer_name ?? '-'}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-600">
                     {formatDate(sale.sale_date)}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-primary-900">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right text-sm font-medium text-primary-900">
                     {formatCurrency(sale.sale_price, sale.currency)}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-primary-600">
+                  <td className="hidden sm:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right text-sm text-primary-600">
                     {sale.commission_percent != null
                       ? `${sale.commission_percent}%`
                       : '-'}
@@ -308,7 +308,7 @@ export function SalesPage() {
             onChange={(e) => setSaleDate(e.target.value)}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
               label="Sale Price *"
               type="number"
@@ -332,7 +332,7 @@ export function SalesPage() {
             onChange={(e) => setCommissionPercent(e.target.value)}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
               label="Buyer Name"
               placeholder="Buyer's name"

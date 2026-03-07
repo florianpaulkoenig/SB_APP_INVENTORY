@@ -119,7 +119,7 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
 
           {/* Dropdown */}
           {dropdownOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-primary-100 bg-white py-2 shadow-lg">
+            <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-primary-100 bg-white py-2 shadow-lg sm:w-56">
               <div className="border-b border-primary-100 px-4 pb-2">
                 <p className="truncate text-sm font-medium text-primary-900">{userEmail}</p>
                 <p className="text-xs text-primary-400">Admin</p>

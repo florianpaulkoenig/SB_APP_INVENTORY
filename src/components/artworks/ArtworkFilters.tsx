@@ -59,7 +59,7 @@ export function ArtworkFilters({ filters, onChange, onClear }: ArtworkFiltersPro
     <div className="space-y-2">
       {/* Row 1: primary filters */}
       <div className="flex items-center gap-2">
-        <div className="grid flex-1 grid-cols-5 gap-2">
+        <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           <Select
             options={[
               { value: '', label: 'All Statuses' },
@@ -111,7 +111,7 @@ export function ArtworkFilters({ filters, onChange, onClear }: ArtworkFiltersPro
       </div>
 
       {/* Row 2: additional filters — color, medium, dimensions */}
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         <Select
           options={[
             { value: '', label: 'All Colors' },
@@ -167,8 +167,6 @@ export function ArtworkFilters({ filters, onChange, onClear }: ArtworkFiltersPro
           />
         </div>
 
-        {/* Empty cell for alignment */}
-        <div />
       </div>
     </div>
   );

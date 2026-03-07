@@ -22,18 +22,19 @@ interface Column {
   key: string;
   label: string;
   sortable?: boolean;
+  hiddenClass?: string;
 }
 
 const COLUMNS: Column[] = [
-  { key: 'inventory_number', label: 'Inventory #', sortable: true },
-  { key: 'reference_code', label: 'Ref Code', sortable: true },
+  { key: 'inventory_number', label: 'Inventory #', sortable: true, hiddenClass: 'hidden sm:table-cell' },
+  { key: 'reference_code', label: 'Ref Code', sortable: true, hiddenClass: 'hidden lg:table-cell' },
   { key: 'title', label: 'Title', sortable: true },
-  { key: 'medium', label: 'Medium', sortable: true },
+  { key: 'medium', label: 'Medium', sortable: true, hiddenClass: 'hidden md:table-cell' },
   { key: 'year', label: 'Year', sortable: true },
-  { key: 'dimensions', label: 'Dimensions', sortable: false },
+  { key: 'dimensions', label: 'Dimensions', sortable: false, hiddenClass: 'hidden lg:table-cell' },
   { key: 'status', label: 'Status', sortable: true },
   { key: 'price', label: 'Price', sortable: true },
-  { key: 'current_location', label: 'Location', sortable: true },
+  { key: 'current_location', label: 'Location', sortable: true, hiddenClass: 'hidden md:table-cell' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -91,7 +92,7 @@ export function ArtworkTable({
 }: ArtworkTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[900px]">
+      <table className="w-full">
         {/* Header */}
         <thead>
           <tr>
@@ -99,7 +100,8 @@ export function ArtworkTable({
               <th
                 key={col.key}
                 className={
-                  'px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400' +
+                  (col.hiddenClass ? col.hiddenClass + ' ' : '') +
+                  'px-2 py-2 text-left text-xs font-medium uppercase tracking-wider text-primary-400 sm:px-4 sm:py-3' +
                   (col.sortable ? ' cursor-pointer select-none hover:text-primary-600' : '')
                 }
                 onClick={col.sortable ? () => onSort(col.key) : undefined}
@@ -135,49 +137,49 @@ export function ArtworkTable({
                 className="cursor-pointer border-b border-primary-100 transition-colors hover:bg-primary-50"
               >
                 {/* Inventory # */}
-                <td className="px-4 py-3 font-mono text-xs text-primary-700">
+                <td className="hidden px-2 py-2 font-mono text-xs text-primary-700 sm:table-cell sm:px-4 sm:py-3">
                   {artwork.inventory_number}
                 </td>
 
                 {/* Ref Code */}
-                <td className="px-4 py-3 font-mono text-xs text-primary-500">
+                <td className="hidden px-2 py-2 font-mono text-xs text-primary-500 lg:table-cell sm:px-4 sm:py-3">
                   {artwork.reference_code}
                 </td>
 
                 {/* Title */}
-                <td className="px-4 py-3 text-sm font-medium text-primary-900">
+                <td className="px-2 py-2 text-sm font-medium text-primary-900 sm:px-4 sm:py-3">
                   {artwork.title}
                 </td>
 
                 {/* Medium */}
-                <td className="px-4 py-3 text-sm text-primary-600">
+                <td className="hidden px-2 py-2 text-sm text-primary-600 md:table-cell sm:px-4 sm:py-3">
                   {artwork.medium ?? '\u2014'}
                 </td>
 
                 {/* Year */}
-                <td className="px-4 py-3 text-sm text-primary-600">
+                <td className="px-2 py-2 text-sm text-primary-600 sm:px-4 sm:py-3">
                   {artwork.year ?? '\u2014'}
                 </td>
 
                 {/* Dimensions */}
-                <td className="px-4 py-3 text-sm text-primary-600">
+                <td className="hidden px-2 py-2 text-sm text-primary-600 lg:table-cell sm:px-4 sm:py-3">
                   {dimensions || '\u2014'}
                 </td>
 
                 {/* Status */}
-                <td className="px-4 py-3">
+                <td className="px-2 py-2 sm:px-4 sm:py-3">
                   <StatusBadge status={artwork.status} />
                 </td>
 
                 {/* Price */}
-                <td className="px-4 py-3 text-sm text-primary-800">
+                <td className="px-2 py-2 text-sm text-primary-800 sm:px-4 sm:py-3">
                   {artwork.price != null
                     ? formatCurrency(artwork.price, artwork.currency)
                     : '\u2014'}
                 </td>
 
                 {/* Location */}
-                <td className="px-4 py-3 text-sm text-primary-600">
+                <td className="hidden px-2 py-2 text-sm text-primary-600 md:table-cell sm:px-4 sm:py-3">
                   {artwork.current_location ?? '\u2014'}
                 </td>
               </tr>

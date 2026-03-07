@@ -47,26 +47,26 @@ function getTemplateLabel(templateType: string | null): string {
 export function EmailLogList({ emails, onViewEmail }: EmailLogListProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[900px]">
+      <table className="w-full">
         {/* Header */}
         <thead>
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400">
+            <th className="px-2 py-2 text-left text-xs font-medium uppercase tracking-wider text-primary-400 sm:px-4 sm:py-3">
               Date
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400">
+            <th className="px-2 py-2 text-left text-xs font-medium uppercase tracking-wider text-primary-400 sm:px-4 sm:py-3">
               To
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400">
+            <th className="px-2 py-2 text-left text-xs font-medium uppercase tracking-wider text-primary-400 sm:px-4 sm:py-3">
               Subject
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400">
+            <th className="hidden px-2 py-2 text-left text-xs font-medium uppercase tracking-wider text-primary-400 md:table-cell sm:px-4 sm:py-3">
               Template
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400">
+            <th className="px-2 py-2 text-left text-xs font-medium uppercase tracking-wider text-primary-400 sm:px-4 sm:py-3">
               Status
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400">
+            <th className="hidden px-2 py-2 text-left text-xs font-medium uppercase tracking-wider text-primary-400 md:table-cell sm:px-4 sm:py-3">
               Contact
             </th>
           </tr>
@@ -81,34 +81,34 @@ export function EmailLogList({ emails, onViewEmail }: EmailLogListProps) {
               className="cursor-pointer border-b border-primary-100 transition-colors hover:bg-primary-50"
             >
               {/* Date */}
-              <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+              <td className="whitespace-nowrap px-2 py-2 text-sm text-primary-600 sm:px-4 sm:py-3">
                 {formatDate(email.sent_at)}
               </td>
 
               {/* To */}
-              <td className="px-4 py-3 text-sm text-primary-800">
+              <td className="px-2 py-2 text-sm text-primary-800 sm:px-4 sm:py-3">
                 {email.to_email}
               </td>
 
               {/* Subject */}
-              <td className="px-4 py-3 text-sm text-primary-700">
+              <td className="px-2 py-2 text-sm text-primary-700 sm:px-4 sm:py-3">
                 {truncate(email.subject, 50)}
               </td>
 
               {/* Template */}
-              <td className="px-4 py-3 text-sm text-primary-600">
+              <td className="hidden px-2 py-2 text-sm text-primary-600 md:table-cell sm:px-4 sm:py-3">
                 {getTemplateLabel(email.template_type)}
               </td>
 
               {/* Status */}
-              <td className="px-4 py-3">
+              <td className="px-2 py-2 sm:px-4 sm:py-3">
                 <Badge variant={getStatusBadgeVariant(email.status)}>
                   {getStatusLabel(email.status)}
                 </Badge>
               </td>
 
               {/* Contact */}
-              <td className="px-4 py-3 text-sm text-primary-600">
+              <td className="hidden px-2 py-2 text-sm text-primary-600 md:table-cell sm:px-4 sm:py-3">
                 {email.contacts
                   ? `${email.contacts.first_name} ${email.contacts.last_name}`
                   : '\u2014'}

@@ -72,7 +72,7 @@ export function DeliveriesPage() {
           className="max-w-md"
         />
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             options={[...DELIVERY_STATUSES]}
             value={statusFilter}
@@ -81,7 +81,7 @@ export function DeliveriesPage() {
           />
         </div>
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <GallerySelect
             value={galleryFilter}
             onChange={setGalleryFilter}
@@ -137,22 +137,22 @@ export function DeliveriesPage() {
           <table className="min-w-full divide-y divide-primary-100">
             <thead className="bg-primary-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Delivery #
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Recipient
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="hidden md:table-cell px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Gallery
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Date
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Status
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
                   Action
                 </th>
               </tr>
@@ -164,22 +164,22 @@ export function DeliveriesPage() {
                   className="cursor-pointer hover:bg-primary-50 transition-colors"
                   onClick={() => navigate(`/deliveries/${delivery.id}`)}
                 >
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-primary-900">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm font-medium text-primary-900">
                     {delivery.delivery_number}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-600">
                     {delivery.recipient_name}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                  <td className="hidden md:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-600">
                     {delivery.galleries?.name ?? '-'}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-600">
                     {delivery.delivery_date ? formatDate(delivery.delivery_date) : '-'}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3">
                     <StatusBadge status={delivery.status} />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right">
                     <Button
                       variant="ghost"
                       size="sm"

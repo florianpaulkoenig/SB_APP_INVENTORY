@@ -160,12 +160,12 @@ export function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOverlayProp
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm pt-[10vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm pt-[3vh] sm:pt-[10vh]"
       onClick={onClose}
     >
       {/* Search panel */}
       <div
-        className="w-full max-w-2xl rounded-xl bg-white shadow-2xl"
+        className="mx-2 w-full max-w-2xl rounded-lg bg-white shadow-2xl sm:mx-0 sm:rounded-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
@@ -213,7 +213,7 @@ export function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOverlayProp
         </div>
 
         {/* Results area */}
-        <div className="max-h-[60vh] overflow-y-auto">
+        <div className="max-h-[50vh] overflow-y-auto sm:max-h-[60vh]">
           {/* Loading */}
           {loading && (
             <div className="flex items-center justify-center py-8">

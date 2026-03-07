@@ -264,7 +264,7 @@ export function InsurancePanel({ artworkId }: InsurancePanelProps) {
         size="md"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
               label="Insured Value"
               type="number"
@@ -299,7 +299,7 @@ export function InsurancePanel({ artworkId }: InsurancePanelProps) {
             placeholder="e.g., POL-2024-12345"
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
               label="Valid From"
               type="date"

@@ -76,7 +76,7 @@ export function ContactsPage() {
           className="max-w-md"
         />
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             options={[...CONTACT_TYPES]}
             value={typeFilter}

@@ -138,7 +138,7 @@ export function DealsPage() {
                 onChange={(e) => setArtworkId(e.target.value)}
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Input
                   label="Value"
                   type="number"

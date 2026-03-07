@@ -569,7 +569,7 @@ export function DashboardPage() {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-primary-900">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-primary-900">
           Welcome to NOA Inventory
         </h1>
         <p className="mt-1 text-sm text-primary-500">
@@ -583,18 +583,18 @@ export function DashboardPage() {
           <LoadingSpinner />
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 lg:grid-cols-7">
           {statCards.map((stat) => (
             <button
               key={stat.label}
               type="button"
               onClick={stat.onClick}
-              className="rounded-lg border border-primary-100 bg-white p-6 text-left transition-shadow hover:shadow-md"
+              className="rounded-lg border border-primary-100 bg-white p-3 sm:p-6 text-left transition-shadow hover:shadow-md"
             >
               <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
                 {stat.label}
               </p>
-              <p className={`mt-2 font-display text-3xl font-bold ${stat.color ?? 'text-primary-900'}`}>
+              <p className={`mt-2 font-display text-xl sm:text-3xl font-bold ${stat.color ?? 'text-primary-900'}`}>
                 {stat.value}
               </p>
             </button>
@@ -657,18 +657,18 @@ export function DashboardPage() {
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-primary-100 bg-primary-50/50">
-                      <th className="px-4 py-3 font-medium text-primary-500">Revenue Type</th>
-                      <th className="px-4 py-3 text-right font-medium text-sky-600">Gallery</th>
-                      <th className="px-4 py-3 text-right font-medium text-amber-600">NOA</th>
-                      <th className="px-4 py-3 text-right font-medium text-emerald-600">Artist</th>
-                      <th className="px-4 py-3 text-right font-medium text-primary-500">Total</th>
+                      <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium text-primary-500">Revenue Type</th>
+                      <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-sky-600">Gallery</th>
+                      <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-amber-600">NOA</th>
+                      <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-emerald-600">Artist</th>
+                      <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-primary-500">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-primary-50">
                     {/* Sales Revenue Split */}
                     {revenueSplit.total > 0 && (
                       <tr>
-                        <td className="px-4 py-3 font-semibold text-primary-900">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 font-semibold text-primary-900">
                           Sales Revenue
                           <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
                             <div className="bg-sky-500" style={{ width: `${(revenueSplit.gallery / revenueSplit.total) * 100}%` }} />
@@ -676,25 +676,25 @@ export function DashboardPage() {
                             <div className="bg-emerald-500" style={{ width: `${(revenueSplit.artist / revenueSplit.total) * 100}%` }} />
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right text-sky-600">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right text-sky-600">
                           {formatCurrency(revenueSplit.gallery, 'CHF')}
                           <span className="ml-1 text-xs text-primary-400">
                             ({((revenueSplit.gallery / revenueSplit.total) * 100).toFixed(0)}%)
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-amber-600">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right text-amber-600">
                           {formatCurrency(revenueSplit.noa, 'CHF')}
                           <span className="ml-1 text-xs text-primary-400">
                             ({((revenueSplit.noa / revenueSplit.total) * 100).toFixed(0)}%)
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-emerald-600">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right text-emerald-600">
                           {formatCurrency(revenueSplit.artist, 'CHF')}
                           <span className="ml-1 text-xs text-primary-400">
                             ({((revenueSplit.artist / revenueSplit.total) * 100).toFixed(0)}%)
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold text-primary-900">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right font-semibold text-primary-900">
                           {formatCurrency(revenueSplit.total, 'CHF')}
                         </td>
                       </tr>
@@ -703,7 +703,7 @@ export function DashboardPage() {
                     {/* Potential Revenue Split */}
                     {potentialSplit.total > 0 && (
                       <tr>
-                        <td className="px-4 py-3 font-semibold text-primary-900">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 font-semibold text-primary-900">
                           Potential Revenue
                           <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
                             <div className="bg-sky-500" style={{ width: `${(potentialSplit.gallery / potentialSplit.total) * 100}%` }} />
@@ -711,25 +711,25 @@ export function DashboardPage() {
                             <div className="bg-emerald-500" style={{ width: `${(potentialSplit.artist / potentialSplit.total) * 100}%` }} />
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right text-sky-600">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right text-sky-600">
                           {formatCurrency(potentialSplit.gallery, 'CHF')}
                           <span className="ml-1 text-xs text-primary-400">
                             ({((potentialSplit.gallery / potentialSplit.total) * 100).toFixed(0)}%)
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-amber-600">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right text-amber-600">
                           {formatCurrency(potentialSplit.noa, 'CHF')}
                           <span className="ml-1 text-xs text-primary-400">
                             ({((potentialSplit.noa / potentialSplit.total) * 100).toFixed(0)}%)
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-emerald-600">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right text-emerald-600">
                           {formatCurrency(potentialSplit.artist, 'CHF')}
                           <span className="ml-1 text-xs text-primary-400">
                             ({((potentialSplit.artist / potentialSplit.total) * 100).toFixed(0)}%)
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold text-primary-900">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right font-semibold text-primary-900">
                           {formatCurrency(potentialSplit.total, 'CHF')}
                         </td>
                       </tr>
@@ -738,7 +738,7 @@ export function DashboardPage() {
                     {/* Confirmed Orders Revenue Split */}
                     {ordersSplit.total > 0 && (
                       <tr>
-                        <td className="px-4 py-3 font-semibold text-primary-900">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 font-semibold text-primary-900">
                           Confirmed Orders
                           <div className="mt-1 flex h-2 w-24 overflow-hidden rounded-full bg-primary-100">
                             <div className="bg-sky-500" style={{ width: `${(ordersSplit.gallery / ordersSplit.total) * 100}%` }} />
@@ -746,25 +746,25 @@ export function DashboardPage() {
                             <div className="bg-emerald-500" style={{ width: `${(ordersSplit.artist / ordersSplit.total) * 100}%` }} />
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right text-sky-600">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right text-sky-600">
                           {formatCurrency(ordersSplit.gallery, 'CHF')}
                           <span className="ml-1 text-xs text-primary-400">
                             ({((ordersSplit.gallery / ordersSplit.total) * 100).toFixed(0)}%)
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-amber-600">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right text-amber-600">
                           {formatCurrency(ordersSplit.noa, 'CHF')}
                           <span className="ml-1 text-xs text-primary-400">
                             ({((ordersSplit.noa / ordersSplit.total) * 100).toFixed(0)}%)
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-emerald-600">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right text-emerald-600">
                           {formatCurrency(ordersSplit.artist, 'CHF')}
                           <span className="ml-1 text-xs text-primary-400">
                             ({((ordersSplit.artist / ordersSplit.total) * 100).toFixed(0)}%)
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold text-primary-900">
+                        <td className="px-2 py-2 sm:px-4 sm:py-3 text-right font-semibold text-primary-900">
                           {formatCurrency(ordersSplit.total, 'CHF')}
                         </td>
                       </tr>
@@ -793,15 +793,15 @@ export function DashboardPage() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-primary-100 bg-primary-50/50">
-                  <th className="px-4 py-3 text-center font-medium text-primary-500">#</th>
-                  <th className="px-4 py-3 font-medium text-primary-500">Gallery Name</th>
-                  <th className="px-4 py-3 text-right font-medium text-primary-500">Total Revenue</th>
-                  <th className="hidden px-4 py-3 text-right font-medium text-primary-500 sm:table-cell">Orders Revenue</th>
-                  <th className="hidden px-4 py-3 text-right font-medium text-primary-500 md:table-cell">Potential Revenue</th>
-                  <th className="px-4 py-3 text-center font-medium text-primary-500">Sold</th>
-                  <th className="hidden px-4 py-3 text-center font-medium text-primary-500 sm:table-cell">Consigned</th>
-                  <th className="px-4 py-3 font-medium text-primary-500">Sell-Through</th>
-                  <th className="hidden px-4 py-3 text-center font-medium text-primary-500 md:table-cell">Commission Split</th>
+                  <th className="px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500">#</th>
+                  <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium text-primary-500">Gallery Name</th>
+                  <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-primary-500">Total Revenue</th>
+                  <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-primary-500 sm:table-cell">Orders Revenue</th>
+                  <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-primary-500 md:table-cell">Potential Revenue</th>
+                  <th className="px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500">Sold</th>
+                  <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500 sm:table-cell">Consigned</th>
+                  <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium text-primary-500">Sell-Through</th>
+                  <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500 md:table-cell">Commission Split</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary-50">
@@ -811,30 +811,30 @@ export function DashboardPage() {
                     className={`cursor-pointer transition-colors hover:bg-primary-50/50 ${idx % 2 === 1 ? 'bg-primary-50/25' : ''}`}
                     onClick={() => navigate(`/galleries/${gr.id}`)}
                   >
-                    <td className="px-4 py-3 text-center font-bold text-primary-400">
+                    <td className="px-2 py-2 sm:px-4 sm:py-3 text-center font-bold text-primary-400">
                       {idx + 1}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-primary-900">
+                    <td className="px-2 py-2 sm:px-4 sm:py-3 font-semibold text-primary-900">
                       {gr.name}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-emerald-600">
+                    <td className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-emerald-600">
                       {gr.totalRevenue > 0 ? chfFmt.format(gr.totalRevenue) : '—'}
                     </td>
-                    <td className="hidden px-4 py-3 text-right font-medium text-blue-600 sm:table-cell">
+                    <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-blue-600 sm:table-cell">
                       {gr.ordersRevenue > 0 ? chfFmt.format(gr.ordersRevenue) : '—'}
                     </td>
-                    <td className="hidden px-4 py-3 text-right font-medium text-amber-600 md:table-cell">
+                    <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-amber-600 md:table-cell">
                       {gr.potentialRevenue > 0 ? chfFmt.format(gr.potentialRevenue) : '—'}
                     </td>
-                    <td className="px-4 py-3 text-center text-primary-600">
+                    <td className="px-2 py-2 sm:px-4 sm:py-3 text-center text-primary-600">
                       {gr.artworksSold}
                     </td>
-                    <td className="hidden px-4 py-3 text-center text-primary-600 sm:table-cell">
+                    <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center text-primary-600 sm:table-cell">
                       {gr.artworksConsigned}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-2 py-2 sm:px-4 sm:py-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-2 w-16 overflow-hidden rounded-full bg-primary-100">
+                        <div className="h-2 w-10 sm:w-16 overflow-hidden rounded-full bg-primary-100">
                           <div
                             className={`h-full rounded-full ${
                               gr.sellThroughRate >= 60
@@ -851,7 +851,7 @@ export function DashboardPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="hidden px-4 py-3 text-center text-xs text-primary-500 md:table-cell">
+                    <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center text-xs text-primary-500 md:table-cell">
                       {gr.commissionSplit !== '—' ? (
                         <span className="inline-flex items-center gap-0.5">
                           <span className="font-medium text-sky-600">G</span>{gr.commissionSplit.split('/')[0]}%

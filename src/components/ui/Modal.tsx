@@ -48,7 +48,7 @@ export function Modal({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-2 sm:items-center sm:p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 transition-opacity"
@@ -58,14 +58,14 @@ export function Modal({
       {/* Dialog */}
       <div
         className={cn(
-          'relative flex max-h-[calc(100vh-2rem)] w-full flex-col rounded-lg bg-white shadow-xl transition-all',
+          'relative flex max-h-[calc(100vh-1rem)] w-full flex-col rounded-t-2xl bg-white shadow-xl transition-all sm:max-h-[calc(100vh-2rem)] sm:rounded-lg',
           'animate-in fade-in zoom-in-95 duration-200',
           sizeStyles[size],
         )}
       >
         {/* Header */}
         {title && (
-          <div className="flex shrink-0 items-center justify-between border-b border-primary-100 px-6 py-4">
+          <div className="flex shrink-0 items-center justify-between border-b border-primary-100 px-4 py-3 sm:px-6 sm:py-4">
             <h2 className="font-display text-lg font-semibold text-primary-900">
               {title}
             </h2>
@@ -115,7 +115,7 @@ export function Modal({
         )}
 
         {/* Body */}
-        <div className="overflow-y-auto overscroll-contain px-6 py-4">{children}</div>
+        <div className="overflow-y-auto overscroll-contain px-4 py-3 sm:px-6 sm:py-4">{children}</div>
       </div>
     </div>,
     document.body,

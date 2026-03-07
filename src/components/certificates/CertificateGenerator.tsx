@@ -110,7 +110,7 @@ export function CertificateGenerator({
   if (!existingCertificate) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             label="Language"
             options={[...LANGUAGE_OPTIONS]}
@@ -161,7 +161,7 @@ export function CertificateGenerator({
 
       {/* Language selector + actions */}
       <div className="flex flex-wrap items-end gap-3">
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             label="Language"
             options={[...LANGUAGE_OPTIONS]}

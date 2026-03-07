@@ -150,7 +150,7 @@ export function GalleryForwardingOrdersPage() {
           className="max-w-md"
         />
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             options={[...FORWARDING_STATUSES]}
             value={statusFilter}

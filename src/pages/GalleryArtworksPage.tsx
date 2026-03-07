@@ -199,22 +199,22 @@ export function GalleryArtworksPage() {
           <table className="min-w-full divide-y divide-primary-100">
             <thead className="bg-primary-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Title
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="hidden sm:table-cell px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Reference
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="hidden md:table-cell px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                   Year
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
                   Price
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
                   Actions
                 </th>
               </tr>
@@ -223,36 +223,36 @@ export function GalleryArtworksPage() {
               {filtered.map((artwork) => (
                 <tr key={artwork.id} className="hover:bg-primary-50 transition-colors">
                   {/* Title */}
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-primary-900">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm font-medium text-primary-900">
                     {artwork.title}
                   </td>
 
                   {/* Reference code */}
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                  <td className="hidden sm:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-600">
                     {artwork.reference_code}
                   </td>
 
                   {/* Status */}
-                  <td className="whitespace-nowrap px-4 py-3">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3">
                     <Badge variant={STATUS_BADGE_VARIANT[artwork.status] ?? 'default'}>
                       {artwork.status.replace(/_/g, ' ')}
                     </Badge>
                   </td>
 
                   {/* Year */}
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-600">
+                  <td className="hidden md:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-600">
                     {artwork.year ?? '\u2014'}
                   </td>
 
                   {/* Price */}
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-primary-600">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right text-sm text-primary-600">
                     {artwork.price != null
                       ? formatCurrency(artwork.price, artwork.currency)
                       : '\u2014'}
                   </td>
 
                   {/* Actions */}
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right">
                     {SELLABLE_STATUSES.has(artwork.status) ? (
                       <Button
                         variant="outline"

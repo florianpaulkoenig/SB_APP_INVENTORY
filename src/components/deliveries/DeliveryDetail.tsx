@@ -274,7 +274,7 @@ export function DeliveryDetail({
 
         {items.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[500px]">
+            <table className="w-full">
               <thead>
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400">
@@ -343,7 +343,7 @@ export function DeliveryDetail({
           Delivery Receipt PDF
         </h2>
         <div className="flex flex-wrap items-end gap-3">
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <Select
               label="Language"
               options={[...LANGUAGE_OPTIONS]}

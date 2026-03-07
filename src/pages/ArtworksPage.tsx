@@ -400,7 +400,7 @@ export function ArtworksPage() {
 
         {/* Sort dropdown (grid view only) */}
         {viewMode === 'grid' && (
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <Select
               options={SORT_OPTIONS}
               value={`${sortBy}:${sortOrder}`}

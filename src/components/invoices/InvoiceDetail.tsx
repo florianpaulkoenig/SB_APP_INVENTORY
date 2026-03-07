@@ -144,7 +144,7 @@ export function InvoiceDetail({
 
         {items.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[500px]">
+            <table className="w-full">
               <thead>
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400">

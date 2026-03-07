@@ -417,7 +417,7 @@ export function ArtworkDetailPage() {
             <p className="mr-auto text-sm text-primary-500">
               {certificate.certificate_number}
             </p>
-            <div className="w-48">
+            <div className="w-full sm:w-48">
               <Select
                 label="Language"
                 options={[...LANGUAGE_OPTIONS]}
