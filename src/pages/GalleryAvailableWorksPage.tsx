@@ -211,12 +211,8 @@ export function GalleryAvailableWorksPage() {
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           className="w-full sm:w-48"
-        >
-          <option value="">All Categories</option>
-          {ARTWORK_CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
-          ))}
-        </Select>
+          options={[{value: '', label: 'All Categories'}, ...ARTWORK_CATEGORIES]}
+        />
         <Input
           type="text"
           placeholder="Search by title, medium, or series..."

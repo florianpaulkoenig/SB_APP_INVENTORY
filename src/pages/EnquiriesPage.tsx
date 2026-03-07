@@ -137,24 +137,9 @@ export function EnquiriesPage() {
 
       <Card>
         <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-4">
-          <Select label="Status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-            <option value="">All Statuses</option>
-            {ENQUIRY_STATUSES.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </Select>
-          <Select label="Source" value={filterSource} onChange={(e) => setFilterSource(e.target.value)}>
-            <option value="">All Sources</option>
-            {ENQUIRY_SOURCES.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </Select>
-          <Select label="Priority" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-            <option value="">All Priorities</option>
-            {ENQUIRY_PRIORITIES.map((p) => (
-              <option key={p.value} value={p.value}>{p.label}</option>
-            ))}
-          </Select>
+          <Select label="Status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} options={[{value: '', label: 'All Statuses'}, ...ENQUIRY_STATUSES]} />
+          <Select label="Source" value={filterSource} onChange={(e) => setFilterSource(e.target.value)} options={[{value: '', label: 'All Sources'}, ...ENQUIRY_SOURCES]} />
+          <Select label="Priority" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} options={[{value: '', label: 'All Priorities'}, ...ENQUIRY_PRIORITIES]} />
           <Input label="Search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name, subject, email..." />
         </div>
       </Card>
@@ -213,12 +198,7 @@ export function EnquiriesPage() {
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add Enquiry">
         <div className="space-y-4">
-          <Select label="Source" value={formData.source} onChange={(e) => updateField('source', e.target.value)}>
-            <option value="">Select source...</option>
-            {ENQUIRY_SOURCES.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </Select>
+          <Select label="Source" value={formData.source} onChange={(e) => updateField('source', e.target.value)} options={[{value: '', label: 'Select source...'}, ...ENQUIRY_SOURCES]} />
           <Input label="Sender Name" value={formData.sender_name} onChange={(e) => updateField('sender_name', e.target.value)} />
           <Input label="Sender Email" value={formData.sender_email} onChange={(e) => updateField('sender_email', e.target.value)} />
           <Input label="Sender Phone" value={formData.sender_phone} onChange={(e) => updateField('sender_phone', e.target.value)} />
@@ -247,17 +227,9 @@ export function EnquiriesPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Estimated Value" type="number" value={formData.estimated_value} onChange={(e) => updateField('estimated_value', e.target.value)} />
-            <Select label="Currency" value={formData.currency} onChange={(e) => updateField('currency', e.target.value)}>
-              {CURRENCIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </Select>
+            <Select label="Currency" value={formData.currency} onChange={(e) => updateField('currency', e.target.value)} options={CURRENCIES} />
           </div>
-          <Select label="Priority" value={formData.priority} onChange={(e) => updateField('priority', e.target.value)}>
-            {ENQUIRY_PRIORITIES.map((p) => (
-              <option key={p.value} value={p.value}>{p.label}</option>
-            ))}
-          </Select>
+          <Select label="Priority" value={formData.priority} onChange={(e) => updateField('priority', e.target.value)} options={ENQUIRY_PRIORITIES} />
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
             <Button variant="primary" onClick={handleSubmit}>Create Enquiry</Button>

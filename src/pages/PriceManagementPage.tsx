@@ -220,21 +220,11 @@ export function PriceManagementPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end mb-4">
           <div className="flex-1">
             <label className="block text-xs font-medium text-primary-500 mb-1">Category</label>
-            <Select value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value)}>
-              <option value="">All Categories</option>
-              {ARTWORK_CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </Select>
+            <Select value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value)} options={[{value: '', label: 'All Categories'}, ...ARTWORK_CATEGORIES]} />
           </div>
           <div className="flex-1">
             <label className="block text-xs font-medium text-primary-500 mb-1">Series</label>
-            <Select value={bulkSeries} onChange={(e) => setBulkSeries(e.target.value)}>
-              <option value="">All Series</option>
-              {ARTWORK_SERIES.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </Select>
+            <Select value={bulkSeries} onChange={(e) => setBulkSeries(e.target.value)} options={[{value: '', label: 'All Series'}, ...ARTWORK_SERIES]} />
           </div>
         </div>
 
@@ -284,11 +274,7 @@ export function PriceManagementPage() {
           {changeType === 'fixed' && (
             <div className="w-32">
               <label className="block text-xs font-medium text-primary-500 mb-1">Currency</label>
-              <Select value={changeCurrency} onChange={(e) => setChangeCurrency(e.target.value)}>
-                {CURRENCIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </Select>
+              <Select value={changeCurrency} onChange={(e) => setChangeCurrency(e.target.value)} options={CURRENCIES} />
             </div>
           )}
           <Button onClick={handlePreview} disabled={previewLoading || !changeValue}>

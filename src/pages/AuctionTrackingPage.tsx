@@ -207,22 +207,14 @@ export function AuctionTrackingPage() {
           label="Auction House"
           value={filterHouse}
           onChange={(e) => setFilterHouse(e.target.value)}
-        >
-          <option value="">All Houses</option>
-          {AUCTION_HOUSES.map((h) => (
-            <option key={h.value} value={h.value}>{h.label}</option>
-          ))}
-        </Select>
+          options={[{value: '', label: 'All Houses'}, ...AUCTION_HOUSES]}
+        />
         <Select
           label="Result"
           value={filterResult}
           onChange={(e) => setFilterResult(e.target.value)}
-        >
-          <option value="">All Results</option>
-          {AUCTION_RESULTS.map((r) => (
-            <option key={r.value} value={r.value}>{r.label}</option>
-          ))}
-        </Select>
+          options={[{value: '', label: 'All Results'}, ...AUCTION_RESULTS]}
+        />
       </div>
 
       {/* KPI Row */}
@@ -320,12 +312,8 @@ export function AuctionTrackingPage() {
             label="Auction House"
             value={alertForm.auction_house}
             onChange={(e) => setAlertForm({ ...alertForm, auction_house: e.target.value })}
-          >
-            <option value="">Select house</option>
-            {AUCTION_HOUSES.map((h) => (
-              <option key={h.value} value={h.value}>{h.label}</option>
-            ))}
-          </Select>
+            options={[{value: '', label: 'Select house'}, ...AUCTION_HOUSES]}
+          />
           <Input
             label="Sale Title"
             value={alertForm.sale_title}
@@ -375,11 +363,8 @@ export function AuctionTrackingPage() {
               label="Currency"
               value={alertForm.currency}
               onChange={(e) => setAlertForm({ ...alertForm, currency: e.target.value })}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </Select>
+              options={CURRENCIES}
+            />
           </div>
           <Input
             label="Source URL"
@@ -411,12 +396,8 @@ export function AuctionTrackingPage() {
             label="Result"
             value={updateForm.result}
             onChange={(e) => setUpdateForm({ ...updateForm, result: e.target.value })}
-          >
-            <option value="">Select result</option>
-            {AUCTION_RESULTS.map((r) => (
-              <option key={r.value} value={r.value}>{r.label}</option>
-            ))}
-          </Select>
+            options={[{value: '', label: 'Select result'}, ...AUCTION_RESULTS]}
+          />
           <Input
             label="Hammer Price"
             type="number"

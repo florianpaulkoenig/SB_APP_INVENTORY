@@ -235,12 +235,7 @@ export function ExhibitionsPage() {
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? 'Edit Exhibition' : 'Add Exhibition'}>
         <div className="space-y-4">
           <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          <Select label="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-            <option value="">Select type</option>
-            {EXHIBITION_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </Select>
+          <Select label="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} options={[{value: '', label: 'Select type'}, ...EXHIBITION_TYPES]} />
           <Input label="Venue" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} />
           <div className="grid grid-cols-2 gap-4">
             <Input label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
@@ -252,11 +247,7 @@ export function ExhibitionsPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Budget" type="number" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} />
-            <Select label="Currency" value={form.budget_currency} onChange={(e) => setForm({ ...form, budget_currency: e.target.value })}>
-              {CURRENCIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </Select>
+            <Select label="Currency" value={form.budget_currency} onChange={(e) => setForm({ ...form, budget_currency: e.target.value })} options={CURRENCIES} />
           </div>
           <Input label="Catalogue Reference" value={form.catalogue_reference} onChange={(e) => setForm({ ...form, catalogue_reference: e.target.value })} />
           <div>
