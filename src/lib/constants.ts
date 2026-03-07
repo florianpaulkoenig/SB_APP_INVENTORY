@@ -310,10 +310,12 @@ export const ENQUIRY_SOURCES = [
 ] as const;
 
 export const ENQUIRY_STATUSES = [
-  { value: 'new', label: 'New', color: 'bg-blue-100 text-blue-800' },
-  { value: 'reviewing', label: 'Reviewing', color: 'bg-amber-100 text-amber-800' },
-  { value: 'converted', label: 'Converted', color: 'bg-emerald-100 text-emerald-800' },
-  { value: 'archived', label: 'Archived', color: 'bg-gray-100 text-gray-800' },
+  { value: 'new', label: 'New', color: '#93c5fd' },
+  { value: 'reviewing', label: 'Reviewing', color: '#fbbf24' },
+  { value: 'qualified', label: 'Qualified', color: '#2563eb' },
+  { value: 'lead', label: 'Lead', color: '#f97316' },
+  { value: 'sold', label: 'Sold', color: '#c9a96e' },
+  { value: 'archived', label: 'Archived', color: '#9ca3af' },
 ] as const;
 
 export const ENQUIRY_PRIORITIES = [

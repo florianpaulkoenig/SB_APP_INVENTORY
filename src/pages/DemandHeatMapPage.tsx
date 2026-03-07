@@ -2,37 +2,38 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { formatCurrency } from '../lib/utils';
 import { MapView, MapLegend } from '../components/maps/MapView';
 import type { MapMarker } from '../components/maps/MapView';
 import { getCoordinates } from '../lib/geocoding';
 
 interface ActiveLayers {
-  enquiries: boolean;
-  exhibitions: boolean;
+  allEnquiries: boolean;
+  qualified: boolean;
+  leads: boolean;
   sales: boolean;
-  collectors: boolean;
 }
 
 interface MarketRow {
   country: string;
-  collectors: number;
+  enquiries: number;
+  qualified: number;
+  leads: number;
   sales: number;
-  exhibitions: number;
 }
 
 export function DemandHeatMapPage() {
   const [loading, setLoading] = useState(true);
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [activeLayer, setActiveLayer] = useState<ActiveLayers>({
-    enquiries: true,
-    exhibitions: true,
+    allEnquiries: true,
+    qualified: true,
+    leads: true,
     sales: true,
-    collectors: true,
   });
   const [stats, setStats] = useState({
     totalEnquiries: 0,
-    totalExhibitions: 0,
+    qualifiedEnquiries: 0,
+    totalLeads: 0,
     totalSales: 0,
     countriesCovered: 0,
   });
@@ -42,139 +43,106 @@ export function DemandHeatMapPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [enquiriesRes, exhibitionsRes, salesRes, contactsRes] = await Promise.all([
-        supabase
-          .from('enquiries')
-          .select('id, sender_name, subject, location_city, location_country, estimated_value, currency, status'),
-        supabase
-          .from('exhibitions')
-          .select('id, title, city, country, type'),
-        supabase
-          .from('sales')
-          .select('id, sale_date, sale_price, currency, sale_city, sale_country'),
-        supabase
-          .from('contacts')
-          .select('id, first_name, last_name, city, country, type')
-          .eq('type', 'collector'),
-      ]);
+      const { data: enquiriesData } = await supabase
+        .from('enquiries')
+        .select('id, sender_name, subject, location_city, location_country, estimated_value, currency, status');
 
-      const enquiries = enquiriesRes.data || [];
-      const exhibitions = exhibitionsRes.data || [];
-      const sales = salesRes.data || [];
-      const collectors = contactsRes.data || [];
+      const enquiries = enquiriesData || [];
 
-      // Build markers with geocoding
-      const enquiryMarkers: MapMarker[] = [];
+      // Pipeline stages — each enquiry belongs to exactly one stage
+      const allEnquiryMarkers: MapMarker[] = [];    // All (light blue)
+      const qualifiedMarkers: MapMarker[] = [];       // Qualified (blue)
+      const leadMarkers: MapMarker[] = [];            // Lead (orange)
+      const saleMarkers: MapMarker[] = [];            // Sold (gold)
+
       for (const e of enquiries) {
         const coords = await getCoordinates(e.location_city, e.location_country);
-        if (coords) {
-          enquiryMarkers.push({
-            id: `enquiry-${e.id}`,
-            lat: coords.lat,
-            lng: coords.lng,
-            type: 'enquiry',
-            color: '#3b82f6',
-            label: e.sender_name || e.subject || 'Enquiry',
-            value: e.estimated_value ?? undefined,
-            currency: e.currency ?? undefined,
-          });
-        }
-      }
+        if (!coords) continue;
 
-      const exhibitionMarkers: MapMarker[] = [];
-      for (const ex of exhibitions) {
-        const coords = await getCoordinates(ex.city, ex.country);
-        if (coords) {
-          exhibitionMarkers.push({
-            id: `exhibition-${ex.id}`,
-            lat: coords.lat,
-            lng: coords.lng,
-            type: 'exhibition',
-            color: '#8b5cf6',
-            label: ex.title || 'Exhibition',
-          });
-        }
-      }
+        const base = {
+          lat: coords.lat,
+          lng: coords.lng,
+          label: e.sender_name || e.subject || 'Enquiry',
+          value: e.estimated_value ?? undefined,
+          currency: e.currency ?? undefined,
+        };
 
-      const saleMarkers: MapMarker[] = [];
-      for (const s of sales) {
-        const coords = await getCoordinates(s.sale_city, s.sale_country);
-        if (coords) {
+        // Every enquiry goes into "All Enquiries" layer
+        allEnquiryMarkers.push({
+          ...base,
+          id: `enquiry-${e.id}`,
+          type: 'enquiry',
+          color: '#93c5fd',
+        });
+
+        // Additionally, place into specific pipeline stage layer
+        if (e.status === 'qualified') {
+          qualifiedMarkers.push({
+            ...base,
+            id: `qualified-${e.id}`,
+            type: 'qualified',
+            color: '#2563eb',
+          });
+        } else if (e.status === 'lead') {
+          leadMarkers.push({
+            ...base,
+            id: `lead-${e.id}`,
+            type: 'lead',
+            color: '#f97316',
+          });
+        } else if (e.status === 'sold' || e.status === 'closed_won') {
           saleMarkers.push({
-            id: `sale-${s.id}`,
-            lat: coords.lat,
-            lng: coords.lng,
+            ...base,
+            id: `sale-${e.id}`,
             type: 'sale',
             color: '#c9a96e',
-            label: `Sale: ${s.sale_city || 'Unknown'}`,
-            value: s.sale_price ?? undefined,
-            currency: s.currency ?? undefined,
           });
         }
       }
 
-      const collectorMarkers: MapMarker[] = [];
-      for (const c of collectors) {
-        const coords = await getCoordinates(c.city, c.country);
-        if (coords) {
-          collectorMarkers.push({
-            id: `collector-${c.id}`,
-            lat: coords.lat,
-            lng: coords.lng,
-            type: 'collector',
-            color: '#22c55e',
-            label: `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Collector',
-          });
-        }
-      }
-
-      const combined = [...enquiryMarkers, ...exhibitionMarkers, ...saleMarkers, ...collectorMarkers];
+      const combined = [...allEnquiryMarkers, ...qualifiedMarkers, ...leadMarkers, ...saleMarkers];
       setAllMarkers(combined);
 
       // Compute stats
       const allCountries = new Set<string>();
       enquiries.forEach((e) => e.location_country && allCountries.add(e.location_country));
-      exhibitions.forEach((e) => e.country && allCountries.add(e.country));
-      sales.forEach((s) => s.sale_country && allCountries.add(s.sale_country));
-      collectors.forEach((c) => c.country && allCountries.add(c.country));
 
       setStats({
         totalEnquiries: enquiries.length,
-        totalExhibitions: exhibitions.length,
-        totalSales: sales.length,
+        qualifiedEnquiries: qualifiedMarkers.length,
+        totalLeads: leadMarkers.length,
+        totalSales: saleMarkers.length,
         countriesCovered: allCountries.size,
       });
 
-      // Compute market opportunities
-      const collectorCountries = new Map<string, number>();
-      collectors.forEach((c) => {
-        if (c.country) {
-          collectorCountries.set(c.country, (collectorCountries.get(c.country) || 0) + 1);
-        }
-      });
+      // Compute market opportunities by country
+      const countryData = new Map<string, { enquiries: number; qualified: number; leads: number; sales: number }>();
 
-      const exhibitionCountries = new Set<string>();
-      exhibitions.forEach((e) => {
-        if (e.country) exhibitionCountries.add(e.country);
-      });
+      const addToCountry = (country: string, field: 'enquiries' | 'qualified' | 'leads' | 'sales') => {
+        if (!country) return;
+        const existing = countryData.get(country) || { enquiries: 0, qualified: 0, leads: 0, sales: 0 };
+        existing[field]++;
+        countryData.set(country, existing);
+      };
 
-      const saleCountryCount = new Map<string, number>();
-      sales.forEach((s) => {
-        if (s.sale_country) {
-          saleCountryCount.set(s.sale_country, (saleCountryCount.get(s.sale_country) || 0) + 1);
-        }
+      enquiries.forEach((e) => {
+        addToCountry(e.location_country, 'enquiries');
+        if (e.status === 'qualified') addToCountry(e.location_country, 'qualified');
+        if (e.status === 'lead') addToCountry(e.location_country, 'leads');
+        if (e.status === 'sold' || e.status === 'closed_won') addToCountry(e.location_country, 'sales');
       });
 
       const opportunities: MarketRow[] = [];
-      for (const [country, count] of collectorCountries) {
+      for (const [country, data] of countryData) {
         opportunities.push({
           country,
-          collectors: count,
-          sales: saleCountryCount.get(country) || 0,
-          exhibitions: exhibitionCountries.has(country) ? 1 : 0,
+          enquiries: data.enquiries,
+          qualified: data.qualified,
+          leads: data.leads,
+          sales: data.sales,
         });
       }
-      opportunities.sort((a, b) => b.collectors - a.collectors);
+      opportunities.sort((a, b) => (b.qualified + b.sales + b.leads) - (a.qualified + a.sales + a.leads));
       setMarketOpportunities(opportunities);
     } catch (err) {
       console.error('Failed to fetch demand data:', err);
@@ -190,10 +158,10 @@ export function DemandHeatMapPage() {
   // Filter markers by active layers
   useEffect(() => {
     const filtered = allMarkers.filter((m) => {
-      if (m.type === 'enquiry' && !activeLayer.enquiries) return false;
-      if (m.type === 'exhibition' && !activeLayer.exhibitions) return false;
+      if (m.type === 'enquiry' && !activeLayer.allEnquiries) return false;
+      if (m.type === 'qualified' && !activeLayer.qualified) return false;
+      if (m.type === 'lead' && !activeLayer.leads) return false;
       if (m.type === 'sale' && !activeLayer.sales) return false;
-      if (m.type === 'collector' && !activeLayer.collectors) return false;
       return true;
     });
     setMarkers(filtered);
@@ -204,13 +172,13 @@ export function DemandHeatMapPage() {
   };
 
   const getStatusBadge = (row: MarketRow) => {
-    if (row.exhibitions === 0 && row.sales === 0) {
-      return <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">Cold</span>;
-    }
-    if (row.exhibitions > 0 && row.sales > 0) {
+    if (row.sales > 0) {
       return <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">Hot</span>;
     }
-    return <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">Warm</span>;
+    if (row.leads > 0 || row.qualified > 0) {
+      return <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">Warm</span>;
+    }
+    return <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">Cold</span>;
   };
 
   if (loading) {
@@ -227,31 +195,41 @@ export function DemandHeatMapPage() {
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Demand Heat Map</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Geographic distribution of enquiries, exhibitions, sales, and collectors.
+          Enquiry pipeline: from first contact to sale — visualized geographically.
         </p>
       </div>
 
       {/* Layer Toggles */}
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={() => toggleLayer('enquiries')}
+          onClick={() => toggleLayer('allEnquiries')}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-            activeLayer.enquiries
-              ? 'bg-blue-500 text-white'
-              : 'border border-blue-500 text-blue-500 bg-white'
+            activeLayer.allEnquiries
+              ? 'bg-blue-300 text-white'
+              : 'border border-blue-300 text-blue-400 bg-white'
           }`}
         >
-          Enquiries
+          All Enquiries ({stats.totalEnquiries})
         </button>
         <button
-          onClick={() => toggleLayer('exhibitions')}
+          onClick={() => toggleLayer('qualified')}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-            activeLayer.exhibitions
-              ? 'bg-purple-500 text-white'
-              : 'border border-purple-500 text-purple-500 bg-white'
+            activeLayer.qualified
+              ? 'bg-blue-600 text-white'
+              : 'border border-blue-600 text-blue-600 bg-white'
           }`}
         >
-          Exhibitions
+          Qualified ({stats.qualifiedEnquiries})
+        </button>
+        <button
+          onClick={() => toggleLayer('leads')}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            activeLayer.leads
+              ? 'bg-orange-500 text-white'
+              : 'border border-orange-500 text-orange-500 bg-white'
+          }`}
+        >
+          Leads ({stats.totalLeads})
         </button>
         <button
           onClick={() => toggleLayer('sales')}
@@ -261,43 +239,39 @@ export function DemandHeatMapPage() {
               : 'border border-[#c9a96e] text-[#c9a96e] bg-white'
           }`}
         >
-          Sales
-        </button>
-        <button
-          onClick={() => toggleLayer('collectors')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-            activeLayer.collectors
-              ? 'bg-green-500 text-white'
-              : 'border border-green-500 text-green-500 bg-white'
-          }`}
-        >
-          Collectors
+          Sales ({stats.totalSales})
         </button>
       </div>
 
       {/* Stats Bar */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
         <Card>
           <div className="p-4 text-center">
-            <p className="text-sm text-gray-500">Total Enquiries</p>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.totalEnquiries}</p>
+            <p className="text-sm text-gray-500">All Enquiries</p>
+            <p className="mt-1 text-2xl font-semibold text-blue-400">{stats.totalEnquiries}</p>
           </div>
         </Card>
         <Card>
           <div className="p-4 text-center">
-            <p className="text-sm text-gray-500">Exhibitions</p>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.totalExhibitions}</p>
+            <p className="text-sm text-gray-500">Qualified</p>
+            <p className="mt-1 text-2xl font-semibold text-blue-600">{stats.qualifiedEnquiries}</p>
+          </div>
+        </Card>
+        <Card>
+          <div className="p-4 text-center">
+            <p className="text-sm text-gray-500">Leads</p>
+            <p className="mt-1 text-2xl font-semibold text-orange-500">{stats.totalLeads}</p>
           </div>
         </Card>
         <Card>
           <div className="p-4 text-center">
             <p className="text-sm text-gray-500">Sales</p>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.totalSales}</p>
+            <p className="mt-1 text-2xl font-semibold text-[#c9a96e]">{stats.totalSales}</p>
           </div>
         </Card>
         <Card>
           <div className="p-4 text-center">
-            <p className="text-sm text-gray-500">Countries Covered</p>
+            <p className="text-sm text-gray-500">Countries</p>
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.countriesCovered}</p>
           </div>
         </Card>
@@ -313,16 +287,16 @@ export function DemandHeatMapPage() {
       {/* Legend */}
       <MapLegend
         items={[
-          { label: 'Enquiries', color: '#3b82f6', count: allMarkers.filter(m => m.type === 'enquiry').length },
-          { label: 'Exhibitions', color: '#8b5cf6', count: allMarkers.filter(m => m.type === 'exhibition').length },
+          { label: 'All Enquiries', color: '#93c5fd', count: allMarkers.filter(m => m.type === 'enquiry').length },
+          { label: 'Qualified', color: '#2563eb', count: allMarkers.filter(m => m.type === 'qualified').length },
+          { label: 'Leads', color: '#f97316', count: allMarkers.filter(m => m.type === 'lead').length },
           { label: 'Sales', color: '#c9a96e', count: allMarkers.filter(m => m.type === 'sale').length },
-          { label: 'Collectors', color: '#22c55e', count: allMarkers.filter(m => m.type === 'collector').length },
         ]}
       />
 
       {/* Market Opportunities */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Market Opportunities</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Market Opportunities by Country</h2>
         <Card>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -332,13 +306,16 @@ export function DemandHeatMapPage() {
                     Country
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Collectors
+                    Enquiries
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Qualified
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Leads
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                     Sales
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Exhibitions
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                     Status
@@ -348,7 +325,7 @@ export function DemandHeatMapPage() {
               <tbody className="divide-y divide-gray-200 bg-white">
                 {marketOpportunities.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
+                    <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
                       No market data available.
                     </td>
                   </tr>
@@ -358,14 +335,17 @@ export function DemandHeatMapPage() {
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                         {row.country}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
-                        {row.collectors}
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-blue-400">
+                        {row.enquiries}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-blue-600 font-medium">
+                        {row.qualified}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-orange-500 font-medium">
+                        {row.leads}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-[#c9a96e] font-medium">
                         {row.sales}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
-                        {row.exhibitions}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
                         {getStatusBadge(row)}
