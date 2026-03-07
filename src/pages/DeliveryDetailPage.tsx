@@ -202,10 +202,8 @@ export function DeliveryDetailPage() {
         size="2xl"
       >
         <DeliveryForm
-          deliveryNumber={delivery.delivery_number}
-          initialData={delivery}
+          delivery={delivery}
           onSubmit={handleEdit}
-          onCancel={() => setShowEditModal(false)}
           loading={editLoading}
         />
       </Modal>

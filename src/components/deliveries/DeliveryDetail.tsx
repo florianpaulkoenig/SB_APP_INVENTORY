@@ -6,7 +6,8 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { DeliveryReceiptPDF } from '../pdf/DeliveryReceiptPDF';
 import { formatDate, formatDimensions } from '../../lib/utils';
-import { DELIVERY_STATUSES } from '../../lib/constants';
+import { DELIVERY_STATUSES, ARTWORK_CATEGORIES } from '../../lib/constants';
+import { supabase } from '../../lib/supabase';
 import type { DeliveryRow, DeliveryItemRow, DeliveryStatus } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -34,6 +35,7 @@ export interface DeliveryDetailProps {
         title: string;
         reference_code: string;
         medium: string | null;
+        category: string | null;
         status: string;
         height?: number | null;
         width?: number | null;
@@ -154,10 +156,42 @@ export function DeliveryDetail({
     setDownloading(true);
 
     try {
+      // Fetch primary image URLs for all artworks in this delivery
+      const artworkIds = items
+        .map((item) => item.artwork_id)
+        .filter(Boolean);
+
+      const imageMap: Record<string, string> = {};
+
+      if (artworkIds.length > 0) {
+        const { data: primaryImages } = await supabase
+          .from('artwork_images')
+          .select('artwork_id, storage_path')
+          .in('artwork_id', artworkIds)
+          .eq('is_primary', true);
+
+        if (primaryImages) {
+          for (const img of primaryImages) {
+            const { data: urlData } = await supabase.storage
+              .from('artwork-images')
+              .createSignedUrl(img.storage_path, 600);
+            if (urlData) {
+              imageMap[img.artwork_id] = urlData.signedUrl;
+            }
+          }
+        }
+      }
+
+      // Category label helper
+      const categoryLabel = (val: string | null) => {
+        if (!val) return null;
+        return ARTWORK_CATEGORIES.find((c) => c.value === val)?.label ?? val;
+      };
+
       const pdfItems = items.map((item) => ({
         artwork_title: item.artworks?.title ?? 'Untitled',
         artwork_reference_code: item.artworks?.reference_code ?? '',
-        artwork_medium: item.artworks?.medium ?? null,
+        artwork_category: categoryLabel(item.artworks?.category ?? null),
         artwork_dimensions: item.artworks
           ? formatDimensions(
               item.artworks.height ?? null,
@@ -166,7 +200,7 @@ export function DeliveryDetail({
               item.artworks.dimension_unit ?? 'cm',
             )
           : '',
-        notes: item.notes,
+        artwork_image_url: imageMap[item.artwork_id] ?? null,
       }));
 
       const blob = await pdf(

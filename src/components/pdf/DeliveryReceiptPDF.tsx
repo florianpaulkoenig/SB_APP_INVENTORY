@@ -2,7 +2,7 @@
 // NOA Inventory -- Delivery Receipt PDF
 // ---------------------------------------------------------------------------
 
-import { Document, Page, View, Text } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image } from '@react-pdf/renderer';
 import styles, { PDF_COLORS } from './PDFStyles';
 import { PDFHeader } from './PDFHeader';
 import { COMPANY_NAME } from '../../lib/constants';
@@ -18,11 +18,11 @@ interface TranslationStrings {
   address: string;
   gallery: string;
   item: string;
+  image: string;
   reference: string;
   title: string;
-  medium: string;
+  category: string;
   dimensions: string;
-  notes: string;
   deliveredBy: string;
   receivedBy: string;
   signature: string;
@@ -38,11 +38,11 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     address: 'Address',
     gallery: 'Gallery',
     item: '#',
+    image: 'Image',
     reference: 'Reference',
     title: 'Title',
-    medium: 'Medium',
+    category: 'Category',
     dimensions: 'Dimensions',
-    notes: 'Notes',
     deliveredBy: 'Delivered by',
     receivedBy: 'Received by',
     signature: 'Signature',
@@ -56,11 +56,11 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     address: 'Adresse',
     gallery: 'Galerie',
     item: '#',
+    image: 'Bild',
     reference: 'Referenz',
     title: 'Titel',
-    medium: 'Technik',
+    category: 'Kategorie',
     dimensions: 'Ma\u00dfe',
-    notes: 'Anmerkungen',
     deliveredBy: '\u00dcbergeben von',
     receivedBy: 'Empfangen von',
     signature: 'Unterschrift',
@@ -74,11 +74,11 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     address: 'Adresse',
     gallery: 'Galerie',
     item: '#',
+    image: 'Image',
     reference: 'R\u00e9f\u00e9rence',
     title: 'Titre',
-    medium: 'Technique',
+    category: 'Cat\u00e9gorie',
     dimensions: 'Dimensions',
-    notes: 'Notes',
     deliveredBy: 'Livr\u00e9 par',
     receivedBy: 'Re\u00e7u par',
     signature: 'Signature',
@@ -102,9 +102,9 @@ export interface DeliveryReceiptPDFProps {
   items: Array<{
     artwork_title: string;
     artwork_reference_code: string;
-    artwork_medium: string | null;
+    artwork_category: string | null;
     artwork_dimensions: string;
-    notes: string | null;
+    artwork_image_url: string | null;
   }>;
   language: 'en' | 'de' | 'fr';
 }
@@ -112,12 +112,12 @@ export interface DeliveryReceiptPDFProps {
 // ---------------------------------------------------------------------------
 // Table column widths (percentages)
 // ---------------------------------------------------------------------------
-const COL_NUM = '6%';
+const COL_NUM = '5%';
+const COL_IMG = '12%';
 const COL_REF = '16%';
-const COL_TITLE = '24%';
-const COL_MEDIUM = '18%';
-const COL_DIM = '18%';
-const COL_NOTES = '18%';
+const COL_TITLE = '30%';
+const COL_CAT = '17%';
+const COL_DIM = '20%';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -176,58 +176,86 @@ export function DeliveryReceiptPDF({
             <Text style={[styles.tableHeaderCell, { width: COL_NUM }]}>
               {t.item}
             </Text>
+            <Text style={[styles.tableHeaderCell, { width: COL_IMG }]}>
+              {t.image}
+            </Text>
             <Text style={[styles.tableHeaderCell, { width: COL_REF }]}>
               {t.reference}
             </Text>
             <Text style={[styles.tableHeaderCell, { width: COL_TITLE }]}>
               {t.title}
             </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_MEDIUM }]}>
-              {t.medium}
+            <Text style={[styles.tableHeaderCell, { width: COL_CAT }]}>
+              {t.category}
             </Text>
             <Text style={[styles.tableHeaderCell, { width: COL_DIM }]}>
               {t.dimensions}
-            </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_NOTES }]}>
-              {t.notes}
             </Text>
           </View>
 
           {/* Table body */}
           {items.map((item, index) => (
             <View
-              style={index % 2 === 1 ? styles.tableBodyRowAlt : styles.tableBodyRow}
+              style={[
+                index % 2 === 1 ? styles.tableBodyRowAlt : styles.tableBodyRow,
+                { minHeight: 50, alignItems: 'center' },
+              ]}
               key={`${item.artwork_reference_code}-${index}`}
             >
               <Text style={[styles.tableCell, { width: COL_NUM }]}>
                 {index + 1}
               </Text>
+              <View
+                style={{
+                  width: COL_IMG,
+                  paddingHorizontal: 4,
+                  paddingVertical: 3,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                {item.artwork_image_url ? (
+                  <Image
+                    src={item.artwork_image_url}
+                    style={{
+                      width: 42,
+                      height: 42,
+                      objectFit: 'cover',
+                      borderRadius: 2,
+                    }}
+                  />
+                ) : (
+                  <View
+                    style={{
+                      width: 42,
+                      height: 42,
+                      backgroundColor: '#f3f4f6',
+                      borderRadius: 2,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 6, color: '#9ca3af' }}>
+                      No image
+                    </Text>
+                  </View>
+                )}
+              </View>
               <Text style={[styles.tableCell, { width: COL_REF }]}>
                 {item.artwork_reference_code}
               </Text>
               <Text style={[styles.tableCell, { width: COL_TITLE }]}>
                 {item.artwork_title}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_MEDIUM }]}>
-                {item.artwork_medium ?? '\u2014'}
+              <Text style={[styles.tableCell, { width: COL_CAT }]}>
+                {item.artwork_category ?? '\u2014'}
               </Text>
               <Text style={[styles.tableCell, { width: COL_DIM }]}>
                 {item.artwork_dimensions}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_NOTES }]}>
-                {item.notes ?? ''}
-              </Text>
             </View>
           ))}
         </View>
-
-        {/* ----- Notes --------------------------------------------------- */}
-        {delivery.notes && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t.notes}</Text>
-            <Text style={styles.bodyText}>{delivery.notes}</Text>
-          </View>
-        )}
 
         {/* ----- Signature Area ------------------------------------------ */}
         <View

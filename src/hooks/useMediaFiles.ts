@@ -16,6 +16,10 @@ interface MediaFile {
   status: 'published' | 'pending_review' | 'rejected';
   submitted_by_gallery: string | null;
   review_notes: string | null;
+  content_type: 'file' | 'text';
+  text_content: string | null;
+  credit: string | null;
+  source_url: string | null;
   created_at: string;
   galleries?: { name: string } | null;
 }
@@ -157,18 +161,84 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
     [profile, isAdmin, isGallery, toast, fetchFiles]
   );
 
+  const createTextEntry = useCallback(
+    async (
+      category: string,
+      title: string,
+      textContent: string,
+      credit?: string,
+      sourceUrl?: string,
+      description?: string,
+    ): Promise<MediaFile | null> => {
+      try {
+        if (!profile?.id) {
+          toast({ title: 'Error', description: 'You must be logged in.', variant: 'error' });
+          return null;
+        }
+
+        const status = isAdmin ? 'published' : 'pending_review';
+        const submittedByGallery = isGallery ? profile.gallery_id : null;
+
+        const { data, error } = await supabase
+          .from('media_files')
+          .insert({
+            category,
+            title,
+            description: description || null,
+            file_name: `${title}.txt`,
+            storage_path: `text/${Date.now()}_${Math.random().toString(36).substring(2)}`,
+            file_size: null,
+            mime_type: null,
+            uploaded_by: profile.id,
+            status,
+            submitted_by_gallery: submittedByGallery,
+            content_type: 'text',
+            text_content: textContent || null,
+            credit: credit || null,
+            source_url: sourceUrl || null,
+          } as never)
+          .select('*, galleries:submitted_by_gallery(name)')
+          .single();
+
+        if (error) throw error;
+
+        toast({
+          title: 'Text Entry Created',
+          description: isAdmin
+            ? 'Entry has been published.'
+            : 'Entry submitted for review.',
+          variant: 'success',
+        });
+
+        await fetchFiles();
+        return data as MediaFile;
+      } catch (err) {
+        toast({
+          title: 'Error',
+          description: 'Could not create text entry. Please try again.',
+          variant: 'error',
+        });
+        return null;
+      }
+    },
+    [profile, isAdmin, isGallery, toast, fetchFiles]
+  );
+
   const deleteFile = useCallback(
     async (id: string): Promise<boolean> => {
       try {
         const file = files.find((f) => f.id === id);
         if (!file) return false;
 
-        const { error: storageError } = await supabase.storage
-          .from('media-files')
-          .remove([file.storage_path]);
+        // Only delete from storage for file entries (not text entries)
+        if (file.content_type !== 'text') {
+          const { error: storageError } = await supabase.storage
+            .from('media-files')
+            .remove([file.storage_path]);
 
-        if (storageError) {
-          // Storage deletion is best-effort; continue with DB deletion
+          if (storageError) {
+            // Storage deletion is best-effort; continue with DB deletion
+          }
         }
 
         const { error } = await supabase.from('media_files').delete().eq('id', id);
@@ -176,8 +246,8 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
         if (error) throw error;
 
         toast({
-          title: 'File Deleted',
-          description: 'The file has been removed.',
+          title: 'Entry Deleted',
+          description: 'The entry has been removed.',
           variant: 'success',
         });
 
@@ -186,7 +256,7 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
       } catch (err) {
         toast({
           title: 'Error',
-          description: 'Failed to delete the file.',
+          description: 'Failed to delete the entry.',
           variant: 'error',
         });
         return false;
@@ -290,6 +360,7 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
     files,
     loading,
     uploadFile,
+    createTextEntry,
     deleteFile,
     approveFile,
     rejectFile,
