@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { sanitizeFilterTerm } from '../../lib/utils';
+import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/Button';
 import { Select, type SelectOption } from '../ui/Select';
 import { useToast } from '../ui/Toast';
@@ -58,6 +60,7 @@ function convertToCSV(data: Record<string, unknown>[]): string {
 
 export function DataExport() {
   const { toast } = useToast();
+  const { role } = useAuth();
 
   const [selectedTable, setSelectedTable] = useState('artworks');
   const [format, setFormat] = useState('csv');
@@ -65,15 +68,34 @@ export function DataExport() {
   const [exporting, setExporting] = useState(false);
 
   async function handleExport() {
+    if (role !== 'admin') {
+      toast({
+        title: 'Access denied',
+        description: 'Only administrators can export data.',
+        variant: 'error',
+      });
+      return;
+    }
+
     setExporting(true);
 
     try {
-      let query = supabase.from(selectedTable as never).select('*');
+      let query = supabase.from(selectedTable as never).select('*').limit(10000);
 
       // Apply a simple ilike filter across common text columns if provided
       if (filter.trim()) {
+        const safeFilter = sanitizeFilterTerm(filter);
+        if (!safeFilter) {
+          toast({
+            title: 'Invalid filter',
+            description: 'The filter term contains invalid characters.',
+            variant: 'error',
+          });
+          setExporting(false);
+          return;
+        }
         query = query.or(
-          `name.ilike.%${filter.trim()}%,status.ilike.%${filter.trim()}%`,
+          `name.ilike.%${safeFilter}%,status.ilike.%${safeFilter}%`,
         );
       }
 
@@ -120,10 +142,9 @@ export function DataExport() {
         variant: 'success',
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
       toast({
         title: 'Export failed',
-        description: message,
+        description: 'An error occurred. Please try again.',
         variant: 'error',
       });
     } finally {

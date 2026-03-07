@@ -24,7 +24,7 @@ export function useLoans(artworkId: string) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch loans';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export function useLoans(artworkId: string) {
       return created as LoanRow;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create loan';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -69,7 +69,7 @@ export function useLoans(artworkId: string) {
       return updated as LoanRow;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to update loan';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -83,7 +83,7 @@ export function useLoans(artworkId: string) {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete loan';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetch]);

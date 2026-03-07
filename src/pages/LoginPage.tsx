@@ -26,9 +26,7 @@ export function LoginPage() {
       await signIn(email, password);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'An unexpected error occurred.',
-      );
+      setError('Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -119,7 +119,7 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
       const message =
         err instanceof Error ? err.message : 'Failed to fetch production orders';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -160,7 +160,7 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create production order';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -188,7 +188,7 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update production order';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -214,7 +214,7 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete production order';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
@@ -275,7 +275,7 @@ export function useProductionOrder(id: string): UseProductionOrderReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch production order';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -342,7 +342,7 @@ export function useProductionOrderItems(productionOrderId: string): UseProductio
       const message =
         err instanceof Error ? err.message : 'Failed to fetch production order items';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -382,7 +382,7 @@ export function useProductionOrderItems(productionOrderId: string): UseProductio
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to add production order item';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -410,7 +410,7 @@ export function useProductionOrderItems(productionOrderId: string): UseProductio
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update production order item';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -436,7 +436,7 @@ export function useProductionOrderItems(productionOrderId: string): UseProductio
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to remove production order item';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },

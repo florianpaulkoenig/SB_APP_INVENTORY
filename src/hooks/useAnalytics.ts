@@ -324,7 +324,7 @@ export function useAnalytics(): UseAnalyticsReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch analytics data';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }

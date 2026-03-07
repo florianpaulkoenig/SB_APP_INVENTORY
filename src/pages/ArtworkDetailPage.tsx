@@ -130,7 +130,7 @@ export function ArtworkDetailPage() {
       if (primaryImage?.storage_path) {
         const { data: urlData } = await supabase.storage
           .from('artwork-images')
-          .createSignedUrl(primaryImage.storage_path, 60 * 60);
+          .createSignedUrl(primaryImage.storage_path, 600);
         if (urlData) artworkImageUrl = urlData.signedUrl;
       }
 
@@ -139,7 +139,7 @@ export function ArtworkDetailPage() {
       try {
         const { data: sigData } = await supabase.storage
           .from('assets')
-          .createSignedUrl('signature.png', 60 * 60);
+          .createSignedUrl('signature.png', 600);
         if (sigData) signatureUrl = sigData.signedUrl;
       } catch {
         // Signature is optional
@@ -265,8 +265,7 @@ export function ArtworkDetailPage() {
         toast({ title: 'Artwork marked as sold', variant: 'success' });
         await refetchArtwork();
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to record sale';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'Failed to record sale. Please try again.', variant: 'error' });
       }
     },
     [id, artwork, toast, refetchArtwork],
@@ -322,8 +321,7 @@ export function ArtworkDetailPage() {
         navigate(`/artworks/${created.id}`);
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to duplicate artwork';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'Failed to duplicate artwork. Please try again.', variant: 'error' });
     }
   }, [artwork, createArtwork, generateNumber, toast, navigate]);
 

@@ -74,7 +74,7 @@ export function useActivityLog(filters: ActivityLogFilters = {}): UseActivityLog
       const message =
         err instanceof Error ? err.message : 'Failed to fetch activity log';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ export function useActivityLog(filters: ActivityLogFilters = {}): UseActivityLog
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to log activity';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },

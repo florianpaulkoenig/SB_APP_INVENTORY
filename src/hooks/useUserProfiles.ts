@@ -54,7 +54,7 @@ export function useUserProfiles() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch user profiles';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export function useUserProfiles() {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to update profile';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetchProfiles]);
@@ -104,7 +104,7 @@ export function useUserProfiles() {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete profile';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetchProfiles]);
@@ -148,7 +148,7 @@ export function useUserProfiles() {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to invite user';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetchProfiles]);

@@ -52,7 +52,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch images';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -66,6 +66,19 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
   const uploadImage = useCallback(
     async (file: File, imageType: ImageType): Promise<ArtworkImageRow | null> => {
+      // Validate file size and MIME type before uploading
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+      const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+      if (file.size > MAX_FILE_SIZE) {
+        toast({ title: 'Error', description: 'File too large. Maximum size is 10MB.', variant: 'error' });
+        return null;
+      }
+      if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+        toast({ title: 'Error', description: 'Invalid file type. Only JPEG, PNG, and WebP are allowed.', variant: 'error' });
+        return null;
+      }
+
       try {
         const {
           data: { session },
@@ -81,16 +94,13 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
         const storagePath = `${userId}/${artworkId}/${safeName}`;
 
         // Upload file to Supabase Storage
-        console.log('[uploadImage] Uploading to storage:', { bucket: 'artwork-images', storagePath, fileSize: file.size, fileType: file.type });
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('artwork-images')
           .upload(storagePath, file, { upsert: true });
 
         if (uploadError) {
-          console.error('[uploadImage] Storage upload failed:', JSON.stringify(uploadError));
           throw uploadError;
         }
-        console.log('[uploadImage] Storage upload success:', uploadData);
 
         // Determine sort_order (append after last existing image)
         const nextSortOrder = images.length > 0
@@ -116,10 +126,8 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
           .single();
 
         if (insertError) {
-          console.error('[uploadImage] DB insert failed:', JSON.stringify(insertError));
           throw insertError;
         }
-        console.log('[uploadImage] DB insert success:', created);
 
         toast({ title: 'Image uploaded', description: `"${file.name}" has been added.`, variant: 'success' });
 
@@ -130,7 +138,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to upload image';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -166,7 +174,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete image';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
@@ -203,7 +211,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to set primary image';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
@@ -217,7 +225,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
       try {
         const { data, error: urlError } = await supabase.storage
           .from('artwork-images')
-          .createSignedUrl(storagePath, 60 * 60); // 60 minutes
+          .createSignedUrl(storagePath, 600); // 10 minutes
 
         if (urlError) throw urlError;
 
@@ -225,7 +233,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to generate image URL';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },

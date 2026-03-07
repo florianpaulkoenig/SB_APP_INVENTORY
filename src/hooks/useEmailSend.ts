@@ -82,8 +82,7 @@ export function useEmailSend(): UseEmailSendReturn {
         });
 
         if (logError) {
-          // Log failure is non-critical -- warn but don't fail the overall send
-          console.warn('Failed to log email:', logError.message);
+          // Log failure is non-critical -- don't fail the overall send
         }
 
         toast({ title: 'Email sent', description: `Email sent to ${params.to}`, variant: 'success' });
@@ -91,7 +90,7 @@ export function useEmailSend(): UseEmailSendReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to send email';
-        toast({ title: 'Email failed', description: message, variant: 'error' });
+        toast({ title: 'Email failed', description: 'An error occurred. Please try again.', variant: 'error' });
 
         // Attempt to log the failure
         try {

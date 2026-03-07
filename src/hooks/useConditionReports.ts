@@ -24,7 +24,7 @@ export function useConditionReports(artworkId: string) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch condition reports';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export function useConditionReports(artworkId: string) {
       return created as ConditionReportRow;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create condition report';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -69,7 +69,7 @@ export function useConditionReports(artworkId: string) {
       return updated as ConditionReportRow;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to update condition report';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -83,7 +83,7 @@ export function useConditionReports(artworkId: string) {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete condition report';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetch]);

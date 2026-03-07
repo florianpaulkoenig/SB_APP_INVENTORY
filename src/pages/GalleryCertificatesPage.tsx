@@ -120,14 +120,14 @@ export function GalleryCertificatesPage() {
         if (imageData?.storage_path) {
           const { data: signedData } = await supabase.storage
             .from('artwork-images')
-            .createSignedUrl(imageData.storage_path, 3600);
+            .createSignedUrl(imageData.storage_path, 600);
           artworkImageUrl = signedData?.signedUrl ?? null;
         }
 
         // Fetch signature from assets bucket
         const { data: signatureData } = await supabase.storage
           .from('assets')
-          .createSignedUrl('signature.png', 3600);
+          .createSignedUrl('signature.png', 600);
         const signatureUrl = signatureData?.signedUrl ?? null;
 
         // Lazy-import react-pdf and CertificatePDF component
@@ -153,10 +153,9 @@ export function GalleryCertificatesPage() {
 
         toast({ title: 'Success', description: 'Certificate downloaded.' });
       } catch (err) {
-        console.error(err);
         toast({
           title: 'Error',
-          description: err instanceof Error ? err.message : 'Failed to generate certificate.',
+          description: 'Failed to generate certificate. Please try again.',
           variant: 'destructive',
         });
       } finally {

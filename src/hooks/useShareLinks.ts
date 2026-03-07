@@ -8,9 +8,9 @@ import type { ShareLinkRow, ShareLinkInsert } from '../types/database';
 // ---------------------------------------------------------------------------
 
 export function generateShareToken(): string {
-  const arr = new Uint8Array(24);
+  const arr = new Uint8Array(32);
   crypto.getRandomValues(arr);
-  return Array.from(arr, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 32);
+  return Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 // ---------------------------------------------------------------------------
@@ -47,7 +47,7 @@ export function useShareLinks() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch share links';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export function useShareLinks() {
       return created as ShareLinkRow;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create share link';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
   }, [toast, fetchLinks]);
@@ -101,7 +101,7 @@ export function useShareLinks() {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete share link';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetchLinks]);
@@ -226,7 +226,7 @@ export function useShareLink(token: string) {
       for (const img of images) {
         const { data: signedData, error: urlError } = await supabase.storage
           .from('artwork-images')
-          .createSignedUrl(img.storage_path, 60 * 60); // 60 minutes
+          .createSignedUrl(img.storage_path, 600); // 10 minutes
 
         if (urlError) throw urlError;
 

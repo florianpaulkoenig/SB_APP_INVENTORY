@@ -93,10 +93,12 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
         query = query.ilike('buyer_name', term);
       }
 
-      // Sorting
-      const sortBy = filters.sortBy || 'sale_date';
+      // Sorting (whitelist to prevent SQL injection via arbitrary column names)
+      const VALID_SORT_COLUMNS: readonly string[] = ['created_at', 'sale_date', 'sale_price', 'status'];
+      const rawSortBy = filters.sortBy || 'sale_date';
+      const safeSortBy = VALID_SORT_COLUMNS.includes(rawSortBy) ? rawSortBy : 'sale_date';
       const sortOrder = filters.sortOrder || 'desc';
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+      query = query.order(safeSortBy, { ascending: sortOrder === 'asc' });
 
       // Pagination (offset-based via .range)
       const from = (page - 1) * pageSize;
@@ -113,7 +115,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch sales';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -153,7 +155,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create sale';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -181,7 +183,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update sale';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -207,7 +209,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete sale';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
@@ -270,7 +272,7 @@ export function useSale(id: string): UseSaleReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch sale';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }

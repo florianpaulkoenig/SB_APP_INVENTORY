@@ -154,7 +154,7 @@ export function CatalogueBuilder({ onGenerated }: CatalogueBuilderProps) {
           images.map(async (img) => {
             const { data: urlData } = await supabase.storage
               .from('artwork-images')
-              .createSignedUrl(img.storage_path, 3600);
+              .createSignedUrl(img.storage_path, 600);
             return {
               artworkId: img.artwork_id,
               url: urlData?.signedUrl ?? null,
@@ -218,9 +218,7 @@ export function CatalogueBuilder({ onGenerated }: CatalogueBuilderProps) {
 
       onGenerated?.();
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : 'Failed to generate catalogue.';
-      setError(msg);
+      setError('Failed to generate catalogue. Please try again.');
     } finally {
       setGenerating(false);
     }

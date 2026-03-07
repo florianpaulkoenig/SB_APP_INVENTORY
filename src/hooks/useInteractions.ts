@@ -53,7 +53,7 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch interactions';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -92,7 +92,7 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create interaction';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -117,7 +117,7 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete interaction';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },

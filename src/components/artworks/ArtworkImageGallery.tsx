@@ -87,7 +87,7 @@ export function ArtworkImageGallery({
     for (const row of rows) {
       const { data } = await supabase.storage
         .from('artwork-images')
-        .createSignedUrl(row.storage_path, 3600);
+        .createSignedUrl(row.storage_path, 600);
 
       if (data?.signedUrl) {
         imagesWithUrls.push({ ...row, signedUrl: data.signedUrl });

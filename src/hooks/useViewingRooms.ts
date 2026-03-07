@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { verifyPassword } from '../lib/crypto';
 import { useToast } from '../components/ui/Toast';
 import type { ViewingRoomRow, ViewingRoomInsert, ViewingRoomUpdate } from '../types/database';
 
@@ -69,7 +70,7 @@ export function useViewingRooms() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch viewing rooms';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -101,7 +102,7 @@ export function useViewingRooms() {
       return created as ViewingRoomRow;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create viewing room';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
   }, [toast, fetchRooms]);
@@ -123,7 +124,7 @@ export function useViewingRooms() {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to update viewing room';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetchRooms]);
@@ -145,7 +146,7 @@ export function useViewingRooms() {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete viewing room';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetchRooms]);
@@ -187,7 +188,7 @@ export function useViewingRoom(id: string) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch viewing room';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -214,7 +215,7 @@ export function useViewingRoom(id: string) {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to update viewing room';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [id, toast]);
@@ -244,7 +245,7 @@ export function useViewingRoom(id: string) {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to toggle published status';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [id, room, toast]);
@@ -310,7 +311,7 @@ export function usePublicViewingRoom(slug: string) {
         for (const img of imageData ?? []) {
           const { data: signedData, error: urlError } = await supabase.storage
             .from('artwork-images')
-            .createSignedUrl(img.storage_path, 60 * 60); // 60 minutes
+            .createSignedUrl(img.storage_path, 600); // 10 minutes
 
           if (!urlError && signedData) {
             imageMap.set(img.artwork_id, signedData.signedUrl);
@@ -362,9 +363,9 @@ export function usePublicViewingRoom(slug: string) {
   // ---- Password check -------------------------------------------------------
 
   const checkPassword = useCallback(
-    (password: string): boolean => {
+    async (password: string): Promise<boolean> => {
       if (!room?.password_hash) return true;
-      return btoa(password) === room.password_hash;
+      return verifyPassword(password, room.password_hash);
     },
     [room],
   );

@@ -323,7 +323,6 @@ export function ProductionOrderDetailPage() {
             .single();
 
           if (artworkError) {
-            console.error('[autoConvert] Failed to create artwork:', artworkError);
             continue;
           }
 
@@ -348,7 +347,7 @@ export function ProductionOrderDetailPage() {
                 } as never);
             }
           } catch {
-            console.warn('[autoConvert] Auto-certificate failed for', artwork.id);
+            // Auto-certificate is best-effort
           }
         }
 
@@ -359,8 +358,8 @@ export function ProductionOrderDetailPage() {
             .update({ artwork_id: lastArtworkId })
             .eq('id', item.id);
         }
-      } catch (err) {
-        console.error('[autoConvert] Error converting item:', item.id, err);
+      } catch {
+        // Error converting item — continue with remaining items
       }
     }
 

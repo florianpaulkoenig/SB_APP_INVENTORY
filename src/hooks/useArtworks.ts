@@ -144,10 +144,12 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         query = query.lte('width', filters.maxWidth);
       }
 
-      // Sorting
-      const sortBy = filters.sortBy || 'created_at';
+      // Sorting (whitelist to prevent SQL injection via arbitrary column names)
+      const VALID_SORT_COLUMNS: readonly string[] = ['created_at', 'title', 'inventory_number', 'reference_code', 'medium', 'year', 'status', 'price', 'current_location', 'category', 'color', 'edition_type', 'motif', 'series'];
+      const rawSortBy = filters.sortBy || 'created_at';
+      const safeSortBy = VALID_SORT_COLUMNS.includes(rawSortBy) ? rawSortBy : 'created_at';
       const sortOrder = filters.sortOrder || 'desc';
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+      query = query.order(safeSortBy, { ascending: sortOrder === 'asc' });
 
       // Pagination (offset-based via .range)
       const from = (page - 1) * pageSize;
@@ -164,7 +166,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       const message =
         err instanceof Error ? err.message : 'Failed to fetch artworks';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -235,17 +237,15 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
           }
         } catch {
           // Certificate auto-creation is best-effort; don't block artwork creation
-          console.warn('[createArtwork] Auto-certificate creation failed');
         }
 
         toast({ title: 'Artwork created', description: `"${created.title}" has been added with certificate.`, variant: 'success' });
 
         return created as ArtworkRow;
       } catch (err: unknown) {
-        console.error('[createArtwork] Full error:', err);
         const message =
           err instanceof Error ? err.message : 'Failed to create artwork';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -272,7 +272,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update artwork';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -297,7 +297,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete artwork';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
@@ -358,7 +358,7 @@ export function useArtwork(id: string): UseArtworkReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch artwork';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }

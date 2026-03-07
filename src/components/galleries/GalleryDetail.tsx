@@ -74,7 +74,7 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
         for (const img of imgData) {
           const { data: signed } = await supabase.storage
             .from('artwork-images')
-            .createSignedUrl(img.storage_path, 3600);
+            .createSignedUrl(img.storage_path, 600);
           if (signed?.signedUrl) {
             urlMap[img.artwork_id] = signed.signedUrl;
           }

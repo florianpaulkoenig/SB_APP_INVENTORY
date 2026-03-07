@@ -10,6 +10,7 @@ import { Select } from '../ui/Select';
 import { Modal } from '../ui/Modal';
 import { CatalogueArtworkPicker } from '../catalogues/CatalogueArtworkPicker';
 import { supabase } from '../../lib/supabase';
+import { hashPassword } from '../../lib/crypto';
 import { generateSlug } from '../../hooks/useViewingRooms';
 import type {
   ViewingRoomRow,
@@ -127,7 +128,7 @@ export function ViewingRoomForm({
           const urlPromises = images.map(async (img) => {
             const { data: urlData } = await supabase.storage
               .from('artwork-images')
-              .createSignedUrl(img.storage_path, 3600);
+              .createSignedUrl(img.storage_path, 600);
             return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
           });
           const urls = await Promise.all(urlPromises);
@@ -232,7 +233,7 @@ export function ViewingRoomForm({
           const urlPromises = images.map(async (img) => {
             const { data: urlData } = await supabase.storage
               .from('artwork-images')
-              .createSignedUrl(img.storage_path, 3600);
+              .createSignedUrl(img.storage_path, 600);
             return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
           });
           const urls = await Promise.all(urlPromises);
@@ -292,7 +293,7 @@ export function ViewingRoomForm({
       artwork_ids: selectedIds,
       visibility,
       ...(visibility === 'password' && password
-        ? { password_hash: btoa(password) }
+        ? { password_hash: await hashPassword(password) }
         : {}),
       ...(visibility !== 'password' ? { password_hash: null } : {}),
     };

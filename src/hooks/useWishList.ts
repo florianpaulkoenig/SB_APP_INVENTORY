@@ -53,7 +53,7 @@ export function useWishList(contactId: string): UseWishListReturn {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch wish list';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ export function useWishList(contactId: string): UseWishListReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to add to wish list';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -122,7 +122,7 @@ export function useWishList(contactId: string): UseWishListReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to remove from wish list';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },

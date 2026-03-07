@@ -32,7 +32,7 @@ export function useExpenses(artworkId?: string) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch expenses';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export function useExpenses(artworkId?: string) {
       return created as ExpenseRow;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create expense';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -81,7 +81,7 @@ export function useExpenses(artworkId?: string) {
       return updated as ExpenseRow;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to update expense';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -95,7 +95,7 @@ export function useExpenses(artworkId?: string) {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete expense';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetch]);

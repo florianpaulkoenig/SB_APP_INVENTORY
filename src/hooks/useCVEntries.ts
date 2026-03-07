@@ -47,7 +47,6 @@ export function useCVEntries() {
       if (error) throw error;
       setEntries((data as CVEntry[]) || []);
     } catch (err) {
-      console.error('Error fetching CV entries:', err);
       toast({
         title: 'Error',
         description: 'Failed to load CV entries.',
@@ -97,7 +96,6 @@ export function useCVEntries() {
         await fetchEntries();
         return created as CVEntry;
       } catch (err) {
-        console.error('Error creating CV entry:', err);
         toast({
           title: 'Error',
           description: 'Failed to create CV entry.',
@@ -128,7 +126,6 @@ export function useCVEntries() {
         await fetchEntries();
         return true;
       } catch (err) {
-        console.error('Error updating CV entry:', err);
         toast({
           title: 'Error',
           description: 'Failed to update CV entry.',
@@ -156,7 +153,6 @@ export function useCVEntries() {
         await fetchEntries();
         return true;
       } catch (err) {
-        console.error('Error deleting CV entry:', err);
         toast({
           title: 'Error',
           description: 'Failed to delete CV entry.',
@@ -302,7 +298,6 @@ export function useCVEntries() {
         variant: 'success',
       });
     } catch (err) {
-      console.error('Error exporting PDF:', err);
       toast({
         title: 'Export Failed',
         description: 'Could not generate PDF.',
@@ -350,7 +345,6 @@ export function useCVEntries() {
         variant: 'success',
       });
     } catch (err) {
-      console.error('Error exporting XLS:', err);
       toast({
         title: 'Export Failed',
         description: 'Could not generate XLS file.',

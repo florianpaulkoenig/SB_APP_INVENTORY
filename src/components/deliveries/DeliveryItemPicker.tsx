@@ -96,7 +96,6 @@ export function DeliveryItemPicker({
     const { data, error } = await query;
 
     if (error) {
-      console.error('Failed to fetch artworks for delivery picker:', error.message);
       setArtworks([]);
       setLoading(false);
       return;
@@ -131,7 +130,7 @@ export function DeliveryItemPicker({
         const urlPromises = images.map(async (img) => {
           const { data: urlData } = await supabase.storage
             .from('artwork-images')
-            .createSignedUrl(img.storage_path, 3600, {
+            .createSignedUrl(img.storage_path, 600, {
               transform: { width: 200, height: 200, resize: 'cover' },
             });
           return {

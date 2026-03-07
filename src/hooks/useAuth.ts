@@ -49,7 +49,7 @@ export function useAuth(): UseAuthReturn {
     // so the user can at least see the login page instead of an infinite spinner.
     const timeout = setTimeout(() => {
       if (mounted && !loadingResolved.current) {
-        console.warn('[useAuth] Session check timed out after 5s — forcing loading=false');
+        // Session check timed out after 5s — force loading=false
         loadingResolved.current = true;
         setLoading(false);
       }
@@ -74,8 +74,7 @@ export function useAuth(): UseAuthReturn {
           setLoading(false);
         }
       })
-      .catch((err) => {
-        console.error('[useAuth] getSession failed:', err);
+      .catch(() => {
         if (mounted && !loadingResolved.current) {
           loadingResolved.current = true;
           setLoading(false);
@@ -110,6 +109,30 @@ export function useAuth(): UseAuthReturn {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Session inactivity timeout (30 minutes)
+  useEffect(() => {
+    if (!user) return;
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        supabase.auth.signOut();
+      }, INACTIVITY_LIMIT);
+    };
+
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach((event) => document.addEventListener(event, resetTimer));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach((event) => document.removeEventListener(event, resetTimer));
+    };
+  }, [user]);
 
   async function signIn(email: string, password: string): Promise<void> {
     const { error } = await supabase.auth.signInWithPassword({ email, password });

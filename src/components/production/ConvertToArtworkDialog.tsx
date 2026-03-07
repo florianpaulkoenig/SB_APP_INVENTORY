@@ -265,15 +265,12 @@ export function ConvertToArtworkDialog({
         }
       } catch {
         // Best-effort; don't block artwork conversion
-        console.warn('[ConvertToArtwork] Auto-certificate creation failed');
       }
 
       onConverted(artwork.id);
       onClose();
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to create artwork';
-      setErrors({ submit: message });
+      setErrors({ submit: 'Failed to create artwork. Please try again.' });
     } finally {
       setLoading(false);
     }

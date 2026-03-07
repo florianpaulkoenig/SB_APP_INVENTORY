@@ -28,7 +28,7 @@ export function useExhibitions() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch exhibitions';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ export function useExhibitions() {
       return created as ExhibitionRow;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create exhibition';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -73,7 +73,7 @@ export function useExhibitions() {
       return updated as ExhibitionRow;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to update exhibition';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -87,7 +87,7 @@ export function useExhibitions() {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete exhibition';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetch]);
@@ -116,7 +116,7 @@ export function useArtworkExhibitions(artworkId: string) {
       setExhibitions(data ?? []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch artwork exhibitions';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -162,7 +162,7 @@ export function useArtworkExhibitions(artworkId: string) {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to link artwork to exhibition';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [artworkId, toast, fetch]);
@@ -179,7 +179,7 @@ export function useArtworkExhibitions(artworkId: string) {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to unlink artwork from exhibition';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetch]);

@@ -24,7 +24,7 @@ export function useValuations(artworkId: string) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch valuations';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export function useValuations(artworkId: string) {
       return created as ValuationRow;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create valuation';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -64,7 +64,7 @@ export function useValuations(artworkId: string) {
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete valuation';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
   }, [toast, fetch]);

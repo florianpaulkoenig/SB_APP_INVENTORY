@@ -127,7 +127,7 @@ export function usePackingLists(options: UsePackingListsOptions = {}): UsePackin
       const message =
         err instanceof Error ? err.message : 'Failed to fetch packing lists';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -167,7 +167,7 @@ export function usePackingLists(options: UsePackingListsOptions = {}): UsePackin
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create packing list';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -195,7 +195,7 @@ export function usePackingLists(options: UsePackingListsOptions = {}): UsePackin
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update packing list';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -221,7 +221,7 @@ export function usePackingLists(options: UsePackingListsOptions = {}): UsePackin
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete packing list';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
@@ -284,7 +284,7 @@ export function usePackingList(id: string): UsePackingListReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch packing list';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -351,7 +351,7 @@ export function usePackingListItems(packingListId: string): UsePackingListItemsR
       const message =
         err instanceof Error ? err.message : 'Failed to fetch packing list items';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -391,7 +391,7 @@ export function usePackingListItems(packingListId: string): UsePackingListItemsR
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to add packing list item';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -419,7 +419,7 @@ export function usePackingListItems(packingListId: string): UsePackingListItemsR
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update packing list item';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -445,7 +445,7 @@ export function usePackingListItems(packingListId: string): UsePackingListItemsR
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to remove packing list item';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },

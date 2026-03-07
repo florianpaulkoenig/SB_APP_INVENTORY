@@ -121,7 +121,7 @@ export function ArtworksPage() {
       imageData.map(async (img) => {
         const { data: signedData } = await supabase.storage
           .from('artwork-images')
-          .createSignedUrl(img.storage_path, 3600, {
+          .createSignedUrl(img.storage_path, 600, {
             transform: { width: 400, height: 400, resize: 'cover' },
           });
         return { artworkId: img.artwork_id, url: signedData?.signedUrl ?? null };
@@ -185,7 +185,7 @@ export function ArtworksPage() {
       if (primaryImage?.storage_path) {
         const { data: urlData } = await supabase.storage
           .from('artwork-images')
-          .createSignedUrl(primaryImage.storage_path, 3600);
+          .createSignedUrl(primaryImage.storage_path, 600);
         if (urlData) artworkImageUrl = urlData.signedUrl;
       }
 
@@ -194,7 +194,7 @@ export function ArtworksPage() {
       try {
         const { data: sigData } = await supabase.storage
           .from('assets')
-          .createSignedUrl('signature.png', 3600);
+          .createSignedUrl('signature.png', 600);
         if (sigData) signatureUrl = sigData.signedUrl;
       } catch {
         // Signature is optional
@@ -246,7 +246,6 @@ export function ArtworksPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Certificate download failed:', err);
       toast({ title: 'Error', description: 'Failed to download certificate.', variant: 'error' });
     } finally {
       setDownloadingCertId(null);

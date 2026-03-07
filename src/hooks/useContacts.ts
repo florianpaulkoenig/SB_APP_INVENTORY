@@ -76,10 +76,12 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         query = query.eq('country', filters.country);
       }
 
-      // Sorting
-      const sortBy = filters.sortBy || 'last_name';
+      // Sorting (whitelist to prevent SQL injection via arbitrary column names)
+      const VALID_SORT_COLUMNS: readonly string[] = ['created_at', 'first_name', 'last_name', 'email', 'company', 'role', 'city', 'country'];
+      const rawSortBy = filters.sortBy || 'last_name';
+      const safeSortBy = VALID_SORT_COLUMNS.includes(rawSortBy) ? rawSortBy : 'last_name';
       const sortOrder = filters.sortOrder || 'asc';
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+      query = query.order(safeSortBy, { ascending: sortOrder === 'asc' });
 
       // Pagination (offset-based via .range)
       const from = (page - 1) * pageSize;
@@ -96,7 +98,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
       const message =
         err instanceof Error ? err.message : 'Failed to fetch contacts';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -135,7 +137,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create contact';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -162,7 +164,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update contact';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -187,7 +189,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete contact';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
@@ -248,7 +250,7 @@ export function useContact(id: string): UseContactReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch contact';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }

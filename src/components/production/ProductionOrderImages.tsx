@@ -20,9 +20,13 @@ export interface ProductionOrderImagesProps {
 const ACCEPTED_MIME = 'image/jpeg,image/png,image/webp';
 const BUCKET = 'artwork-images';
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 function isAcceptedFile(file: File): boolean {
   const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-  return ['.jpg', '.jpeg', '.png', '.webp'].includes(ext);
+  const validExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext);
+  const validMime = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+  return validExt && validMime;
 }
 
 // ---------------------------------------------------------------------------
@@ -60,7 +64,7 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
         const fullPath = `${prefix}${file.name}`;
         const { data: signed } = await supabase.storage
           .from(BUCKET)
-          .createSignedUrl(fullPath, 3600);
+          .createSignedUrl(fullPath, 600);
         if (signed?.signedUrl) {
           urls.push({ path: fullPath, url: signed.signedUrl });
         }
@@ -86,6 +90,13 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
       return;
     }
 
+    // Check file size limit
+    const oversizedFiles = validFiles.filter((f) => f.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      toast({ title: 'File too large', description: 'Maximum file size is 10MB.', variant: 'error' });
+      return;
+    }
+
     setUploading(true);
 
     const {
@@ -106,7 +117,7 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
         .upload(storagePath, file, { upsert: true });
 
       if (error) {
-        toast({ title: 'Upload failed', description: error.message, variant: 'error' });
+        toast({ title: 'Upload failed', description: 'An error occurred. Please try again.', variant: 'error' });
       }
     }
 
@@ -120,7 +131,7 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
   async function handleDelete(path: string) {
     const { error } = await supabase.storage.from(BUCKET).remove([path]);
     if (error) {
-      toast({ title: 'Delete failed', description: error.message, variant: 'error' });
+      toast({ title: 'Delete failed', description: 'An error occurred. Please try again.', variant: 'error' });
     } else {
       toast({ title: 'Image deleted', variant: 'success' });
       setImages((prev) => prev.filter((img) => img.path !== path));

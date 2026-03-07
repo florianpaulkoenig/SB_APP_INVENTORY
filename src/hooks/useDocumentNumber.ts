@@ -32,7 +32,7 @@ export function useDocumentNumber() {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to generate document number';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },

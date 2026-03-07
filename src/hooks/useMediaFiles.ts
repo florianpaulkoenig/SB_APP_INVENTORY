@@ -60,7 +60,6 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
       if (error) throw error;
       setFiles((data as MediaFile[]) || []);
     } catch (err) {
-      console.error('Error fetching media files:', err);
       toast({
         title: 'Error',
         description: 'Failed to load media files.',
@@ -82,6 +81,23 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
       title: string,
       description?: string
     ): Promise<MediaFile | null> => {
+      // Validate file size and MIME type before uploading
+      const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+      const ALLOWED_MIME_TYPES = [
+        'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+        'application/pdf',
+        'video/mp4', 'video/quicktime',
+      ];
+
+      if (file.size > MAX_FILE_SIZE) {
+        toast({ title: 'Error', description: 'File too large. Maximum size is 50MB.', variant: 'error' });
+        return null;
+      }
+      if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+        toast({ title: 'Error', description: 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF, PDF, MP4, MOV.', variant: 'error' });
+        return null;
+      }
+
       try {
         if (!profile?.id) {
           toast({ title: 'Error', description: 'You must be logged in.', variant: 'error' });
@@ -130,7 +146,6 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
         await fetchFiles();
         return data as MediaFile;
       } catch (err) {
-        console.error('Error uploading file:', err);
         toast({
           title: 'Upload Failed',
           description: 'Could not upload the file. Please try again.',
@@ -153,7 +168,7 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
           .remove([file.storage_path]);
 
         if (storageError) {
-          console.error('Storage deletion error:', storageError);
+          // Storage deletion is best-effort; continue with DB deletion
         }
 
         const { error } = await supabase.from('media_files').delete().eq('id', id);
@@ -169,7 +184,6 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
         await fetchFiles();
         return true;
       } catch (err) {
-        console.error('Error deleting file:', err);
         toast({
           title: 'Error',
           description: 'Failed to delete the file.',
@@ -200,7 +214,6 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
         await fetchFiles();
         return true;
       } catch (err) {
-        console.error('Error approving file:', err);
         toast({
           title: 'Error',
           description: 'Failed to approve the file.',
@@ -231,7 +244,6 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
         await fetchFiles();
         return true;
       } catch (err) {
-        console.error('Error rejecting file:', err);
         toast({
           title: 'Error',
           description: 'Failed to reject the file.',
@@ -260,7 +272,6 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
         link.click();
         document.body.removeChild(link);
       } catch (err) {
-        console.error('Error downloading file:', err);
         toast({
           title: 'Download Failed',
           description: 'Could not download the file.',

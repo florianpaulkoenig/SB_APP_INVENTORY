@@ -148,9 +148,7 @@ export function ExcelImporter({
       setMappings(detected);
       setStep('mapping');
     } catch (err) {
-      setParseError(
-        err instanceof Error ? err.message : 'Failed to parse file',
-      );
+      setParseError('Failed to parse file. Please check the format and try again.');
     }
   }, []);
 

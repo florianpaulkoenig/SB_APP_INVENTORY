@@ -100,10 +100,12 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
         query = query.ilike('certificate_number', term);
       }
 
-      // Sorting
-      const sortBy = filters.sortBy || 'created_at';
+      // Sorting (whitelist to prevent SQL injection via arbitrary column names)
+      const VALID_SORT_COLUMNS: readonly string[] = ['created_at', 'certificate_number', 'issue_date', 'status'];
+      const rawSortBy = filters.sortBy || 'created_at';
+      const safeSortBy = VALID_SORT_COLUMNS.includes(rawSortBy) ? rawSortBy : 'created_at';
       const sortOrder = filters.sortOrder || 'desc';
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+      query = query.order(safeSortBy, { ascending: sortOrder === 'asc' });
 
       // Pagination (offset-based via .range)
       const from = (page - 1) * pageSize;
@@ -120,7 +122,7 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
       const message =
         err instanceof Error ? err.message : 'Failed to fetch certificates';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -160,7 +162,7 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create certificate';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -188,7 +190,7 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update certificate';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -214,7 +216,7 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete certificate';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
@@ -277,7 +279,7 @@ export function useCertificate(id: string): UseCertificateReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch certificate';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }

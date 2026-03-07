@@ -98,7 +98,7 @@ export function useEmailLog(options: UseEmailLogOptions = {}): UseEmailLogReturn
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch email log';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }

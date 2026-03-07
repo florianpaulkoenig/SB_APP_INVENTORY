@@ -53,8 +53,8 @@ export function useExchangeRates(): ExchangeRates {
           cacheTimestamp = Date.now();
           setRates(data.rates);
         }
-      } catch (err) {
-        console.warn('[useExchangeRates] API failed, using fallback rates:', err);
+      } catch {
+        // API failed, use fallback rates
         if (!cancelled) {
           cachedRates = FALLBACK_RATES;
           cacheTimestamp = Date.now();

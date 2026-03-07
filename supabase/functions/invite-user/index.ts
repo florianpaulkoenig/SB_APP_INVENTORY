@@ -4,11 +4,11 @@
 // SECURITY: Requires authenticated admin caller (JWT verified).
 // ---------------------------------------------------------------------------
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Restrict CORS to known origins (update for production domain)
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || '*';
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.noacontemporary.com';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
@@ -126,6 +126,15 @@ serve(async (req: Request) => {
       );
     }
 
+    // ---- Validate email format ----------------------------------------------
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_REGEX.test(payload.email)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid email format' }),
+        { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
+    }
+
     // ---- Create Supabase admin client ---------------------------------------
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -148,6 +157,25 @@ serve(async (req: Request) => {
     }
 
     const userId = authData.user.id;
+
+    // ---- Generate a password reset link (magic link for first login) --------
+    const appUrl = Deno.env.get('APP_URL') || 'https://app.noacontemporary.com';
+    let resetLink = `${appUrl}/login`;
+
+    try {
+      const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email: payload.email,
+      });
+
+      if (!resetError && resetData?.properties?.action_link) {
+        resetLink = resetData.properties.action_link;
+      } else {
+        console.warn('Failed to generate recovery link, using fallback login URL:', resetError?.message);
+      }
+    } catch (linkErr) {
+      console.warn('Failed to generate recovery link:', linkErr);
+    }
 
     // ---- Create the user_profile record -------------------------------------
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -190,12 +218,15 @@ serve(async (req: Request) => {
   <h2>Welcome to NOA Inventory</h2>
   <p>Hello ${safeName},</p>
   <p>You have been invited to join NOA Inventory as a <strong>${safeRole}</strong>.</p>
-  <p>Your temporary login credentials:</p>
+  <p>Your account details:</p>
   <ul>
     <li><strong>Email:</strong> ${safeEmail}</li>
-    <li><strong>Password:</strong> ${escapeHtml(tempPassword)}</li>
+    <li><strong>First Login:</strong> Use the button below to set your own password</li>
   </ul>
-  <p>Please log in and change your password as soon as possible.</p>
+  <p style="margin: 24px 0;">
+    <a href="${resetLink}" style="display: inline-block; background-color: #1a1a1a; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 4px; font-weight: bold;">Set Password &amp; Login</a>
+  </p>
+  <p style="font-size: 0.9em; color: #666;">If the button above does not work, copy and paste this link into your browser:<br>${resetLink}</p>
   <br>
   <p>Best regards,<br>NOA Contemporary</p>
 </body>

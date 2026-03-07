@@ -86,7 +86,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch deals';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -125,7 +125,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create deal';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -152,7 +152,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update deal';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -177,7 +177,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete deal';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
@@ -239,7 +239,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch deals';
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -277,7 +277,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create deal';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -304,7 +304,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update deal';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -329,7 +329,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete deal';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },

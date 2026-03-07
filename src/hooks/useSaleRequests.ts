@@ -57,7 +57,6 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
       if (error) throw error;
       setRequests((data as SaleRequest[]) || []);
     } catch (err) {
-      console.error('Error fetching sale requests:', err);
       toast({
         title: 'Error',
         description: 'Failed to load sale requests.',
@@ -137,10 +136,6 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
           .update({ status: 'pending_sale' } as never)
           .eq('id', data.artwork_id);
 
-        if (artworkError) {
-          console.error('Error updating artwork status:', artworkError);
-        }
-
         // Send email notification to admin
         try {
           await supabase.functions.invoke('send-email', {
@@ -150,8 +145,8 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
               html: `<p>Gallery "${galleryName}" has requested to mark artwork "${artworkTitle}" as sold for ${price} ${data.currency}.</p><p>Please review in the admin panel.</p>`,
             },
           });
-        } catch (emailErr) {
-          console.error('Error sending email notification:', emailErr);
+        } catch {
+          // Email notification is best-effort
         }
 
         toast({
@@ -162,7 +157,6 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
         await fetchRequests();
         return request as SaleRequest;
       } catch (err) {
-        console.error('Error creating sale request:', err);
         toast({
           title: 'Error',
           description: 'Failed to create sale request.',
@@ -218,19 +212,11 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
             buyer_name: request.buyer_name,
           } as never);
 
-        if (saleError) {
-          console.error('Error creating sale record:', saleError);
-        }
-
         // Update artwork status to sold
         const { error: artworkError } = await supabase
           .from('artworks')
           .update({ status: 'sold' } as never)
           .eq('id', request.artwork_id);
-
-        if (artworkError) {
-          console.error('Error updating artwork status:', artworkError);
-        }
 
         toast({
           title: 'Request Approved',
@@ -240,7 +226,6 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
         await fetchRequests();
         return true;
       } catch (err) {
-        console.error('Error approving sale request:', err);
         toast({
           title: 'Error',
           description: 'Failed to approve sale request.',
@@ -290,10 +275,6 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
           .update({ status: 'on_consignment' } as never)
           .eq('id', request.artwork_id);
 
-        if (artworkError) {
-          console.error('Error reverting artwork status:', artworkError);
-        }
-
         toast({
           title: 'Request Rejected',
           description: 'The sale request has been rejected.',
@@ -302,7 +283,6 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
         await fetchRequests();
         return true;
       } catch (err) {
-        console.error('Error rejecting sale request:', err);
         toast({
           title: 'Error',
           description: 'Failed to reject sale request.',

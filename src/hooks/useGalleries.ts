@@ -90,7 +90,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
       const message =
         err instanceof Error ? err.message : 'Failed to fetch galleries';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -129,7 +129,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create gallery';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -156,7 +156,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update gallery';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -181,7 +181,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete gallery';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },

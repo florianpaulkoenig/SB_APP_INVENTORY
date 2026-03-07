@@ -116,23 +116,50 @@ function ArtworkCard({
 }
 
 // ---------------------------------------------------------------------------
-// Password Gate
+// Password Gate (with rate limiting)
 // ---------------------------------------------------------------------------
 
 function PasswordGate({
   onUnlock,
 }: {
-  onUnlock: (password: string) => boolean;
+  onUnlock: (password: string) => Promise<boolean>;
 }) {
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = onUnlock(password);
-    if (!success) {
-      setError(true);
-      setPassword('');
+
+    // Rate limiting check
+    const now = Date.now();
+    if (lockedUntil && now < lockedUntil) {
+      const remainingSec = Math.ceil((lockedUntil - now) / 1000);
+      setError(`Too many attempts. Try again in ${remainingSec}s`);
+      return;
+    }
+
+    setChecking(true);
+    setError(null);
+
+    try {
+      const success = await onUnlock(password);
+      if (!success) {
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        if (newAttempts >= 5) {
+          setLockedUntil(now + 60_000); // Lock for 60 seconds
+          setAttempts(0);
+          setError('Too many attempts. Locked for 60 seconds');
+        } else {
+          setError('Incorrect password. Please try again.');
+        }
+        setPassword('');
+      }
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -169,22 +196,23 @@ function PasswordGate({
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
-              setError(false);
+              setError(null);
             }}
-            className="w-full border-b border-neutral-200 bg-transparent px-1 py-2 text-center text-sm text-neutral-900 placeholder:text-neutral-300 transition-colors focus:border-neutral-900 focus:outline-none"
+            disabled={checking}
+            className="w-full border-b border-neutral-200 bg-transparent px-1 py-2 text-center text-sm text-neutral-900 placeholder:text-neutral-300 transition-colors focus:border-neutral-900 focus:outline-none disabled:opacity-50"
             autoFocus
           />
           {error && (
             <p className="text-xs text-red-500">
-              Incorrect password. Please try again.
+              {error}
             </p>
           )}
           <button
             type="submit"
-            disabled={!password}
+            disabled={!password || checking}
             className="w-full rounded-none bg-neutral-900 px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-30"
           >
-            Enter
+            {checking ? 'Checking...' : 'Enter'}
           </button>
         </form>
       </div>
@@ -244,8 +272,8 @@ export function ViewingRoomPublicPage({ slug }: ViewingRoomPublicPageProps) {
   if (room.visibility === 'password' && room.password_hash && !unlocked) {
     return (
       <PasswordGate
-        onUnlock={(pw) => {
-          const valid = checkPassword(pw);
+        onUnlock={async (pw) => {
+          const valid = await checkPassword(pw);
           if (valid) setUnlocked(true);
           return valid;
         }}

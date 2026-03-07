@@ -90,7 +90,6 @@ export function CatalogueArtworkPicker({
     const { data, error } = await query;
 
     if (error) {
-      console.error('Failed to fetch artworks for picker:', error.message);
       setArtworks([]);
       setLoading(false);
       return;
@@ -113,7 +112,7 @@ export function CatalogueArtworkPicker({
         const urlPromises = images.map(async (img) => {
           const { data: urlData } = await supabase.storage
             .from('artwork-images')
-            .createSignedUrl(img.storage_path, 3600);
+            .createSignedUrl(img.storage_path, 600);
           return {
             artworkId: img.artwork_id,
             url: urlData?.signedUrl ?? null,

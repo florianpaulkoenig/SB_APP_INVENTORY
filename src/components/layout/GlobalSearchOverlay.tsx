@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { sanitizeFilterTerm } from '../../lib/utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,7 +79,14 @@ export function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOverlayProp
     setLoading(true);
     setHasSearched(true);
 
-    const pattern = `%${term.trim()}%`;
+    const safeTerm = sanitizeFilterTerm(term);
+    if (!safeTerm) {
+      setResults(EMPTY_RESULTS);
+      setLoading(false);
+      setHasSearched(false);
+      return;
+    }
+    const pattern = `%${safeTerm}%`;
 
     try {
       const [artworksRes, contactsRes, productionRes, deliveriesRes, invoicesRes] =

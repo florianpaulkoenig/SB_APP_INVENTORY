@@ -102,7 +102,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch tasks';
       setError(message);
-      toast({ title: 'Error', description: message, variant: 'error' });
+      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -141,7 +141,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create task';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -168,7 +168,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update task';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
@@ -193,7 +193,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete task';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
@@ -224,7 +224,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to toggle task';
-        toast({ title: 'Error', description: message, variant: 'error' });
+        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
