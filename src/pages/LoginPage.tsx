@@ -36,7 +36,7 @@ export function LoginPage() {
       if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
         setShowMfaChallenge(true);
         setLoading(false);
-        return; // Don't navigate yet
+        return; // Don't navigate yet — useAuth blocks session until MFA done
       }
 
       navigate('/', { replace: true });
@@ -70,6 +70,12 @@ export function LoginPage() {
         code: mfaCode,
       });
       if (verifyError) throw verifyError;
+
+      // Refresh session so useAuth sees aal2 and exposes the session
+      await supabase.auth.refreshSession();
+
+      // Small delay to let auth state propagate
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       navigate('/', { replace: true });
     } catch {

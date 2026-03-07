@@ -45,6 +45,16 @@ export function useAuth(): UseAuthReturn {
   useEffect(() => {
     let mounted = true;
 
+    // Helper: check if session requires MFA completion before granting access
+    async function isMfaPending(): Promise<boolean> {
+      try {
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        return aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2';
+      } catch {
+        return false;
+      }
+    }
+
     // Safety timeout: if auth never resolves within 5 seconds, stop loading
     // so the user can at least see the login page instead of an infinite spinner.
     const timeout = setTimeout(() => {
@@ -61,12 +71,28 @@ export function useAuth(): UseAuthReturn {
       .then(async ({ data: { session: currentSession } }) => {
         if (!mounted) return;
 
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-
         if (currentSession?.user) {
+          // Check if MFA is required but not completed
+          const mfaNeeded = await isMfaPending();
+          if (mfaNeeded) {
+            // Don't expose session — user must complete MFA first
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            if (mounted && !loadingResolved.current) {
+              loadingResolved.current = true;
+              setLoading(false);
+            }
+            return;
+          }
+
+          setSession(currentSession);
+          setUser(currentSession.user);
           const profileData = await fetchProfile(currentSession.user.id);
           if (mounted) setProfile(profileData);
+        } else {
+          setSession(null);
+          setUser(null);
         }
 
         if (mounted && !loadingResolved.current) {
@@ -87,13 +113,28 @@ export function useAuth(): UseAuthReturn {
     } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (!mounted) return;
 
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-
       if (newSession?.user) {
+        // Check if MFA is required but not completed
+        const mfaNeeded = await isMfaPending();
+        if (mfaNeeded) {
+          // Don't expose session — user must complete MFA on LoginPage
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          if (!loadingResolved.current) {
+            loadingResolved.current = true;
+            setLoading(false);
+          }
+          return;
+        }
+
+        setSession(newSession);
+        setUser(newSession.user);
         const profileData = await fetchProfile(newSession.user.id);
         if (mounted) setProfile(profileData);
       } else {
+        setSession(newSession);
+        setUser(null);
         setProfile(null);
       }
 
