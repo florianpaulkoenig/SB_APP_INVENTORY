@@ -221,6 +221,7 @@ export function DashboardPage() {
     // Fetch gallery names + commission rates + splits
     const galleryIds = Array.from(allGalleryIds);
     const nameMap: Record<string, string> = {};
+    const typeMap: Record<string, string> = {};
     const commissionMap: Record<string, number> = {};
     const splitMap: Record<string, { gallery: number; noa: number; artist: number }> = {};
     if (galleryIds.length > 0) {
@@ -228,7 +229,6 @@ export function DashboardPage() {
         .from('galleries')
         .select('id, name, type, commission_rate, commission_gallery, commission_noa, commission_artist')
         .in('id', galleryIds);
-      const typeMap: Record<string, string> = {};
       for (const g of galleries ?? []) {
         nameMap[g.id] = g.name;
         typeMap[g.id] = g.type ?? 'representative';
