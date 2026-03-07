@@ -96,6 +96,9 @@ export function TwoFactorSettings() {
       });
       if (verifyError) throw verifyError;
 
+      // Refresh session so the token reflects aal2 before onAuthStateChange fires
+      await supabase.auth.refreshSession();
+
       // Successfully enrolled
       setVerifyCode('');
       setQrCode(null);
