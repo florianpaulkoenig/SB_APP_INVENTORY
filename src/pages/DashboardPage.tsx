@@ -242,7 +242,7 @@ export function DashboardPage() {
         .in('id', galleryIds);
       for (const g of galleries ?? []) {
         nameMap[g.id] = g.name;
-        typeMap[g.id] = g.type ?? 'representative';
+        typeMap[g.id] = g.type ?? 'primary_flagship';
         if (g.commission_rate != null) {
           commissionMap[g.id] = g.commission_rate;
         }
@@ -569,7 +569,7 @@ export function DashboardPage() {
         return {
           id: gId,
           name: galleryNameMap[gId] || 'Unknown',
-          type: galleryTypeMap[gId] || 'representative',
+          type: galleryTypeMap[gId] || 'primary_flagship',
           totalRevenue: revenueMap.get(gId) ?? 0,
           ordersRevenue: orderRevMap.get(gId) ?? 0,
           potentialRevenue: potentialMap.get(gId) ?? 0,
@@ -797,13 +797,17 @@ export function DashboardPage() {
             Gallery Ranking
           </h2>
 
-          {(['representative', 'project', 'agent'] as const).map((galleryType) => {
+          {(['primary_flagship', 'regional_partner', 'project_partner', 'sales_agent', 'terminated'] as const).map((galleryType) => {
             const sectionLabel =
-              galleryType === 'representative'
-                ? 'Representative Galleries'
-                : galleryType === 'project'
-                  ? 'Project Galleries'
-                  : 'Agent Galleries';
+              galleryType === 'primary_flagship'
+                ? 'Primary Flagship Galleries'
+                : galleryType === 'regional_partner'
+                  ? 'Regional Partners'
+                  : galleryType === 'project_partner'
+                    ? 'Project Partners'
+                    : galleryType === 'sales_agent'
+                      ? 'Sales Agents / Intermediaries'
+                      : 'Terminated Partners';
             const sectionGalleries = galleryRankings.filter((gr) => gr.type === galleryType);
             if (sectionGalleries.length === 0) return null;
 
