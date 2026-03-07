@@ -183,6 +183,9 @@ const NewsPage = React.lazy(() =>
 const GalleryNewsPage = React.lazy(() =>
   import('./pages/GalleryNewsPage').then((m) => ({ default: m.GalleryNewsPage })),
 );
+const PublicCollectionsPage = React.lazy(() =>
+  import('./pages/PublicCollectionsPage').then((m) => ({ default: m.PublicCollectionsPage })),
+);
 
 // ---------------------------------------------------------------------------
 // Suspense fallback
@@ -293,6 +296,18 @@ const router = createBrowserRouter(
             <Suspense fallback={<SuspenseFallback />}>
               <GalleryEditPage />
             </Suspense>
+          ),
+        },
+
+        // Public Collections
+        {
+          path: 'collections',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <PublicCollectionsPage />
+              </Suspense>
+            </RoleGuard>
           ),
         },
 

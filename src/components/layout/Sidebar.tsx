@@ -126,6 +126,12 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M13 3h3a1 1 0 011 1v12a1 1 0 01-1 1h-3M9 15l-4-5 4-5M5 10h9" />
     </svg>
   ),
+  collections: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h14a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zM10 3l3 2H7l3-2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 5V3.5M14 5V3.5" />
+    </svg>
+  ),
   collapse: (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4l-5 6 5 6" />
@@ -148,6 +154,7 @@ const navSections: NavSection[] = [
       { label: 'Dashboard', to: '/', icon: icons.dashboard, roles: ['admin', 'gallery', 'collector'] },
       { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin', 'gallery', 'collector'] },
       { label: 'Galleries', to: '/galleries', icon: icons.galleries, roles: ['admin'] },
+      { label: 'Collections', to: '/collections', icon: icons.collections, roles: ['admin'] },
       { label: 'Production Orders', to: '/production', icon: icons.production, roles: ['admin'] },
     ],
   },

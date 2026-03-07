@@ -2,6 +2,7 @@
 // SalesOverTimeChart -- Monthly sales revenue (bars) & count (line)
 // ---------------------------------------------------------------------------
 
+import { useState, useEffect } from 'react';
 import {
   ComposedChart,
   Bar,
@@ -20,29 +21,40 @@ export interface SalesOverTimeChartProps {
 }
 
 function currencyFormatter(value: number) {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('de-CH', {
     style: 'currency',
-    currency: 'EUR',
+    currency: 'CHF',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
 }
 
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < breakpoint);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export function SalesOverTimeChart({ data }: SalesOverTimeChartProps) {
+  const isMobile = useIsMobile();
   const hasData = data.length > 0;
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-6">
       <h3 className="mb-4 font-display text-lg font-semibold text-primary-900">
         Sales Over Time
       </h3>
 
       {!hasData ? (
-        <div className="flex h-[400px] items-center justify-center">
+        <div className="flex h-[250px] sm:h-[400px] items-center justify-center">
           <p className="text-sm text-primary-400">No sales data</p>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer width="100%" height={isMobile ? 250 : 400}>
           <ComposedChart
             data={data}
             margin={{ top: 8, right: 8, left: 8, bottom: 8 }}

@@ -3,6 +3,7 @@
 // Manage reminders, data exports, and application preferences.
 // ---------------------------------------------------------------------------
 
+import { TwoFactorSettings } from '../components/settings/TwoFactorSettings';
 import { ReminderSettings } from '../components/settings/ReminderSettings';
 import { DataExport } from '../components/settings/DataExport';
 
@@ -25,6 +26,7 @@ export function SettingsPage() {
 
       {/* Settings sections */}
       <div className="space-y-8">
+        <TwoFactorSettings />
         <ReminderSettings />
         <DataExport />
       </div>

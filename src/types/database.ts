@@ -89,6 +89,10 @@ export type InteractionType = 'email' | 'call' | 'meeting' | 'note';
 
 export type DealStage = 'lead' | 'contacted' | 'quoted' | 'negotiating' | 'sold' | 'lost';
 
+export type GalleryType = 'representative' | 'project' | 'agent';
+
+export type InstitutionType = 'museum' | 'foundation' | 'corporate' | 'university' | 'government' | 'other';
+
 // ---- Table row / insert / update types -------------------------------------
 
 // -- galleries ---------------------------------------------------------------
@@ -97,6 +101,7 @@ export interface GalleryRow {
   id: string;
   user_id: string;
   name: string;
+  type: GalleryType;
   contact_person: string | null;
   email: string | null;
   phone: string | null;
@@ -116,6 +121,7 @@ export interface GalleryInsert {
   id?: string;
   user_id?: string;
   name: string;
+  type?: GalleryType;
   contact_person?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -271,6 +277,8 @@ export type ArtworkMovementUpdate = Partial<ArtworkMovementInsert>;
 
 // -- sales -------------------------------------------------------------------
 
+export type SaleType = 'art_fair' | 'exhibition' | 'direct';
+
 export interface SaleRow {
   id: string;
   user_id: string;
@@ -283,6 +291,9 @@ export interface SaleRow {
   buyer_name: string | null;
   buyer_email: string | null;
   commission_percent: number | null;
+  sale_city: string | null;
+  sale_country: string | null;
+  sale_type: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -300,6 +311,9 @@ export interface SaleInsert {
   buyer_name?: string | null;
   buyer_email?: string | null;
   commission_percent?: number | null;
+  sale_city?: string | null;
+  sale_country?: string | null;
+  sale_type?: string | null;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -1301,6 +1315,36 @@ export interface ReminderInsert {
 
 export type ReminderUpdate = Partial<ReminderInsert>;
 
+// -- gallery_team_members -----------------------------------------------------
+
+export interface GalleryTeamMemberRow {
+  id: string;
+  user_id: string;
+  gallery_id: string;
+  name: string;
+  role_title: string | null;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GalleryTeamMemberInsert {
+  id?: string;
+  user_id?: string;
+  gallery_id: string;
+  name: string;
+  role_title?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  notes?: string | null;
+  sort_order?: number;
+}
+
+export type GalleryTeamMemberUpdate = Partial<GalleryTeamMemberInsert>;
+
 // ---- Artwork Templates (predefined artworks) --------------------------------
 
 export interface ArtworkTemplateRow {
@@ -1354,6 +1398,57 @@ export interface ArtworkTemplateInsert {
 }
 
 export type ArtworkTemplateUpdate = Partial<ArtworkTemplateInsert>;
+
+// -- public_collections -------------------------------------------------------
+
+export interface PublicCollectionRow {
+  id: string;
+  user_id: string;
+  name: string;
+  city: string | null;
+  country: string | null;
+  institution_type: InstitutionType | null;
+  website: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicCollectionInsert {
+  id?: string;
+  user_id?: string;
+  name: string;
+  city?: string | null;
+  country?: string | null;
+  institution_type?: InstitutionType | null;
+  website?: string | null;
+  notes?: string | null;
+}
+
+export type PublicCollectionUpdate = Partial<PublicCollectionInsert>;
+
+// -- artwork_collections ------------------------------------------------------
+
+export interface ArtworkCollectionRow {
+  id: string;
+  user_id: string;
+  artwork_id: string;
+  collection_id: string;
+  acquisition_year: number | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface ArtworkCollectionInsert {
+  id?: string;
+  user_id?: string;
+  artwork_id: string;
+  collection_id: string;
+  acquisition_year?: number | null;
+  notes?: string | null;
+}
+
+export type ArtworkCollectionUpdate = Partial<ArtworkCollectionInsert>;
 
 // ---- Supabase Database type (standard pattern) -----------------------------
 
@@ -1544,6 +1639,21 @@ export interface Database {
         Row: ArtworkTemplateRow;
         Insert: ArtworkTemplateInsert;
         Update: ArtworkTemplateUpdate;
+      };
+      gallery_team_members: {
+        Row: GalleryTeamMemberRow;
+        Insert: GalleryTeamMemberInsert;
+        Update: GalleryTeamMemberUpdate;
+      };
+      public_collections: {
+        Row: PublicCollectionRow;
+        Insert: PublicCollectionInsert;
+        Update: PublicCollectionUpdate;
+      };
+      artwork_collections: {
+        Row: ArtworkCollectionRow;
+        Insert: ArtworkCollectionInsert;
+        Update: ArtworkCollectionUpdate;
       };
     };
     Views: Record<string, never>;

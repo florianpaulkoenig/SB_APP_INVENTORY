@@ -22,11 +22,12 @@ export function sanitizeFilterTerm(input: string): string {
 // Currency formatting
 // ---------------------------------------------------------------------------
 export function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-US', {
+  const isCHF = currency === 'CHF';
+  return new Intl.NumberFormat(isCHF ? 'de-CH' : 'en-US', {
     style: 'currency',
     currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: isCHF ? 0 : 2,
+    maximumFractionDigits: isCHF ? 0 : 2,
   }).format(amount);
 }
 

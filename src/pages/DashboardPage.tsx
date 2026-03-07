@@ -100,6 +100,7 @@ interface GalleryPerformance {
 interface GalleryRanking {
   id: string;
   name: string;
+  type: string;
   totalRevenue: number;
   ordersRevenue: number;
   potentialRevenue: number;
@@ -131,6 +132,7 @@ export function DashboardPage() {
   const [rawSales, setRawSales] = useState<RawSale[]>([]);
   const [rawProdOrders, setRawProdOrders] = useState<RawProdOrder[]>([]);
   const [galleryNameMap, setGalleryNameMap] = useState<Record<string, string>>({});
+  const [galleryTypeMap, setGalleryTypeMap] = useState<Record<string, string>>({});
   const [galleryCommissionRates, setGalleryCommissionRates] = useState<Record<string, number>>({});
   const [galleryCommissionSplits, setGalleryCommissionSplits] = useState<Record<string, { gallery: number; noa: number; artist: number }>>({});
   const [consignmentDates, setConsignmentDates] = useState<Record<string, string>>({});
@@ -175,7 +177,7 @@ export function DashboardPage() {
       onConsignment: artworks.filter((a) => a.status === 'on_consignment').length,
       sold: artworks.filter((a) => a.status === 'sold').length,
       reserved: artworks.filter((a) => a.status === 'reserved').length,
-      inProduction: artworks.filter((a) => a.status === 'in_production').length,
+      inProduction: (prodOrders ?? []).length,
       inTransit: artworks.filter((a) => a.status === 'in_transit').length,
       ordered: orderedItemCount,
     });
@@ -224,10 +226,12 @@ export function DashboardPage() {
     if (galleryIds.length > 0) {
       const { data: galleries } = await supabase
         .from('galleries')
-        .select('id, name, commission_rate, commission_gallery, commission_noa, commission_artist')
+        .select('id, name, type, commission_rate, commission_gallery, commission_noa, commission_artist')
         .in('id', galleryIds);
+      const typeMap: Record<string, string> = {};
       for (const g of galleries ?? []) {
         nameMap[g.id] = g.name;
+        typeMap[g.id] = g.type ?? 'representative';
         if (g.commission_rate != null) {
           commissionMap[g.id] = g.commission_rate;
         }
@@ -241,6 +245,7 @@ export function DashboardPage() {
       }
     }
     setGalleryNameMap(nameMap);
+    setGalleryTypeMap(typeMap);
     setGalleryCommissionRates(commissionMap);
     setGalleryCommissionSplits(splitMap);
 
@@ -510,7 +515,7 @@ export function DashboardPage() {
         { label: 'On Consignment', value: stats.onConsignment, color: 'text-sky-600' },
         { label: 'Sold', value: stats.sold, color: 'text-red-600' },
         { label: 'Reserved', value: stats.reserved, color: 'text-amber-600' },
-        { label: 'In Production', value: stats.inProduction, color: 'text-blue-600' },
+        { label: 'In Production', value: stats.inProduction, color: 'text-blue-600', onClick: () => navigate('/production') },
         { label: 'Ordered', value: stats.ordered, color: 'text-violet-600', onClick: () => navigate('/production') },
       ]
     : [];
@@ -553,6 +558,7 @@ export function DashboardPage() {
         return {
           id: gId,
           name: galleryNameMap[gId] || 'Unknown',
+          type: galleryTypeMap[gId] || 'representative',
           totalRevenue: revenueMap.get(gId) ?? 0,
           ordersRevenue: orderRevMap.get(gId) ?? 0,
           potentialRevenue: potentialMap.get(gId) ?? 0,
@@ -563,20 +569,10 @@ export function DashboardPage() {
         };
       })
       .sort((a, b) => b.totalRevenue - a.totalRevenue);
-  }, [galleryCounts, galleryRevenues, galleryOrderRevenues, galleryPotentials, galleryPerformance, galleryCommissionSplits, galleryNameMap]);
+  }, [galleryCounts, galleryRevenues, galleryOrderRevenues, galleryPotentials, galleryPerformance, galleryCommissionSplits, galleryNameMap, galleryTypeMap]);
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="font-display text-2xl sm:text-3xl font-bold text-primary-900">
-          Welcome to NOA Inventory
-        </h1>
-        <p className="mt-1 text-sm text-primary-500">
-          Your artwork management dashboard
-        </p>
-      </div>
-
       {/* Stat cards */}
       {loading ? (
         <div className="flex justify-center py-12">
@@ -783,90 +779,110 @@ export function DashboardPage() {
         </Card>
       )}
 
-      {/* Gallery Ranking */}
+      {/* Gallery Ranking — grouped by type */}
       {!loading && galleryRankings.length > 0 && (
         <div className="mt-10">
           <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
             Gallery Ranking
           </h2>
-          <div className="overflow-x-auto rounded-lg border border-primary-100 bg-white">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-primary-100 bg-primary-50/50">
-                  <th className="px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500">#</th>
-                  <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium text-primary-500">Gallery Name</th>
-                  <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-primary-500">Total Revenue</th>
-                  <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-primary-500 sm:table-cell">Orders Revenue</th>
-                  <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-primary-500 md:table-cell">Potential Revenue</th>
-                  <th className="px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500">Sold</th>
-                  <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500 sm:table-cell">Consigned</th>
-                  <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium text-primary-500">Sell-Through</th>
-                  <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500 md:table-cell">Commission Split</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-primary-50">
-                {galleryRankings.map((gr, idx) => (
-                  <tr
-                    key={gr.id}
-                    className={`cursor-pointer transition-colors hover:bg-primary-50/50 ${idx % 2 === 1 ? 'bg-primary-50/25' : ''}`}
-                    onClick={() => navigate(`/galleries/${gr.id}`)}
-                  >
-                    <td className="px-2 py-2 sm:px-4 sm:py-3 text-center font-bold text-primary-400">
-                      {idx + 1}
-                    </td>
-                    <td className="px-2 py-2 sm:px-4 sm:py-3 font-semibold text-primary-900">
-                      {gr.name}
-                    </td>
-                    <td className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-emerald-600">
-                      {gr.totalRevenue > 0 ? chfFmt.format(gr.totalRevenue) : '—'}
-                    </td>
-                    <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-blue-600 sm:table-cell">
-                      {gr.ordersRevenue > 0 ? chfFmt.format(gr.ordersRevenue) : '—'}
-                    </td>
-                    <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-amber-600 md:table-cell">
-                      {gr.potentialRevenue > 0 ? chfFmt.format(gr.potentialRevenue) : '—'}
-                    </td>
-                    <td className="px-2 py-2 sm:px-4 sm:py-3 text-center text-primary-600">
-                      {gr.artworksSold}
-                    </td>
-                    <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center text-primary-600 sm:table-cell">
-                      {gr.artworksConsigned}
-                    </td>
-                    <td className="px-2 py-2 sm:px-4 sm:py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-10 sm:w-16 overflow-hidden rounded-full bg-primary-100">
-                          <div
-                            className={`h-full rounded-full ${
-                              gr.sellThroughRate >= 60
-                                ? 'bg-emerald-500'
-                                : gr.sellThroughRate >= 30
-                                  ? 'bg-amber-500'
-                                  : 'bg-red-400'
-                            }`}
-                            style={{ width: `${Math.min(gr.sellThroughRate, 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-medium text-primary-600">
-                          {gr.sellThroughRate.toFixed(0)}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center text-xs text-primary-500 md:table-cell">
-                      {gr.commissionSplit !== '—' ? (
-                        <span className="inline-flex items-center gap-0.5">
-                          <span className="font-medium text-sky-600">G</span>{gr.commissionSplit.split('/')[0]}%
-                          <span className="mx-0.5 text-primary-300">/</span>
-                          <span className="font-medium text-amber-600">N</span>{gr.commissionSplit.split('/')[1]}%
-                          <span className="mx-0.5 text-primary-300">/</span>
-                          <span className="font-medium text-emerald-600">A</span>{gr.commissionSplit.split('/')[2]}%
-                        </span>
-                      ) : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+
+          {(['representative', 'project', 'agent'] as const).map((galleryType) => {
+            const sectionLabel =
+              galleryType === 'representative'
+                ? 'Representative Galleries'
+                : galleryType === 'project'
+                  ? 'Project Galleries'
+                  : 'Agent Galleries';
+            const sectionGalleries = galleryRankings.filter((gr) => gr.type === galleryType);
+            if (sectionGalleries.length === 0) return null;
+
+            return (
+              <div key={galleryType} className="mb-6">
+                <h3 className="mb-2 font-display text-sm font-semibold text-primary-700">
+                  {sectionLabel}
+                </h3>
+                <div className="overflow-x-auto rounded-lg border border-primary-100 bg-white">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-primary-100 bg-primary-50/50">
+                        <th className="px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500">#</th>
+                        <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium text-primary-500">Gallery Name</th>
+                        <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-primary-500">Total Revenue</th>
+                        <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-primary-500 sm:table-cell">Orders Revenue</th>
+                        <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-primary-500 md:table-cell">Potential Revenue</th>
+                        <th className="px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500">Sold</th>
+                        <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500 sm:table-cell">Consigned</th>
+                        <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium text-primary-500">Sell-Through</th>
+                        <th className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center font-medium text-primary-500 md:table-cell">Commission Split</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-primary-50">
+                      {sectionGalleries.map((gr, idx) => (
+                        <tr
+                          key={gr.id}
+                          className={`cursor-pointer transition-colors hover:bg-primary-50/50 ${idx % 2 === 1 ? 'bg-primary-50/25' : ''}`}
+                          onClick={() => navigate(`/galleries/${gr.id}`)}
+                        >
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 text-center font-bold text-primary-400">
+                            {idx + 1}
+                          </td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 font-semibold text-primary-900">
+                            {gr.name}
+                          </td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-emerald-600">
+                            {gr.totalRevenue > 0 ? chfFmt.format(gr.totalRevenue) : '—'}
+                          </td>
+                          <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-blue-600 sm:table-cell">
+                            {gr.ordersRevenue > 0 ? chfFmt.format(gr.ordersRevenue) : '—'}
+                          </td>
+                          <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-amber-600 md:table-cell">
+                            {gr.potentialRevenue > 0 ? chfFmt.format(gr.potentialRevenue) : '—'}
+                          </td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 text-center text-primary-600">
+                            {gr.artworksSold}
+                          </td>
+                          <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center text-primary-600 sm:table-cell">
+                            {gr.artworksConsigned}
+                          </td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-10 sm:w-16 overflow-hidden rounded-full bg-primary-100">
+                                <div
+                                  className={`h-full rounded-full ${
+                                    gr.sellThroughRate >= 60
+                                      ? 'bg-emerald-500'
+                                      : gr.sellThroughRate >= 30
+                                        ? 'bg-amber-500'
+                                        : 'bg-red-400'
+                                  }`}
+                                  style={{ width: `${Math.min(gr.sellThroughRate, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-medium text-primary-600">
+                                {gr.sellThroughRate.toFixed(0)}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="hidden px-2 py-2 sm:px-4 sm:py-3 text-center text-xs text-primary-500 md:table-cell">
+                            {gr.commissionSplit !== '—' ? (
+                              <span className="inline-flex items-center gap-0.5">
+                                <span className="font-medium text-sky-600">G</span>{gr.commissionSplit.split('/')[0]}%
+                                <span className="mx-0.5 text-primary-300">/</span>
+                                <span className="font-medium text-amber-600">N</span>{gr.commissionSplit.split('/')[1]}%
+                                <span className="mx-0.5 text-primary-300">/</span>
+                                <span className="font-medium text-emerald-600">A</span>{gr.commissionSplit.split('/')[2]}%
+                              </span>
+                            ) : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })}
+
           <p className="mt-2 text-xs text-primary-400">
             Sorted by total revenue. Sell-through = Sold / (Sold + Consigned). Commission Split = Gallery / NOA / Artist.
           </p>

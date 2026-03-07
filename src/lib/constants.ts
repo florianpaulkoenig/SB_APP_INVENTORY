@@ -265,3 +265,33 @@ export const IMAGE_TYPES = [
   { value: 'retouched', label: 'Retouched' },
   { value: 'detail', label: 'Detail' },
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Gallery types
+// ---------------------------------------------------------------------------
+export const GALLERY_TYPES = [
+  { value: 'representative', label: 'Representative' },
+  { value: 'project', label: 'Project' },
+  { value: 'agent', label: 'Agent' },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Sale types
+// ---------------------------------------------------------------------------
+export const SALE_TYPES = [
+  { value: 'art_fair', label: 'Art Fair' },
+  { value: 'exhibition', label: 'Exhibition' },
+  { value: 'direct', label: 'Direct' },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Institution types (for public collections)
+// ---------------------------------------------------------------------------
+export const INSTITUTION_TYPES = [
+  { value: 'museum', label: 'Museum' },
+  { value: 'foundation', label: 'Foundation' },
+  { value: 'corporate', label: 'Corporate Collection' },
+  { value: 'university', label: 'University' },
+  { value: 'government', label: 'Government' },
+  { value: 'other', label: 'Other' },
+] as const;

@@ -13,6 +13,7 @@ import { ConditionReportPanel } from '../components/artworks/ConditionReportPane
 import { InsurancePanel } from '../components/artworks/InsurancePanel';
 import { ValuationHistory } from '../components/artworks/ValuationHistory';
 import { ExhibitionHistory } from '../components/artworks/ExhibitionHistory';
+import { CollectionHistory } from '../components/artworks/CollectionHistory';
 import { LoanPanel } from '../components/artworks/LoanPanel';
 import { ExpenseTracker } from '../components/artworks/ExpenseTracker';
 import { CertificatePDF } from '../components/pdf/CertificatePDF';
@@ -225,7 +226,7 @@ export function ArtworkDetailPage() {
   // ---- Mark as Sold handler ------------------------------------------------
 
   const handleMarkSold = useCallback(
-    async (salePrice: number, currency: string, saleDateStr: string) => {
+    async (salePrice: number, currency: string, saleDateStr: string, saleCity: string, saleCountry: string, saleType: string) => {
       if (!id || !artwork) return;
 
       try {
@@ -247,6 +248,9 @@ export function ArtworkDetailPage() {
             sale_date: saleDateStr,
             sale_price: salePrice,
             currency,
+            sale_city: saleCity.trim() || null,
+            sale_country: saleCountry.trim() || null,
+            sale_type: saleType || null,
             user_id: session.user.id,
           } as never)
           .select()
@@ -467,6 +471,11 @@ export function ArtworkDetailPage() {
       {/* Exhibition history */}
       <div className="mt-8">
         <ExhibitionHistory artworkId={id!} />
+      </div>
+
+      {/* Public Collections */}
+      <div className="mt-8">
+        <CollectionHistory artworkId={id!} />
       </div>
 
       {/* Loan tracking */}

@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import type { GalleryRow, GalleryInsert } from '../../types/database';
+import { GALLERY_TYPES } from '../../lib/constants';
+import type { GalleryRow, GalleryInsert, GalleryType } from '../../types/database';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -31,6 +33,7 @@ export function GalleryForm({
   // ---- Form state ---------------------------------------------------------
 
   const [name, setName] = useState(gallery?.name ?? '');
+  const [type, setType] = useState<GalleryType>(gallery?.type ?? 'representative');
   const [contactPerson, setContactPerson] = useState(gallery?.contact_person ?? '');
   const [email, setEmail] = useState(gallery?.email ?? '');
   const [phone, setPhone] = useState(gallery?.phone ?? '');
@@ -97,6 +100,7 @@ export function GalleryForm({
 
     const data: GalleryInsert = {
       name: name.trim(),
+      type,
       contact_person: contactPerson.trim() || null,
       email: email.trim() || null,
       phone: phone.trim() || null,
@@ -117,14 +121,22 @@ export function GalleryForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Gallery name */}
-      <Input
-        label="Gallery Name *"
-        placeholder="e.g. Galerie Perrotin"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        error={errors.name}
-      />
+      {/* Gallery name + type */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Input
+          label="Gallery Name *"
+          placeholder="e.g. Galerie Perrotin"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          error={errors.name}
+        />
+        <Select
+          label="Gallery Type"
+          options={[...GALLERY_TYPES]}
+          value={type}
+          onChange={(e) => setType(e.target.value as GalleryType)}
+        />
+      </div>
 
       {/* Contact info row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

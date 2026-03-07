@@ -1,12 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { Modal } from '../ui/Modal';
+import { Input } from '../ui/Input';
 import { StatusBadge } from '../ui/StatusBadge';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { useGalleryTeamMembers } from '../../hooks/useGalleryTeamMembers';
 import { formatCurrency, formatDimensions, formatDate } from '../../lib/utils';
-import type { GalleryRow, ArtworkRow, ProductionOrderRow } from '../../types/database';
+import type { GalleryRow, ArtworkRow, ProductionOrderRow, GalleryTeamMemberRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -110,6 +113,58 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
   useEffect(() => {
     fetchProductionOrders();
   }, [fetchProductionOrders]);
+
+  // ---- Team members --------------------------------------------------------
+  const { members: teamMembers, loading: teamLoading, createMember, updateMember, deleteMember } = useGalleryTeamMembers(gallery.id);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [editingMember, setEditingMember] = useState<GalleryTeamMemberRow | null>(null);
+  const [memberDeleteId, setMemberDeleteId] = useState<string | null>(null);
+  const [memberForm, setMemberForm] = useState({ name: '', role_title: '', email: '', phone: '', notes: '' });
+  const [memberSaving, setMemberSaving] = useState(false);
+
+  function openAddMember() {
+    setEditingMember(null);
+    setMemberForm({ name: '', role_title: '', email: '', phone: '', notes: '' });
+    setShowTeamModal(true);
+  }
+
+  function openEditMember(member: GalleryTeamMemberRow) {
+    setEditingMember(member);
+    setMemberForm({
+      name: member.name,
+      role_title: member.role_title ?? '',
+      email: member.email ?? '',
+      phone: member.phone ?? '',
+      notes: member.notes ?? '',
+    });
+    setShowTeamModal(true);
+  }
+
+  async function handleMemberSubmit(e: FormEvent) {
+    e.preventDefault();
+    setMemberSaving(true);
+    const payload = {
+      gallery_id: gallery.id,
+      name: memberForm.name,
+      role_title: memberForm.role_title || null,
+      email: memberForm.email || null,
+      phone: memberForm.phone || null,
+      notes: memberForm.notes || null,
+    };
+    if (editingMember) {
+      await updateMember(editingMember.id, payload);
+    } else {
+      await createMember(payload);
+    }
+    setMemberSaving(false);
+    setShowTeamModal(false);
+  }
+
+  async function handleMemberDelete() {
+    if (!memberDeleteId) return;
+    await deleteMember(memberDeleteId);
+    setMemberDeleteId(null);
+  }
 
   // ---- Helpers ------------------------------------------------------------
 
@@ -241,6 +296,164 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
           </p>
         </section>
       )}
+
+      {/* Team Members */}
+      <section className="rounded-lg border border-primary-100 bg-white p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-display text-base font-semibold text-primary-900">
+            Team Members
+            {!teamLoading && teamMembers.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-primary-400">
+                ({teamMembers.length})
+              </span>
+            )}
+          </h2>
+          <Button size="sm" onClick={openAddMember}>
+            Add Member
+          </Button>
+        </div>
+
+        {teamLoading ? (
+          <div className="flex justify-center py-6">
+            <LoadingSpinner />
+          </div>
+        ) : teamMembers.length === 0 ? (
+          <p className="text-sm text-primary-400">
+            No team members added yet.
+          </p>
+        ) : (
+          <div className="divide-y divide-primary-100">
+            {teamMembers.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-primary-900">
+                    {member.name}
+                  </p>
+                  {member.role_title && (
+                    <p className="mt-0.5 text-xs text-primary-500">
+                      {member.role_title}
+                    </p>
+                  )}
+                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+                    {member.email && (
+                      <a
+                        href={`mailto:${member.email}`}
+                        className="text-xs text-accent hover:underline"
+                      >
+                        {member.email}
+                      </a>
+                    )}
+                    {member.phone && (
+                      <a
+                        href={`tel:${member.phone}`}
+                        className="text-xs text-primary-600 hover:underline"
+                      >
+                        {member.phone}
+                      </a>
+                    )}
+                  </div>
+                  {member.notes && (
+                    <p className="mt-1 text-xs text-primary-400">
+                      {member.notes}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openEditMember(member)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={() => setMemberDeleteId(member.id)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Team Member Modal */}
+      <Modal
+        isOpen={showTeamModal}
+        onClose={() => setShowTeamModal(false)}
+        title={editingMember ? 'Edit Team Member' : 'Add Team Member'}
+      >
+        <form onSubmit={handleMemberSubmit} className="space-y-4">
+          <Input
+            label="Name"
+            required
+            value={memberForm.name}
+            onChange={(e) => setMemberForm((f) => ({ ...f, name: e.target.value }))}
+            placeholder="Full name"
+          />
+          <Input
+            label="Role / Title"
+            value={memberForm.role_title}
+            onChange={(e) => setMemberForm((f) => ({ ...f, role_title: e.target.value }))}
+            placeholder="e.g. Director, Sales Manager"
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={memberForm.email}
+            onChange={(e) => setMemberForm((f) => ({ ...f, email: e.target.value }))}
+            placeholder="email@example.com"
+          />
+          <Input
+            label="Phone"
+            type="tel"
+            value={memberForm.phone}
+            onChange={(e) => setMemberForm((f) => ({ ...f, phone: e.target.value }))}
+            placeholder="+1 234 567 890"
+          />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-primary-700">
+              Notes
+            </label>
+            <textarea
+              value={memberForm.notes}
+              onChange={(e) => setMemberForm((f) => ({ ...f, notes: e.target.value }))}
+              rows={3}
+              className="w-full rounded-md border border-primary-200 bg-white px-3 py-2 text-sm text-primary-900 placeholder:text-primary-400 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
+              placeholder="Optional notes..."
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowTeamModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" loading={memberSaving}>
+              {editingMember ? 'Save Changes' : 'Add Member'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Team Member Delete Confirm */}
+      <ConfirmDialog
+        isOpen={!!memberDeleteId}
+        onClose={() => setMemberDeleteId(null)}
+        onConfirm={handleMemberDelete}
+        title="Remove Team Member"
+        message="Are you sure you want to remove this team member? This action cannot be undone."
+        confirmLabel="Remove"
+        variant="danger"
+      />
 
       {/* Artworks on Consignment */}
       <section className="rounded-lg border border-primary-100 bg-white p-6">

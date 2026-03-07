@@ -12,6 +12,7 @@ import {
   ARTWORK_MOTIFS,
   ARTWORK_SERIES,
   CURRENCIES,
+  SALE_TYPES,
 } from '../../lib/constants';
 import type { ArtworkRow } from '../../types/database';
 
@@ -24,7 +25,7 @@ export interface ArtworkDetailProps {
   galleryName?: string | null;
   onEdit: () => void;
   onDelete: () => Promise<void>;
-  onMarkSold?: (salePrice: number, currency: string, saleDate: string) => Promise<void>;
+  onMarkSold?: (salePrice: number, currency: string, saleDate: string, saleCity: string, saleCountry: string, saleType: string) => Promise<void>;
   onDuplicate?: () => Promise<void>;
 }
 
@@ -77,6 +78,9 @@ export function ArtworkDetail({
   const [salePrice, setSalePrice] = useState(artwork.price?.toString() ?? '');
   const [saleCurrency, setSaleCurrency] = useState(artwork.currency ?? 'EUR');
   const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10));
+  const [saleCityState, setSaleCityState] = useState('');
+  const [saleCountryState, setSaleCountryState] = useState('');
+  const [saleTypeState, setSaleTypeState] = useState('');
   const [soldLoading, setSoldLoading] = useState(false);
 
   // Formatted values
@@ -118,7 +122,7 @@ export function ArtworkDetail({
     if (isNaN(price) || price <= 0) return;
 
     setSoldLoading(true);
-    await onMarkSold(price, saleCurrency, saleDate);
+    await onMarkSold(price, saleCurrency, saleDate, saleCityState, saleCountryState, saleTypeState);
     setSoldLoading(false);
     setShowSoldDialog(false);
   }
@@ -149,6 +153,9 @@ export function ArtworkDetail({
                 setSalePrice(artwork.price?.toString() ?? '');
                 setSaleCurrency(artwork.currency ?? 'EUR');
                 setSaleDate(new Date().toISOString().slice(0, 10));
+                setSaleCityState('');
+                setSaleCountryState('');
+                setSaleTypeState('');
                 setShowSoldDialog(true);
               }}
             >
@@ -313,6 +320,29 @@ export function ArtworkDetail({
             type="date"
             value={saleDate}
             onChange={(e) => setSaleDate(e.target.value)}
+          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input
+              label="City"
+              placeholder="e.g. Basel"
+              value={saleCityState}
+              onChange={(e) => setSaleCityState(e.target.value)}
+            />
+            <Input
+              label="Country"
+              placeholder="e.g. Switzerland"
+              value={saleCountryState}
+              onChange={(e) => setSaleCountryState(e.target.value)}
+            />
+          </div>
+          <Select
+            label="Sale Type"
+            options={[
+              { value: '', label: 'Select type' },
+              ...SALE_TYPES,
+            ]}
+            value={saleTypeState}
+            onChange={(e) => setSaleTypeState(e.target.value)}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={() => setShowSoldDialog(false)}>

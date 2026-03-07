@@ -2,7 +2,7 @@
 // GalleryPerformanceChart -- Horizontal bar chart of revenue by gallery
 // ---------------------------------------------------------------------------
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -19,15 +19,26 @@ export interface GalleryPerformanceChartProps {
 }
 
 function currencyFormatter(value: number) {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('de-CH', {
     style: 'currency',
-    currency: 'EUR',
+    currency: 'CHF',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
 }
 
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < breakpoint);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export function GalleryPerformanceChart({ data }: GalleryPerformanceChartProps) {
+  const isMobile = useIsMobile();
   const sorted = useMemo(
     () =>
       [...data]
@@ -37,16 +48,16 @@ export function GalleryPerformanceChart({ data }: GalleryPerformanceChartProps) 
   );
 
   const hasData = sorted.length > 0;
-  const chartHeight = Math.max(300, sorted.length * 48 + 60);
+  const chartHeight = Math.max(isMobile ? 250 : 300, sorted.length * (isMobile ? 40 : 48) + 60);
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-6">
       <h3 className="mb-4 font-display text-lg font-semibold text-primary-900">
         Gallery Performance
       </h3>
 
       {!hasData ? (
-        <div className="flex h-[300px] items-center justify-center">
+        <div className="flex h-[250px] sm:h-[300px] items-center justify-center">
           <p className="text-sm text-primary-400">No gallery data</p>
         </div>
       ) : (
@@ -54,12 +65,12 @@ export function GalleryPerformanceChart({ data }: GalleryPerformanceChartProps) 
           <BarChart
             data={sorted}
             layout="vertical"
-            margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
+            margin={{ top: 8, right: 16, left: 4, bottom: 8 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" horizontal={false} />
             <XAxis
               type="number"
-              tick={{ fill: '#737373', fontSize: 12 }}
+              tick={{ fill: '#737373', fontSize: isMobile ? 10 : 12 }}
               axisLine={{ stroke: '#d4d4d4' }}
               tickLine={false}
               tickFormatter={currencyFormatter}
@@ -67,8 +78,8 @@ export function GalleryPerformanceChart({ data }: GalleryPerformanceChartProps) 
             <YAxis
               type="category"
               dataKey="gallery"
-              width={140}
-              tick={{ fill: '#404040', fontSize: 12 }}
+              width={isMobile ? 80 : 140}
+              tick={{ fill: '#404040', fontSize: isMobile ? 10 : 12 }}
               axisLine={{ stroke: '#d4d4d4' }}
               tickLine={false}
             />
@@ -89,7 +100,7 @@ export function GalleryPerformanceChart({ data }: GalleryPerformanceChartProps) 
               name="Revenue"
               fill="#c9a96e"
               radius={[0, 4, 4, 0]}
-              barSize={24}
+              barSize={isMobile ? 18 : 24}
             />
           </BarChart>
         </ResponsiveContainer>

@@ -13,7 +13,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { GallerySelect } from '../components/galleries/GallerySelect';
 import { Textarea } from '../components/ui/Textarea';
 import { formatCurrency, formatDate } from '../lib/utils';
-import { CURRENCIES } from '../lib/constants';
+import { CURRENCIES, SALE_TYPES } from '../lib/constants';
 import { supabase } from '../lib/supabase';
 import type { SaleInsert, Currency } from '../types/database';
 
@@ -57,6 +57,9 @@ export function SalesPage() {
   const [commissionPercent, setCommissionPercent] = useState('');
   const [buyerName, setBuyerName] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
+  const [saleCity, setSaleCity] = useState('');
+  const [saleCountry, setSaleCountry] = useState('');
+  const [saleType, setSaleType] = useState('');
   const [notes, setNotes] = useState('');
 
   // ---- Handlers -----------------------------------------------------------
@@ -71,6 +74,9 @@ export function SalesPage() {
     setCommissionPercent('');
     setBuyerName('');
     setBuyerEmail('');
+    setSaleCity('');
+    setSaleCountry('');
+    setSaleType('');
     setNotes('');
   }
 
@@ -95,6 +101,9 @@ export function SalesPage() {
       commission_percent: commissionPercent ? parseFloat(commissionPercent) : null,
       buyer_name: buyerName.trim() || null,
       buyer_email: buyerEmail.trim() || null,
+      sale_city: saleCity.trim() || null,
+      sale_country: saleCountry.trim() || null,
+      sale_type: saleType || null,
       notes: notes.trim() || null,
     };
 
@@ -347,6 +356,31 @@ export function SalesPage() {
               onChange={(e) => setBuyerEmail(e.target.value)}
             />
           </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="City"
+              placeholder="e.g. Basel"
+              value={saleCity}
+              onChange={(e) => setSaleCity(e.target.value)}
+            />
+            <Input
+              label="Country"
+              placeholder="e.g. Switzerland"
+              value={saleCountry}
+              onChange={(e) => setSaleCountry(e.target.value)}
+            />
+          </div>
+
+          <Select
+            label="Sale Type"
+            options={[
+              { value: '', label: 'Select type' },
+              ...SALE_TYPES,
+            ]}
+            value={saleType}
+            onChange={(e) => setSaleType(e.target.value)}
+          />
 
           <Textarea
             label="Notes"

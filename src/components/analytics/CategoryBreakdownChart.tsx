@@ -2,7 +2,7 @@
 // CategoryBreakdownChart -- Donut chart of artworks by category
 // ---------------------------------------------------------------------------
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   PieChart,
   Pie,
@@ -13,6 +13,16 @@ import {
   type PieLabelRenderProps,
 } from 'recharts';
 import { Card } from '../ui/Card';
+
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < breakpoint);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 export interface CategoryBreakdownChartProps {
   data: { category: string; count: number }[];
@@ -62,6 +72,7 @@ function renderCustomLabel(props: PieLabelRenderProps) {
 }
 
 export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
+  const isMobile = useIsMobile();
   const hasData = data.length > 0;
 
   const total = useMemo(
@@ -70,17 +81,17 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
   );
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-6">
       <h3 className="mb-4 font-display text-lg font-semibold text-primary-900">
         Category Breakdown
       </h3>
 
       {!hasData ? (
-        <div className="flex h-[320px] items-center justify-center">
+        <div className="flex h-[260px] sm:h-[320px] items-center justify-center">
           <p className="text-sm text-primary-400">No category data</p>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={320}>
+        <ResponsiveContainer width="100%" height={isMobile ? 260 : 320}>
           <PieChart>
             <Pie
               data={data}
@@ -88,8 +99,8 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
               nameKey="category"
               cx="50%"
               cy="45%"
-              innerRadius={60}
-              outerRadius={100}
+              innerRadius={isMobile ? 40 : 60}
+              outerRadius={isMobile ? 70 : 100}
               paddingAngle={2}
               label={renderCustomLabel}
               labelLine={false}
