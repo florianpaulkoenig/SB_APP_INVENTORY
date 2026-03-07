@@ -102,8 +102,12 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Verify webhook secret
-    const secret = req.headers.get('x-webhook-secret') || req.headers.get('webhook-secret');
+    // Verify webhook secret (check header first, then URL query parameter)
+    const url = new URL(req.url);
+    const secret =
+      req.headers.get('x-webhook-secret') ||
+      req.headers.get('webhook-secret') ||
+      url.searchParams.get('secret');
     if (!WEBHOOK_SECRET || secret !== WEBHOOK_SECRET) {
       return new Response(JSON.stringify({ error: 'Invalid webhook secret' }), {
         status: 401,
