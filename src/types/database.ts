@@ -174,6 +174,7 @@ export interface ArtworkRow {
   series: ArtworkSeries | null;
   color: ArtworkColor | null;
   notes: string | null;
+  consigned_since: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -211,6 +212,7 @@ export interface ArtworkInsert {
   series?: ArtworkSeries | null;
   color?: ArtworkColor | null;
   notes?: string | null;
+  consigned_since?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -294,6 +296,7 @@ export interface SaleRow {
   sale_city: string | null;
   sale_country: string | null;
   sale_type: string | null;
+  source_exhibition_id: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -314,6 +317,7 @@ export interface SaleInsert {
   sale_city?: string | null;
   sale_country?: string | null;
   sale_type?: string | null;
+  source_exhibition_id?: string | null;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -738,6 +742,8 @@ export interface DealRow {
   value: number | null;
   currency: Currency | null;
   notes: string | null;
+  stage_changed_at: string | null;
+  lost_reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -751,6 +757,8 @@ export interface DealInsert {
   value?: number | null;
   currency?: Currency | null;
   notes?: string | null;
+  stage_changed_at?: string | null;
+  lost_reason?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -921,6 +929,8 @@ export interface ExhibitionRow {
   catalogue_reference: string | null;
   gallery_id: string | null;
   contact_id: string | null;
+  budget: number | null;
+  budget_currency: Currency | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -938,6 +948,8 @@ export interface ExhibitionInsert {
   catalogue_reference?: string | null;
   gallery_id?: string | null;
   contact_id?: string | null;
+  budget?: number | null;
+  budget_currency?: Currency | null;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -1019,6 +1031,7 @@ export interface ExpenseRow {
   expense_date: string;
   vendor: string | null;
   receipt_path: string | null;
+  exhibition_id: string | null;
   notes: string | null;
   created_at: string;
 }
@@ -1033,6 +1046,7 @@ export interface ExpenseInsert {
   expense_date?: string;
   vendor?: string | null;
   receipt_path?: string | null;
+  exhibition_id?: string | null;
   notes?: string | null;
   created_at?: string;
 }
@@ -1232,6 +1246,14 @@ export interface ViewingRoomInsert {
 }
 
 export type ViewingRoomUpdate = Partial<ViewingRoomInsert>;
+
+// -- viewing_room_views -------------------------------------------------------
+
+export interface ViewingRoomViewRow {
+  id: string;
+  viewing_room_id: string;
+  viewed_at: string;
+}
 
 // -- user_profiles ------------------------------------------------------------
 

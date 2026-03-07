@@ -4,9 +4,10 @@
 // Minimal, gallery-worthy design with generous whitespace.
 // ---------------------------------------------------------------------------
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { usePublicViewingRoom } from '../../hooks/useViewingRooms';
+import { supabase } from '../../lib/supabase';
 import { COMPANY_NAME, ARTIST_NAME } from '../../lib/constants';
 import { formatDimensions } from '../../lib/utils';
 import type { PublicArtwork } from '../../hooks/useViewingRooms';
@@ -236,6 +237,13 @@ export function ViewingRoomPublicPage({ slug }: ViewingRoomPublicPageProps) {
   const { room, artworks, loading, error, checkPassword } =
     usePublicViewingRoom(slug);
   const [unlocked, setUnlocked] = useState(false);
+
+  // Log a view (fire-and-forget, anon insert allowed by RLS)
+  useEffect(() => {
+    if (room?.id) {
+      supabase.from('viewing_room_views').insert({ viewing_room_id: room.id } as never);
+    }
+  }, [room?.id]);
 
   // ---- Loading state --------------------------------------------------------
 

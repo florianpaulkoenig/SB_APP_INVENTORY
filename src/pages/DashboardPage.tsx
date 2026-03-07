@@ -8,8 +8,18 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { useExchangeRates } from '../hooks/useExchangeRates';
+import { useDashboardAnalytics } from '../hooks/useDashboardAnalytics';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Card } from '../components/ui/Card';
+import { ProfitLossCard } from '../components/dashboard/ProfitLossCard';
+import { SalesFunnelChart } from '../components/dashboard/SalesFunnelChart';
+import { CollectorLTVTable } from '../components/dashboard/CollectorLTVTable';
+import { CashFlowChart } from '../components/dashboard/CashFlowChart';
+import { ConsignmentAgingChart } from '../components/dashboard/ConsignmentAgingChart';
+import { ExhibitionImpactTable } from '../components/dashboard/ExhibitionImpactTable';
+import { PriceIntelligenceCard } from '../components/dashboard/PriceIntelligenceCard';
+import { ViewingRoomEngagement } from '../components/dashboard/ViewingRoomEngagement';
+import { GeoDistributionChart } from '../components/dashboard/GeoDistributionChart';
 
 interface DashboardStats {
   total: number;
@@ -113,6 +123,7 @@ interface GalleryRanking {
 export function DashboardPage() {
   const navigate = useNavigate();
   const { toCHF, ready: ratesReady } = useExchangeRates();
+  const { data: analyticsData, loading: analyticsLoading } = useDashboardAnalytics(toCHF, ratesReady);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [galleryCounts, setGalleryCounts] = useState<GalleryCount[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -886,6 +897,43 @@ export function DashboardPage() {
           <p className="mt-2 text-xs text-primary-400">
             Sorted by total revenue. Sell-through = Sold / (Sold + Consigned). Commission Split = Gallery / NOA / Artist.
           </p>
+        </div>
+      )}
+
+      {/* Business Analyses Section */}
+      {!loading && !analyticsLoading && analyticsData && (
+        <div className="mt-10">
+          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
+            Business Analyses
+          </h2>
+          <div className="space-y-6">
+            {/* Row 1: Profit & Loss + Sales Funnel */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <ProfitLossCard data={analyticsData.profitLoss} />
+              <SalesFunnelChart data={analyticsData.salesFunnel} />
+            </div>
+
+            {/* Row 2: Collector LTV + Price Intelligence */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <CollectorLTVTable data={analyticsData.collectorLTV} />
+              <PriceIntelligenceCard data={analyticsData.priceIntelligence} />
+            </div>
+
+            {/* Row 3: Cash Flow (full width) */}
+            <CashFlowChart data={analyticsData.cashFlow} />
+
+            {/* Row 4: Consignment Aging + Exhibition Impact */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <ConsignmentAgingChart data={analyticsData.inventoryAging} />
+              <ExhibitionImpactTable data={analyticsData.exhibitionImpact} />
+            </div>
+
+            {/* Row 5: Viewing Room Engagement + Geographic Distribution */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <ViewingRoomEngagement data={analyticsData.viewingRoomEngagement} />
+              <GeoDistributionChart data={analyticsData.geoDistribution} />
+            </div>
+          </div>
         </div>
       )}
     </div>
