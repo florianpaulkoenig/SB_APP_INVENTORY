@@ -270,9 +270,11 @@ export const IMAGE_TYPES = [
 // Gallery types
 // ---------------------------------------------------------------------------
 export const GALLERY_TYPES = [
-  { value: 'representative', label: 'Representative' },
-  { value: 'project', label: 'Project' },
-  { value: 'agent', label: 'Agent' },
+  { value: 'primary_flagship', label: 'Primary Flagship Gallery' },
+  { value: 'regional_partner', label: 'Regional Partner' },
+  { value: 'project_partner', label: 'Project Partner' },
+  { value: 'sales_agent', label: 'Sales Agent / Intermediary' },
+  { value: 'terminated', label: 'Terminated Partner' },
 ] as const;
 
 // ---------------------------------------------------------------------------
