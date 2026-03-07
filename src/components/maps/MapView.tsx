@@ -19,7 +19,7 @@ export interface MapMarker {
 }
 
 interface MapViewProps {
-  markers: MapMarker[];
+  markers?: MapMarker[];
   onMarkerClick?: (marker: MapMarker) => void;
   height?: string;
   className?: string;
@@ -40,12 +40,13 @@ const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 // ---------------------------------------------------------------------------
 export function MapView({ markers, onMarkerClick, height = '500px', className = '' }: MapViewProps) {
   const [popup, setPopup] = useState<MapMarker | null>(null);
+  const safeMarkers = markers ?? [];
 
   // Calculate initial viewport from markers
   const initialViewState = useMemo(() => {
-    if (markers.length === 0) return { latitude: 47, longitude: 8, zoom: 3 };
-    const lats = markers.map((m) => m.lat);
-    const lngs = markers.map((m) => m.lng);
+    if (safeMarkers.length === 0) return { latitude: 47, longitude: 8, zoom: 3 };
+    const lats = safeMarkers.map((m) => m.lat);
+    const lngs = safeMarkers.map((m) => m.lng);
     const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
     const midLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
     const latSpan = Math.max(...lats) - Math.min(...lats);
@@ -53,7 +54,7 @@ export function MapView({ markers, onMarkerClick, height = '500px', className = 
     const span = Math.max(latSpan, lngSpan);
     const zoom = span > 100 ? 1.5 : span > 50 ? 2.5 : span > 20 ? 3.5 : span > 5 ? 5 : 6;
     return { latitude: midLat, longitude: midLng, zoom };
-  }, [markers]);
+  }, [safeMarkers]);
 
   const handleMarkerClick = useCallback(
     (marker: MapMarker) => {
@@ -71,7 +72,7 @@ export function MapView({ markers, onMarkerClick, height = '500px', className = 
           <p className="mt-1 text-xs text-primary-400">
             Add <code className="rounded bg-primary-100 px-1">VITE_MAPBOX_TOKEN</code> to your .env file
           </p>
-          <p className="mt-2 text-xs text-primary-400">{markers.length} markers ready</p>
+          <p className="mt-2 text-xs text-primary-400">{safeMarkers.length} markers ready</p>
         </div>
       </div>
     );
@@ -85,7 +86,7 @@ export function MapView({ markers, onMarkerClick, height = '500px', className = 
         mapStyle="mapbox://styles/mapbox/light-v11"
         style={{ width: '100%', height: '100%' }}
       >
-        {markers.map((marker) => (
+        {safeMarkers.map((marker) => (
           <Marker
             key={marker.id}
             latitude={marker.lat}
