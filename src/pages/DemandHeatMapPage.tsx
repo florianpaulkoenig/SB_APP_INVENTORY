@@ -311,7 +311,14 @@ export function DemandHeatMapPage() {
       </Card>
 
       {/* Legend */}
-      <MapLegend />
+      <MapLegend
+        items={[
+          { label: 'Enquiries', color: '#3b82f6', count: allMarkers.filter(m => m.type === 'enquiry').length },
+          { label: 'Exhibitions', color: '#8b5cf6', count: allMarkers.filter(m => m.type === 'exhibition').length },
+          { label: 'Sales', color: '#c9a96e', count: allMarkers.filter(m => m.type === 'sale').length },
+          { label: 'Collectors', color: '#22c55e', count: allMarkers.filter(m => m.type === 'collector').length },
+        ]}
+      />
 
       {/* Market Opportunities */}
       <div>

@@ -264,7 +264,11 @@ export function ArtFairHeatMapPage() {
       </Card>
 
       {/* Legend */}
-      <MapLegend />
+      <MapLegend
+        items={[
+          { label: 'Art Fairs', color: '#a855f7', count: markers.length },
+        ]}
+      />
 
       {/* Fair Performance Chart */}
       <div>

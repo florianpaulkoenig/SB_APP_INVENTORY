@@ -93,8 +93,7 @@ export function ExhibitionDetailPage() {
       setExhibition(data as Exhibition);
 
       if (data.city || data.country) {
-        const location = [data.city, data.country].filter(Boolean).join(', ');
-        const coords = await getCoordinates(location);
+        const coords = getCoordinates(data.city, data.country);
         if (coords) setCoordinates(coords);
       }
     } catch {

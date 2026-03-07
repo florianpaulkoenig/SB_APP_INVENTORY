@@ -139,7 +139,8 @@ export function MapView({ markers, onMarkerClick, height = '500px', className = 
 // ---------------------------------------------------------------------------
 // Legend helper
 // ---------------------------------------------------------------------------
-export function MapLegend({ items }: { items: Array<{ label: string; color: string; count: number }> }) {
+export function MapLegend({ items = [] }: { items?: Array<{ label: string; color: string; count: number }> }) {
+  if (items.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-4">
       {items.map((item) => (
