@@ -268,13 +268,8 @@ export function CVEditorPage() {
             <Select
               value={form.category}
               onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-            >
-              {CV_CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
-              ))}
-            </Select>
+              options={[...CV_CATEGORIES]}
+            />
           </div>
 
           {/* Title */}

@@ -438,13 +438,8 @@ export function MediaLibraryPage() {
             <Select
               value={uploadCategory}
               onChange={(e) => setUploadCategory(e.target.value)}
-            >
-              {MEDIA_CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
-              ))}
-            </Select>
+              options={[...MEDIA_CATEGORIES]}
+            />
           </div>
 
           {/* Description */}
