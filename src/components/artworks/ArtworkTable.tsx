@@ -33,6 +33,7 @@ const COLUMNS: Column[] = [
   { key: 'year', label: 'Year', sortable: true },
   { key: 'dimensions', label: 'Dimensions', sortable: false, hiddenClass: 'hidden lg:table-cell' },
   { key: 'status', label: 'Status', sortable: true },
+  { key: 'available_for_partners', label: 'Partners', sortable: false, hiddenClass: 'hidden md:table-cell' },
   { key: 'price', label: 'Price', sortable: true },
   { key: 'current_location', label: 'Location', sortable: true, hiddenClass: 'hidden md:table-cell' },
 ];
@@ -169,6 +170,17 @@ export function ArtworkTable({
                 {/* Status */}
                 <td className="px-2 py-2 sm:px-4 sm:py-3">
                   <StatusBadge status={artwork.status} />
+                </td>
+
+                {/* Partners */}
+                <td className="hidden px-2 py-2 md:table-cell sm:px-4 sm:py-3">
+                  {artwork.available_for_partners ? (
+                    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                      Yes
+                    </span>
+                  ) : (
+                    <span className="text-xs text-primary-400">{'\u2014'}</span>
+                  )}
                 </td>
 
                 {/* Price */}

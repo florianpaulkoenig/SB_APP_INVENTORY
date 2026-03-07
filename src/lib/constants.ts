@@ -295,3 +295,64 @@ export const INSTITUTION_TYPES = [
   { value: 'government', label: 'Government' },
   { value: 'other', label: 'Other' },
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Enquiry sources, statuses, priorities
+// ---------------------------------------------------------------------------
+export const ENQUIRY_SOURCES = [
+  { value: 'email', label: 'Email', color: 'bg-blue-100 text-blue-800' },
+  { value: 'instagram', label: 'Instagram', color: 'bg-pink-100 text-pink-800' },
+  { value: 'website', label: 'Website', color: 'bg-indigo-100 text-indigo-800' },
+  { value: 'art_fair', label: 'Art Fair', color: 'bg-purple-100 text-purple-800' },
+  { value: 'phone', label: 'Phone', color: 'bg-teal-100 text-teal-800' },
+  { value: 'referral', label: 'Referral', color: 'bg-amber-100 text-amber-800' },
+  { value: 'other', label: 'Other', color: 'bg-gray-100 text-gray-800' },
+] as const;
+
+export const ENQUIRY_STATUSES = [
+  { value: 'new', label: 'New', color: 'bg-blue-100 text-blue-800' },
+  { value: 'reviewing', label: 'Reviewing', color: 'bg-amber-100 text-amber-800' },
+  { value: 'converted', label: 'Converted', color: 'bg-emerald-100 text-emerald-800' },
+  { value: 'archived', label: 'Archived', color: 'bg-gray-100 text-gray-800' },
+] as const;
+
+export const ENQUIRY_PRIORITIES = [
+  { value: 'low', label: 'Low', color: 'bg-gray-100 text-gray-800' },
+  { value: 'normal', label: 'Normal', color: 'bg-blue-100 text-blue-800' },
+  { value: 'high', label: 'High', color: 'bg-amber-100 text-amber-800' },
+  { value: 'urgent', label: 'Urgent', color: 'bg-red-100 text-red-800' },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Exhibition types
+// ---------------------------------------------------------------------------
+export const EXHIBITION_TYPES = [
+  { value: 'exhibition', label: 'Exhibition', color: 'bg-indigo-100 text-indigo-800' },
+  { value: 'art_fair', label: 'Art Fair', color: 'bg-purple-100 text-purple-800' },
+  { value: 'solo_show', label: 'Solo Show', color: 'bg-emerald-100 text-emerald-800' },
+  { value: 'group_show', label: 'Group Show', color: 'bg-amber-100 text-amber-800' },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Auction results & houses
+// ---------------------------------------------------------------------------
+export const AUCTION_RESULTS = [
+  { value: 'upcoming', label: 'Upcoming', color: 'bg-blue-100 text-blue-800' },
+  { value: 'sold', label: 'Sold', color: 'bg-emerald-100 text-emerald-800' },
+  { value: 'bought_in', label: 'Bought In', color: 'bg-red-100 text-red-800' },
+  { value: 'withdrawn', label: 'Withdrawn', color: 'bg-gray-100 text-gray-800' },
+  { value: 'pending', label: 'Pending', color: 'bg-amber-100 text-amber-800' },
+] as const;
+
+export const AUCTION_HOUSES = [
+  "Christie's",
+  "Sotheby's",
+  'Phillips',
+  'Bonhams',
+  'Dorotheum',
+  'Ketterer Kunst',
+  'Koller',
+  'Artcurial',
+  'Grisebach',
+  'Lempertz',
+] as const;

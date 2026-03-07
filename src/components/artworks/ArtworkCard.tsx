@@ -120,7 +120,14 @@ export function ArtworkCard({ artwork, imageUrl, onClick, onDownloadCertificate,
 
         {/* Status + Price row */}
         <div className="flex items-center justify-between pt-1">
-          <StatusBadge status={artwork.status} />
+          <div className="flex items-center gap-1.5">
+            <StatusBadge status={artwork.status} />
+            {artwork.available_for_partners && (
+              <span className="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700" title="Available for Partners">
+                Partners
+              </span>
+            )}
+          </div>
           {artwork.price != null && (
             <span className="text-sm font-medium text-primary-800">
               {formatCurrency(artwork.price, artwork.currency)}

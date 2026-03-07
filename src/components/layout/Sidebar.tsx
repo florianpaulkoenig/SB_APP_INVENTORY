@@ -132,6 +132,33 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M6 5V3.5M14 5V3.5" />
     </svg>
   ),
+  enquiry: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093M10 15h.01" />
+      <circle cx="10" cy="10" r="8" />
+    </svg>
+  ),
+  map: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 2C6.686 2 4 4.686 4 8c0 4.5 6 10 6 10s6-5.5 6-10c0-3.314-2.686-6-6-6z" />
+      <circle cx="10" cy="8" r="2" />
+    </svg>
+  ),
+  exhibition: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2 17h16M4 17V7l6-4 6 4v10M8 17v-4h4v4M8 9h4" />
+    </svg>
+  ),
+  priceTag: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2 4.5V10l8 8 6-6-8-8H2.5zM6 7a1 1 0 100-2 1 1 0 000 2z" />
+    </svg>
+  ),
+  auction: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14 3l3 3-8 8-3-3 8-8zM11 6l3 3M4 17h12M6 14l-2 3" />
+    </svg>
+  ),
   collapse: (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4l-5 6 5 6" />
@@ -173,6 +200,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Contacts', to: '/contacts', icon: icons.contacts, roles: ['admin'] },
       { label: 'Deals', to: '/deals', icon: icons.deals, roles: ['admin'] },
+      { label: 'Enquiries', to: '/enquiries', icon: icons.enquiry, roles: ['admin'] },
       { label: 'Invoices', to: '/invoices', icon: icons.invoices, roles: ['admin'] },
       { label: 'Sales', to: '/sales', icon: icons.sales, roles: ['admin', 'gallery'] },
     ],
@@ -191,9 +219,20 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    title: 'MARKET INTELLIGENCE',
+    items: [
+      { label: 'Demand Map', to: '/demand-map', icon: icons.map, roles: ['admin'] },
+      { label: 'Exhibitions & Fairs', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
+      { label: 'Art Fair Map', to: '/art-fair-map', icon: icons.map, roles: ['admin'] },
+      { label: 'Price Management', to: '/price-management', icon: icons.priceTag, roles: ['admin'] },
+      { label: 'Auction Tracking', to: '/auction-tracking', icon: icons.auction, roles: ['admin'] },
+    ],
+  },
+  {
     title: 'GALLERY PORTAL',
     items: [
       { label: 'Gallery Dashboard', to: '/gallery/dashboard', icon: icons.dashboard, roles: ['gallery'] },
+      { label: 'Available Works', to: '/gallery/available-works', icon: icons.artworks, roles: ['gallery'] },
       { label: 'My Artworks', to: '/gallery/artworks', icon: icons.artworks, roles: ['gallery'] },
       { label: 'My Deliveries', to: '/gallery/deliveries', icon: icons.delivery, roles: ['gallery'] },
       { label: 'Certificates', to: '/gallery/certificates', icon: icons.certificate, roles: ['gallery'] },

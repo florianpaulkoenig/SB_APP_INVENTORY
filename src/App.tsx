@@ -186,6 +186,33 @@ const GalleryNewsPage = React.lazy(() =>
 const PublicCollectionsPage = React.lazy(() =>
   import('./pages/PublicCollectionsPage').then((m) => ({ default: m.PublicCollectionsPage })),
 );
+const EnquiriesPage = React.lazy(() =>
+  import('./pages/EnquiriesPage').then((m) => ({ default: m.EnquiriesPage })),
+);
+const EnquiryDetailPage = React.lazy(() =>
+  import('./pages/EnquiryDetailPage').then((m) => ({ default: m.EnquiryDetailPage })),
+);
+const DemandHeatMapPage = React.lazy(() =>
+  import('./pages/DemandHeatMapPage').then((m) => ({ default: m.DemandHeatMapPage })),
+);
+const ExhibitionsPage = React.lazy(() =>
+  import('./pages/ExhibitionsPage').then((m) => ({ default: m.ExhibitionsPage })),
+);
+const ExhibitionDetailPage = React.lazy(() =>
+  import('./pages/ExhibitionDetailPage').then((m) => ({ default: m.ExhibitionDetailPage })),
+);
+const ArtFairHeatMapPage = React.lazy(() =>
+  import('./pages/ArtFairHeatMapPage').then((m) => ({ default: m.ArtFairHeatMapPage })),
+);
+const PriceManagementPage = React.lazy(() =>
+  import('./pages/PriceManagementPage').then((m) => ({ default: m.PriceManagementPage })),
+);
+const AuctionTrackingPage = React.lazy(() =>
+  import('./pages/AuctionTrackingPage').then((m) => ({ default: m.AuctionTrackingPage })),
+);
+const GalleryAvailableWorksPage = React.lazy(() =>
+  import('./pages/GalleryAvailableWorksPage').then((m) => ({ default: m.GalleryAvailableWorksPage })),
+);
 
 // ---------------------------------------------------------------------------
 // Suspense fallback
@@ -611,7 +638,101 @@ const router = createBrowserRouter(
           ),
         },
 
+        // Enquiries (admin only)
+        {
+          path: 'enquiries',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <EnquiriesPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'enquiries/:id',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <EnquiryDetailPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+
+        // Market Intelligence (admin only)
+        {
+          path: 'demand-map',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <DemandHeatMapPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'exhibitions',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <ExhibitionsPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'exhibitions/:id',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <ExhibitionDetailPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'art-fair-map',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <ArtFairHeatMapPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'price-management',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <PriceManagementPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'auction-tracking',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <AuctionTrackingPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+
         // Gallery portal routes (admin + gallery)
+        {
+          path: 'gallery/available-works',
+          element: (
+            <RoleGuard allowed={['admin', 'gallery']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <GalleryAvailableWorksPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
         {
           path: 'gallery/dashboard',
           element: (

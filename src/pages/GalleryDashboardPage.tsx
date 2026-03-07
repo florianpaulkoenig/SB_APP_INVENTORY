@@ -1,37 +1,54 @@
 // ---------------------------------------------------------------------------
-// NOA Inventory -- Gallery Dashboard Page
-// Dashboard view for gallery-role users showing consigned artworks overview,
-// revenue stats, and recent activity.
+// NOA Inventory -- Gallery Dashboard Page (Full Analytics)
+// Dashboard view for gallery-role users with KPIs, charts, and top artworks.
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useGalleryAnalytics } from '../hooks/useGalleryAnalytics';
+import { useExchangeRates } from '../hooks/useExchangeRates';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { Button } from '../components/ui/Button';
-import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { formatCurrency } from '../lib/utils';
-import type { ArtworkRow, GalleryRow, DeliveryRow } from '../types/database';
+import { Button } from '../components/ui/Button';
+import { formatCurrency, formatDate } from '../lib/utils';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Legend,
+} from 'recharts';
 
 // ---------------------------------------------------------------------------
-// Status badge variant mapping
+// Status color map for pie chart
 // ---------------------------------------------------------------------------
 
-const STATUS_BADGE_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'info' | 'danger'> = {
-  available: 'success',
-  sold: 'default',
-  reserved: 'warning',
-  in_production: 'info',
-  in_transit: 'info',
-  on_consignment: 'info',
-  paid: 'success',
-  pending_sale: 'warning',
-  archived: 'default',
-  destroyed: 'default',
+const STATUS_COLORS: Record<string, string> = {
+  available: '#22c55e',
+  sold: '#c9a96e',
+  on_consignment: '#3b82f6',
+  in_transit: '#f59e0b',
+  reserved: '#a855f7',
+  pending_sale: '#f97316',
+  in_production: '#6366f1',
+  paid: '#10b981',
+  archived: '#a3a3a3',
+  destroyed: '#a3a3a3',
 };
+
+function getStatusColor(status: string): string {
+  return STATUS_COLORS[status] || '#a3a3a3';
+}
 
 // ---------------------------------------------------------------------------
 // Page
@@ -39,95 +56,31 @@ const STATUS_BADGE_VARIANT: Record<string, 'default' | 'success' | 'warning' | '
 
 export function GalleryDashboardPage() {
   const { profile } = useAuth();
-
-  const [gallery, setGallery] = useState<GalleryRow | null>(null);
-  const [artworks, setArtworks] = useState<ArtworkRow[]>([]);
-  const [deliveries, setDeliveries] = useState<DeliveryRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Revenue data
-  const [salesRevenue, setSalesRevenue] = useState(0);
-  const [pendingSaleRequests, setPendingSaleRequests] = useState(0);
+  const navigate = useNavigate();
+  const { toCHF, ready: ratesReady } = useExchangeRates();
 
   const galleryId = profile?.gallery_id;
+  const { data, loading, refresh } = useGalleryAnalytics(galleryId, toCHF, ratesReady);
 
-  // ---- Fetch data ---------------------------------------------------------
+  const [galleryName, setGalleryName] = useState<string>('Gallery');
+
+  // ---- Fetch gallery name -------------------------------------------------
 
   useEffect(() => {
-    if (!galleryId) {
-      setLoading(false);
-      return;
-    }
+    if (!galleryId) return;
 
-    async function fetchData() {
-      setLoading(true);
-
-      // Fetch gallery details
-      const { data: galleryData } = await supabase
+    async function fetchGalleryName() {
+      const { data: gallery } = await supabase
         .from('galleries')
-        .select('*')
+        .select('name')
         .eq('id', galleryId!)
         .single();
 
-      if (galleryData) setGallery(galleryData as GalleryRow);
-
-      // Fetch artworks consigned to this gallery
-      const { data: artworkData } = await supabase
-        .from('artworks')
-        .select('*')
-        .eq('gallery_id', galleryId!)
-        .order('created_at', { ascending: false });
-
-      if (artworkData) setArtworks(artworkData as ArtworkRow[]);
-
-      // Fetch active deliveries for this gallery
-      const { data: deliveryData } = await supabase
-        .from('deliveries')
-        .select('*')
-        .eq('gallery_id', galleryId!)
-        .neq('status', 'delivered')
-        .order('created_at', { ascending: false });
-
-      if (deliveryData) setDeliveries(deliveryData as DeliveryRow[]);
-
-      // Fetch sales revenue for this gallery
-      const { data: salesData } = await supabase
-        .from('sales')
-        .select('sale_price, currency')
-        .eq('gallery_id', galleryId!);
-
-      if (salesData) {
-        const total = salesData.reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0);
-        setSalesRevenue(total);
-      }
-
-      // Fetch pending sale requests count
-      const { count } = await supabase
-        .from('sale_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('gallery_id', galleryId!)
-        .eq('status', 'pending');
-
-      setPendingSaleRequests(count ?? 0);
-
-      setLoading(false);
+      if (gallery?.name) setGalleryName(gallery.name);
     }
 
-    fetchData();
+    fetchGalleryName();
   }, [galleryId]);
-
-  // ---- Derived stats ------------------------------------------------------
-
-  const totalConsigned = artworks.length;
-  const totalSold = artworks.filter((a) => a.status === 'sold' || a.status === 'paid').length;
-  const activeDeliveries = deliveries.length;
-
-  // Potential revenue: price of unsold artworks
-  const potentialRevenue = artworks
-    .filter((a) => a.status !== 'sold' && a.status !== 'paid')
-    .reduce((sum, a) => sum + (Number(a.price) || 0), 0);
-
-  const recentArtworks = artworks.slice(0, 6);
 
   // ---- Render: no gallery configured --------------------------------------
 
@@ -139,25 +92,27 @@ export function GalleryDashboardPage() {
             Gallery Dashboard
           </h1>
         </div>
-        <EmptyState
-          icon={
-            <svg
-              className="h-12 w-12"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"
-              />
-            </svg>
-          }
-          title="Your gallery profile is not configured yet"
-          description="Please contact an administrator to link your account to a gallery."
-        />
+        <Card className="p-8 text-center">
+          <svg
+            className="mx-auto h-12 w-12 text-primary-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="1.5"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"
+            />
+          </svg>
+          <h3 className="mt-4 text-sm font-medium text-primary-900">
+            Your gallery profile is not configured yet
+          </h3>
+          <p className="mt-1 text-sm text-primary-500">
+            Please contact an administrator to link your account to a gallery.
+          </p>
+        </Card>
       </div>
     );
   }
@@ -172,6 +127,16 @@ export function GalleryDashboardPage() {
     );
   }
 
+  // ---- Prepare chart data -------------------------------------------------
+
+  const statusData = data.statusBreakdown.map((s) => ({
+    name: s.status.replace(/_/g, ' '),
+    value: s.count,
+    fill: getStatusColor(s.status),
+  }));
+
+  const geoData = data.geoDistribution.slice(0, 8);
+
   // ---- Render: dashboard --------------------------------------------------
 
   return (
@@ -181,145 +146,248 @@ export function GalleryDashboardPage() {
         <h1 className="font-display text-2xl sm:text-3xl font-bold text-primary-900">
           Gallery Dashboard
         </h1>
-        <p className="mt-1 text-sm text-primary-500">
-          {gallery?.name ?? 'Gallery'}
-        </p>
+        <p className="mt-1 text-sm text-primary-500">{galleryName}</p>
       </div>
 
-      {/* Stat cards */}
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
+      {/* KPI Row */}
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card className="p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-            Consigned
+            Consigned Works
           </p>
-          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-primary-900">
-            {totalConsigned}
+          <p className="mt-1 font-display text-2xl font-bold text-primary-900">
+            {data.consignedCount}
           </p>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
+        <Card className="p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-            Sold
+            Total Revenue
           </p>
-          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-primary-900">
-            {totalSold}
+          <p className="mt-1 font-display text-2xl font-bold text-emerald-700">
+            {formatCurrency(data.totalRevenue, 'CHF')}
           </p>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
+        <Card className="p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-            Deliveries
+            Commission Earned
           </p>
-          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-primary-900">
-            {activeDeliveries}
+          <p className="mt-1 font-display text-2xl font-bold text-primary-900">
+            {formatCurrency(data.commissionEarned, 'CHF')}
           </p>
-        </div>
+        </Card>
 
-        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-emerald-600">
-            Sales Revenue
+        <Card className="p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+            Avg Days to Sale
           </p>
-          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-emerald-700">
-            {formatCurrency(salesRevenue, 'EUR')}
+          <p className="mt-1 font-display text-2xl font-bold text-primary-900">
+            {data.avgDaysToSale}
           </p>
-        </div>
-
-        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
-            Potential Revenue
-          </p>
-          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-blue-700">
-            {formatCurrency(potentialRevenue, 'EUR')}
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-primary-100 bg-white p-3 sm:p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-amber-600">
-            Pending Sales
-          </p>
-          <p className="mt-1 font-display text-xl sm:text-2xl font-bold text-amber-700">
-            {pendingSaleRequests}
-          </p>
-        </div>
+        </Card>
       </div>
 
-      {/* Quick links */}
-      <div className="mb-8 flex flex-wrap gap-3">
-        <Link to="/gallery/artworks">
-          <Button variant="outline" size="sm">My Artworks</Button>
-        </Link>
-        <Link to="/gallery/deliveries">
-          <Button variant="outline" size="sm">Deliveries</Button>
-        </Link>
-        <Link to="/gallery/certificates">
-          <Button variant="outline" size="sm">Certificates</Button>
-        </Link>
-        <Link to="/gallery/media">
-          <Button variant="outline" size="sm">Media Library</Button>
-        </Link>
-        <Link to="/gallery/news">
-          <Button variant="outline" size="sm">News</Button>
-        </Link>
+      {/* Row 1: Sales Timeline + Geographic Distribution */}
+      <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Sales Timeline */}
+        <Card className="p-4">
+          <h3 className="font-display text-sm font-semibold text-primary-900 mb-3">
+            Sales Timeline
+          </h3>
+          {data.salesTimeline.length === 0 ? (
+            <p className="text-sm text-primary-400 py-8 text-center">No sales data yet</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={data.salesTimeline}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 11, fill: '#737373' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: '#737373' }}
+                  tickLine={false}
+                  tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
+                />
+                <Tooltip
+                  formatter={(value: number) => [formatCurrency(value, 'CHF'), 'Revenue']}
+                  labelStyle={{ color: '#171717', fontWeight: 600 }}
+                  contentStyle={{ borderRadius: 8, border: '1px solid #e5e5e5' }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#c9a96e"
+                  strokeWidth={2}
+                  dot={{ fill: '#c9a96e', r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </Card>
+
+        {/* Geographic Distribution */}
+        <Card className="p-4">
+          <h3 className="font-display text-sm font-semibold text-primary-900 mb-3">
+            Geographic Distribution
+          </h3>
+          {geoData.length === 0 ? (
+            <p className="text-sm text-primary-400 py-8 text-center">No geographic data yet</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={geoData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 11, fill: '#737373' }}
+                  tickLine={false}
+                  tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="country"
+                  tick={{ fontSize: 11, fill: '#737373' }}
+                  tickLine={false}
+                  width={80}
+                />
+                <Tooltip
+                  formatter={(value: number) => [formatCurrency(value, 'CHF'), 'Revenue']}
+                  contentStyle={{ borderRadius: 8, border: '1px solid #e5e5e5' }}
+                />
+                <Bar dataKey="revenue" fill="#c9a96e" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </Card>
       </div>
 
-      {/* Recent artworks */}
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold text-primary-900">
-          Recent Artworks
-        </h2>
-        <Link to="/gallery/artworks">
-          <Button variant="ghost" size="sm">
-            View All
-          </Button>
-        </Link>
-      </div>
+      {/* Row 2: Price Performance + Consignment Status */}
+      <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Price Performance */}
+        <Card className="p-4">
+          <h3 className="font-display text-sm font-semibold text-primary-900 mb-4">
+            Price Performance
+          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                Avg Sale Price
+              </p>
+              <p className="mt-1 font-display text-lg font-bold text-primary-900">
+                {formatCurrency(data.avgSalePrice, 'CHF')}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                Avg Discount Rate
+              </p>
+              <p className="mt-1 font-display text-lg font-bold text-primary-900">
+                {data.avgDiscountRate.toFixed(1)}%
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                At List Price
+              </p>
+              <p className="mt-1 font-display text-lg font-bold text-emerald-700">
+                {data.atListPricePercent.toFixed(0)}%
+              </p>
+            </div>
+          </div>
+        </Card>
 
-      {recentArtworks.length === 0 ? (
-        <EmptyState
-          title="No artworks yet"
-          description="Artworks consigned to your gallery will appear here."
-        />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {recentArtworks.map((artwork) => (
-            <Card key={artwork.id} className="overflow-hidden">
-              {/* Image placeholder */}
-              <div className="flex h-40 items-center justify-center bg-primary-50">
-                <svg
-                  className="h-10 w-10 text-primary-300"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
+        {/* Consignment Status */}
+        <Card className="p-4">
+          <h3 className="font-display text-sm font-semibold text-primary-900 mb-3">
+            Consignment Status
+          </h3>
+          {statusData.length === 0 ? (
+            <p className="text-sm text-primary-400 py-8 text-center">No status data yet</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={40}
+                  outerRadius={70}
+                  paddingAngle={2}
+                  dataKey="value"
+                  nameKey="name"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z"
-                  />
-                </svg>
-              </div>
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: number, name: string) => [value, name]}
+                  contentStyle={{ borderRadius: 8, border: '1px solid #e5e5e5' }}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: 11 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </Card>
+      </div>
 
-              {/* Card body */}
-              <div className="p-4">
-                <h3 className="text-sm font-medium text-primary-900 truncate">
-                  {artwork.title}
-                </h3>
-                <div className="mt-1 flex items-center justify-between">
-                  <Badge variant={STATUS_BADGE_VARIANT[artwork.status] ?? 'default'}>
-                    {artwork.status.replace(/_/g, ' ')}
-                  </Badge>
-                  {artwork.price != null && (
-                    <span className="text-xs text-primary-500">
-                      {formatCurrency(Number(artwork.price), artwork.currency ?? 'EUR')}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
+      {/* Row 3: Top Selling Artworks */}
+      <Card className="mb-8 p-4">
+        <h3 className="font-display text-sm font-semibold text-primary-900 mb-3">
+          Top Selling Artworks
+        </h3>
+        {data.topArtworks.length === 0 ? (
+          <p className="text-sm text-primary-400 py-4 text-center">No sales data yet</p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-primary-100">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-primary-50 text-left">
+                  <th className="px-3 py-2 font-medium text-primary-600 w-10">#</th>
+                  <th className="px-3 py-2 font-medium text-primary-600">Title</th>
+                  <th className="px-3 py-2 font-medium text-primary-600 text-right">Revenue</th>
+                  <th className="px-3 py-2 font-medium text-primary-600">Sale Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.topArtworks.slice(0, 10).map((artwork, i) => (
+                  <tr key={artwork.artworkId} className="border-t border-primary-50">
+                    <td className="px-3 py-2 text-primary-400">{i + 1}</td>
+                    <td className="px-3 py-2 text-primary-900 font-medium">{artwork.title}</td>
+                    <td className="px-3 py-2 text-right text-primary-900">
+                      {formatCurrency(artwork.revenue, 'CHF')}
+                    </td>
+                    <td className="px-3 py-2 text-primary-600">
+                      {artwork.saleDate ? formatDate(artwork.saleDate) : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* Quick Links */}
+      <div className="flex flex-wrap gap-3">
+        <Button variant="outline" onClick={() => navigate('/gallery/available-works')}>
+          Available Works
+        </Button>
+        <Button variant="outline" onClick={() => navigate('/gallery/deliveries')}>
+          Deliveries
+        </Button>
+        <Button variant="outline" onClick={() => navigate('/gallery/certificates')}>
+          Certificates
+        </Button>
+      </div>
     </div>
   );
 }

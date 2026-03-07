@@ -175,6 +175,7 @@ export interface ArtworkRow {
   color: ArtworkColor | null;
   notes: string | null;
   consigned_since: string | null;
+  available_for_partners: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -213,6 +214,7 @@ export interface ArtworkInsert {
   color?: ArtworkColor | null;
   notes?: string | null;
   consigned_since?: string | null;
+  available_for_partners?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -917,10 +919,13 @@ export type ValuationUpdate = Partial<ValuationInsert>;
 
 // -- exhibitions -------------------------------------------------------------
 
+export type ExhibitionType = 'exhibition' | 'art_fair' | 'solo_show' | 'group_show';
+
 export interface ExhibitionRow {
   id: string;
   user_id: string;
   title: string;
+  type: ExhibitionType;
   venue: string | null;
   city: string | null;
   country: string | null;
@@ -940,6 +945,7 @@ export interface ExhibitionInsert {
   id?: string;
   user_id?: string;
   title: string;
+  type?: ExhibitionType;
   venue?: string | null;
   city?: string | null;
   country?: string | null;
@@ -1472,6 +1478,151 @@ export interface ArtworkCollectionInsert {
 
 export type ArtworkCollectionUpdate = Partial<ArtworkCollectionInsert>;
 
+// -- enquiries ---------------------------------------------------------------
+
+export type EnquirySource = 'email' | 'instagram' | 'website' | 'art_fair' | 'phone' | 'referral' | 'other';
+export type EnquiryStatus = 'new' | 'reviewing' | 'converted' | 'archived';
+export type EnquiryPriority = 'low' | 'normal' | 'high' | 'urgent';
+
+export interface EnquiryRow {
+  id: string;
+  user_id: string;
+  source: EnquirySource;
+  sender_name: string | null;
+  sender_email: string | null;
+  sender_phone: string | null;
+  subject: string | null;
+  body: string | null;
+  interest_description: string | null;
+  interested_artwork_ids: string[];
+  location_city: string | null;
+  location_country: string | null;
+  estimated_value: number | null;
+  currency: Currency;
+  priority: EnquiryPriority;
+  status: EnquiryStatus;
+  converted_deal_id: string | null;
+  converted_contact_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EnquiryInsert {
+  id?: string;
+  user_id?: string;
+  source?: EnquirySource;
+  sender_name?: string | null;
+  sender_email?: string | null;
+  sender_phone?: string | null;
+  subject?: string | null;
+  body?: string | null;
+  interest_description?: string | null;
+  interested_artwork_ids?: string[];
+  location_city?: string | null;
+  location_country?: string | null;
+  estimated_value?: number | null;
+  currency?: Currency;
+  priority?: EnquiryPriority;
+  status?: EnquiryStatus;
+  converted_deal_id?: string | null;
+  converted_contact_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type EnquiryUpdate = Partial<EnquiryInsert>;
+
+// -- exhibition_galleries ----------------------------------------------------
+
+export interface ExhibitionGalleryRow {
+  id: string;
+  user_id: string;
+  exhibition_id: string;
+  gallery_id: string;
+  booth_number: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface ExhibitionGalleryInsert {
+  id?: string;
+  user_id?: string;
+  exhibition_id: string;
+  gallery_id: string;
+  booth_number?: string | null;
+  notes?: string | null;
+  created_at?: string;
+}
+
+export type ExhibitionGalleryUpdate = Partial<ExhibitionGalleryInsert>;
+
+// -- auction_alerts ----------------------------------------------------------
+
+export type AuctionResult = 'upcoming' | 'sold' | 'bought_in' | 'withdrawn' | 'pending';
+
+export interface AuctionAlertRow {
+  id: string;
+  user_id: string;
+  auction_house: string;
+  sale_title: string | null;
+  sale_date: string | null;
+  lot_number: string | null;
+  artwork_title: string;
+  artwork_description: string | null;
+  estimate_low: number | null;
+  estimate_high: number | null;
+  currency: Currency;
+  hammer_price: number | null;
+  result: AuctionResult;
+  matched_artwork_id: string | null;
+  matched_gallery_id: string | null;
+  source_url: string | null;
+  ai_detected: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuctionAlertInsert {
+  id?: string;
+  user_id?: string;
+  auction_house: string;
+  sale_title?: string | null;
+  sale_date?: string | null;
+  lot_number?: string | null;
+  artwork_title: string;
+  artwork_description?: string | null;
+  estimate_low?: number | null;
+  estimate_high?: number | null;
+  currency?: Currency;
+  hammer_price?: number | null;
+  result?: AuctionResult;
+  matched_artwork_id?: string | null;
+  matched_gallery_id?: string | null;
+  source_url?: string | null;
+  ai_detected?: boolean;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type AuctionAlertUpdate = Partial<AuctionAlertInsert>;
+
+// -- price_intelligence_reports ----------------------------------------------
+
+export type PriceReportType = 'market_analysis' | 'price_recommendation' | 'auction_review';
+
+export interface PriceIntelligenceReportRow {
+  id: string;
+  user_id: string;
+  report_type: PriceReportType;
+  title: string;
+  summary: string | null;
+  report_data: Record<string, unknown>;
+  ai_model: string | null;
+  created_at: string;
+}
+
 // ---- Supabase Database type (standard pattern) -----------------------------
 
 export interface Database {
@@ -1676,6 +1827,21 @@ export interface Database {
         Row: ArtworkCollectionRow;
         Insert: ArtworkCollectionInsert;
         Update: ArtworkCollectionUpdate;
+      };
+      enquiries: {
+        Row: EnquiryRow;
+        Insert: EnquiryInsert;
+        Update: EnquiryUpdate;
+      };
+      exhibition_galleries: {
+        Row: ExhibitionGalleryRow;
+        Insert: ExhibitionGalleryInsert;
+        Update: ExhibitionGalleryUpdate;
+      };
+      auction_alerts: {
+        Row: AuctionAlertRow;
+        Insert: AuctionAlertInsert;
+        Update: AuctionAlertUpdate;
       };
     };
     Views: Record<string, never>;

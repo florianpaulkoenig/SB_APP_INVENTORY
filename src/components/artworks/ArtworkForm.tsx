@@ -136,6 +136,9 @@ export function ArtworkForm({
     artwork?.commission_artist != null ? String(artwork.commission_artist) : '',
   );
 
+  // Partner availability
+  const [availableForPartners, setAvailableForPartners] = useState(v?.available_for_partners ?? false);
+
   // Notes
   const [notes, setNotes] = useState(v?.notes ?? '');
 
@@ -247,6 +250,7 @@ export function ArtworkForm({
       series: (series || null) as ArtworkSeries | null,
       color: (color || null) as ArtworkColor | null,
       notes: notes.trim() || null,
+      available_for_partners: availableForPartners,
     };
 
     await onSubmit(data);
@@ -515,6 +519,18 @@ export function ArtworkForm({
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           />
+        </div>
+
+        <div className="mt-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={availableForPartners}
+              onChange={(e) => setAvailableForPartners(e.target.checked)}
+              className="h-4 w-4 rounded border-primary-300 text-accent focus:ring-accent"
+            />
+            <span className="text-sm font-medium text-primary-700">Available for Partner Galleries</span>
+          </label>
         </div>
       </section>
 
