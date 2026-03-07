@@ -82,7 +82,7 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
       description?: string
     ): Promise<MediaFile | null> => {
       // Validate file size and MIME type before uploading
-      const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+      const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
       const ALLOWED_MIME_TYPES = [
         'image/jpeg', 'image/png', 'image/webp', 'image/gif',
         'application/pdf',
@@ -90,7 +90,7 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
       ];
 
       if (file.size > MAX_FILE_SIZE) {
-        toast({ title: 'Error', description: 'File too large. Maximum size is 50MB.', variant: 'error' });
+        toast({ title: 'Error', description: 'File too large. Maximum size is 100MB.', variant: 'error' });
         return null;
       }
       if (!ALLOWED_MIME_TYPES.includes(file.type)) {

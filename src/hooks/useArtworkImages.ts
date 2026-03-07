@@ -67,11 +67,11 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
   const uploadImage = useCallback(
     async (file: File, imageType: ImageType): Promise<ArtworkImageRow | null> => {
       // Validate file size and MIME type before uploading
-      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+      const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
       const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
       if (file.size > MAX_FILE_SIZE) {
-        toast({ title: 'Error', description: 'File too large. Maximum size is 10MB.', variant: 'error' });
+        toast({ title: 'Error', description: 'File too large. Maximum size is 100MB.', variant: 'error' });
         return null;
       }
       if (!ALLOWED_MIME_TYPES.includes(file.type)) {

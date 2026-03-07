@@ -20,7 +20,7 @@ export interface ProductionOrderImagesProps {
 const ACCEPTED_MIME = 'image/jpeg,image/png,image/webp';
 const BUCKET = 'artwork-images';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 function isAcceptedFile(file: File): boolean {
   const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
@@ -93,7 +93,7 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
     // Check file size limit
     const oversizedFiles = validFiles.filter((f) => f.size > MAX_FILE_SIZE);
     if (oversizedFiles.length > 0) {
-      toast({ title: 'File too large', description: 'Maximum file size is 10MB.', variant: 'error' });
+      toast({ title: 'File too large', description: 'Maximum file size is 100MB.', variant: 'error' });
       return;
     }
 
