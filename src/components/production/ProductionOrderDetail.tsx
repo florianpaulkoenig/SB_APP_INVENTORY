@@ -200,37 +200,20 @@ export function ProductionOrderDetail({
 
   // ---- PDF download -------------------------------------------------------
 
-  // ---- Helper: fetch image as base64 data URL ------------------------------
-  async function imagePathToDataUrl(storagePath: string): Promise<string | null> {
-    try {
-      // Use Supabase SDK download (avoids CORS issues vs fetch + signedUrl)
-      const { data: blob, error } = await supabase.storage
-        .from('artwork-images')
-        .download(storagePath);
-      if (error || !blob) return null;
-
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = () => resolve(null);
-        reader.readAsDataURL(blob);
-      });
-    } catch {
-      return null;
-    }
-  }
-
   // ---- PDF download -------------------------------------------------------
   async function handleDownloadPDF() {
     setDownloading(true);
 
     try {
-      // Resolve reference images as base64 for PDF embedding
-      const refImageDataUrls: Record<string, string> = {};
+      // Resolve reference images as signed URLs for PDF embedding
+      // (same approach as CataloguePDF — react-pdf fetches images itself)
+      const refImageUrls_: Record<string, string> = {};
       for (const item of items) {
         if (item.reference_image_path) {
-          const dataUrl = await imagePathToDataUrl(item.reference_image_path);
-          if (dataUrl) refImageDataUrls[item.id] = dataUrl;
+          const { data } = await supabase.storage
+            .from('artwork-images')
+            .createSignedUrl(item.reference_image_path, 600);
+          if (data?.signedUrl) refImageUrls_[item.id] = data.signedUrl;
         }
       }
 
@@ -245,7 +228,7 @@ export function ProductionOrderDetail({
         ),
         quantity: item.quantity,
         notes: item.notes,
-        referenceImageDataUrl: refImageDataUrls[item.id] ?? null,
+        referenceImageUrl: refImageUrls_[item.id] ?? null,
       }));
 
       const blob = await pdf(
