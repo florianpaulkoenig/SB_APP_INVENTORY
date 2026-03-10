@@ -183,22 +183,17 @@ export function ProductionOrdersArtistPDF({
               ))
             )}
 
-            {/* Reference images (shown below item list) */}
-            {order.items.some((i) => i.referenceImageUrl) && (
+            {/* Reference images (order-level, from storage gallery) */}
+            {order.referenceImageUrls && order.referenceImageUrls.length > 0 && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 4 }}>
-                {order.items
-                  .filter((i) => i.referenceImageUrl)
-                  .map((item, imgIdx) => (
-                    <View key={`ref-${orderIdx}-${imgIdx}`} style={{ marginBottom: 6 }}>
-                      <Image
-                        src={item.referenceImageUrl!}
-                        style={{ width: 120, objectFit: 'contain' as const }}
-                      />
-                      <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 2, maxWidth: 120 }}>
-                        {item.description}
-                      </Text>
-                    </View>
-                  ))}
+                {order.referenceImageUrls.map((url, imgIdx) => (
+                  <View key={`ref-${orderIdx}-${imgIdx}`} style={{ marginBottom: 6 }}>
+                    <Image
+                      src={url}
+                      style={{ width: 120, objectFit: 'contain' as const }}
+                    />
+                  </View>
+                ))}
               </View>
             )}
           </View>

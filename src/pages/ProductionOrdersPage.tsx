@@ -348,6 +348,32 @@ export function ProductionOrdersPage() {
         return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
       });
 
+      // Resolve reference images from storage folder per order
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
+      const userId = currentSession?.user?.id;
+
+      const orderRefImages: Record<string, string[]> = {};
+      if (userId) {
+        for (const order of sortedOrders) {
+          const prefix = `${userId}/production-orders/${order.id}/`;
+          const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
+          if (files && files.length > 0) {
+            const urls: string[] = [];
+            for (const file of files) {
+              // Skip the items/ subfolder (per-item reference photos)
+              if (file.id === null) continue;
+              const { data: signed } = await supabase.storage
+                .from('artwork-images')
+                .createSignedUrl(`${prefix}${file.name}`, 600);
+              if (signed?.signedUrl) urls.push(signed.signedUrl);
+            }
+            if (urls.length > 0) orderRefImages[order.id] = urls;
+          }
+        }
+      }
+
       const artistOrders: OverviewOrder[] = sortedOrders.map((order) => ({
         order_number: order.order_number,
         title: order.title,
@@ -359,6 +385,7 @@ export function ProductionOrdersPage() {
         price: null,
         currency: order.currency ?? 'EUR',
         items: itemsByOrder[order.id] ?? [],
+        referenceImageUrls: orderRefImages[order.id] ?? [],
       }));
 
       const blob = await pdf(
