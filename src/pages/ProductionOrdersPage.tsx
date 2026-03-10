@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pdf } from '@react-pdf/renderer';
+import JSZip from 'jszip';
 import { supabase } from '../lib/supabase';
 import { useProductionOrders } from '../hooks/useProductionOrders';
 import { ProductionOrderPDF } from '../components/pdf/ProductionOrderPDF';
@@ -355,12 +356,15 @@ export function ProductionOrdersPage() {
       const userId = currentSession?.user?.id;
 
       const orderRefImages: Record<string, string[]> = {};
+      // Keep raw blobs for ZIP export (keyed by order id, array of { blob, ext })
+      const orderRefBlobs: Record<string, Array<{ blob: Blob; ext: string }>> = {};
       if (userId) {
         for (const order of sortedOrders) {
           const prefix = `${userId}/production-orders/${order.id}`;
           const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
           if (files && files.length > 0) {
             const dataUrls: string[] = [];
+            const blobs: Array<{ blob: Blob; ext: string }> = [];
             for (const file of files) {
               // Skip subfolders (e.g. items/)
               if (!file.id) continue;
@@ -368,6 +372,8 @@ export function ProductionOrdersPage() {
                 .from('artwork-images')
                 .download(`${prefix}/${file.name}`);
               if (blob) {
+                const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase() || '.jpg';
+                blobs.push({ blob, ext });
                 const dataUrl = await new Promise<string>((resolve) => {
                   const reader = new FileReader();
                   reader.onloadend = () => resolve(reader.result as string);
@@ -377,6 +383,7 @@ export function ProductionOrdersPage() {
               }
             }
             if (dataUrls.length > 0) orderRefImages[order.id] = dataUrls;
+            if (blobs.length > 0) orderRefBlobs[order.id] = blobs;
           }
         }
       }
@@ -395,7 +402,7 @@ export function ProductionOrdersPage() {
         referenceImageUrls: orderRefImages[order.id] ?? [],
       }));
 
-      const blob = await pdf(
+      const pdfBlob = await pdf(
         <ProductionOrdersArtistPDF
           orders={artistOrders}
           language={language}
@@ -405,10 +412,32 @@ export function ProductionOrdersPage() {
         />,
       ).toBlob();
 
-      const url = URL.createObjectURL(blob);
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+
+      // Build ZIP with PDF + reference images
+      const zip = new JSZip();
+      zip.file(`NOA_SB_Production_Artist_${dateSuffix}.pdf`, pdfBlob);
+
+      // Add reference images named by order title
+      for (const order of sortedOrders) {
+        const blobs = orderRefBlobs[order.id];
+        if (!blobs || blobs.length === 0) continue;
+        // Sanitise title for filename
+        const safeTitle = order.title.replace(/[/\\:*?"<>|]/g, '_').trim() || order.order_number;
+        if (blobs.length === 1) {
+          zip.file(`${safeTitle}${blobs[0].ext}`, blobs[0].blob);
+        } else {
+          for (let i = 0; i < blobs.length; i++) {
+            zip.file(`${safeTitle}_${i + 1}${blobs[i].ext}`, blobs[i].blob);
+          }
+        }
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `NOA_SB_Production_Artist_${new Date().toISOString().slice(0, 10)}.pdf`;
+      link.download = `NOA_SB_Production_Artist_${dateSuffix}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
