@@ -162,7 +162,7 @@ export function ProductionOrdersArtistPDF({
                       flexDirection: 'row',
                       paddingVertical: 5,
                       paddingHorizontal: 10,
-                      borderBottomWidth: item.referenceImageUrl ? 0 : 0.5,
+                      borderBottomWidth: item.referenceImageUrls && item.referenceImageUrls.length > 0 ? 0 : 0.5,
                       borderBottomColor: PDF_COLORS.border,
                       backgroundColor: itemIdx % 2 === 1 ? '#fafafa' : PDF_COLORS.white,
                     }}
@@ -180,10 +180,13 @@ export function ProductionOrdersArtistPDF({
                       {item.category ?? '\u2014'}
                     </Text>
                   </View>
-                  {/* Per-item reference image */}
-                  {item.referenceImageUrl && (
+                  {/* Per-item reference images */}
+                  {item.referenceImageUrls && item.referenceImageUrls.length > 0 && (
                     <View
                       style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        gap: 6,
                         paddingHorizontal: 10,
                         paddingVertical: 6,
                         borderBottomWidth: 0.5,
@@ -191,10 +194,13 @@ export function ProductionOrdersArtistPDF({
                         backgroundColor: itemIdx % 2 === 1 ? '#fafafa' : PDF_COLORS.white,
                       }}
                     >
-                      <Image
-                        src={item.referenceImageUrl}
-                        style={{ width: 120, objectFit: 'contain' as const }}
-                      />
+                      {item.referenceImageUrls.map((url, imgIdx) => (
+                        <Image
+                          key={`ref-${orderIdx}-${itemIdx}-${imgIdx}`}
+                          src={url}
+                          style={{ width: 120, objectFit: 'contain' as const }}
+                        />
+                      ))}
                     </View>
                   )}
                 </View>

@@ -125,7 +125,7 @@ export interface ProductionOrderPDFProps {
     dimensions: string;
     quantity: number;
     notes: string | null;
-    referenceImageUrl?: string | null;
+    referenceImageUrls?: string[];
   }>;
   galleryName?: string | null;
   contactName?: string | null;
@@ -360,21 +360,24 @@ export function ProductionOrderPDF({
         )}
 
         {/* ----- Reference Photos ---------------------------------------- */}
-        {items.some((i) => i.referenceImageUrl) && (
+        {items.some((i) => i.referenceImageUrls && i.referenceImageUrls.length > 0) && (
           <View style={artistStyles.refPhotosSection} break>
             <Text style={artistStyles.refPhotosTitle}>{t.referencePhotos}</Text>
             {items
-              .filter((i) => i.referenceImageUrl)
+              .filter((i) => i.referenceImageUrls && i.referenceImageUrls.length > 0)
               .map((item, idx) => (
                 <View style={artistStyles.refPhotoItem} key={`ref-${idx}`}>
                   <Text style={artistStyles.refPhotoCaption}>
                     {item.description}
                     {item.dimensions ? ` \u2014 ${item.dimensions}` : ''}
                   </Text>
-                  <Image
-                    style={artistStyles.refPhotoImage}
-                    src={item.referenceImageUrl!}
-                  />
+                  {item.referenceImageUrls!.map((url, imgIdx) => (
+                    <Image
+                      key={`ref-img-${idx}-${imgIdx}`}
+                      style={artistStyles.refPhotoImage}
+                      src={url}
+                    />
+                  ))}
                 </View>
               ))}
           </View>

@@ -119,38 +119,56 @@ export function ProductionItemEditor({
   );
   const [notes, setNotes] = useState(item?.notes ?? '');
 
-  // ---- Reference image state ------------------------------------------------
+  // ---- Reference images state (multiple per item) --------------------------
 
   const { toast } = useToast();
   const refImageInputRef = useRef<HTMLInputElement>(null);
-  const [refImageUrl, setRefImageUrl] = useState<string | null>(null);
+  const [refImages, setRefImages] = useState<Array<{ path: string; url: string }>>([]);
   const [refImageLoading, setRefImageLoading] = useState(false);
   const [refImageUploading, setRefImageUploading] = useState(false);
 
   const BUCKET = 'artwork-images';
 
-  // Load existing reference image on mount (edit mode)
-  const loadRefImage = useCallback(async () => {
-    if (!item?.reference_image_path) return;
+  // Load existing reference images from storage folder on mount (edit mode)
+  const loadRefImages = useCallback(async () => {
+    if (!item?.id) return;
     setRefImageLoading(true);
-    const { data } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(item.reference_image_path, 600);
-    if (data?.signedUrl) setRefImageUrl(data.signedUrl);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) { setRefImageLoading(false); return; }
+
+    const prefix = `${session.user.id}/production-orders/${productionOrderId}/items/${item.id}`;
+    const { data: files } = await supabase.storage.from(BUCKET).list(prefix);
+
+    if (files && files.length > 0) {
+      const imgs: Array<{ path: string; url: string }> = [];
+      for (const file of files) {
+        if (!file.id) continue; // skip subfolders
+        const fullPath = `${prefix}/${file.name}`;
+        const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(fullPath, 600);
+        if (signed?.signedUrl) imgs.push({ path: fullPath, url: signed.signedUrl });
+      }
+      setRefImages(imgs);
+    } else {
+      setRefImages([]);
+    }
     setRefImageLoading(false);
-  }, [item?.reference_image_path]);
+  }, [item?.id, productionOrderId]);
 
   useEffect(() => {
-    loadRefImage();
-  }, [loadRefImage]);
+    loadRefImages();
+  }, [loadRefImages]);
 
-  async function handleRefImageUpload(file: File) {
+  async function handleRefImageUpload(files: FileList | File[]) {
     if (!item?.id) return;
 
-    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    const validExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext);
-    const validMime = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
-    if (!validExt || !validMime) {
+    const validFiles = Array.from(files).filter((file) => {
+      const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+      const validExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext);
+      const validMime = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+      return validExt && validMime;
+    });
+    if (validFiles.length === 0) {
       toast({ title: 'Invalid file type', description: 'Please use JPG, PNG, or WebP.', variant: 'error' });
       return;
     }
@@ -164,51 +182,39 @@ export function ProductionItemEditor({
       return;
     }
 
-    // Delete old reference image if exists
-    if (item.reference_image_path) {
-      await supabase.storage.from(BUCKET).remove([item.reference_image_path]);
+    for (const file of validFiles) {
+      const safeName = sanitizeStoragePath(file.name);
+      const storagePath = `${session.user.id}/production-orders/${productionOrderId}/items/${item.id}/${safeName}`;
+
+      const { error } = await supabase.storage
+        .from(BUCKET)
+        .upload(storagePath, file, { upsert: true });
+
+      if (error) {
+        toast({ title: 'Upload failed', description: `Could not upload ${file.name}.`, variant: 'error' });
+      }
     }
 
-    const safeName = sanitizeStoragePath(`reference${ext}`);
-    const storagePath = `${session.user.id}/production-orders/${productionOrderId}/items/${item.id}/${safeName}`;
-
-    const { error } = await supabase.storage
-      .from(BUCKET)
-      .upload(storagePath, file, { upsert: true });
-
-    if (error) {
-      toast({ title: 'Upload failed', description: 'An error occurred. Please try again.', variant: 'error' });
-      setRefImageUploading(false);
-      return;
-    }
-
-    // Save path to item record
-    await supabase
-      .from('production_order_items')
-      .update({ reference_image_path: storagePath } as never)
-      .eq('id', item.id);
-
-    // Update local state with signed URL
-    const { data: signed } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(storagePath, 600);
-    if (signed?.signedUrl) setRefImageUrl(signed.signedUrl);
-
-    toast({ title: 'Reference photo uploaded', variant: 'success' });
+    toast({ title: `${validFiles.length} photo${validFiles.length > 1 ? 's' : ''} uploaded`, variant: 'success' });
+    await loadRefImages();
     setRefImageUploading(false);
   }
 
-  async function handleRefImageRemove() {
-    if (!item?.id || !item.reference_image_path) return;
+  async function handleRefImageRemove(path: string) {
+    if (!item?.id) return;
 
     setRefImageLoading(true);
-    await supabase.storage.from(BUCKET).remove([item.reference_image_path]);
-    await supabase
-      .from('production_order_items')
-      .update({ reference_image_path: null } as never)
-      .eq('id', item.id);
+    await supabase.storage.from(BUCKET).remove([path]);
 
-    setRefImageUrl(null);
+    // Clear legacy DB column if it matches
+    if (item.reference_image_path === path) {
+      await supabase
+        .from('production_order_items')
+        .update({ reference_image_path: null } as never)
+        .eq('id', item.id);
+    }
+
+    await loadRefImages();
     setRefImageLoading(false);
     toast({ title: 'Reference photo removed', variant: 'success' });
   }
@@ -603,81 +609,76 @@ export function ProductionItemEditor({
         </div>
       </div>
 
-      {/* ---- Reference Photo (edit mode only) ---- */}
+      {/* ---- Reference Photos (edit mode only, multiple) ---- */}
       {item?.id && (
         <div>
           <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-primary-400">
-            Reference Photo
+            Reference Photos
           </h3>
 
           {refImageLoading ? (
             <div className="flex justify-center py-4">
               <LoadingSpinner />
             </div>
-          ) : refImageUrl ? (
-            <div className="flex items-start gap-4">
-              <div className="group relative overflow-hidden rounded-lg border border-primary-100">
-                <img
-                  src={refImageUrl}
-                  alt="Reference"
-                  className="h-40 w-40 object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={handleRefImageRemove}
-                  className="absolute right-1.5 top-1.5 rounded-full bg-red-600 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                  title="Remove"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => refImageInputRef.current?.click()}
-                loading={refImageUploading}
-              >
-                Replace Photo
-              </Button>
-            </div>
           ) : (
-            <div
-              onClick={() => refImageInputRef.current?.click()}
-              className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors
-                ${refImageUploading ? 'pointer-events-none opacity-60' : 'border-primary-200 hover:border-primary-300'}
-              `}
-            >
-              {refImageUploading ? (
-                <div className="flex flex-col items-center gap-2">
-                  <LoadingSpinner />
-                  <p className="text-sm text-primary-500">Uploading...</p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <svg className="h-8 w-8 text-primary-300" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
-                  </svg>
-                  <p className="text-sm text-primary-500">
-                    Upload customer reference photo
-                  </p>
-                  <p className="text-xs text-primary-400">JPG, PNG, WebP</p>
+            <>
+              {/* Image grid */}
+              {refImages.length > 0 && (
+                <div className="mb-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
+                  {refImages.map((img) => (
+                    <div key={img.path} className="group relative overflow-hidden rounded-lg border border-primary-100">
+                      <img src={img.url} alt="Reference" className="h-32 w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleRefImageRemove(img.path)}
+                        className="absolute right-1.5 top-1.5 rounded-full bg-red-600 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                        title="Remove"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
-            </div>
+
+              {/* Upload area */}
+              <div
+                onClick={() => refImageInputRef.current?.click()}
+                className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors
+                  ${refImageUploading ? 'pointer-events-none opacity-60' : 'border-primary-200 hover:border-primary-300'}
+                `}
+              >
+                {refImageUploading ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <LoadingSpinner />
+                    <p className="text-sm text-primary-500">Uploading...</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <svg className="h-8 w-8 text-primary-300" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                    </svg>
+                    <p className="text-sm text-primary-500">
+                      {refImages.length > 0 ? 'Add more reference photos' : 'Upload reference photos'}
+                    </p>
+                    <p className="text-xs text-primary-400">JPG, PNG, WebP</p>
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
           <input
             ref={refImageInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            multiple
             className="hidden"
             onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleRefImageUpload(file);
+              if (e.target.files && e.target.files.length > 0) handleRefImageUpload(e.target.files);
               e.target.value = '';
             }}
           />

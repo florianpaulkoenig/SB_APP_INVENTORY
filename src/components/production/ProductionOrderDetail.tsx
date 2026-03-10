@@ -155,27 +155,37 @@ export function ProductionOrderDetail({
   const [downloading, setDownloading] = useState(false);
   const [downloadingPhotos, setDownloadingPhotos] = useState(false);
 
-  // ---- Resolve reference image thumbnails -----------------------------------
-  const [refImageUrls, setRefImageUrls] = useState<Record<string, string>>({});
+  // ---- Resolve reference image thumbnails (multiple per item) ---------------
+  const [refImageUrls, setRefImageUrls] = useState<Record<string, string[]>>({});
 
   const resolveRefImages = useCallback(async () => {
-    const urls: Record<string, string> = {};
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const urls: Record<string, string[]> = {};
     for (const item of items) {
-      if (item.reference_image_path) {
-        const { data } = await supabase.storage
-          .from('artwork-images')
-          .createSignedUrl(item.reference_image_path, 600);
-        if (data?.signedUrl) urls[item.id] = data.signedUrl;
+      const prefix = `${session.user.id}/production-orders/${order.id}/items/${item.id}`;
+      const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
+      if (files && files.length > 0) {
+        const itemUrls: string[] = [];
+        for (const file of files) {
+          if (!file.id) continue;
+          const { data: signed } = await supabase.storage
+            .from('artwork-images')
+            .createSignedUrl(`${prefix}/${file.name}`, 600);
+          if (signed?.signedUrl) itemUrls.push(signed.signedUrl);
+        }
+        if (itemUrls.length > 0) urls[item.id] = itemUrls;
       }
     }
     setRefImageUrls(urls);
-  }, [items]);
+  }, [items, order.id]);
 
   useEffect(() => {
     resolveRefImages();
   }, [resolveRefImages]);
 
-  const hasAnyRefImages = items.some((i) => i.reference_image_path);
+  const hasAnyRefImages = Object.keys(refImageUrls).length > 0;
 
   // ---- Item price summary -------------------------------------------------
   const itemPriceSummary = (() => {
@@ -205,15 +215,33 @@ export function ProductionOrderDetail({
     setDownloading(true);
 
     try {
-      // Resolve reference images as signed URLs for PDF embedding
-      // (same approach as CataloguePDF — react-pdf fetches images itself)
-      const refImageUrls_: Record<string, string> = {};
-      for (const item of items) {
-        if (item.reference_image_path) {
-          const { data } = await supabase.storage
-            .from('artwork-images')
-            .createSignedUrl(item.reference_image_path, 600);
-          if (data?.signedUrl) refImageUrls_[item.id] = data.signedUrl;
+      // Resolve reference images from storage folders (multiple per item)
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const currentUserId = currentSession?.user?.id;
+      const refImageDataUrls_: Record<string, string[]> = {};
+
+      if (currentUserId) {
+        for (const item of items) {
+          const prefix = `${currentUserId}/production-orders/${order.id}/items/${item.id}`;
+          const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
+          if (files && files.length > 0) {
+            const dataUrls: string[] = [];
+            for (const file of files) {
+              if (!file.id) continue;
+              const { data: blob } = await supabase.storage
+                .from('artwork-images')
+                .download(`${prefix}/${file.name}`);
+              if (blob) {
+                const dataUrl = await new Promise<string>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.readAsDataURL(blob);
+                });
+                dataUrls.push(dataUrl);
+              }
+            }
+            if (dataUrls.length > 0) refImageDataUrls_[item.id] = dataUrls;
+          }
         }
       }
 
@@ -228,7 +256,7 @@ export function ProductionOrderDetail({
         ),
         quantity: item.quantity,
         notes: item.notes,
-        referenceImageUrl: refImageUrls_[item.id] ?? null,
+        referenceImageUrls: refImageDataUrls_[item.id] ?? [],
       }));
 
       const blob = await pdf(
@@ -256,38 +284,44 @@ export function ProductionOrderDetail({
 
   // ---- Download reference photos as ZIP -----------------------------------
   async function handleDownloadRefPhotos() {
-    const itemsWithImages = items.filter((i) => i.reference_image_path);
-    if (itemsWithImages.length === 0) return;
+    if (!hasAnyRefImages) return;
 
     setDownloadingPhotos(true);
 
     try {
+      const { data: { session: dlSession } } = await supabase.auth.getSession();
+      if (!dlSession?.user) { setDownloadingPhotos(false); return; }
+
       const zip = new JSZip();
       let index = 1;
 
-      for (const item of itemsWithImages) {
-        if (!item.reference_image_path) continue;
+      for (const item of items) {
+        const prefix = `${dlSession.user.id}/production-orders/${order.id}/items/${item.id}`;
+        const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
+        if (!files || files.length === 0) continue;
 
-        const { data: signed } = await supabase.storage
-          .from('artwork-images')
-          .createSignedUrl(item.reference_image_path, 300);
-        if (!signed?.signedUrl) continue;
-
-        const response = await fetch(signed.signedUrl);
-        const blob = await response.blob();
-
-        // Build filename: 01_Description_100x100cm.jpg
-        const ext = item.reference_image_path.split('.').pop() || 'jpg';
         const safeName = item.description
           .replace(/[^a-zA-Z0-9\s-]/g, '')
           .replace(/\s+/g, '_')
           .substring(0, 60);
         const dims = formatDimensions(item.height, item.width, item.depth, item.dimension_unit ?? 'cm')
           .replace(/\s+/g, '');
-        const filename = `${String(index).padStart(2, '0')}_${safeName}${dims ? '_' + dims : ''}.${ext}`;
 
-        zip.file(filename, blob);
-        index++;
+        let fileIdx = 0;
+        for (const file of files) {
+          if (!file.id) continue;
+          const { data: blob } = await supabase.storage
+            .from('artwork-images')
+            .download(`${prefix}/${file.name}`);
+          if (!blob) continue;
+
+          const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase() || '.jpg';
+          const suffix = files.filter((f) => f.id).length > 1 ? `_${fileIdx + 1}` : '';
+          const filename = `${String(index).padStart(2, '0')}_${safeName}${dims ? '_' + dims : ''}${suffix}${ext}`;
+          zip.file(filename, blob);
+          fileIdx++;
+        }
+        if (fileIdx > 0) index++;
       }
 
       const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -442,12 +476,19 @@ export function ProductionOrderDetail({
                   >
                     {hasAnyRefImages && (
                       <td className="px-2 py-3 text-center">
-                        {refImageUrls[item.id] ? (
-                          <img
-                            src={refImageUrls[item.id]}
-                            alt="Ref"
-                            className="mx-auto h-10 w-10 rounded object-cover"
-                          />
+                        {refImageUrls[item.id] && refImageUrls[item.id].length > 0 ? (
+                          <div className="relative mx-auto h-10 w-10">
+                            <img
+                              src={refImageUrls[item.id][0]}
+                              alt="Ref"
+                              className="h-10 w-10 rounded object-cover"
+                            />
+                            {refImageUrls[item.id].length > 1 && (
+                              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[10px] font-bold text-white">
+                                {refImageUrls[item.id].length}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-primary-200">&mdash;</span>
                         )}

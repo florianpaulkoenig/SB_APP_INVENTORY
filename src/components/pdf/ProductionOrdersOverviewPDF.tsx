@@ -150,7 +150,7 @@ export interface OverviewItem {
   price: number | null;
   currency: string | null;
   category: string | null;
-  referenceImageUrl?: string | null;
+  referenceImageUrls?: string[];
 }
 
 export interface OverviewOrder {
