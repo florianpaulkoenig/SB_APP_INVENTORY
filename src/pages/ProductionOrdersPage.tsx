@@ -357,19 +357,26 @@ export function ProductionOrdersPage() {
       const orderRefImages: Record<string, string[]> = {};
       if (userId) {
         for (const order of sortedOrders) {
-          const prefix = `${userId}/production-orders/${order.id}/`;
+          const prefix = `${userId}/production-orders/${order.id}`;
           const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
           if (files && files.length > 0) {
-            const urls: string[] = [];
+            const dataUrls: string[] = [];
             for (const file of files) {
-              // Skip the items/ subfolder (per-item reference photos)
-              if (file.id === null) continue;
-              const { data: signed } = await supabase.storage
+              // Skip subfolders (e.g. items/)
+              if (!file.id) continue;
+              const { data: blob } = await supabase.storage
                 .from('artwork-images')
-                .createSignedUrl(`${prefix}${file.name}`, 600);
-              if (signed?.signedUrl) urls.push(signed.signedUrl);
+                .download(`${prefix}/${file.name}`);
+              if (blob) {
+                const dataUrl = await new Promise<string>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.readAsDataURL(blob);
+                });
+                dataUrls.push(dataUrl);
+              }
             }
-            if (urls.length > 0) orderRefImages[order.id] = urls;
+            if (dataUrls.length > 0) orderRefImages[order.id] = dataUrls;
           }
         }
       }
