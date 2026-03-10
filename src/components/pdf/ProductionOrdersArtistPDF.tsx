@@ -156,45 +156,49 @@ export function ProductionOrdersArtistPDF({
               </View>
             ) : (
               order.items.map((item, itemIdx) => (
-                <View
-                  key={`item-${orderIdx}-${itemIdx}`}
-                  style={{
-                    flexDirection: 'row',
-                    paddingVertical: 5,
-                    paddingHorizontal: 10,
-                    borderBottomWidth: 0.5,
-                    borderBottomColor: PDF_COLORS.border,
-                    backgroundColor: itemIdx % 2 === 1 ? '#fafafa' : PDF_COLORS.white,
-                  }}
-                >
-                  <Text style={[styles.tableCell, { width: COL_ITEM, fontSize: 10 }]}>
-                    {item.description}
-                  </Text>
-                  <Text style={[styles.tableCell, { width: COL_DIMS }]}>
-                    {item.dimensions || '\u2014'}
-                  </Text>
-                  <Text style={[styles.tableCell, { width: COL_QTY, textAlign: 'center', fontFamily: 'AnzianoPro', fontWeight: 'bold' as const }]}>
-                    {item.quantity ?? 1}
-                  </Text>
-                  <Text style={[styles.tableCell, { width: COL_CATEGORY }]}>
-                    {item.category ?? '\u2014'}
-                  </Text>
+                <View key={`item-${orderIdx}-${itemIdx}`}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      paddingVertical: 5,
+                      paddingHorizontal: 10,
+                      borderBottomWidth: item.referenceImageUrl ? 0 : 0.5,
+                      borderBottomColor: PDF_COLORS.border,
+                      backgroundColor: itemIdx % 2 === 1 ? '#fafafa' : PDF_COLORS.white,
+                    }}
+                  >
+                    <Text style={[styles.tableCell, { width: COL_ITEM, fontSize: 10 }]}>
+                      {item.description}
+                    </Text>
+                    <Text style={[styles.tableCell, { width: COL_DIMS }]}>
+                      {item.dimensions || '\u2014'}
+                    </Text>
+                    <Text style={[styles.tableCell, { width: COL_QTY, textAlign: 'center', fontFamily: 'AnzianoPro', fontWeight: 'bold' as const }]}>
+                      {item.quantity ?? 1}
+                    </Text>
+                    <Text style={[styles.tableCell, { width: COL_CATEGORY }]}>
+                      {item.category ?? '\u2014'}
+                    </Text>
+                  </View>
+                  {/* Per-item reference image */}
+                  {item.referenceImageUrl && (
+                    <View
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderBottomWidth: 0.5,
+                        borderBottomColor: PDF_COLORS.border,
+                        backgroundColor: itemIdx % 2 === 1 ? '#fafafa' : PDF_COLORS.white,
+                      }}
+                    >
+                      <Image
+                        src={item.referenceImageUrl}
+                        style={{ width: 120, objectFit: 'contain' as const }}
+                      />
+                    </View>
+                  )}
                 </View>
               ))
-            )}
-
-            {/* Reference images (order-level, from storage gallery) */}
-            {order.referenceImageUrls && order.referenceImageUrls.length > 0 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 4 }}>
-                {order.referenceImageUrls.map((url, imgIdx) => (
-                  <View key={`ref-${orderIdx}-${imgIdx}`} style={{ marginBottom: 6 }}>
-                    <Image
-                      src={url}
-                      style={{ width: 120, objectFit: 'contain' as const }}
-                    />
-                  </View>
-                ))}
-              </View>
             )}
           </View>
         ))}

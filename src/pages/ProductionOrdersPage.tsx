@@ -297,6 +297,8 @@ export function ProductionOrdersPage() {
       // Batch-fetch all items
       const orderIds = dateFilteredOrders.map((o) => o.id);
       const itemsByOrder: Record<string, OverviewItem[]> = {};
+      let refImageBlobs: Record<string, { blob: Blob; ext: string }> = {};
+      let itemMeta: Record<string, { orderTitle: string; description: string }> = {};
 
       if (orderIds.length > 0) {
         const { data: allItems } = await supabase
@@ -305,16 +307,37 @@ export function ProductionOrdersPage() {
           .in('production_order_id', orderIds)
           .order('sort_order', { ascending: true });
 
-        // Resolve signed URLs for reference images
-        const refImageUrls: Record<string, string> = {};
+        // Download per-item reference images as base64 (for PDF) and keep blobs (for ZIP)
+        const refImageDataUrls: Record<string, string> = {};
+        refImageBlobs = {};
         for (const item of allItems ?? []) {
           if (item.reference_image_path) {
-            const { data } = await supabase.storage
+            const { data: blob } = await supabase.storage
               .from('artwork-images')
-              .createSignedUrl(item.reference_image_path, 600);
-            if (data?.signedUrl) refImageUrls[item.id] = data.signedUrl;
+              .download(item.reference_image_path);
+            if (blob) {
+              const ext = item.reference_image_path
+                .substring(item.reference_image_path.lastIndexOf('.'))
+                .toLowerCase() || '.jpg';
+              refImageBlobs[item.id] = { blob, ext };
+              const dataUrl = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+              });
+              refImageDataUrls[item.id] = dataUrl;
+            }
           }
         }
+
+        // Build order title lookup for ZIP naming
+        const orderTitleMap: Record<string, string> = {};
+        for (const o of dateFilteredOrders) {
+          orderTitleMap[o.id] = o.title || o.order_number;
+        }
+
+        // Track item metadata for ZIP filenames
+        itemMeta = {};
 
         for (const item of allItems ?? []) {
           const orderId = item.production_order_id;
@@ -336,8 +359,12 @@ export function ProductionOrdersPage() {
             price: item.price ?? null,
             currency: item.currency ?? null,
             category: item.category ?? null,
-            referenceImageUrl: refImageUrls[item.id] ?? null,
+            referenceImageUrl: refImageDataUrls[item.id] ?? null,
           });
+          itemMeta[item.id] = {
+            orderTitle: orderTitleMap[orderId] ?? orderId,
+            description: item.description ?? 'item',
+          };
         }
       }
 
@@ -348,45 +375,6 @@ export function ProductionOrdersPage() {
         if (!b.deadline) return -1;
         return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
       });
-
-      // Resolve reference images from storage folder per order
-      const {
-        data: { session: currentSession },
-      } = await supabase.auth.getSession();
-      const userId = currentSession?.user?.id;
-
-      const orderRefImages: Record<string, string[]> = {};
-      // Keep raw blobs for ZIP export (keyed by order id, array of { blob, ext })
-      const orderRefBlobs: Record<string, Array<{ blob: Blob; ext: string }>> = {};
-      if (userId) {
-        for (const order of sortedOrders) {
-          const prefix = `${userId}/production-orders/${order.id}`;
-          const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
-          if (files && files.length > 0) {
-            const dataUrls: string[] = [];
-            const blobs: Array<{ blob: Blob; ext: string }> = [];
-            for (const file of files) {
-              // Skip subfolders (e.g. items/)
-              if (!file.id) continue;
-              const { data: blob } = await supabase.storage
-                .from('artwork-images')
-                .download(`${prefix}/${file.name}`);
-              if (blob) {
-                const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase() || '.jpg';
-                blobs.push({ blob, ext });
-                const dataUrl = await new Promise<string>((resolve) => {
-                  const reader = new FileReader();
-                  reader.onloadend = () => resolve(reader.result as string);
-                  reader.readAsDataURL(blob);
-                });
-                dataUrls.push(dataUrl);
-              }
-            }
-            if (dataUrls.length > 0) orderRefImages[order.id] = dataUrls;
-            if (blobs.length > 0) orderRefBlobs[order.id] = blobs;
-          }
-        }
-      }
 
       const artistOrders: OverviewOrder[] = sortedOrders.map((order) => ({
         order_number: order.order_number,
@@ -399,7 +387,6 @@ export function ProductionOrdersPage() {
         price: null,
         currency: order.currency ?? 'EUR',
         items: itemsByOrder[order.id] ?? [],
-        referenceImageUrls: orderRefImages[order.id] ?? [],
       }));
 
       const pdfBlob = await pdf(
@@ -418,19 +405,23 @@ export function ProductionOrdersPage() {
       const zip = new JSZip();
       zip.file(`NOA_SB_Production_Artist_${dateSuffix}.pdf`, pdfBlob);
 
-      // Add reference images named by order title
-      for (const order of sortedOrders) {
-        const blobs = orderRefBlobs[order.id];
-        if (!blobs || blobs.length === 0) continue;
-        // Sanitise title for filename
-        const safeTitle = order.title.replace(/[/\\:*?"<>|]/g, '_').trim() || order.order_number;
-        if (blobs.length === 1) {
-          zip.file(`${safeTitle}${blobs[0].ext}`, blobs[0].blob);
-        } else {
-          for (let i = 0; i < blobs.length; i++) {
-            zip.file(`${safeTitle}_${i + 1}${blobs[i].ext}`, blobs[i].blob);
-          }
+      // Add per-item reference images named by order title + item description
+      const usedFilenames = new Set<string>();
+      for (const [itemId, blobData] of Object.entries(refImageBlobs)) {
+        const meta = itemMeta[itemId];
+        if (!meta) continue;
+        const safeTitle = meta.orderTitle.replace(/[/\\:*?"<>|]/g, '_').trim();
+        const safeDesc = meta.description.replace(/[/\\:*?"<>|]/g, '_').trim();
+        let baseName = `${safeTitle}_${safeDesc}`;
+        let fileName = `${baseName}${blobData.ext}`;
+        // Handle filename collisions
+        let counter = 2;
+        while (usedFilenames.has(fileName)) {
+          fileName = `${baseName}_${counter}${blobData.ext}`;
+          counter++;
         }
+        usedFilenames.add(fileName);
+        zip.file(fileName, blobData.blob);
       }
 
       const zipBlob = await zip.generateAsync({ type: 'blob' });

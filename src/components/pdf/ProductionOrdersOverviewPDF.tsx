@@ -164,7 +164,6 @@ export interface OverviewOrder {
   price: number | null;
   currency: string;
   items: OverviewItem[];
-  referenceImageUrls?: string[];
 }
 
 export interface GalleryValueSummary {
