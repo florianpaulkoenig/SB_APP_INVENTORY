@@ -203,13 +203,12 @@ export function ProductionOrderDetail({
   // ---- Helper: fetch image as base64 data URL ------------------------------
   async function imagePathToDataUrl(storagePath: string): Promise<string | null> {
     try {
-      const { data: signed } = await supabase.storage
+      // Use Supabase SDK download (avoids CORS issues vs fetch + signedUrl)
+      const { data: blob, error } = await supabase.storage
         .from('artwork-images')
-        .createSignedUrl(storagePath, 300);
-      if (!signed?.signedUrl) return null;
+        .download(storagePath);
+      if (error || !blob) return null;
 
-      const response = await fetch(signed.signedUrl);
-      const blob = await response.blob();
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
