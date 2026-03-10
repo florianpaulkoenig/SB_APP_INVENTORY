@@ -3,7 +3,7 @@
 // Simplified export for the artist: Item, Dimensions, Qty, Category only
 // ---------------------------------------------------------------------------
 
-import { Document, Page, View, Text } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image } from '@react-pdf/renderer';
 import styles, { PDF_COLORS } from './PDFStyles';
 import { PDFHeader } from './PDFHeader';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
@@ -181,6 +181,25 @@ export function ProductionOrdersArtistPDF({
                   </Text>
                 </View>
               ))
+            )}
+
+            {/* Reference images (shown below item list) */}
+            {order.items.some((i) => i.referenceImageUrl) && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 4 }}>
+                {order.items
+                  .filter((i) => i.referenceImageUrl)
+                  .map((item, imgIdx) => (
+                    <View key={`ref-${orderIdx}-${imgIdx}`} style={{ marginBottom: 6 }}>
+                      <Image
+                        src={item.referenceImageUrl!}
+                        style={{ width: 120, objectFit: 'contain' as const }}
+                      />
+                      <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 2, maxWidth: 120 }}>
+                        {item.description}
+                      </Text>
+                    </View>
+                  ))}
+              </View>
             )}
           </View>
         ))}

@@ -304,6 +304,17 @@ export function ProductionOrdersPage() {
           .in('production_order_id', orderIds)
           .order('sort_order', { ascending: true });
 
+        // Resolve signed URLs for reference images
+        const refImageUrls: Record<string, string> = {};
+        for (const item of allItems ?? []) {
+          if (item.reference_image_path) {
+            const { data } = await supabase.storage
+              .from('artwork-images')
+              .createSignedUrl(item.reference_image_path, 600);
+            if (data?.signedUrl) refImageUrls[item.id] = data.signedUrl;
+          }
+        }
+
         for (const item of allItems ?? []) {
           const orderId = item.production_order_id;
           if (!itemsByOrder[orderId]) itemsByOrder[orderId] = [];
@@ -324,6 +335,7 @@ export function ProductionOrdersPage() {
             price: item.price ?? null,
             currency: item.currency ?? null,
             category: item.category ?? null,
+            referenceImageUrl: refImageUrls[item.id] ?? null,
           });
         }
       }
