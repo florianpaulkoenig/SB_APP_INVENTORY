@@ -1,10 +1,51 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, Component, type ReactNode, type ErrorInfo } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { RoleGuard } from './components/auth/RoleGuard';
 import { AppLayout } from './components/layout/AppLayout';
+
+// ---------------------------------------------------------------------------
+// Error boundary for lazy-loaded chunks that fail to load
+// ---------------------------------------------------------------------------
+class ChunkErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_error: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, _info: ErrorInfo) {
+    console.error('Chunk load error:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-screen w-screen flex-col items-center justify-center gap-4">
+          <p className="text-sm text-primary-500">
+            Failed to load page. Please check your connection.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="rounded-md bg-primary-900 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800"
+          >
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Lazy-loaded pages (code splitting)
@@ -215,13 +256,22 @@ const GalleryAvailableWorksPage = React.lazy(() =>
 );
 
 // ---------------------------------------------------------------------------
-// Suspense fallback
+// Suspense fallback with error boundary
 // ---------------------------------------------------------------------------
 function SuspenseFallback() {
   return (
     <div className="flex h-screen w-screen items-center justify-center">
       <LoadingSpinner size="lg" />
     </div>
+  );
+}
+
+/** Wraps lazy-loaded pages with both error boundary and suspense */
+function LazyPage({ children }: { children: ReactNode }) {
+  return (
+    <ChunkErrorBoundary>
+      <Suspense fallback={<SuspenseFallback />}>{children}</Suspense>
+    </ChunkErrorBoundary>
   );
 }
 
@@ -910,8 +960,10 @@ const router = createBrowserRouter(
 // ---------------------------------------------------------------------------
 export default function App() {
   return (
-    <ToastProvider>
-      <RouterProvider router={router} />
-    </ToastProvider>
+    <AuthProvider>
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
+    </AuthProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
@@ -11,7 +11,14 @@ import { COMPANY_NAME } from '../lib/constants';
 // ---------------------------------------------------------------------------
 export function LoginPage() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, session } = useAuth();
+
+  // Auto-redirect when session becomes available (via shared context)
+  useEffect(() => {
+    if (session) {
+      navigate('/', { replace: true });
+    }
+  }, [session, navigate]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,7 +46,7 @@ export function LoginPage() {
         return; // Don't navigate yet — useAuth blocks session until MFA done
       }
 
-      navigate('/', { replace: true });
+      // Navigation happens automatically via the useEffect when session updates
     } catch {
       setError('Invalid email or password. Please try again.');
     } finally {
@@ -74,10 +81,7 @@ export function LoginPage() {
       // Refresh session so useAuth sees aal2 and exposes the session
       await supabase.auth.refreshSession();
 
-      // Small delay to let auth state propagate
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      navigate('/', { replace: true });
+      // Navigation happens automatically via the useEffect when session updates
     } catch {
       setMfaError('Invalid verification code. Please try again.');
     } finally {
