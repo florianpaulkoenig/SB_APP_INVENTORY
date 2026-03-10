@@ -1,8 +1,12 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { useToast } from '../ui/Toast';
+import { supabase } from '../../lib/supabase';
+import { sanitizeStoragePath } from '../../lib/utils';
 import {
   DIMENSION_UNITS,
   EDITION_TYPES,
@@ -114,6 +118,100 @@ export function ProductionItemEditor({
     item?.quantity != null ? String(item.quantity) : '1',
   );
   const [notes, setNotes] = useState(item?.notes ?? '');
+
+  // ---- Reference image state ------------------------------------------------
+
+  const { toast } = useToast();
+  const refImageInputRef = useRef<HTMLInputElement>(null);
+  const [refImageUrl, setRefImageUrl] = useState<string | null>(null);
+  const [refImageLoading, setRefImageLoading] = useState(false);
+  const [refImageUploading, setRefImageUploading] = useState(false);
+
+  const BUCKET = 'artwork-images';
+
+  // Load existing reference image on mount (edit mode)
+  const loadRefImage = useCallback(async () => {
+    if (!item?.reference_image_path) return;
+    setRefImageLoading(true);
+    const { data } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(item.reference_image_path, 600);
+    if (data?.signedUrl) setRefImageUrl(data.signedUrl);
+    setRefImageLoading(false);
+  }, [item?.reference_image_path]);
+
+  useEffect(() => {
+    loadRefImage();
+  }, [loadRefImage]);
+
+  async function handleRefImageUpload(file: File) {
+    if (!item?.id) return;
+
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    const validExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext);
+    const validMime = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+    if (!validExt || !validMime) {
+      toast({ title: 'Invalid file type', description: 'Please use JPG, PNG, or WebP.', variant: 'error' });
+      return;
+    }
+
+    setRefImageUploading(true);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      toast({ title: 'Error', description: 'You must be logged in', variant: 'error' });
+      setRefImageUploading(false);
+      return;
+    }
+
+    // Delete old reference image if exists
+    if (item.reference_image_path) {
+      await supabase.storage.from(BUCKET).remove([item.reference_image_path]);
+    }
+
+    const safeName = sanitizeStoragePath(`reference${ext}`);
+    const storagePath = `${session.user.id}/production-orders/${productionOrderId}/items/${item.id}/${safeName}`;
+
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(storagePath, file, { upsert: true });
+
+    if (error) {
+      toast({ title: 'Upload failed', description: 'An error occurred. Please try again.', variant: 'error' });
+      setRefImageUploading(false);
+      return;
+    }
+
+    // Save path to item record
+    await supabase
+      .from('production_order_items')
+      .update({ reference_image_path: storagePath } as never)
+      .eq('id', item.id);
+
+    // Update local state with signed URL
+    const { data: signed } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(storagePath, 600);
+    if (signed?.signedUrl) setRefImageUrl(signed.signedUrl);
+
+    toast({ title: 'Reference photo uploaded', variant: 'success' });
+    setRefImageUploading(false);
+  }
+
+  async function handleRefImageRemove() {
+    if (!item?.id || !item.reference_image_path) return;
+
+    setRefImageLoading(true);
+    await supabase.storage.from(BUCKET).remove([item.reference_image_path]);
+    await supabase
+      .from('production_order_items')
+      .update({ reference_image_path: null } as never)
+      .eq('id', item.id);
+
+    setRefImageUrl(null);
+    setRefImageLoading(false);
+    toast({ title: 'Reference photo removed', variant: 'success' });
+  }
 
   // ---- Validation ---------------------------------------------------------
 
@@ -504,6 +602,87 @@ export function ProductionItemEditor({
           />
         </div>
       </div>
+
+      {/* ---- Reference Photo (edit mode only) ---- */}
+      {item?.id && (
+        <div>
+          <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-primary-400">
+            Reference Photo
+          </h3>
+
+          {refImageLoading ? (
+            <div className="flex justify-center py-4">
+              <LoadingSpinner />
+            </div>
+          ) : refImageUrl ? (
+            <div className="flex items-start gap-4">
+              <div className="group relative overflow-hidden rounded-lg border border-primary-100">
+                <img
+                  src={refImageUrl}
+                  alt="Reference"
+                  className="h-40 w-40 object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={handleRefImageRemove}
+                  className="absolute right-1.5 top-1.5 rounded-full bg-red-600 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  title="Remove"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => refImageInputRef.current?.click()}
+                loading={refImageUploading}
+              >
+                Replace Photo
+              </Button>
+            </div>
+          ) : (
+            <div
+              onClick={() => refImageInputRef.current?.click()}
+              className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors
+                ${refImageUploading ? 'pointer-events-none opacity-60' : 'border-primary-200 hover:border-primary-300'}
+              `}
+            >
+              {refImageUploading ? (
+                <div className="flex flex-col items-center gap-2">
+                  <LoadingSpinner />
+                  <p className="text-sm text-primary-500">Uploading...</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <svg className="h-8 w-8 text-primary-300" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                  </svg>
+                  <p className="text-sm text-primary-500">
+                    Upload customer reference photo
+                  </p>
+                  <p className="text-xs text-primary-400">JPG, PNG, WebP</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <input
+            ref={refImageInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleRefImageUpload(file);
+              e.target.value = '';
+            }}
+          />
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-3 border-t border-primary-100 pt-4">

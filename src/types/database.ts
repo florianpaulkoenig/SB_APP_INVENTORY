@@ -509,6 +509,7 @@ export interface ProductionOrderItemRow {
   color: ArtworkColor | null;
   quantity: number;
   notes: string | null;
+  reference_image_path: string | null;
   artwork_id: string | null;
   sort_order: number;
   created_at: string;
@@ -540,6 +541,7 @@ export interface ProductionOrderItemInsert {
   color?: ArtworkColor | null;
   quantity?: number;
   notes?: string | null;
+  reference_image_path?: string | null;
   artwork_id?: string | null;
   sort_order?: number;
   created_at?: string;

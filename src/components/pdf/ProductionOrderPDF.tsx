@@ -2,7 +2,7 @@
 // NOA Inventory -- Production Order PDF (Artist Version)
 // ---------------------------------------------------------------------------
 
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import styles, { PDF_COLORS } from './PDFStyles';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 
@@ -21,6 +21,7 @@ interface TranslationStrings {
   price: string;
   notes: string;
   totalItems: string;
+  referencePhotos: string;
 }
 
 const TRANSLATIONS: Record<string, TranslationStrings> = {
@@ -36,6 +37,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     price: 'Price',
     notes: 'Notes',
     totalItems: 'Total Items',
+    referencePhotos: 'Reference Photos',
   },
   de: {
     artworkCreationSchedule: 'Kunstwerk-Produktionsplan',
@@ -49,6 +51,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     price: 'Preis',
     notes: 'Anmerkungen',
     totalItems: 'Gesamtanzahl',
+    referencePhotos: 'Referenzfotos',
   },
   fr: {
     artworkCreationSchedule: "Calendrier de Cr\u00e9ation d'Oeuvres",
@@ -62,6 +65,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     price: 'Prix',
     notes: 'Notes',
     totalItems: 'Total articles',
+    referencePhotos: 'Photos de r\u00e9f\u00e9rence',
   },
 };
 
@@ -121,6 +125,7 @@ export interface ProductionOrderPDFProps {
     dimensions: string;
     quantity: number;
     notes: string | null;
+    referenceImageDataUrl?: string | null;
   }>;
   galleryName?: string | null;
   contactName?: string | null;
@@ -202,6 +207,35 @@ const artistStyles = StyleSheet.create({
     fontWeight: 'bold' as const,
     fontSize: 9,
     color: PDF_COLORS.primary900,
+  },
+  refPhotosSection: {
+    marginTop: 20,
+  },
+  refPhotosTitle: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 11,
+    color: PDF_COLORS.primary900,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  refPhotoItem: {
+    marginBottom: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: PDF_COLORS.border,
+    paddingBottom: 10,
+  },
+  refPhotoCaption: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 9,
+    color: PDF_COLORS.primary900,
+    marginBottom: 6,
+  },
+  refPhotoImage: {
+    width: 180,
+    objectFit: 'contain' as const,
   },
 });
 
@@ -322,6 +356,27 @@ export function ProductionOrderPDF({
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t.notes}</Text>
             <Text style={styles.bodyText}>{order.notes}</Text>
+          </View>
+        )}
+
+        {/* ----- Reference Photos ---------------------------------------- */}
+        {items.some((i) => i.referenceImageDataUrl) && (
+          <View style={artistStyles.refPhotosSection} break>
+            <Text style={artistStyles.refPhotosTitle}>{t.referencePhotos}</Text>
+            {items
+              .filter((i) => i.referenceImageDataUrl)
+              .map((item, idx) => (
+                <View style={artistStyles.refPhotoItem} key={`ref-${idx}`}>
+                  <Text style={artistStyles.refPhotoCaption}>
+                    {item.description}
+                    {item.dimensions ? ` \u2014 ${item.dimensions}` : ''}
+                  </Text>
+                  <Image
+                    style={artistStyles.refPhotoImage}
+                    src={item.referenceImageDataUrl!}
+                  />
+                </View>
+              ))}
           </View>
         )}
 

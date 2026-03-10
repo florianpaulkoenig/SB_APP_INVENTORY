@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { pdf } from '@react-pdf/renderer';
+import JSZip from 'jszip';
 import { Button } from '../ui/Button';
 import { StatusBadge } from '../ui/StatusBadge';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -7,6 +8,7 @@ import { Select } from '../ui/Select';
 import { ProductionOrderPDF } from '../pdf/ProductionOrderPDF';
 import { formatDate, formatDimensions, formatCurrency } from '../../lib/utils';
 import { PRODUCTION_STATUSES } from '../../lib/constants';
+import { supabase } from '../../lib/supabase';
 import type {
   ProductionOrderRow,
   ProductionOrderItemRow,
@@ -151,6 +153,29 @@ export function ProductionOrderDetail({
   const [deleting, setDeleting] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
   const [downloading, setDownloading] = useState(false);
+  const [downloadingPhotos, setDownloadingPhotos] = useState(false);
+
+  // ---- Resolve reference image thumbnails -----------------------------------
+  const [refImageUrls, setRefImageUrls] = useState<Record<string, string>>({});
+
+  const resolveRefImages = useCallback(async () => {
+    const urls: Record<string, string> = {};
+    for (const item of items) {
+      if (item.reference_image_path) {
+        const { data } = await supabase.storage
+          .from('artwork-images')
+          .createSignedUrl(item.reference_image_path, 600);
+        if (data?.signedUrl) urls[item.id] = data.signedUrl;
+      }
+    }
+    setRefImageUrls(urls);
+  }, [items]);
+
+  useEffect(() => {
+    resolveRefImages();
+  }, [resolveRefImages]);
+
+  const hasAnyRefImages = items.some((i) => i.reference_image_path);
 
   // ---- Item price summary -------------------------------------------------
   const itemPriceSummary = (() => {
@@ -175,10 +200,41 @@ export function ProductionOrderDetail({
 
   // ---- PDF download -------------------------------------------------------
 
+  // ---- Helper: fetch image as base64 data URL ------------------------------
+  async function imagePathToDataUrl(storagePath: string): Promise<string | null> {
+    try {
+      const { data: signed } = await supabase.storage
+        .from('artwork-images')
+        .createSignedUrl(storagePath, 300);
+      if (!signed?.signedUrl) return null;
+
+      const response = await fetch(signed.signedUrl);
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  // ---- PDF download -------------------------------------------------------
   async function handleDownloadPDF() {
     setDownloading(true);
 
     try {
+      // Resolve reference images as base64 for PDF embedding
+      const refImageDataUrls: Record<string, string> = {};
+      for (const item of items) {
+        if (item.reference_image_path) {
+          const dataUrl = await imagePathToDataUrl(item.reference_image_path);
+          if (dataUrl) refImageDataUrls[item.id] = dataUrl;
+        }
+      }
+
       const pdfItems = items.map((item) => ({
         description: item.description,
         medium: item.medium,
@@ -190,6 +246,7 @@ export function ProductionOrderDetail({
         ),
         quantity: item.quantity,
         notes: item.notes,
+        referenceImageDataUrl: refImageDataUrls[item.id] ?? null,
       }));
 
       const blob = await pdf(
@@ -212,6 +269,56 @@ export function ProductionOrderDetail({
       URL.revokeObjectURL(url);
     } finally {
       setDownloading(false);
+    }
+  }
+
+  // ---- Download reference photos as ZIP -----------------------------------
+  async function handleDownloadRefPhotos() {
+    const itemsWithImages = items.filter((i) => i.reference_image_path);
+    if (itemsWithImages.length === 0) return;
+
+    setDownloadingPhotos(true);
+
+    try {
+      const zip = new JSZip();
+      let index = 1;
+
+      for (const item of itemsWithImages) {
+        if (!item.reference_image_path) continue;
+
+        const { data: signed } = await supabase.storage
+          .from('artwork-images')
+          .createSignedUrl(item.reference_image_path, 300);
+        if (!signed?.signedUrl) continue;
+
+        const response = await fetch(signed.signedUrl);
+        const blob = await response.blob();
+
+        // Build filename: 01_Description_100x100cm.jpg
+        const ext = item.reference_image_path.split('.').pop() || 'jpg';
+        const safeName = item.description
+          .replace(/[^a-zA-Z0-9\s-]/g, '')
+          .replace(/\s+/g, '_')
+          .substring(0, 60);
+        const dims = formatDimensions(item.height, item.width, item.depth, item.dimension_unit ?? 'cm')
+          .replace(/\s+/g, '');
+        const filename = `${String(index).padStart(2, '0')}_${safeName}${dims ? '_' + dims : ''}.${ext}`;
+
+        zip.file(filename, blob);
+        index++;
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${order.order_number}_reference-photos.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadingPhotos(false);
     }
   }
 
@@ -317,6 +424,11 @@ export function ProductionOrderDetail({
             <table className="w-full">
               <thead>
                 <tr>
+                  {hasAnyRefImages && (
+                    <th className="px-2 py-3 text-center text-xs font-medium uppercase tracking-wider text-primary-400 w-14">
+                      Ref
+                    </th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-400">
                     Description
                   </th>
@@ -346,6 +458,19 @@ export function ProductionOrderDetail({
                     key={item.id}
                     className="border-b border-primary-100"
                   >
+                    {hasAnyRefImages && (
+                      <td className="px-2 py-3 text-center">
+                        {refImageUrls[item.id] ? (
+                          <img
+                            src={refImageUrls[item.id]}
+                            alt="Ref"
+                            className="mx-auto h-10 w-10 rounded object-cover"
+                          />
+                        ) : (
+                          <span className="text-primary-200">&mdash;</span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-sm text-primary-800">
                       {item.description}
                     </td>
@@ -423,7 +548,7 @@ export function ProductionOrderDetail({
               {itemPriceSummary.total > 0 && (
                 <tfoot>
                   <tr className="border-t-2 border-primary-200">
-                    <td colSpan={4} className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-primary-500">
+                    <td colSpan={hasAnyRefImages ? 5 : 4} className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-primary-500">
                       Total ({itemPriceSummary.count} {itemPriceSummary.count === 1 ? 'piece' : 'pieces'})
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-bold text-primary-900">
@@ -472,6 +597,29 @@ export function ProductionOrderDetail({
             </svg>
             Download PDF
           </Button>
+          {hasAnyRefImages && (
+            <Button variant="outline" onClick={handleDownloadRefPhotos} loading={downloadingPhotos}>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"
+                />
+              </svg>
+              Download Reference Photos
+            </Button>
+          )}
         </div>
       </section>
 
