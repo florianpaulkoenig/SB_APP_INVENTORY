@@ -101,53 +101,56 @@ export function ProductionOrdersArtistPDF({
         />
 
         {orders.map((order, orderIdx) => (
-          <View key={`${order.order_number}-${orderIdx}`} wrap={false} style={{ marginBottom: 14 }}>
-            {/* Order header */}
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                backgroundColor: PDF_COLORS.primary900,
-                paddingVertical: 6,
-                paddingHorizontal: 10,
-              }}
-            >
-              <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.white }}>
-                {order.title}
-              </Text>
-              {order.deadline && (
+          <View key={`${order.order_number}-${orderIdx}`} style={{ marginBottom: 14 }}>
+            {/* Order header + table header kept together */}
+            <View wrap={false}>
+              {/* Order header */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  backgroundColor: PDF_COLORS.primary900,
+                  paddingVertical: 6,
+                  paddingHorizontal: 10,
+                }}
+              >
                 <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.white }}>
-                  {t.deadline}: {order.deadline}
+                  {order.title}
                 </Text>
-              )}
+                {order.deadline && (
+                  <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.white }}>
+                    {t.deadline}: {order.deadline}
+                  </Text>
+                )}
+              </View>
+
+              {/* Table header */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  backgroundColor: PDF_COLORS.backgroundLight,
+                  paddingVertical: 4,
+                  paddingHorizontal: 10,
+                  borderBottomWidth: 0.5,
+                  borderBottomColor: PDF_COLORS.border,
+                }}
+              >
+                <Text style={[styles.tableHeaderCell, { width: COL_ITEM, color: PDF_COLORS.primary400 }]}>
+                  {t.item}
+                </Text>
+                <Text style={[styles.tableHeaderCell, { width: COL_DIMS, color: PDF_COLORS.primary400 }]}>
+                  {t.dimensions}
+                </Text>
+                <Text style={[styles.tableHeaderCell, { width: COL_QTY, color: PDF_COLORS.primary400, textAlign: 'center' }]}>
+                  {t.qty}
+                </Text>
+                <Text style={[styles.tableHeaderCell, { width: COL_CATEGORY, color: PDF_COLORS.primary400 }]}>
+                  {t.category}
+                </Text>
+              </View>
             </View>
 
-            {/* Table header */}
-            <View
-              style={{
-                flexDirection: 'row',
-                backgroundColor: PDF_COLORS.backgroundLight,
-                paddingVertical: 4,
-                paddingHorizontal: 10,
-                borderBottomWidth: 0.5,
-                borderBottomColor: PDF_COLORS.border,
-              }}
-            >
-              <Text style={[styles.tableHeaderCell, { width: COL_ITEM, color: PDF_COLORS.primary400 }]}>
-                {t.item}
-              </Text>
-              <Text style={[styles.tableHeaderCell, { width: COL_DIMS, color: PDF_COLORS.primary400 }]}>
-                {t.dimensions}
-              </Text>
-              <Text style={[styles.tableHeaderCell, { width: COL_QTY, color: PDF_COLORS.primary400, textAlign: 'center' }]}>
-                {t.qty}
-              </Text>
-              <Text style={[styles.tableHeaderCell, { width: COL_CATEGORY, color: PDF_COLORS.primary400 }]}>
-                {t.category}
-              </Text>
-            </View>
-
-            {/* Item rows */}
+            {/* Item rows — each item+images kept together, but items can split across pages */}
             {order.items.length === 0 ? (
               <View style={{ paddingVertical: 6, paddingHorizontal: 10, borderBottomWidth: 0.5, borderBottomColor: PDF_COLORS.border }}>
                 <Text style={{ fontFamily: 'AnzianoPro', fontSize: 9, color: PDF_COLORS.primary400, fontStyle: 'italic' }}>
@@ -156,7 +159,7 @@ export function ProductionOrdersArtistPDF({
               </View>
             ) : (
               order.items.map((item, itemIdx) => (
-                <View key={`item-${orderIdx}-${itemIdx}`}>
+                <View key={`item-${orderIdx}-${itemIdx}`} wrap={false}>
                   <View
                     style={{
                       flexDirection: 'row',
