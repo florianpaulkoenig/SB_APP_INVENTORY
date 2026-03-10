@@ -275,8 +275,8 @@ export function ProductionOrdersPage() {
     setDownloadingArtist(true);
 
     try {
-      // Filter by date range if set
-      let dateFilteredOrders = [...productionOrders];
+      // Exclude completed orders and filter by date range
+      let dateFilteredOrders = productionOrders.filter((o) => o.status !== 'completed');
       if (artistDateFrom) {
         dateFilteredOrders = dateFilteredOrders.filter(
           (o) => o.deadline && o.deadline >= artistDateFrom
