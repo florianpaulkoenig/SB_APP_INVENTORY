@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
@@ -13,6 +13,7 @@ import { useExhibitionGalleries } from '../hooks/useExhibitionGalleries';
 import { EXHIBITION_TYPES } from '../lib/constants';
 import { MapView } from '../components/maps/MapView';
 import { getCoordinates } from '../lib/geocoding';
+import { CatalogueArtworkPicker } from '../components/catalogues/CatalogueArtworkPicker';
 
 interface Exhibition {
   id: string;
@@ -49,13 +50,6 @@ interface ExhibitionArtwork {
 interface GalleryOption {
   id: string;
   name: string;
-}
-
-interface ArtworkOption {
-  id: string;
-  title: string;
-  medium: string | null;
-  year: number | null;
 }
 
 interface LinkedProductionOrder {
@@ -95,10 +89,10 @@ export function ExhibitionDetailPage() {
   const [selectedGalleryId, setSelectedGalleryId] = useState('');
   const [boothNumber, setBoothNumber] = useState('');
 
-  const [artworkModalOpen, setArtworkModalOpen] = useState(false);
-  const [artworkOptions, setArtworkOptions] = useState<ArtworkOption[]>([]);
-  const [artworkSearch, setArtworkSearch] = useState('');
-  const [artworkLoading, setArtworkLoading] = useState(false);
+  const [artworkPickerOpen, setArtworkPickerOpen] = useState(false);
+  const [selectedArtworkIds, setSelectedArtworkIds] = useState<string[]>([]);
+  const [artworkSaving, setArtworkSaving] = useState(false);
+  const initialArtworkIdsRef = useRef<string[]>([]);
 
   const [linkedPOs, setLinkedPOs] = useState<LinkedProductionOrder[]>([]);
   const [poModalOpen, setPOModalOpen] = useState(false);
@@ -137,7 +131,11 @@ export function ExhibitionDetailPage() {
         .select('*, artworks(id, title, medium, year, price, currency, status)')
         .eq('exhibition_id', id);
       if (error) throw error;
-      setArtworks((data || []) as ExhibitionArtwork[]);
+      const list = (data || []) as ExhibitionArtwork[];
+      setArtworks(list);
+      const ids = list.map((ea) => ea.artwork_id);
+      setSelectedArtworkIds(ids);
+      initialArtworkIdsRef.current = ids;
     } catch {
       toast({ title: 'Failed to load artworks', variant: 'error' });
     }
@@ -200,38 +198,54 @@ export function ExhibitionDetailPage() {
     }
   }, [unlinkGallery, toast]);
 
-  const openArtworkModal = useCallback(async () => {
-    setArtworkModalOpen(true);
-    setArtworkLoading(true);
-    try {
-      const { data, error } = await supabase.from('artworks').select('id, title, medium, year');
-      if (error) throw error;
-      setArtworkOptions((data || []) as ArtworkOption[]);
-    } catch {
-      toast({ title: 'Failed to load artworks', variant: 'error' });
-    } finally {
-      setArtworkLoading(false);
-    }
-  }, [toast]);
-
-  const handleAddArtwork = useCallback(async (artworkId: string) => {
+  const handleSaveArtworks = useCallback(async () => {
     if (!id) return;
+    setArtworkSaving(true);
     try {
-      const { error } = await supabase
-        .from('exhibition_artworks')
-        .insert({ exhibition_id: id, artwork_id: artworkId } as never);
-      if (error) throw error;
-      toast({ title: 'Artwork added to exhibition', variant: 'success' });
-      setArtworkModalOpen(false);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const uid = session.user.id;
+
+      const prev = new Set(initialArtworkIdsRef.current);
+      const next = new Set(selectedArtworkIds);
+
+      // Artworks to add (in next but not in prev)
+      const toAdd = selectedArtworkIds.filter((aid) => !prev.has(aid));
+      // Artworks to remove (in prev but not in next)
+      const toRemove = initialArtworkIdsRef.current.filter((aid) => !next.has(aid));
+
+      // Remove de-selected
+      if (toRemove.length > 0) {
+        const { error } = await supabase
+          .from('exhibition_artworks')
+          .delete()
+          .eq('exhibition_id', id)
+          .in('artwork_id', toRemove);
+        if (error) throw error;
+      }
+
+      // Add newly selected
+      if (toAdd.length > 0) {
+        const rows = toAdd.map((artwork_id) => ({
+          exhibition_id: id,
+          artwork_id,
+          user_id: uid,
+        }));
+        const { error } = await supabase
+          .from('exhibition_artworks')
+          .insert(rows as never);
+        if (error) throw error;
+      }
+
+      toast({ title: 'Artworks updated', variant: 'success' });
+      setArtworkPickerOpen(false);
       fetchArtworks();
     } catch {
-      toast({ title: 'Failed to add artwork', variant: 'error' });
+      toast({ title: 'Failed to update artworks', variant: 'error' });
+    } finally {
+      setArtworkSaving(false);
     }
-  }, [id, fetchArtworks, toast]);
-
-  const filteredArtworkOptions = artworkOptions.filter((a) =>
-    a.title?.toLowerCase().includes(artworkSearch.toLowerCase())
-  );
+  }, [id, selectedArtworkIds, fetchArtworks, toast]);
 
   const openPOModal = useCallback(async () => {
     setPOModalOpen(true);
@@ -426,9 +440,39 @@ export function ExhibitionDetailPage() {
       <Card>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Artworks in Exhibition</h2>
-          <Button variant="primary" onClick={openArtworkModal}>Add Artwork</Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              setSelectedArtworkIds(initialArtworkIdsRef.current);
+              setArtworkPickerOpen(true);
+            }}
+          >
+            {artworks.length > 0 ? 'Edit Artworks' : 'Add Artworks'}
+          </Button>
         </div>
-        {artworks.length === 0 ? (
+
+        {artworkPickerOpen ? (
+          <div className="space-y-4">
+            <CatalogueArtworkPicker
+              selectedIds={selectedArtworkIds}
+              onSelectionChange={setSelectedArtworkIds}
+            />
+            <div className="flex justify-end gap-3 pt-2 border-t border-gray-200">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setSelectedArtworkIds(initialArtworkIdsRef.current);
+                  setArtworkPickerOpen(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={handleSaveArtworks} disabled={artworkSaving}>
+                {artworkSaving ? 'Saving...' : 'Save Selection'}
+              </Button>
+            </div>
+          </div>
+        ) : artworks.length === 0 ? (
           <p className="text-gray-500 text-center py-6">No artworks added yet.</p>
         ) : (
           <div className="overflow-x-auto">
@@ -514,37 +558,6 @@ export function ExhibitionDetailPage() {
           />
         </Card>
       )}
-
-      {/* Artwork Selector Modal */}
-      <Modal isOpen={artworkModalOpen} onClose={() => setArtworkModalOpen(false)} title="Add Artwork to Exhibition">
-        <div className="space-y-4">
-          <Input
-            label="Search Artworks"
-            value={artworkSearch}
-            onChange={(e) => setArtworkSearch(e.target.value)}
-          />
-          {artworkLoading ? (
-            <LoadingSpinner />
-          ) : filteredArtworkOptions.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">No artworks found.</p>
-          ) : (
-            <div className="max-h-64 overflow-y-auto divide-y divide-gray-200">
-              {filteredArtworkOptions.map((a) => (
-                <button
-                  key={a.id}
-                  onClick={() => handleAddArtwork(a.id)}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center justify-between"
-                >
-                  <span className="text-sm font-medium text-gray-900">{a.title}</span>
-                  <span className="text-xs text-gray-500">
-                    {[a.medium, a.year].filter(Boolean).join(' · ')}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </Modal>
 
       {/* Production Order Selector Modal */}
       <Modal isOpen={poModalOpen} onClose={() => setPOModalOpen(false)} title="Add Production Order">
