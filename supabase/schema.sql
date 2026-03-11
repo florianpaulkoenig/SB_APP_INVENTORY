@@ -784,9 +784,9 @@ CREATE POLICY "Collector sees own certificates" ON certificates FOR SELECT TO au
 
 -- Public access for share_links — restricted to unexpired links only (no enumeration)
 -- NOTE: Actual token filtering is done client-side via .eq('token', ...).
--- This policy prevents listing ALL share links by requiring expires_at check.
+-- This policy prevents listing ALL share links by requiring expiry check.
 CREATE POLICY "Public can view share links by token" ON share_links FOR SELECT TO anon
-  USING (expires_at IS NULL OR expires_at > NOW());
+  USING (expiry IS NULL OR expiry > NOW());
 
 -- Public access for viewing_rooms (by slug, check visibility)
 CREATE POLICY "Public can view published viewing rooms" ON viewing_rooms FOR SELECT TO anon USING (published = true AND visibility IN ('public', 'link_only'));
