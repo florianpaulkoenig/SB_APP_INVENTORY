@@ -122,11 +122,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       });
 
-    // Listen for auth state changes (shared across ALL consumers)
+    // Listen for auth state changes (shared across ALL consumers).
+    // IMPORTANT: The INITIAL_SESSION event fires immediately on registration
+    // with the cached session — which may hold an EXPIRED access token.
+    // We must NOT resolve loading from INITIAL_SESSION because getSession()
+    // (above) properly refreshes expired tokens before resolving. Letting
+    // INITIAL_SESSION set loading=false would allow pages to query Supabase
+    // with a stale token, causing 400 errors on first load.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted.current) return;
+
+      // Skip INITIAL_SESSION — getSession() handles the initial load
+      // and ensures the token is refreshed before we resolve loading.
+      if (event === 'INITIAL_SESSION') return;
 
       if (newSession?.user) {
         const mfaNeeded = await isMfaPending();
@@ -134,10 +144,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(null);
           setUser(null);
           setProfile(null);
-          if (!loadingResolved.current) {
-            loadingResolved.current = true;
-            setLoading(false);
-          }
           return;
         }
 
@@ -149,11 +155,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(newSession);
         setUser(null);
         setProfile(null);
-      }
-
-      if (!loadingResolved.current) {
-        loadingResolved.current = true;
-        setLoading(false);
       }
     });
 

@@ -119,12 +119,13 @@ export function ProductionOrdersPage() {
     const orderIds = productionOrders.map((o) => o.id);
     const { data: allItems } = await supabase
       .from('production_order_items')
-      .select('production_order_id, price, currency, quantity')
+      .select('production_order_id, price, currency, quantity, artwork_id')
       .in('production_order_id', orderIds);
 
     const valMap: Record<string, number> = {};
     const currMap: Record<string, string> = {};
     for (const item of allItems ?? []) {
+      if (item.artwork_id) continue; // converted to artwork — value moved to artwork potential revenue
       if (item.price != null && item.price > 0) {
         const qty = item.quantity ?? 1;
         valMap[item.production_order_id] = (valMap[item.production_order_id] || 0) + item.price * qty;

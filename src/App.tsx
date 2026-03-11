@@ -236,6 +236,15 @@ const EnquiryDetailPage = React.lazy(() =>
 const DemandHeatMapPage = React.lazy(() =>
   import('./pages/DemandHeatMapPage').then((m) => ({ default: m.DemandHeatMapPage })),
 );
+const AnnualSchedulePage = React.lazy(() =>
+  import('./pages/AnnualSchedulePage').then((m) => ({ default: m.AnnualSchedulePage })),
+);
+const ProjectsPage = React.lazy(() =>
+  import('./pages/ProjectsPage').then((m) => ({ default: m.ProjectsPage })),
+);
+const ProjectDetailPage = React.lazy(() =>
+  import('./pages/ProjectDetailPage').then((m) => ({ default: m.ProjectDetailPage })),
+);
 const ExhibitionsPage = React.lazy(() =>
   import('./pages/ExhibitionsPage').then((m) => ({ default: m.ExhibitionsPage })),
 );
@@ -717,6 +726,36 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <DemandHeatMapPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'schedule',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <AnnualSchedulePage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'projects',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <ProjectsPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'projects/:id',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <ProjectDetailPage />
               </Suspense>
             </RoleGuard>
           ),

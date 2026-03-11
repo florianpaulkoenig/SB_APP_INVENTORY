@@ -56,7 +56,7 @@ function getTypeFilterValue(tab: string): string | null {
 
 export function ExhibitionsPage() {
   const navigate = useNavigate();
-  const { showSuccess, showError } = useToast();
+  const { toast } = useToast();
   const { exhibitions, loading, createExhibition, updateExhibition, deleteExhibition } = useExhibitions();
 
   const [activeTab, setActiveTab] = useState<string>('All');
@@ -97,7 +97,7 @@ export function ExhibitionsPage() {
 
   const handleSubmit = useCallback(async () => {
     if (!form.title.trim()) {
-      showError('Title is required');
+      toast({ title: 'Title is required', variant: 'error' });
       return;
     }
     setSubmitting(true);
@@ -117,29 +117,29 @@ export function ExhibitionsPage() {
       };
       if (editingId) {
         await updateExhibition(editingId, payload as never);
-        showSuccess('Exhibition updated');
+        toast({ title: 'Exhibition updated', variant: 'success' });
       } else {
         await createExhibition(payload as never);
-        showSuccess('Exhibition created');
+        toast({ title: 'Exhibition created', variant: 'success' });
       }
       setModalOpen(false);
     } catch {
-      showError('Failed to save exhibition');
+      toast({ title: 'Failed to save exhibition', variant: 'error' });
     } finally {
       setSubmitting(false);
     }
-  }, [form, editingId, createExhibition, updateExhibition, showSuccess, showError]);
+  }, [form, editingId, createExhibition, updateExhibition, toast]);
 
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm('Delete this exhibition?')) return;
     try {
       await deleteExhibition(id);
-      showSuccess('Exhibition deleted');
+      toast({ title: 'Exhibition deleted', variant: 'success' });
     } catch {
-      showError('Failed to delete exhibition');
+      toast({ title: 'Failed to delete exhibition', variant: 'error' });
     }
-  }, [deleteExhibition, showSuccess, showError]);
+  }, [deleteExhibition, toast]);
 
   const getTypeBadge = (type: string) => {
     const found = EXHIBITION_TYPES.find((t) => t.value === type);

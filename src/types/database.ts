@@ -985,6 +985,38 @@ export interface ExhibitionArtworkInsert {
 
 export type ExhibitionArtworkUpdate = Partial<ExhibitionArtworkInsert>;
 
+// -- projects ----------------------------------------------------------------
+
+export type ProjectStatus = 'planned' | 'in_progress' | 'completed' | 'on_hold' | 'cancelled';
+
+export interface ProjectRow {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: ProjectStatus;
+  color: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectInsert {
+  id?: string;
+  user_id?: string;
+  title: string;
+  description?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status?: ProjectStatus;
+  color?: string | null;
+  notes?: string | null;
+}
+
+export type ProjectUpdate = Partial<ProjectInsert>;
+
 // -- loans -------------------------------------------------------------------
 
 export type LoanStatus = 'pending' | 'active' | 'returned';
@@ -1844,6 +1876,11 @@ export interface Database {
         Row: AuctionAlertRow;
         Insert: AuctionAlertInsert;
         Update: AuctionAlertUpdate;
+      };
+      projects: {
+        Row: ProjectRow;
+        Insert: ProjectInsert;
+        Update: ProjectUpdate;
       };
     };
     Views: Record<string, never>;

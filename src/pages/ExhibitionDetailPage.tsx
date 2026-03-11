@@ -61,7 +61,7 @@ interface ArtworkOption {
 export function ExhibitionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { showSuccess, showError } = useToast();
+  const { toast } = useToast();
 
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,11 +97,11 @@ export function ExhibitionDetailPage() {
         if (coords) setCoordinates(coords);
       }
     } catch {
-      showError('Failed to load exhibition');
+      toast({ title: 'Failed to load exhibition', variant: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [id, showError]);
+  }, [id, toast]);
 
   const fetchArtworks = useCallback(async () => {
     if (!id) return;
@@ -113,9 +113,9 @@ export function ExhibitionDetailPage() {
       if (error) throw error;
       setArtworks((data || []) as ExhibitionArtwork[]);
     } catch {
-      showError('Failed to load artworks');
+      toast({ title: 'Failed to load artworks', variant: 'error' });
     }
-  }, [id, showError]);
+  }, [id, toast]);
 
   const fetchGalleryOptions = useCallback(async () => {
     try {
@@ -135,29 +135,29 @@ export function ExhibitionDetailPage() {
 
   const handleLinkGallery = useCallback(async () => {
     if (!selectedGalleryId) {
-      showError('Select a gallery');
+      toast({ title: 'Select a gallery', variant: 'error' });
       return;
     }
     try {
       await linkGallery({ gallery_id: selectedGalleryId, booth_number: boothNumber || null } as never);
-      showSuccess('Gallery linked');
+      toast({ title: 'Gallery linked', variant: 'success' });
       setAddGalleryOpen(false);
       setSelectedGalleryId('');
       setBoothNumber('');
     } catch {
-      showError('Failed to link gallery');
+      toast({ title: 'Failed to link gallery', variant: 'error' });
     }
-  }, [selectedGalleryId, boothNumber, linkGallery, showSuccess, showError]);
+  }, [selectedGalleryId, boothNumber, linkGallery, toast]);
 
   const handleUnlinkGallery = useCallback(async (galleryLinkId: string) => {
     if (!confirm('Remove this gallery from the exhibition?')) return;
     try {
       await unlinkGallery(galleryLinkId);
-      showSuccess('Gallery removed');
+      toast({ title: 'Gallery removed', variant: 'success' });
     } catch {
-      showError('Failed to remove gallery');
+      toast({ title: 'Failed to remove gallery', variant: 'error' });
     }
-  }, [unlinkGallery, showSuccess, showError]);
+  }, [unlinkGallery, toast]);
 
   const openArtworkModal = useCallback(async () => {
     setArtworkModalOpen(true);
@@ -167,11 +167,11 @@ export function ExhibitionDetailPage() {
       if (error) throw error;
       setArtworkOptions((data || []) as ArtworkOption[]);
     } catch {
-      showError('Failed to load artworks');
+      toast({ title: 'Failed to load artworks', variant: 'error' });
     } finally {
       setArtworkLoading(false);
     }
-  }, [showError]);
+  }, [toast]);
 
   const handleAddArtwork = useCallback(async (artworkId: string) => {
     if (!id) return;
@@ -180,13 +180,13 @@ export function ExhibitionDetailPage() {
         .from('exhibition_artworks')
         .insert({ exhibition_id: id, artwork_id: artworkId } as never);
       if (error) throw error;
-      showSuccess('Artwork added to exhibition');
+      toast({ title: 'Artwork added to exhibition', variant: 'success' });
       setArtworkModalOpen(false);
       fetchArtworks();
     } catch {
-      showError('Failed to add artwork');
+      toast({ title: 'Failed to add artwork', variant: 'error' });
     }
-  }, [id, fetchArtworks, showSuccess, showError]);
+  }, [id, fetchArtworks, toast]);
 
   const filteredArtworkOptions = artworkOptions.filter((a) =>
     a.title?.toLowerCase().includes(artworkSearch.toLowerCase())

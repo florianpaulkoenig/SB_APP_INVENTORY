@@ -338,6 +338,31 @@ export const EXHIBITION_TYPES = [
 ] as const;
 
 // ---------------------------------------------------------------------------
+// Project statuses
+// ---------------------------------------------------------------------------
+export const PROJECT_STATUSES = [
+  { value: 'planned', label: 'Planned', color: 'bg-blue-100 text-blue-800' },
+  { value: 'in_progress', label: 'In Progress', color: 'bg-amber-100 text-amber-800' },
+  { value: 'completed', label: 'Completed', color: 'bg-emerald-100 text-emerald-800' },
+  { value: 'on_hold', label: 'On Hold', color: 'bg-gray-100 text-gray-800' },
+  { value: 'cancelled', label: 'Cancelled', color: 'bg-red-100 text-red-800' },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Schedule event type colors (for annual Gantt chart)
+// ---------------------------------------------------------------------------
+export const SCHEDULE_EVENT_COLORS: Record<string, { bg: string; text: string; light: string; label: string }> = {
+  exhibition: { bg: 'bg-indigo-500', text: 'text-white', light: 'bg-indigo-100 text-indigo-800', label: 'Exhibition' },
+  art_fair: { bg: 'bg-purple-500', text: 'text-white', light: 'bg-purple-100 text-purple-800', label: 'Art Fair' },
+  solo_show: { bg: 'bg-emerald-500', text: 'text-white', light: 'bg-emerald-100 text-emerald-800', label: 'Solo Show' },
+  group_show: { bg: 'bg-amber-500', text: 'text-white', light: 'bg-amber-100 text-amber-800', label: 'Group Show' },
+  production_order: { bg: 'bg-blue-500', text: 'text-white', light: 'bg-blue-100 text-blue-800', label: 'Production' },
+  project: { bg: 'bg-rose-500', text: 'text-white', light: 'bg-rose-100 text-rose-800', label: 'Project' },
+};
+
+export type ScheduleEventType = keyof typeof SCHEDULE_EVENT_COLORS;
+
+// ---------------------------------------------------------------------------
 // Auction results & houses
 // ---------------------------------------------------------------------------
 export const AUCTION_RESULTS = [

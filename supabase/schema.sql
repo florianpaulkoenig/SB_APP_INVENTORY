@@ -914,3 +914,30 @@ CREATE POLICY "Users manage own read status" ON news_read_status FOR ALL TO auth
 -- ALTER TABLE artworks DROP CONSTRAINT artworks_status_check;
 -- ALTER TABLE artworks ADD CONSTRAINT artworks_status_check
 --   CHECK (status IN ('available','sold','reserved','in_production','in_transit','on_consignment','paid','pending_sale'));
+
+-- ============================================================================
+-- PROJECTS (scheduling & planning)
+-- ============================================================================
+CREATE TABLE projects (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  start_date DATE,
+  end_date DATE,
+  status TEXT NOT NULL DEFAULT 'planned' CHECK (status IN ('planned', 'in_progress', 'completed', 'on_hold', 'cancelled')),
+  color TEXT DEFAULT 'rose',
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_projects_user_id ON projects(user_id);
+CREATE INDEX idx_projects_dates ON projects(start_date, end_date);
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON projects
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own projects" ON projects
+  FOR ALL TO authenticated USING (user_id = (select auth.uid()));

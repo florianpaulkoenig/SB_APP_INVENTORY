@@ -144,6 +144,16 @@ const icons = {
       <circle cx="10" cy="8" r="2" />
     </svg>
   ),
+  calendar: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 2v2M14 2v2M3 6h14M3 6v10a2 2 0 002 2h10a2 2 0 002-2V6M3 6a2 2 0 012-2h10a2 2 0 012 2M8 10h4M8 14h2" />
+    </svg>
+  ),
+  project: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h14v3H3zM3 10h8v7H3zM14 10h3v7h-3z" />
+    </svg>
+  ),
   exhibition: (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M2 17h16M4 17V7l6-4 6 4v10M8 17v-4h4v4M8 9h4" />
@@ -210,6 +220,13 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin', 'gallery'] },
       { label: 'Image Sharing', to: '/sharing', icon: icons.imageSharing, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'PLANNING',
+    items: [
+      { label: 'Annual Schedule', to: '/schedule', icon: icons.calendar, roles: ['admin'] },
+      { label: 'Projects', to: '/projects', icon: icons.project, roles: ['admin'] },
     ],
   },
   {

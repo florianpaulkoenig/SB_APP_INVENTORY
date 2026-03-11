@@ -142,6 +142,8 @@ export function DashboardPage() {
   const [rawArtworks, setRawArtworks] = useState<RawArtwork[]>([]);
   const [rawSales, setRawSales] = useState<RawSale[]>([]);
   const [rawProdOrders, setRawProdOrders] = useState<RawProdOrder[]>([]);
+  // Per-order value from unconverted items only (excludes items already converted to artworks)
+  const [prodOrderItemValues, setProdOrderItemValues] = useState<Record<string, { value: number; currency: string }>>({});
   const [galleryNameMap, setGalleryNameMap] = useState<Record<string, string>>({});
   const [galleryTypeMap, setGalleryTypeMap] = useState<Record<string, string>>({});
   const [galleryCommissionRates, setGalleryCommissionRates] = useState<Record<string, number>>({});
@@ -170,16 +172,29 @@ export function DashboardPage() {
       .not('status', 'in', '("draft","completed")');
     setRawProdOrders(prodOrders ?? []);
 
-    // Fetch production order items count (total ordered items)
+    // Fetch production order items (count + per-item values excluding converted)
     const activeOrderIds = (prodOrders ?? []).map((o) => o.id);
     let orderedItemCount = 0;
+    const itemValMap: Record<string, { value: number; currency: string }> = {};
     if (activeOrderIds.length > 0) {
       const { data: orderItems } = await supabase
         .from('production_order_items')
-        .select('quantity')
+        .select('production_order_id, quantity, price, currency, artwork_id')
         .in('production_order_id', activeOrderIds);
       orderedItemCount = (orderItems ?? []).reduce((sum, item) => sum + (item.quantity || 1), 0);
+      for (const item of orderItems ?? []) {
+        if (item.artwork_id) continue; // converted → value moved to artwork potential revenue
+        if (item.price != null && item.price > 0) {
+          const qty = item.quantity ?? 1;
+          if (!itemValMap[item.production_order_id]) {
+            itemValMap[item.production_order_id] = { value: 0, currency: item.currency ?? 'EUR' };
+          }
+          itemValMap[item.production_order_id].value += item.price * qty;
+          if (item.currency) itemValMap[item.production_order_id].currency = item.currency;
+        }
+      }
     }
+    setProdOrderItemValues(itemValMap);
 
     // Stat counts (no currency needed)
     setStats({
@@ -335,17 +350,20 @@ export function DashboardPage() {
     setGalleryPotentials(potentials);
 
     // ---- Confirmed production orders revenue (CHF) — total + per gallery ----
-    const confirmedTotal = rawProdOrders.reduce(
-      (sum, o) => sum + (o.price != null && o.price > 0 ? toCHF(o.price, o.currency ?? 'EUR') : 0),
-      0,
-    );
+    // Use per-item values excluding converted items (artwork_id set)
+    const confirmedTotal = rawProdOrders.reduce((sum, o) => {
+      const itemVal = prodOrderItemValues[o.id];
+      if (itemVal && itemVal.value > 0) return sum + toCHF(itemVal.value, itemVal.currency);
+      return sum;
+    }, 0);
     setConfirmedOrdersRevenue(confirmedTotal);
 
     // Orders revenue per gallery (CHF)
     const galleryOrderMap: Record<string, { revenue: number; count: number }> = {};
     for (const po of rawProdOrders) {
-      if (po.gallery_id && po.price != null && po.price > 0) {
-        const chfVal = toCHF(po.price, po.currency ?? 'EUR');
+      const itemVal = prodOrderItemValues[po.id];
+      if (po.gallery_id && itemVal && itemVal.value > 0) {
+        const chfVal = toCHF(itemVal.value, itemVal.currency);
         if (!galleryOrderMap[po.gallery_id]) {
           galleryOrderMap[po.gallery_id] = { revenue: 0, count: 0 };
         }
@@ -428,8 +446,9 @@ export function DashboardPage() {
     let ordSplitNoa = 0;
     let ordSplitArtist = 0;
     for (const po of rawProdOrders) {
-      if (po.price == null || po.price <= 0) continue;
-      const chfPrice = toCHF(po.price, po.currency ?? 'EUR');
+      const itemVal = prodOrderItemValues[po.id];
+      if (!itemVal || itemVal.value <= 0) continue;
+      const chfPrice = toCHF(itemVal.value, itemVal.currency);
       if (po.gallery_id && galleryCommissionSplits[po.gallery_id]) {
         const split = galleryCommissionSplits[po.gallery_id];
         ordSplitGallery += chfPrice * (split.gallery / 100);
@@ -515,7 +534,7 @@ export function DashboardPage() {
       .filter((p) => p.totalArtworks > 0 || p.revenue > 0)
       .sort((a, b) => b.sellThroughRate - a.sellThroughRate);
     setGalleryPerformance(performances);
-  }, [ratesReady, toCHF, rawArtworks, rawSales, rawProdOrders, galleryNameMap, galleryCommissionRates, galleryCommissionSplits, consignmentDates]);
+  }, [ratesReady, toCHF, rawArtworks, rawSales, rawProdOrders, prodOrderItemValues, galleryNameMap, galleryCommissionRates, galleryCommissionSplits, consignmentDates]);
 
   // ---- Stat cards ---------------------------------------------------------
 
