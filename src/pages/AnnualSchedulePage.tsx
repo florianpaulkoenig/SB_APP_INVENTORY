@@ -94,9 +94,7 @@ function groupEventsByWeek(events: ScheduleEvent[], year: number): WeekGroup[] {
       return anchor >= monday && anchor <= sunday;
     });
 
-    if (matching.length > 0) {
-      groups.push({ weekNumber: wn, monday, events: matching });
-    }
+    groups.push({ weekNumber: wn, monday, events: matching });
   }
 
   return groups.sort((a, b) => a.monday.getTime() - b.monday.getTime());
@@ -176,10 +174,7 @@ export function AnnualSchedulePage() {
 
       {/* Table */}
       <Card>
-        {weekGroups.length === 0 ? (
-          <p className="text-gray-500 text-center py-12">No events scheduled for {year}.</p>
-        ) : (
-          <div className="overflow-x-auto">
+        <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -197,7 +192,22 @@ export function AnnualSchedulePage() {
               <tbody className="bg-white">
                 {weekGroups.map((group) => {
                   const currentWk = isCurrentWeek(group.monday);
-                  const rowCount = group.events.length;
+                  const hasEvents = group.events.length > 0;
+                  const rowCount = Math.max(group.events.length, 1);
+
+                  if (!hasEvents) {
+                    // Empty week — single row with KW + Montag
+                    return (
+                      <tr
+                        key={`${group.monday.getTime()}-empty`}
+                        className={`border-t border-gray-200 ${currentWk ? 'bg-blue-50/60' : ''}`}
+                      >
+                        <td className="px-3 py-2 text-sm font-semibold text-gray-700 whitespace-nowrap">{group.weekNumber}</td>
+                        <td className="px-3 py-2 text-sm text-gray-600 whitespace-nowrap">{fmtDate(group.monday)}</td>
+                        <td className="px-3 py-2 text-sm text-gray-300" colSpan={7} />
+                      </tr>
+                    );
+                  }
 
                   return group.events.map((event, idx) => {
                     const isFirst = idx === 0;
@@ -278,7 +288,6 @@ export function AnnualSchedulePage() {
               </tbody>
             </table>
           </div>
-        )}
       </Card>
     </div>
   );
