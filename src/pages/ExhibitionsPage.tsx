@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Badge } from '../components/ui/Badge';
@@ -24,6 +25,8 @@ interface ExhibitionForm {
   end_date: string;
   budget: string;
   budget_currency: string;
+  gallery_id: string;
+  contact_id: string;
   catalogue_reference: string;
   notes: string;
 }
@@ -38,6 +41,8 @@ const emptyForm: ExhibitionForm = {
   end_date: '',
   budget: '',
   budget_currency: 'CHF',
+  gallery_id: '',
+  contact_id: '',
   catalogue_reference: '',
   notes: '',
 };
@@ -64,6 +69,22 @@ export function ExhibitionsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ExhibitionForm>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [galleryOptions, setGalleryOptions] = useState<{ value: string; label: string }[]>([]);
+  const [contactOptions, setContactOptions] = useState<{ value: string; label: string }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const uid = session.user.id;
+      const [gRes, cRes] = await Promise.all([
+        supabase.from('galleries').select('id, name').eq('user_id', uid).order('name'),
+        supabase.from('contacts').select('id, first_name, last_name').eq('user_id', uid).order('last_name'),
+      ]);
+      setGalleryOptions((gRes.data ?? []).map((g) => ({ value: g.id, label: g.name })));
+      setContactOptions((cRes.data ?? []).map((c) => ({ value: c.id, label: [c.first_name, c.last_name].filter(Boolean).join(' ') })));
+    })();
+  }, []);
 
   const filteredExhibitions = exhibitions.filter((ex) => {
     const filterValue = getTypeFilterValue(activeTab);
@@ -89,6 +110,8 @@ export function ExhibitionsPage() {
       end_date: ex.end_date || '',
       budget: ex.budget ? String(ex.budget) : '',
       budget_currency: ex.budget_currency || 'CHF',
+      gallery_id: ex.gallery_id || '',
+      contact_id: ex.contact_id || '',
       catalogue_reference: ex.catalogue_reference || '',
       notes: ex.notes || '',
     });
@@ -112,6 +135,8 @@ export function ExhibitionsPage() {
         end_date: form.end_date || null,
         budget: form.budget ? parseFloat(form.budget) : null,
         budget_currency: form.budget_currency || null,
+        gallery_id: form.gallery_id || null,
+        contact_id: form.contact_id || null,
         catalogue_reference: form.catalogue_reference.trim() || null,
         notes: form.notes.trim() || null,
       };
@@ -248,6 +273,10 @@ export function ExhibitionsPage() {
           <div className="grid grid-cols-2 gap-4">
             <Input label="Budget" type="number" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} />
             <Select label="Currency" value={form.budget_currency} onChange={(e) => setForm({ ...form, budget_currency: e.target.value })} options={CURRENCIES} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Select label="Gallery" value={form.gallery_id} onChange={(e) => setForm({ ...form, gallery_id: e.target.value })} options={[{ value: '', label: 'None' }, ...galleryOptions]} />
+            <Select label="Contact" value={form.contact_id} onChange={(e) => setForm({ ...form, contact_id: e.target.value })} options={[{ value: '', label: 'None' }, ...contactOptions]} />
           </div>
           <Input label="Catalogue Reference" value={form.catalogue_reference} onChange={(e) => setForm({ ...form, catalogue_reference: e.target.value })} />
           <div>

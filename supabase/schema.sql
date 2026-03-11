@@ -941,3 +941,72 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON projects
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage own projects" ON projects
   FOR ALL TO authenticated USING (user_id = (select auth.uid()));
+
+-- ============================================================================
+-- LINKING: Exhibitions & Projects → Galleries, Contacts
+-- ============================================================================
+
+-- Add gallery_id + contact_id to exhibitions
+ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS type TEXT;
+ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS budget NUMERIC;
+ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS budget_currency TEXT;
+ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS gallery_id UUID REFERENCES galleries(id) ON DELETE SET NULL;
+ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL;
+
+-- Add gallery_id + contact_id to projects
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS gallery_id UUID REFERENCES galleries(id) ON DELETE SET NULL;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL;
+
+-- ============================================================================
+-- JUNCTION: Exhibition ↔ Production Orders
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS exhibition_production_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  exhibition_id UUID NOT NULL REFERENCES exhibitions(id) ON DELETE CASCADE,
+  production_order_id UUID NOT NULL REFERENCES production_orders(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(exhibition_id, production_order_id)
+);
+
+ALTER TABLE exhibition_production_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own exhibition_production_orders"
+  ON exhibition_production_orders FOR ALL
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ============================================================================
+-- JUNCTION: Project ↔ Artworks
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS project_artworks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  artwork_id UUID NOT NULL REFERENCES artworks(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(project_id, artwork_id)
+);
+
+ALTER TABLE project_artworks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own project_artworks"
+  ON project_artworks FOR ALL
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ============================================================================
+-- JUNCTION: Project ↔ Production Orders
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS project_production_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  production_order_id UUID NOT NULL REFERENCES production_orders(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(project_id, production_order_id)
+);
+
+ALTER TABLE project_production_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own project_production_orders"
+  ON project_production_orders FOR ALL
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Reload schema cache
+NOTIFY pgrst, 'reload schema';

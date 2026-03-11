@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Badge } from '../components/ui/Badge';
@@ -23,6 +24,8 @@ interface ProjectForm {
   end_date: string;
   status: string;
   color: string;
+  gallery_id: string;
+  contact_id: string;
   notes: string;
 }
 
@@ -33,6 +36,8 @@ const emptyForm: ProjectForm = {
   end_date: '',
   status: 'planned',
   color: 'rose',
+  gallery_id: '',
+  contact_id: '',
   notes: '',
 };
 
@@ -73,6 +78,22 @@ export function ProjectsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProjectForm>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [galleryOptions, setGalleryOptions] = useState<{ value: string; label: string }[]>([]);
+  const [contactOptions, setContactOptions] = useState<{ value: string; label: string }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const uid = session.user.id;
+      const [gRes, cRes] = await Promise.all([
+        supabase.from('galleries').select('id, name').eq('user_id', uid).order('name'),
+        supabase.from('contacts').select('id, first_name, last_name').eq('user_id', uid).order('last_name'),
+      ]);
+      setGalleryOptions((gRes.data ?? []).map((g) => ({ value: g.id, label: g.name })));
+      setContactOptions((cRes.data ?? []).map((c) => ({ value: c.id, label: [c.first_name, c.last_name].filter(Boolean).join(' ') })));
+    })();
+  }, []);
 
   const filteredProjects = projects.filter((p) => {
     const filterValue = getStatusFilter(activeTab);
@@ -95,6 +116,8 @@ export function ProjectsPage() {
       end_date: p.end_date || '',
       status: p.status || 'planned',
       color: p.color || 'rose',
+      gallery_id: p.gallery_id || '',
+      contact_id: p.contact_id || '',
       notes: p.notes || '',
     });
     setModalOpen(true);
@@ -114,6 +137,8 @@ export function ProjectsPage() {
         end_date: form.end_date || null,
         status: form.status || 'planned',
         color: form.color || 'rose',
+        gallery_id: form.gallery_id || null,
+        contact_id: form.contact_id || null,
         notes: form.notes.trim() || null,
       };
       if (editingId) {
@@ -245,6 +270,10 @@ export function ProjectsPage() {
               onChange={(e) => setForm({ ...form, color: e.target.value })}
               options={COLOR_OPTIONS}
             />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Select label="Gallery" value={form.gallery_id} onChange={(e) => setForm({ ...form, gallery_id: e.target.value })} options={[{ value: '', label: 'None' }, ...galleryOptions]} />
+            <Select label="Contact" value={form.contact_id} onChange={(e) => setForm({ ...form, contact_id: e.target.value })} options={[{ value: '', label: 'None' }, ...contactOptions]} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>

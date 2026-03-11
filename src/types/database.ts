@@ -998,6 +998,8 @@ export interface ProjectRow {
   end_date: string | null;
   status: ProjectStatus;
   color: string | null;
+  gallery_id: string | null;
+  contact_id: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -1012,10 +1014,63 @@ export interface ProjectInsert {
   end_date?: string | null;
   status?: ProjectStatus;
   color?: string | null;
+  gallery_id?: string | null;
+  contact_id?: string | null;
   notes?: string | null;
 }
 
 export type ProjectUpdate = Partial<ProjectInsert>;
+
+// -- exhibition_production_orders ---------------------------------------------
+
+export interface ExhibitionProductionOrderRow {
+  id: string;
+  user_id: string;
+  exhibition_id: string;
+  production_order_id: string;
+  created_at: string;
+}
+
+export interface ExhibitionProductionOrderInsert {
+  id?: string;
+  user_id?: string;
+  exhibition_id: string;
+  production_order_id: string;
+}
+
+// -- project_artworks ---------------------------------------------------------
+
+export interface ProjectArtworkRow {
+  id: string;
+  user_id: string;
+  project_id: string;
+  artwork_id: string;
+  created_at: string;
+}
+
+export interface ProjectArtworkInsert {
+  id?: string;
+  user_id?: string;
+  project_id: string;
+  artwork_id: string;
+}
+
+// -- project_production_orders ------------------------------------------------
+
+export interface ProjectProductionOrderRow {
+  id: string;
+  user_id: string;
+  project_id: string;
+  production_order_id: string;
+  created_at: string;
+}
+
+export interface ProjectProductionOrderInsert {
+  id?: string;
+  user_id?: string;
+  project_id: string;
+  production_order_id: string;
+}
 
 // -- loans -------------------------------------------------------------------
 

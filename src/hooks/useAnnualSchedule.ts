@@ -84,7 +84,7 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
           .not('status', 'eq', 'draft'),
         supabase
           .from('projects')
-          .select('*')
+          .select('*, gallery:galleries(name), contact:contacts(first_name, last_name)')
           .eq('user_id', uid)
           .not('start_date', 'is', null),
       ]);
@@ -161,7 +161,10 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
           venue: null,
           city: null,
           country: null,
-          partner: null,
+          partner: resolvePartner(
+            proj.gallery as { name: string } | null,
+            proj.contact as { first_name: string; last_name: string } | null,
+          ),
           notes: proj.notes ?? null,
         });
       }

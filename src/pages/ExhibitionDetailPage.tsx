@@ -58,6 +58,26 @@ interface ArtworkOption {
   year: number | null;
 }
 
+interface LinkedProductionOrder {
+  id: string;
+  exhibition_id: string;
+  production_order_id: string;
+  production_orders: {
+    id: string;
+    title: string;
+    order_number: string;
+    status: string | null;
+    deadline: string | null;
+  };
+}
+
+interface ProductionOrderOption {
+  id: string;
+  title: string;
+  order_number: string;
+  deadline: string | null;
+}
+
 export function ExhibitionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -79,6 +99,12 @@ export function ExhibitionDetailPage() {
   const [artworkOptions, setArtworkOptions] = useState<ArtworkOption[]>([]);
   const [artworkSearch, setArtworkSearch] = useState('');
   const [artworkLoading, setArtworkLoading] = useState(false);
+
+  const [linkedPOs, setLinkedPOs] = useState<LinkedProductionOrder[]>([]);
+  const [poModalOpen, setPOModalOpen] = useState(false);
+  const [poOptions, setPOOptions] = useState<ProductionOrderOption[]>([]);
+  const [poSearch, setPOSearch] = useState('');
+  const [poLoading, setPOLoading] = useState(false);
 
   const fetchExhibition = useCallback(async () => {
     if (!id) return;
@@ -117,6 +143,20 @@ export function ExhibitionDetailPage() {
     }
   }, [id, toast]);
 
+  const fetchLinkedPOs = useCallback(async () => {
+    if (!id) return;
+    try {
+      const { data, error } = await supabase
+        .from('exhibition_production_orders')
+        .select('*, production_orders(id, title, order_number, status, deadline)')
+        .eq('exhibition_id', id);
+      if (error) throw error;
+      setLinkedPOs((data || []) as LinkedProductionOrder[]);
+    } catch {
+      // table may not exist yet — ignore silently
+    }
+  }, [id]);
+
   const fetchGalleryOptions = useCallback(async () => {
     try {
       const { data, error } = await supabase.from('galleries').select('id, name');
@@ -130,8 +170,9 @@ export function ExhibitionDetailPage() {
   useEffect(() => {
     fetchExhibition();
     fetchArtworks();
+    fetchLinkedPOs();
     fetchGalleryOptions();
-  }, [fetchExhibition, fetchArtworks, fetchGalleryOptions]);
+  }, [fetchExhibition, fetchArtworks, fetchLinkedPOs, fetchGalleryOptions]);
 
   const handleLinkGallery = useCallback(async () => {
     if (!selectedGalleryId) {
@@ -190,6 +231,55 @@ export function ExhibitionDetailPage() {
 
   const filteredArtworkOptions = artworkOptions.filter((a) =>
     a.title?.toLowerCase().includes(artworkSearch.toLowerCase())
+  );
+
+  const openPOModal = useCallback(async () => {
+    setPOModalOpen(true);
+    setPOLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('production_orders')
+        .select('id, title, order_number, deadline');
+      if (error) throw error;
+      setPOOptions((data || []) as ProductionOrderOption[]);
+    } catch {
+      toast({ title: 'Failed to load production orders', variant: 'error' });
+    } finally {
+      setPOLoading(false);
+    }
+  }, [toast]);
+
+  const handleAddPO = useCallback(async (poId: string) => {
+    if (!id) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { error } = await supabase
+        .from('exhibition_production_orders')
+        .insert({ exhibition_id: id, production_order_id: poId, user_id: session.user.id } as never);
+      if (error) throw error;
+      toast({ title: 'Production order linked', variant: 'success' });
+      setPOModalOpen(false);
+      fetchLinkedPOs();
+    } catch {
+      toast({ title: 'Failed to link production order', variant: 'error' });
+    }
+  }, [id, fetchLinkedPOs, toast]);
+
+  const handleRemovePO = useCallback(async (linkId: string) => {
+    if (!confirm('Remove this production order?')) return;
+    try {
+      const { error } = await supabase.from('exhibition_production_orders').delete().eq('id', linkId);
+      if (error) throw error;
+      toast({ title: 'Production order removed', variant: 'success' });
+      fetchLinkedPOs();
+    } catch {
+      toast({ title: 'Failed to remove production order', variant: 'error' });
+    }
+  }, [fetchLinkedPOs, toast]);
+
+  const filteredPOOptions = poOptions.filter((p) =>
+    (p.title || p.order_number || '').toLowerCase().includes(poSearch.toLowerCase())
   );
 
   const getTypeBadge = (type: string) => {
@@ -372,6 +462,48 @@ export function ExhibitionDetailPage() {
         )}
       </Card>
 
+      {/* Linked Production Orders */}
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Linked Production Orders</h2>
+          <Button variant="primary" onClick={openPOModal}>Add Production Order</Button>
+        </div>
+        {linkedPOs.length === 0 ? (
+          <p className="text-gray-500 text-center py-6">No production orders linked yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deadline</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {linkedPOs.map((lpo) => (
+                  <tr key={lpo.id}>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{lpo.production_orders.title || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{lpo.production_orders.order_number || '—'}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {lpo.production_orders.status ? <Badge variant="default">{lpo.production_orders.status}</Badge> : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {lpo.production_orders.deadline ? formatDate(lpo.production_orders.deadline) : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <Button variant="primary" onClick={() => handleRemovePO(lpo.id)}>Remove</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
       {/* Mini Map */}
       {coordinates && (exhibition.city || exhibition.country) && (
         <Card>
@@ -406,6 +538,37 @@ export function ExhibitionDetailPage() {
                   <span className="text-sm font-medium text-gray-900">{a.title}</span>
                   <span className="text-xs text-gray-500">
                     {[a.medium, a.year].filter(Boolean).join(' · ')}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Production Order Selector Modal */}
+      <Modal isOpen={poModalOpen} onClose={() => setPOModalOpen(false)} title="Add Production Order">
+        <div className="space-y-4">
+          <Input
+            label="Search Production Orders"
+            value={poSearch}
+            onChange={(e) => setPOSearch(e.target.value)}
+          />
+          {poLoading ? (
+            <LoadingSpinner />
+          ) : filteredPOOptions.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">No production orders found.</p>
+          ) : (
+            <div className="max-h-64 overflow-y-auto divide-y divide-gray-200">
+              {filteredPOOptions.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => handleAddPO(p.id)}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center justify-between"
+                >
+                  <span className="text-sm font-medium text-gray-900">{p.title || p.order_number}</span>
+                  <span className="text-xs text-gray-500">
+                    {p.deadline ? formatDate(p.deadline) : ''}
                   </span>
                 </button>
               ))}
