@@ -23,11 +23,32 @@ export interface ScheduleEvent {
   status: string | null;
   detailPath: string;
   subtitle?: string;
+  venue: string | null;
+  city: string | null;
+  country: string | null;
+  partner: string | null;
+  notes: string | null;
 }
 
 export interface UseAnnualScheduleOptions {
   year: number;
   visibleTypes?: ScheduleEventType[];
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function resolvePartner(
+  gallery: { name: string } | null | undefined,
+  contact: { first_name: string; last_name: string } | null | undefined,
+): string | null {
+  if (gallery?.name) return gallery.name;
+  if (contact) {
+    const full = [contact.first_name, contact.last_name].filter(Boolean).join(' ').trim();
+    if (full) return full;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,16 +70,16 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
       const yearStart = `${year}-01-01`;
       const yearEnd = `${year}-12-31`;
 
-      // Fetch all sources in parallel
+      // Fetch all sources in parallel — exhibitions & production orders join gallery + contact
       const [exhibitionsRes, productionRes, projectsRes] = await Promise.all([
         supabase
           .from('exhibitions')
-          .select('*')
+          .select('*, gallery:galleries(name), contact:contacts(first_name, last_name)')
           .eq('user_id', uid)
           .not('start_date', 'is', null),
         supabase
           .from('production_orders')
-          .select('*')
+          .select('*, gallery:galleries(name), contact:contacts(first_name, last_name)')
           .eq('user_id', uid)
           .not('status', 'eq', 'draft'),
         supabase
@@ -75,7 +96,6 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
         if (!ex.start_date) continue;
         const start = new Date(ex.start_date);
         const end = ex.end_date ? new Date(ex.end_date) : new Date(ex.start_date);
-        // Filter by year overlap
         if (end < new Date(yearStart) || start > new Date(yearEnd)) continue;
         const evType = (['exhibition', 'art_fair', 'solo_show', 'group_show'].includes(ex.type)
           ? ex.type
@@ -89,6 +109,14 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
           status: ex.type,
           detailPath: `/exhibitions/${ex.id}`,
           subtitle: [ex.venue, ex.city].filter(Boolean).join(', ') || undefined,
+          venue: ex.venue ?? null,
+          city: ex.city ?? null,
+          country: ex.country ?? null,
+          partner: resolvePartner(
+            ex.gallery as { name: string } | null,
+            ex.contact as { first_name: string; last_name: string } | null,
+          ),
+          notes: ex.notes ?? null,
         });
       }
 
@@ -98,7 +126,6 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
         const deadline = new Date(po.deadline);
         if (deadline < new Date(yearStart) || deadline > new Date(yearEnd)) continue;
         const start = po.ordered_date ? new Date(po.ordered_date) : deadline;
-        // Clamp start to year boundary
         const clampedStart = start < new Date(yearStart) ? new Date(yearStart) : start;
         allEvents.push({
           id: po.id,
@@ -108,6 +135,14 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
           type: 'production_order',
           status: po.status,
           detailPath: `/production/${po.id}`,
+          venue: null,
+          city: null,
+          country: null,
+          partner: resolvePartner(
+            po.gallery as { name: string } | null,
+            po.contact as { first_name: string; last_name: string } | null,
+          ),
+          notes: po.notes ?? null,
         });
       }
 
@@ -125,6 +160,11 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
           type: 'project',
           status: proj.status,
           detailPath: `/projects/${proj.id}`,
+          venue: null,
+          city: null,
+          country: null,
+          partner: null,
+          notes: proj.notes ?? null,
         });
       }
 

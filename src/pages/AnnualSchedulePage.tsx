@@ -2,13 +2,9 @@ import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   startOfISOWeek,
-  endOfISOWeek,
   getISOWeek,
   eachWeekOfInterval,
   addDays,
-  getMonth,
-  isToday,
-  isSameDay,
   format,
 } from 'date-fns';
 import { Card } from '../components/ui/Card';
@@ -22,18 +18,15 @@ import { SCHEDULE_EVENT_COLORS } from '../lib/constants';
 // Types
 // ---------------------------------------------------------------------------
 
-interface WeekInfo {
+interface WeekGroup {
   weekNumber: number;
-  startDate: Date;
-  endDate: Date;
-  days: Date[];
+  monday: Date;
+  events: ScheduleEvent[];
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const ALL_TYPES: ScheduleEventType[] = [
   'production_order',
@@ -44,7 +37,25 @@ const ALL_TYPES: ScheduleEventType[] = [
   'project',
 ];
 
-function generateWeeks(year: number): WeekInfo[] {
+/** Format a date as dd.MM.yyyy */
+function fmtDate(d: Date): string {
+  return format(d, 'dd.MM.yyyy');
+}
+
+/** Format event date range: dd.MM – dd.MM.yyyy (or single date if same) */
+function fmtDateRange(start: Date, end: Date): string {
+  if (start.getTime() === end.getTime()) return fmtDate(start);
+  if (start.getFullYear() === end.getFullYear()) {
+    return `${format(start, 'dd.MM')} – ${format(end, 'dd.MM.yyyy')}`;
+  }
+  return `${fmtDate(start)} – ${fmtDate(end)}`;
+}
+
+/**
+ * Group events by ISO calendar week. Multi-week events appear in every
+ * overlapping week. Returns array sorted by week monday.
+ */
+function groupEventsByWeek(events: ScheduleEvent[], year: number): WeekGroup[] {
   const yearStart = new Date(year, 0, 1);
   const yearEnd = new Date(year, 11, 31);
 
@@ -53,165 +64,39 @@ function generateWeeks(year: number): WeekInfo[] {
     { weekStartsOn: 1 },
   );
 
-  return weekStarts.map((ws) => {
-    const start = startOfISOWeek(ws);
-    const end = endOfISOWeek(ws);
-    const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-    return { weekNumber: getISOWeek(ws), startDate: start, endDate: end, days };
-  });
-}
+  const groups: WeekGroup[] = [];
+  const seen = new Set<number>();
 
-function mapEventsToWeeks(
-  events: ScheduleEvent[],
-  weeks: WeekInfo[],
-): Map<number, ScheduleEvent[]> {
-  const map = new Map<number, ScheduleEvent[]>();
-  for (let wi = 0; wi < weeks.length; wi++) {
-    const week = weeks[wi];
+  for (const ws of weekStarts) {
+    const monday = startOfISOWeek(ws);
+    const sunday = addDays(monday, 6);
+    const wn = getISOWeek(monday);
+
+    // Dedupe edge-case weeks
+    const key = monday.getTime();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
     const matching = events.filter(
-      (e) => e.startDate <= week.endDate && e.endDate >= week.startDate,
+      (e) => e.startDate <= sunday && e.endDate >= monday,
     );
+
     if (matching.length > 0) {
-      map.set(wi, matching);
+      groups.push({ weekNumber: wn, monday, events: matching });
     }
   }
-  return map;
+
+  return groups.sort((a, b) => a.monday.getTime() - b.monday.getTime());
 }
 
-function calculateBarPosition(
-  event: ScheduleEvent,
-  week: WeekInfo,
-): { left: number; width: number } {
-  const weekStart = week.startDate.getTime();
-  const weekEnd = week.endDate.getTime() + 86400000; // include end day fully
-  const weekDuration = weekEnd - weekStart;
-  if (weekDuration <= 0) return { left: 0, width: 100 };
-
-  const barStart = Math.max(event.startDate.getTime(), weekStart);
-  const barEnd = Math.min(event.endDate.getTime() + 86400000, weekEnd); // include end day
-
-  const left = ((barStart - weekStart) / weekDuration) * 100;
-  const width = Math.max(((barEnd - barStart) / weekDuration) * 100, 3); // min 3% for visibility
-
-  return { left, width };
-}
-
-function getTodayPosition(week: WeekInfo): number | null {
-  const today = new Date();
-  for (let i = 0; i < week.days.length; i++) {
-    if (isSameDay(today, week.days[i]) || isToday(week.days[i])) {
-      return ((i + 0.5) / 7) * 100;
-    }
-  }
-  return null;
-}
-
-// ---------------------------------------------------------------------------
-// Month header: compute month spans across weeks
-// ---------------------------------------------------------------------------
-
-interface MonthSpan {
-  month: number;
-  label: string;
-  startWeekIdx: number;
-  count: number;
-}
-
-function computeMonthSpans(weeks: WeekInfo[], year: number): MonthSpan[] {
-  const spans: MonthSpan[] = [];
-  let currentMonth = -1;
-  for (let i = 0; i < weeks.length; i++) {
-    // Use the Thursday of the week to determine which month the week belongs to (ISO convention)
-    const thursday = addDays(weeks[i].startDate, 3);
-    const m = getMonth(thursday);
-    // Only include weeks whose Thursday falls in the target year
-    if (thursday.getFullYear() !== year) continue;
-    if (m !== currentMonth) {
-      spans.push({ month: m, label: MONTH_NAMES[m], startWeekIdx: i, count: 1 });
-      currentMonth = m;
-    } else {
-      spans[spans.length - 1].count++;
-    }
-  }
-  return spans;
-}
-
-// ---------------------------------------------------------------------------
-// GanttWeekRow
-// ---------------------------------------------------------------------------
-
-function GanttWeekRow({
-  week,
-  weekIdx,
-  events,
-  onEventClick,
-}: {
-  week: WeekInfo;
-  weekIdx: number;
-  events: ScheduleEvent[];
-  onEventClick: (e: ScheduleEvent) => void;
-}) {
-  const todayPos = getTodayPosition(week);
-  const hasToday = todayPos !== null;
-  const barHeight = 22;
-  const barGap = 2;
-  const minRowHeight = 28;
-  const rowHeight = Math.max(minRowHeight, events.length * (barHeight + barGap) + 4);
-
+/** Check if a date falls in the current ISO week */
+function isCurrentWeek(monday: Date): boolean {
+  const now = new Date();
+  const curMonday = startOfISOWeek(now);
   return (
-    <div
-      className={`flex border-b border-gray-100 ${hasToday ? 'bg-blue-50/40' : ''}`}
-      style={{ minHeight: `${rowHeight}px` }}
-    >
-      {/* CW label */}
-      <div className="w-11 shrink-0 flex items-start justify-center pt-1 text-[10px] text-gray-400 font-medium border-r border-gray-200 select-none">
-        {week.weekNumber}
-      </div>
-
-      {/* 7-day grid + event bars */}
-      <div className="flex-1 relative">
-        {/* Day columns grid lines */}
-        <div className="absolute inset-0 grid grid-cols-7">
-          {week.days.map((day, i) => (
-            <div
-              key={i}
-              className={`border-r border-gray-50 ${i >= 5 ? 'bg-gray-50/50' : ''}`}
-            />
-          ))}
-        </div>
-
-        {/* Event bars */}
-        {events.map((event, idx) => {
-          const { left, width } = calculateBarPosition(event, week);
-          const colors = SCHEDULE_EVENT_COLORS[event.type] || SCHEDULE_EVENT_COLORS.project;
-          return (
-            <div
-              key={`${event.id}-${weekIdx}`}
-              className={`absolute rounded-sm text-[10px] font-medium px-1.5 truncate cursor-pointer hover:brightness-110 transition-all ${colors.bg} ${colors.text}`}
-              style={{
-                left: `${left}%`,
-                width: `${width}%`,
-                top: `${idx * (barHeight + barGap) + 2}px`,
-                height: `${barHeight}px`,
-                lineHeight: `${barHeight}px`,
-              }}
-              onClick={() => onEventClick(event)}
-              title={`${event.title}\n${format(event.startDate, 'dd.MM.yyyy')} – ${format(event.endDate, 'dd.MM.yyyy')}${event.subtitle ? `\n${event.subtitle}` : ''}`}
-            >
-              {event.title}
-            </div>
-          );
-        })}
-
-        {/* Today indicator */}
-        {todayPos !== null && (
-          <div
-            className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10 pointer-events-none"
-            style={{ left: `${todayPos}%` }}
-          />
-        )}
-      </div>
-    </div>
+    monday.getFullYear() === curMonday.getFullYear() &&
+    monday.getMonth() === curMonday.getMonth() &&
+    monday.getDate() === curMonday.getDate()
   );
 }
 
@@ -226,20 +111,13 @@ export function AnnualSchedulePage() {
 
   const { events, loading } = useAnnualSchedule({ year, visibleTypes });
 
-  const weeks = useMemo(() => generateWeeks(year), [year]);
-  const monthSpans = useMemo(() => computeMonthSpans(weeks, year), [weeks, year]);
-  const eventsByWeek = useMemo(() => mapEventsToWeeks(events, weeks), [events, weeks]);
+  const weekGroups = useMemo(() => groupEventsByWeek(events, year), [events, year]);
 
   const toggleType = useCallback((type: ScheduleEventType) => {
     setVisibleTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
     );
   }, []);
-
-  const handleEventClick = useCallback(
-    (event: ScheduleEvent) => navigate(event.detailPath),
-    [navigate],
-  );
 
   if (loading) return <LoadingSpinner />;
 
@@ -283,43 +161,111 @@ export function AnnualSchedulePage() {
         })}
       </div>
 
-      {/* Gantt chart */}
+      {/* Table */}
       <Card>
-        <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-260px)]">
-          <div className="min-w-[700px]">
-            {/* Sticky month header */}
-            <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
-              {/* Month row */}
-              <div className="flex">
-                <div className="w-11 shrink-0 border-r border-gray-200 text-[10px] text-gray-400 font-medium flex items-center justify-center">
-                  CW
-                </div>
-                <div className="flex-1 flex">
-                  {monthSpans.map((ms) => (
-                    <div
-                      key={ms.month}
-                      className="text-center text-xs font-semibold text-gray-600 py-1.5 border-r border-gray-100"
-                      style={{ flex: ms.count }}
-                    >
-                      {ms.label}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+        {weekGroups.length === 0 ? (
+          <p className="text-gray-500 text-center py-12">No events scheduled for {year}.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">KW</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Montag</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Daten</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Partner</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Venue</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Titel</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Ort</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Land</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Notiz</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white">
+                {weekGroups.map((group) => {
+                  const currentWk = isCurrentWeek(group.monday);
+                  const rowCount = group.events.length;
 
-            {/* Week rows */}
-            {weeks.map((week, idx) => (
-              <GanttWeekRow
-                key={idx}
-                week={week}
-                weekIdx={idx}
-                events={eventsByWeek.get(idx) ?? []}
-                onEventClick={handleEventClick}
-              />
-            ))}
+                  return group.events.map((event, idx) => {
+                    const isFirst = idx === 0;
+                    const colors = SCHEDULE_EVENT_COLORS[event.type] || SCHEDULE_EVENT_COLORS.project;
+
+                    return (
+                      <tr
+                        key={`${group.weekNumber}-${event.id}`}
+                        className={`${currentWk ? 'bg-blue-50/60' : ''} ${isFirst ? 'border-t border-gray-200' : 'border-t border-gray-100'}`}
+                      >
+                        {/* KW — rowSpan if multiple events */}
+                        {isFirst && (
+                          <td
+                            className="px-3 py-2 text-sm font-semibold text-gray-700 align-top whitespace-nowrap"
+                            rowSpan={rowCount}
+                          >
+                            {group.weekNumber}
+                          </td>
+                        )}
+
+                        {/* Montag — rowSpan if multiple events */}
+                        {isFirst && (
+                          <td
+                            className="px-3 py-2 text-sm text-gray-600 align-top whitespace-nowrap"
+                            rowSpan={rowCount}
+                          >
+                            {fmtDate(group.monday)}
+                          </td>
+                        )}
+
+                        {/* Daten */}
+                        <td className="px-3 py-2 text-sm text-gray-600 whitespace-nowrap">
+                          {fmtDateRange(event.startDate, event.endDate)}
+                        </td>
+
+                        {/* Partner */}
+                        <td className="px-3 py-2 text-sm text-gray-600">
+                          {event.partner || '—'}
+                        </td>
+
+                        {/* Venue */}
+                        <td className="px-3 py-2 text-sm text-gray-600">
+                          {event.venue || '—'}
+                        </td>
+
+                        {/* Titel — clickable, with type color dot */}
+                        <td className="px-3 py-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${colors.bg}`} />
+                            <button
+                              type="button"
+                              className="text-left font-medium text-gray-900 hover:text-blue-700 hover:underline transition-colors"
+                              onClick={() => navigate(event.detailPath)}
+                            >
+                              {event.title}
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* Ort */}
+                        <td className="px-3 py-2 text-sm text-gray-600">
+                          {event.city || '—'}
+                        </td>
+
+                        {/* Land */}
+                        <td className="px-3 py-2 text-sm text-gray-600">
+                          {event.country || '—'}
+                        </td>
+
+                        {/* Notiz */}
+                        <td className="px-3 py-2 text-sm text-gray-500 max-w-[200px] truncate" title={event.notes || ''}>
+                          {event.notes || '—'}
+                        </td>
+                      </tr>
+                    );
+                  });
+                })}
+              </tbody>
+            </table>
           </div>
-        </div>
+        )}
       </Card>
     </div>
   );
