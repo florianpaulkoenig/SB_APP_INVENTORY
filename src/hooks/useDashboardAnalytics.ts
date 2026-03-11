@@ -193,6 +193,10 @@ export function useDashboardAnalytics(
   const [raw, setRaw] = useState<Record<string, any[]>>({});
 
   const fetchRaw = useCallback(async () => {
+    // Verify session before querying
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
     const [
       { data: sales },
       { data: expenses },

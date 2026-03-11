@@ -16,7 +16,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { PRODUCTION_STATUSES } from '../lib/constants';
-import { formatDate, formatDimensions, formatCurrency } from '../lib/utils';
+import { formatDate, formatDimensions, formatCurrency, sanitizeFilterTerm } from '../lib/utils';
 import { useExchangeRates } from '../hooks/useExchangeRates';
 import type { ProductionStatus, ProductionOrderRow } from '../types/database';
 
@@ -65,7 +65,7 @@ export function ProductionOrdersPage() {
       const { data } = await supabase
         .from('galleries')
         .select('id')
-        .ilike('name', `%${search}%`);
+        .ilike('name', `%${sanitizeFilterTerm(search)}%`);
 
       if (!cancelled) {
         setMatchingGalleryIds((data ?? []).map((g) => g.id));

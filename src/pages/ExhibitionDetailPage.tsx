@@ -283,6 +283,8 @@ export function ExhibitionDetailPage() {
   const handleRemovePO = useCallback(async (linkId: string) => {
     if (!confirm('Remove this production order?')) return;
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
       const { error } = await supabase.from('exhibition_production_orders').delete().eq('id', linkId);
       if (error) throw error;
       toast({ title: 'Production order removed', variant: 'success' });

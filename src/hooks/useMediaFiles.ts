@@ -39,6 +39,10 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
   const fetchFiles = useCallback(async () => {
     setLoading(true);
     try {
+      // Verify session before querying
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { setLoading(false); return; }
+
       let query = supabase
         .from('media_files')
         .select('*, galleries:submitted_by_gallery(name)')

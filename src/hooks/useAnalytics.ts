@@ -111,6 +111,10 @@ export function useAnalytics(): UseAnalyticsReturn {
     setError(null);
 
     try {
+      // Verify session before querying
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { setLoading(false); return; }
+
       // Build queries in parallel ------------------------------------------
 
       // 1. Artworks: id, status, category, created_at

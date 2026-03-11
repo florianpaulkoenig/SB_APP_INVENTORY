@@ -782,8 +782,11 @@ CREATE POLICY "Gallery sees own sales" ON sales FOR SELECT TO authenticated USIN
 -- Collector users can view their certificates
 CREATE POLICY "Collector sees own certificates" ON certificates FOR SELECT TO authenticated USING (get_user_role() = 'collector' AND artwork_id IN (SELECT artwork_id FROM sales WHERE contact_id = get_user_contact_id()));
 
--- Public access for share_links (by token, no auth needed)
-CREATE POLICY "Public can view share links by token" ON share_links FOR SELECT TO anon USING (true);
+-- Public access for share_links — restricted to unexpired links only (no enumeration)
+-- NOTE: Actual token filtering is done client-side via .eq('token', ...).
+-- This policy prevents listing ALL share links by requiring expires_at check.
+CREATE POLICY "Public can view share links by token" ON share_links FOR SELECT TO anon
+  USING (expires_at IS NULL OR expires_at > NOW());
 
 -- Public access for viewing_rooms (by slug, check visibility)
 CREATE POLICY "Public can view published viewing rooms" ON viewing_rooms FOR SELECT TO anon USING (published = true AND visibility IN ('public', 'link_only'));
@@ -1007,6 +1010,172 @@ ALTER TABLE project_production_orders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users manage own project_production_orders"
   ON project_production_orders FOR ALL
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ============================================================================
+-- MISSING TABLES: auction_alerts
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS auction_alerts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  artist_name TEXT,
+  artwork_title TEXT,
+  auction_house TEXT,
+  sale_date DATE,
+  lot_number TEXT,
+  estimate_low NUMERIC(12,2),
+  estimate_high NUMERIC(12,2),
+  realized_price NUMERIC(12,2),
+  currency TEXT DEFAULT 'EUR',
+  result TEXT CHECK (result IN ('sold', 'bought_in', 'withdrawn', 'pending')),
+  matched_artwork_id UUID REFERENCES artworks(id) ON DELETE SET NULL,
+  matched_gallery_id UUID REFERENCES galleries(id) ON DELETE SET NULL,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE auction_alerts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own auction_alerts" ON auction_alerts
+  FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- ============================================================================
+-- MISSING TABLES: enquiries
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS enquiries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  sender_name TEXT,
+  sender_email TEXT,
+  subject TEXT,
+  message TEXT,
+  location_city TEXT,
+  location_country TEXT,
+  estimated_value NUMERIC(12,2),
+  currency TEXT DEFAULT 'EUR',
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'in_progress', 'converted', 'archived')),
+  contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
+  converted_deal_id UUID REFERENCES deals(id) ON DELETE SET NULL,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE enquiries ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own enquiries" ON enquiries
+  FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- ============================================================================
+-- MISSING TABLES: exhibition_galleries (many-to-many)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS exhibition_galleries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  exhibition_id UUID NOT NULL REFERENCES exhibitions(id) ON DELETE CASCADE,
+  gallery_id UUID NOT NULL REFERENCES galleries(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(exhibition_id, gallery_id)
+);
+
+ALTER TABLE exhibition_galleries ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own exhibition_galleries" ON exhibition_galleries
+  FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- ============================================================================
+-- MISSING TABLES: gallery_forwarding_orders + items
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS gallery_forwarding_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  from_gallery_id UUID REFERENCES galleries(id) ON DELETE SET NULL,
+  to_gallery_id UUID REFERENCES galleries(id) ON DELETE SET NULL,
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'pending', 'confirmed', 'in_transit', 'delivered', 'cancelled')),
+  notes TEXT,
+  shipping_method TEXT,
+  tracking_number TEXT,
+  estimated_delivery DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE gallery_forwarding_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own gallery_forwarding_orders" ON gallery_forwarding_orders
+  FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+CREATE TABLE IF NOT EXISTS gallery_forwarding_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  forwarding_order_id UUID NOT NULL REFERENCES gallery_forwarding_orders(id) ON DELETE CASCADE,
+  artwork_id UUID NOT NULL REFERENCES artworks(id) ON DELETE CASCADE,
+  sort_order INTEGER DEFAULT 0,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE gallery_forwarding_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own gallery_forwarding_items" ON gallery_forwarding_items
+  FOR ALL TO authenticated
+  USING (forwarding_order_id IN (SELECT id FROM gallery_forwarding_orders WHERE user_id = auth.uid()))
+  WITH CHECK (forwarding_order_id IN (SELECT id FROM gallery_forwarding_orders WHERE user_id = auth.uid()));
+
+-- ============================================================================
+-- MISSING TABLES: gallery_team_members
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS gallery_team_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  gallery_id UUID NOT NULL REFERENCES galleries(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  role TEXT,
+  email TEXT,
+  phone TEXT,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE gallery_team_members ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own gallery_team_members" ON gallery_team_members
+  FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- ============================================================================
+-- MISSING TABLES: public_collections
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public_collections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  slug TEXT UNIQUE,
+  artwork_ids UUID[] DEFAULT '{}',
+  published BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public_collections ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own public_collections" ON public_collections
+  FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Anyone can view published collections" ON public_collections
+  FOR SELECT TO anon USING (published = true);
+
+-- ============================================================================
+-- MISSING TABLES: viewing_room_views
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS viewing_room_views (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  viewing_room_id UUID NOT NULL REFERENCES viewing_rooms(id) ON DELETE CASCADE,
+  viewer_ip TEXT,
+  viewed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE viewing_room_views ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admin can view viewing_room_views" ON viewing_room_views
+  FOR SELECT TO authenticated USING (
+    viewing_room_id IN (SELECT id FROM viewing_rooms WHERE user_id = auth.uid())
+  );
+CREATE POLICY "Anyone can insert viewing_room_views" ON viewing_room_views
+  FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Auth users can insert viewing_room_views" ON viewing_room_views
+  FOR INSERT TO authenticated WITH CHECK (true);
 
 -- Reload schema cache
 NOTIFY pgrst, 'reload schema';

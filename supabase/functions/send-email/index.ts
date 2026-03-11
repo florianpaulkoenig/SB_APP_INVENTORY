@@ -81,6 +81,15 @@ serve(async (req: Request) => {
       );
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(payload.to)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid email address format' }),
+        { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
+    }
+
     // ---- Get Resend API key -------------------------------------------------
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
 

@@ -42,10 +42,9 @@ export async function hashPassword(password: string): Promise<string> {
  */
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
   const parts = storedHash.split(':');
-  // Backward compatibility: if no colon, it's a legacy btoa() hash
+  // Reject legacy non-PBKDF2 hashes — force password re-set
   if (parts.length !== 2) {
-    // Legacy Base64 check -- migrate on next update
-    return btoa(password) === storedHash;
+    return false;
   }
   const [saltHex, expectedHashHex] = parts;
   const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map((b) => parseInt(b, 16)));
