@@ -91,19 +91,19 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
 
       const allEvents: ScheduleEvent[] = [];
 
-      // Normalize exhibitions → exhibition / art_fair / solo_show / group_show
+      // Normalize exhibitions → show only in the week of their opening (start_date)
       for (const ex of exhibitionsRes.data ?? []) {
         if (!ex.start_date) continue;
-        const start = new Date(ex.start_date);
-        const end = ex.end_date ? new Date(ex.end_date) : new Date(ex.start_date);
-        if (end < new Date(yearStart) || start > new Date(yearEnd)) continue;
+        const opening = new Date(ex.start_date);
+        const end = ex.end_date ? new Date(ex.end_date) : opening;
+        if (opening < new Date(yearStart) || opening > new Date(yearEnd)) continue;
         const evType = (['exhibition', 'art_fair', 'solo_show', 'group_show'].includes(ex.type)
           ? ex.type
           : 'exhibition') as ScheduleEventType;
         allEvents.push({
           id: ex.id,
           title: ex.title,
-          startDate: start,
+          startDate: opening,
           endDate: end,
           type: evType,
           status: ex.type,
@@ -120,17 +120,15 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
         });
       }
 
-      // Normalize production orders: ordered_date → deadline
+      // Normalize production orders — show only in the week of their deadline
       for (const po of productionRes.data ?? []) {
         if (!po.deadline) continue;
         const deadline = new Date(po.deadline);
         if (deadline < new Date(yearStart) || deadline > new Date(yearEnd)) continue;
-        const start = po.ordered_date ? new Date(po.ordered_date) : deadline;
-        const clampedStart = start < new Date(yearStart) ? new Date(yearStart) : start;
         allEvents.push({
           id: po.id,
           title: po.title || po.order_number || 'Production Order',
-          startDate: clampedStart,
+          startDate: deadline,
           endDate: deadline,
           type: 'production_order',
           status: po.status,

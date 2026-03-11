@@ -52,8 +52,19 @@ function fmtDateRange(start: Date, end: Date): string {
 }
 
 /**
- * Group events by ISO calendar week. Multi-week events appear in every
- * overlapping week. Returns array sorted by week monday.
+ * Determine the anchor date that places an event into a specific week:
+ * - Production orders → deadline (endDate)
+ * - Exhibitions / art fairs / shows → opening date (startDate)
+ * - Projects → startDate
+ */
+function getAnchorDate(event: ScheduleEvent): Date {
+  if (event.type === 'production_order') return event.endDate;
+  return event.startDate;
+}
+
+/**
+ * Group events by ISO calendar week based on their anchor date.
+ * Each event appears in exactly one week. Returns array sorted by monday.
  */
 function groupEventsByWeek(events: ScheduleEvent[], year: number): WeekGroup[] {
   const yearStart = new Date(year, 0, 1);
@@ -77,9 +88,11 @@ function groupEventsByWeek(events: ScheduleEvent[], year: number): WeekGroup[] {
     if (seen.has(key)) continue;
     seen.add(key);
 
-    const matching = events.filter(
-      (e) => e.startDate <= sunday && e.endDate >= monday,
-    );
+    // Match events whose anchor date falls within this week
+    const matching = events.filter((e) => {
+      const anchor = getAnchorDate(e);
+      return anchor >= monday && anchor <= sunday;
+    });
 
     if (matching.length > 0) {
       groups.push({ weekNumber: wn, monday, events: matching });
