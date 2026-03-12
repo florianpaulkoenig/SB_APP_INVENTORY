@@ -10,7 +10,7 @@ import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { Card } from '../ui/Card';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { formatDate, downloadBlob } from '../../lib/utils';
+import { formatDate, downloadBlob, buildCertificateFilename } from '../../lib/utils';
 import type { CertificateRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -73,9 +73,10 @@ export default function CertificatePreview({
         <CertificatePDF certificate={certificate} language={language} />,
       ).toBlob();
 
-      downloadBlob(blob, `${certificate.certificate_number}${
-        certificate.artworks ? `_${certificate.artworks.reference_code}` : ''
-      }.pdf`);
+      downloadBlob(blob, certificate.artworks
+        ? buildCertificateFilename(certificate.artworks)
+        : `${certificate.certificate_number}.pdf`
+      );
     } finally {
       setDownloading(false);
     }

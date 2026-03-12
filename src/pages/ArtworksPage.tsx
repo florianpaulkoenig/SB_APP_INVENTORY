@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, createElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { downloadBlob } from '../lib/utils';
+import { downloadBlob, buildCertificateFilename } from '../lib/utils';
 import { useArtworks } from '../hooks/useArtworks';
 import type { ArtworkFilters as ArtworkFiltersType } from '../hooks/useArtworks';
 import { ArtworkCard } from '../components/artworks/ArtworkCard';
@@ -260,7 +260,7 @@ export function ArtworksPage() {
       ).toBlob();
 
       // Download
-      downloadBlob(blob, `${cert.certificate_number}_certificate.pdf`);
+      downloadBlob(blob, buildCertificateFilename(artwork));
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to download certificate.', variant: 'error' });
     } finally {

@@ -148,6 +148,29 @@ export function sanitizeStoragePath(filename: string): string {
 // for blob: downloads, especially on HTTP origins). For other file types,
 // falls back to the standard anchor-click approach.
 // ---------------------------------------------------------------------------
+
+/** Build a certificate filename: Simon_Berger_[title]_[framedDim]_[year]_[refCode].pdf */
+export function buildCertificateFilename(artwork: {
+  title: string;
+  framed_height?: number | null;
+  framed_width?: number | null;
+  framed_depth?: number | null;
+  dimension_unit?: string;
+  year?: number | null;
+  reference_code: string;
+}): string {
+  const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
+  const parts: string[] = ['Simon_Berger'];
+  parts.push(sanitize(artwork.title));
+  const dims = [artwork.framed_height, artwork.framed_width, artwork.framed_depth].filter((v): v is number => v != null);
+  if (dims.length > 0) {
+    parts.push(dims.join('x') + (artwork.dimension_unit ?? 'cm'));
+  }
+  if (artwork.year != null) parts.push(String(artwork.year));
+  parts.push(sanitize(artwork.reference_code));
+  return parts.join('_') + '.pdf';
+}
+
 export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const isPdf = blob.type === 'application/pdf' || filename.endsWith('.pdf');
