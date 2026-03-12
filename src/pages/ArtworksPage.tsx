@@ -206,13 +206,13 @@ export function ArtworksPage() {
         if (urlData) artworkImageUrl = urlData.signedUrl;
       }
 
-      // Get signature URL
+      // Get public URL for signature
       let signatureUrl: string | null = null;
       try {
-        const { data: sigData } = await supabase.storage
+        const { data: sigData } = supabase.storage
           .from('assets')
-          .createSignedUrl('signature.png', 600);
-        if (sigData) signatureUrl = sigData.signedUrl;
+          .getPublicUrl('signature.png');
+        if (sigData?.publicUrl) signatureUrl = sigData.publicUrl;
       } catch {
         // Signature is optional
       }

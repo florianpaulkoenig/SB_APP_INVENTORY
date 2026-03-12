@@ -125,11 +125,11 @@ export function GalleryCertificatesPage() {
           artworkImageUrl = signedData?.signedUrl ?? null;
         }
 
-        // Fetch signature from assets bucket
-        const { data: signatureData } = await supabase.storage
+        // Get public URL for signature
+        const { data: signatureData } = supabase.storage
           .from('assets')
-          .createSignedUrl('signature.png', 600);
-        const signatureUrl = signatureData?.signedUrl ?? null;
+          .getPublicUrl('signature.png');
+        const signatureUrl = signatureData?.publicUrl ?? null;
 
         // Lazy-import react-pdf and CertificatePDF component
         const { pdf } = await import('@react-pdf/renderer');
