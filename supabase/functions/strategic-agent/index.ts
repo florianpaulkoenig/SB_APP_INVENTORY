@@ -474,9 +474,9 @@ async function handleAsk(
   conversationId?: string,
 ): Promise<Response> {
   // Validate question
-  if (!question || question.length > 1000) {
+  if (!question || question.length > 4000) {
     return new Response(
-      JSON.stringify({ error: 'Question must be 1-1000 characters.' }),
+      JSON.stringify({ error: 'Question must be 1-4000 characters.' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
