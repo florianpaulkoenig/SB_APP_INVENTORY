@@ -206,13 +206,19 @@ export function ArtworksPage() {
         if (urlData) artworkImageUrl = urlData.signedUrl;
       }
 
-      // Get public URL for signature
+      // Download signature as blob and convert to data URL (keeps bucket private)
       let signatureUrl: string | null = null;
       try {
-        const { data: sigData } = supabase.storage
+        const { data: sigBlob, error: sigError } = await supabase.storage
           .from('assets')
-          .getPublicUrl('signature.png');
-        if (sigData?.publicUrl) signatureUrl = sigData.publicUrl;
+          .download('signature.png');
+        if (sigBlob && !sigError) {
+          signatureUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(sigBlob);
+          });
+        }
       } catch {
         // Signature is optional
       }

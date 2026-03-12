@@ -125,11 +125,22 @@ export function GalleryCertificatesPage() {
           artworkImageUrl = signedData?.signedUrl ?? null;
         }
 
-        // Get public URL for signature
-        const { data: signatureData } = supabase.storage
-          .from('assets')
-          .getPublicUrl('signature.png');
-        const signatureUrl = signatureData?.publicUrl ?? null;
+        // Download signature as blob and convert to data URL (keeps bucket private)
+        let signatureUrl: string | null = null;
+        try {
+          const { data: sigBlob, error: sigError } = await supabase.storage
+            .from('assets')
+            .download('signature.png');
+          if (sigBlob && !sigError) {
+            signatureUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(sigBlob);
+            });
+          }
+        } catch {
+          // Signature is optional
+        }
 
         // Lazy-import react-pdf and CertificatePDF component
         const { pdf } = await import('@react-pdf/renderer');
