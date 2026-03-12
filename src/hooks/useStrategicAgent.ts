@@ -37,10 +37,13 @@ export function useStrategicAgent() {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        console.warn('Failed to fetch insights:', error.message);
+        return;
+      }
       setInsights((data || []) as unknown as AiInsightRow[]);
     } catch (err) {
-      console.error('Failed to fetch insights:', err);
+      console.warn('Failed to fetch insights:', err);
     } finally {
       setLoading(false);
     }
@@ -55,10 +58,13 @@ export function useStrategicAgent() {
         .order('updated_at', { ascending: false })
         .limit(20);
 
-      if (error) throw error;
+      if (error) {
+        console.warn('Failed to fetch conversations:', error.message);
+        return;
+      }
       setConversations((data || []) as unknown as AiConversationRow[]);
     } catch (err) {
-      console.error('Failed to fetch conversations:', err);
+      console.warn('Failed to fetch conversations:', err);
     }
   }, []);
 
@@ -78,14 +84,25 @@ export function useStrategicAgent() {
     setAnalyzing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
+      if (!session) {
+        showToast('Not authenticated. Please log in again.', 'error');
+        return;
+      }
 
-      const { data, error } = await supabase.functions.invoke('strategic-agent', {
+      const response = await supabase.functions.invoke('strategic-agent', {
         body: { mode: 'analyze' },
       });
 
-      if (error) throw error;
+      // Handle invoke errors (non-2xx responses)
+      if (response.error) {
+        const msg = typeof response.error === 'object' && 'message' in response.error
+          ? (response.error as { message: string }).message
+          : 'Analysis failed';
+        showToast(msg, 'error');
+        return;
+      }
 
+      const data = response.data;
       if (data?.cooldown) {
         showToast('Analysis was run recently. Please wait before running again.', 'info');
         return;
@@ -94,6 +111,7 @@ export function useStrategicAgent() {
       showToast(`Generated ${data?.count || 0} new insights`, 'success');
       await fetchInsights();
     } catch (err) {
+      console.error('refreshInsights error:', err);
       const message = err instanceof Error ? err.message : 'Analysis failed';
       showToast(message, 'error');
     } finally {
@@ -107,17 +125,33 @@ export function useStrategicAgent() {
       setAsking(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('Not authenticated');
+        if (!session) {
+          showToast('Not authenticated. Please log in again.', 'error');
+          return null;
+        }
 
-        const { data, error } = await supabase.functions.invoke('strategic-agent', {
+        const response = await supabase.functions.invoke('strategic-agent', {
           body: { mode: 'ask', question, conversation_id: conversationId },
         });
 
-        if (error) throw error;
+        if (response.error) {
+          const msg = typeof response.error === 'object' && 'message' in response.error
+            ? (response.error as { message: string }).message
+            : 'Question failed';
+          showToast(msg, 'error');
+          return null;
+        }
 
-        await fetchConversations();
-        return data as AskResponse;
+        const data = response.data;
+        if (data?.answer) {
+          await fetchConversations();
+          return data as AskResponse;
+        }
+
+        showToast('No response received', 'error');
+        return null;
       } catch (err) {
+        console.error('ask error:', err);
         const message = err instanceof Error ? err.message : 'Question failed';
         showToast(message, 'error');
         return null;

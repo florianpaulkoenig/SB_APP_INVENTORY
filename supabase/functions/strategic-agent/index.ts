@@ -540,7 +540,7 @@ serve(async (req: Request) => {
         });
       }
     } else {
-      // JWT auth
+      // JWT auth — extract user from the token passed by Supabase gateway
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
         return new Response(JSON.stringify({ error: 'No authorization header' }), {
@@ -549,22 +549,27 @@ serve(async (req: Request) => {
         });
       }
 
-      const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        global: { headers: { Authorization: authHeader } },
-      });
+      // Use service role client to verify the user's JWT
+      const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      // Extract the JWT token
+      const token = authHeader.replace('Bearer ', '');
+
+      // Use getUser with the token directly
       const {
         data: { user },
         error: authError,
-      } = await supabaseAuth.auth.getUser();
+      } = await supabaseAdmin.auth.getUser(token);
+
       if (authError || !user) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        console.error('Auth error:', authError?.message, 'Token prefix:', token.substring(0, 20));
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized', detail: authError?.message || 'No user found' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
       }
 
       // Verify admin role
-      const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const { data: profile } = await supabaseAdmin
         .from('user_profiles')
         .select('role')
