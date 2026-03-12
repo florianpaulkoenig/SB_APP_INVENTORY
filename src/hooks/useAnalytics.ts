@@ -138,7 +138,7 @@ export function useAnalytics(): UseAnalyticsReturn {
       let salesQuery = supabase
         .from('sales')
         .select(
-          'id, artwork_id, gallery_id, contact_id, sale_date, sale_price, currency, buyer_name, reporting_status, payment_status, artworks(title, created_at, series), galleries(name, country), contacts(first_name, last_name)',
+          'id, artwork_id, gallery_id, contact_id, sale_date, sale_price, currency, buyer_name, artworks(title, created_at, series), galleries(name, country), contacts(first_name, last_name)',
         )
         .order('sale_date', { ascending: false });
 
@@ -343,30 +343,17 @@ export function useAnalytics(): UseAnalyticsReturn {
         verified: 'Verified',
       };
 
-      const reportingMap = new Map<string, number>();
-      for (const sale of sales) {
-        const st = (sale as { reporting_status?: string }).reporting_status || 'draft';
-        reportingMap.set(st, (reportingMap.get(st) ?? 0) + 1);
-      }
-      const reportingBreakdown = Array.from(reportingMap.entries())
-        .map(([status, count]) => ({ status, label: REPORTING_LABELS[status] || status, count }));
+      // Reporting status (column not yet in DB — default all to draft)
+      const reportingBreakdown = [{ status: 'draft', label: REPORTING_LABELS['draft'] || 'Draft', count: sales.length }];
 
-      // ---- Payment status breakdown --------------------------------------
-
+      // Payment status (column not yet in DB — default all to pending)
       const PAYMENT_LABELS: Record<string, string> = {
         pending: 'Pending',
         partial: 'Partial',
         paid: 'Paid',
         overdue: 'Overdue',
       };
-
-      const paymentMap = new Map<string, number>();
-      for (const sale of sales) {
-        const st = (sale as { payment_status?: string }).payment_status || 'pending';
-        paymentMap.set(st, (paymentMap.get(st) ?? 0) + 1);
-      }
-      const paymentBreakdown = Array.from(paymentMap.entries())
-        .map(([status, count]) => ({ status, label: PAYMENT_LABELS[status] || status, count }));
+      const paymentBreakdown = [{ status: 'pending', label: PAYMENT_LABELS['pending'], count: sales.length }];
 
       // ---- Sell-through rate ---------------------------------------------
 

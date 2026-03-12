@@ -93,12 +93,11 @@ export function GalleryDashboardPage() {
       .single();
     if (gallery?.name) setGalleryName(gallery.name);
 
-    // Pending reporting sales (not yet reported/verified)
+    // Pending reporting sales (reporting_status not yet in DB — show recent sales instead)
     const { data: salesData } = await supabase
       .from('sales')
-      .select('id, sale_date, reporting_status, artworks(title)')
+      .select('id, sale_date, artworks(title)')
       .eq('gallery_id', galleryId)
-      .in('reporting_status', ['draft', 'reserved', 'sold_pending_details'])
       .order('sale_date', { ascending: false })
       .limit(10);
 
@@ -108,7 +107,7 @@ export function GalleryDashboardPage() {
           id: s.id,
           title: (s.artworks as { title: string } | null)?.title ?? 'Untitled',
           sale_date: s.sale_date,
-          reporting_status: (s.reporting_status as string) || 'draft',
+          reporting_status: 'draft',
         })),
       );
     }

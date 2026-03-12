@@ -68,7 +68,7 @@ export function useCareerTrajectory() {
         supabase.from('exhibitions').select('id, start_date, type'),
       ]);
 
-      if (milestonesRes.error) throw milestonesRes.error;
+      // career_milestones table may not exist yet — gracefully handle
       if (salesRes.error) throw salesRes.error;
       if (exhibitionsRes.error) throw exhibitionsRes.error;
 

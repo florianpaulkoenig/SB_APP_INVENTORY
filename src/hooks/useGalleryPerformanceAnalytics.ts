@@ -59,7 +59,7 @@ export function useGalleryPerformanceAnalytics() {
       const [galleriesRes, artworksRes, salesRes] = await Promise.all([
         supabase.from('galleries').select('id, name, country'),
         supabase.from('artworks').select('id, gallery_id, status, consigned_since, created_at'),
-        supabase.from('sales').select('id, gallery_id, sale_price, currency, sale_date, reporting_status, artwork_id, artworks(consigned_since)'),
+        supabase.from('sales').select('id, gallery_id, sale_price, currency, sale_date, artwork_id, artworks(consigned_since)'),
       ]);
 
       if (galleriesRes.error) throw galleriesRes.error;
@@ -117,7 +117,7 @@ export function useGalleryPerformanceAnalytics() {
 
         // Reporting completeness
         const repComp = reportingCompleteness(
-          gSales.map((s) => ({ reporting_status: (s.reporting_status as string) || 'draft' })),
+          gSales.map(() => ({ reporting_status: 'draft' })),
         );
 
         // Partner score (simplified factors)
