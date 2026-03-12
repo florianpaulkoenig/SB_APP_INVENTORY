@@ -140,12 +140,16 @@ export function ArtworkDetailPage() {
       // Get signed URL for the signature (stored in assets bucket)
       let signatureUrl: string | null = null;
       try {
-        const { data: sigData } = await supabase.storage
+        const { data: sigData, error: sigError } = await supabase.storage
           .from('assets')
           .createSignedUrl('signature.png', 600);
-        if (sigData) signatureUrl = sigData.signedUrl;
-      } catch {
-        // Signature is optional
+        if (sigError) console.warn('Signature URL error:', sigError.message);
+        if (sigData) {
+          signatureUrl = sigData.signedUrl;
+          console.log('Signature URL loaded:', !!signatureUrl);
+        }
+      } catch (e) {
+        console.warn('Signature fetch failed:', e);
       }
 
       const blob = await pdf(
