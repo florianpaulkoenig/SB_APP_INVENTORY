@@ -376,7 +376,8 @@ export function DashboardPage() {
     if (!ratesReady || rawArtworks.length === 0 && rawSales.length === 0 && rawProdOrders.length === 0) return;
 
     // ---- Total potential revenue (unsold artworks → CHF) ----
-    const unsold = rawArtworks.filter((a) => a.status !== 'sold' && a.price != null && a.price > 0);
+    const excludeFromPotential = new Set(['sold', 'archived', 'destroyed']);
+    const unsold = rawArtworks.filter((a) => !excludeFromPotential.has(a.status) && a.price != null && a.price > 0);
     const potentialTotal = unsold.reduce(
       (sum, a) => sum + toCHF(a.price ?? 0, a.currency ?? 'EUR'),
       0,

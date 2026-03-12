@@ -103,8 +103,8 @@ export function GalleriesPage() {
       stats[a.gallery_id].total += 1;
       if (a.status === 'on_consignment') stats[a.gallery_id].onConsignment += 1;
       if (a.status === 'sold') stats[a.gallery_id].sold += 1;
-      // Potential revenue: unsold artworks with price
-      if (a.status !== 'sold' && a.price && a.price > 0) {
+      // Potential revenue: unsold artworks with price (exclude archived/destroyed)
+      if (a.status !== 'sold' && a.status !== 'archived' && a.status !== 'destroyed' && a.price && a.price > 0) {
         stats[a.gallery_id].revenuePotential += toCHF(a.price, a.currency ?? 'EUR');
       }
     }
