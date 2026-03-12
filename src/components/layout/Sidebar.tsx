@@ -245,6 +245,8 @@ const navSections: NavSection[] = [
       { label: 'Analytics', to: '/analytics', icon: icons.analytics, roles: ['admin'] },
       { label: 'Inventory Health', to: '/analytics/inventory-health', icon: icons.inventoryHealth, roles: ['admin'] },
       { label: 'Gallery Performance', to: '/analytics/gallery-performance', icon: icons.galleryPerformance, roles: ['admin'] },
+      { label: 'Demand Velocity', to: '/analytics/demand-velocity', icon: icons.sales, roles: ['admin'] },
+      { label: 'Price Ladder', to: '/analytics/price-ladder', icon: icons.priceTag, roles: ['admin'] },
     ],
   },
   {
