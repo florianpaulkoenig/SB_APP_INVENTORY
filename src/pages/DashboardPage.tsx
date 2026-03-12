@@ -191,6 +191,7 @@ export function DashboardPage() {
   // ---- Fetch raw data from Supabase (currency-agnostic) -------------------
 
   const fetchRawData = useCallback(async () => {
+    try {
     // Phase 1: Run three independent queries in parallel
     const [artworksResult, prodOrdersResult, salesResult] = await Promise.all([
       supabase
@@ -364,6 +365,10 @@ export function DashboardPage() {
       },
       loading: false,
     }));
+    } catch (err) {
+      console.error('Dashboard fetchRawData error:', err);
+      setState((prev) => ({ ...prev, loading: false }));
+    }
   }, []);
 
   useEffect(() => {

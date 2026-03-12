@@ -207,7 +207,22 @@ export function ArtworkForm({
       }
     }
 
-    // Commission split is now read-only (defined on gallery profile)
+    // Validate dimensions are non-negative
+    for (const [key, val] of [['height', height], ['width', width], ['depth', depth], ['weight', weight]] as const) {
+      if (val !== '' && parseFloat(val) < 0) {
+        next[key] = 'Must be a positive number';
+      }
+    }
+
+    // Validate commissions are 0-100%
+    for (const [key, val] of [['commissionGallery', commissionGallery], ['commissionNoa', commissionNoa], ['commissionArtist', commissionArtist]] as const) {
+      if (val !== '') {
+        const v = parseFloat(val);
+        if (isNaN(v) || v < 0 || v > 100) {
+          next[key] = 'Must be between 0 and 100';
+        }
+      }
+    }
 
     setErrors(next);
     return Object.keys(next).length === 0;

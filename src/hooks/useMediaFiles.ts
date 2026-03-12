@@ -41,7 +41,11 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
     try {
       // Verify session before querying
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { setLoading(false); return; }
+      if (!session?.user) {
+        setLoading(false);
+        setFiles([]);
+        return;
+      }
 
       let query = supabase
         .from('media_files')

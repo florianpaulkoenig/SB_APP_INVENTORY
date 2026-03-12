@@ -116,13 +116,18 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
           throw uploadError;
         }
 
-        // Determine sort_order (append after last existing image)
-        const nextSortOrder = images.length > 0
-          ? Math.max(...images.map((img) => img.sort_order)) + 1
-          : 0;
+        // Determine sort_order from DB to avoid race conditions with rapid uploads
+        const { data: maxRow } = await supabase
+          .from('artwork_images')
+          .select('sort_order')
+          .eq('artwork_id', artworkId)
+          .order('sort_order', { ascending: false })
+          .limit(1)
+          .single();
+        const nextSortOrder = maxRow ? maxRow.sort_order + 1 : 0;
 
         // Determine if this should be the primary image (first image is primary)
-        const isPrimary = images.length === 0;
+        const isPrimary = nextSortOrder === 0;
 
         // Create DB record
         const { data: created, error: insertError } = await supabase
@@ -156,7 +161,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
         return null;
       }
     },
-    [artworkId, images, fetchImages, toast],
+    [artworkId, fetchImages, toast],
   );
 
   // ---- Delete image --------------------------------------------------------

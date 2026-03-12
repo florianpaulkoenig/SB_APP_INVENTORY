@@ -107,8 +107,10 @@ export function usePackingLists(options: UsePackingListsOptions = {}): UsePackin
         query = query.or(`packing_number.ilike.${term},recipient_name.ilike.${term}`);
       }
 
-      // Sorting
-      const sortBy = filters.sortBy || 'created_at';
+      // Sorting (whitelist to prevent injection)
+      const VALID_SORT_COLUMNS = ['created_at', 'packing_number', 'recipient_name', 'updated_at'] as const;
+      const rawSortBy = filters.sortBy || 'created_at';
+      const sortBy = (VALID_SORT_COLUMNS as readonly string[]).includes(rawSortBy) ? rawSortBy : 'created_at';
       const sortOrder = filters.sortOrder || 'desc';
       query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
