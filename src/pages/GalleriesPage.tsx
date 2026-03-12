@@ -24,9 +24,10 @@ export function GalleriesPage() {
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>('name');
 
   const { galleries, loading, totalCount } = useGalleries({
-    filters: { search },
+    filters: { search, sortBy, sortOrder: sortBy === 'status_color' ? 'desc' : 'asc' },
     page,
     pageSize: PAGE_SIZE,
   });
@@ -87,14 +88,26 @@ export function GalleriesPage() {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
+      {/* Search & Sort */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
           value={search}
           onChange={handleSearchChange}
           placeholder="Search galleries by name, city, or country..."
           className="max-w-md"
         />
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-primary-400 whitespace-nowrap">Sort by</span>
+          <select
+            value={sortBy}
+            onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+            className="rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm text-primary-700 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          >
+            <option value="name">Name</option>
+            <option value="status_color">Color</option>
+            <option value="type">Category</option>
+          </select>
+        </div>
       </div>
 
       {/* Loading */}
