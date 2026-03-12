@@ -1,5 +1,20 @@
 import { Card } from '../ui/Card';
+import { formatCurrency } from '../../lib/utils';
 import type { GalleryRow } from '../../types/database';
+
+// ---------------------------------------------------------------------------
+// Stats interface
+// ---------------------------------------------------------------------------
+
+export interface GalleryStats {
+  total: number;
+  onConsignment: number;
+  sold: number;
+  ordered: number;
+  revenueSold: number;
+  revenuePotential: number;
+  revenueOrdered: number;
+}
 
 // ---------------------------------------------------------------------------
 // Props
@@ -7,6 +22,8 @@ import type { GalleryRow } from '../../types/database';
 
 export interface GalleryCardProps {
   gallery: GalleryRow;
+  stats?: GalleryStats;
+  /** @deprecated Use stats.total instead */
   artworkCount?: number;
   onClick?: () => void;
 }
@@ -15,8 +32,9 @@ export interface GalleryCardProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function GalleryCard({ gallery, artworkCount, onClick }: GalleryCardProps) {
+export function GalleryCard({ gallery, stats, artworkCount, onClick }: GalleryCardProps) {
   const location = [gallery.city, gallery.country].filter(Boolean).join(', ');
+  const total = stats?.total ?? artworkCount ?? 0;
 
   return (
     <Card hoverable onClick={onClick} className="p-5">
@@ -84,16 +102,54 @@ export function GalleryCard({ gallery, artworkCount, onClick }: GalleryCardProps
         )}
       </div>
 
-      {/* Artwork count + Commission badge */}
+      {/* Stats counters */}
+      {stats && (
+        <div className="mt-3 grid grid-cols-4 gap-1 rounded-md bg-primary-50 px-2 py-2 text-center">
+          <div>
+            <p className="text-xs text-primary-400">Total</p>
+            <p className="text-sm font-semibold text-primary-800">{stats.total}</p>
+          </div>
+          <div>
+            <p className="text-xs text-primary-400">Consigned</p>
+            <p className="text-sm font-semibold text-blue-600">{stats.onConsignment}</p>
+          </div>
+          <div>
+            <p className="text-xs text-primary-400">Sold</p>
+            <p className="text-sm font-semibold text-red-600">{stats.sold}</p>
+          </div>
+          <div>
+            <p className="text-xs text-primary-400">Ordered</p>
+            <p className="text-sm font-semibold text-indigo-600">{stats.ordered}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Revenue rows */}
+      {stats && (stats.revenueSold > 0 || stats.revenuePotential > 0 || stats.revenueOrdered > 0) && (
+        <div className="mt-2 space-y-0.5 text-xs">
+          {stats.revenueSold > 0 && (
+            <div className="flex justify-between">
+              <span className="text-primary-400">Revenue Sold</span>
+              <span className="font-medium text-primary-700">{formatCurrency(Math.round(stats.revenueSold), 'CHF')}</span>
+            </div>
+          )}
+          {stats.revenuePotential > 0 && (
+            <div className="flex justify-between">
+              <span className="text-primary-400">Revenue Potential</span>
+              <span className="font-medium text-amber-600">{formatCurrency(Math.round(stats.revenuePotential), 'CHF')}</span>
+            </div>
+          )}
+          {stats.revenueOrdered > 0 && (
+            <div className="flex justify-between">
+              <span className="text-primary-400">Revenue Ordered</span>
+              <span className="font-medium text-indigo-600">{formatCurrency(Math.round(stats.revenueOrdered), 'CHF')}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Commission badge */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {artworkCount != null && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-700">
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-            </svg>
-            {artworkCount} {artworkCount === 1 ? 'artwork' : 'artworks'}
-          </span>
-        )}
         {gallery.commission_rate != null && (
           <span className="inline-block rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
             {gallery.commission_rate}% commission

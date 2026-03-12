@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useGalleries } from '../hooks/useGalleries';
+import { useExchangeRates } from '../hooks/useExchangeRates';
 import { GalleryCard } from '../components/galleries/GalleryCard';
+import type { GalleryStats } from '../components/galleries/GalleryCard';
 import { Button } from '../components/ui/Button';
 import { SearchInput } from '../components/ui/SearchInput';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -21,6 +23,7 @@ const PAGE_SIZE = 24;
 
 export function GalleriesPage() {
   const navigate = useNavigate();
+  const { toCHF, ready: ratesReady } = useExchangeRates();
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -34,35 +37,102 @@ export function GalleriesPage() {
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // ---- Fetch artwork counts per gallery ------------------------------------
-  const [artworkCounts, setArtworkCounts] = useState<Record<string, number>>({});
+  // ---- Fetch per-gallery stats ----------------------------------------------
+  const [galleryStats, setGalleryStats] = useState<Record<string, GalleryStats>>({});
 
-  const fetchArtworkCounts = useCallback(async () => {
-    if (galleries.length === 0) {
-      setArtworkCounts({});
+  const fetchGalleryStats = useCallback(async () => {
+    if (galleries.length === 0 || !ratesReady) {
+      setGalleryStats({});
       return;
     }
 
     const galleryIds = galleries.map((g) => g.id);
-    const { data } = await supabase
-      .from('artworks')
-      .select('gallery_id')
-      .in('gallery_id', galleryIds);
 
-    if (data) {
-      const counts: Record<string, number> = {};
-      for (const row of data) {
-        if (row.gallery_id) {
-          counts[row.gallery_id] = (counts[row.gallery_id] || 0) + 1;
-        }
-      }
-      setArtworkCounts(counts);
+    // Phase 1: Artworks + Sales + Production Orders in parallel
+    const [artworksRes, salesRes, ordersRes] = await Promise.all([
+      supabase
+        .from('artworks')
+        .select('id, gallery_id, status, price, currency')
+        .in('gallery_id', galleryIds),
+      supabase
+        .from('sales')
+        .select('sale_price, currency, gallery_id')
+        .in('gallery_id', galleryIds),
+      supabase
+        .from('production_orders')
+        .select('id, gallery_id, status')
+        .in('gallery_id', galleryIds)
+        .not('status', 'in', '("draft","in_production","completed")'),
+    ]);
+
+    const artworks = artworksRes.data ?? [];
+    const sales = salesRes.data ?? [];
+    const orders = ordersRes.data ?? [];
+
+    // Phase 2: Fetch order items for active orders
+    const activeOrderIds = orders.map((o) => o.id);
+    let orderItems: { production_order_id: string; quantity: number; price: number | null; currency: string }[] = [];
+
+    if (activeOrderIds.length > 0) {
+      const { data } = await supabase
+        .from('production_order_items')
+        .select('production_order_id, quantity, price, currency')
+        .in('production_order_id', activeOrderIds);
+      orderItems = data ?? [];
     }
-  }, [galleries]);
+
+    // Build order→gallery map
+    const orderGalleryMap = new Map<string, string>();
+    for (const o of orders) {
+      if (o.gallery_id) orderGalleryMap.set(o.id, o.gallery_id);
+    }
+
+    // Aggregate stats per gallery
+    const stats: Record<string, GalleryStats> = {};
+
+    const ensure = (gId: string) => {
+      if (!stats[gId]) {
+        stats[gId] = { total: 0, onConsignment: 0, sold: 0, ordered: 0, revenueSold: 0, revenuePotential: 0, revenueOrdered: 0 };
+      }
+    };
+
+    // Artworks
+    for (const a of artworks) {
+      if (!a.gallery_id) continue;
+      ensure(a.gallery_id);
+      stats[a.gallery_id].total += 1;
+      if (a.status === 'on_consignment') stats[a.gallery_id].onConsignment += 1;
+      if (a.status === 'sold') stats[a.gallery_id].sold += 1;
+      // Potential revenue: unsold artworks with price
+      if (a.status !== 'sold' && a.price && a.price > 0) {
+        stats[a.gallery_id].revenuePotential += toCHF(a.price, a.currency ?? 'EUR');
+      }
+    }
+
+    // Sales revenue
+    for (const s of sales) {
+      if (!s.gallery_id) continue;
+      ensure(s.gallery_id);
+      stats[s.gallery_id].revenueSold += toCHF(s.sale_price ?? 0, s.currency ?? 'EUR');
+    }
+
+    // Order items → ordered count + ordered revenue
+    for (const item of orderItems) {
+      const gId = orderGalleryMap.get(item.production_order_id);
+      if (!gId) continue;
+      ensure(gId);
+      stats[gId].ordered += item.quantity ?? 0;
+      if (item.price && item.quantity) {
+        stats[gId].revenueOrdered += toCHF(item.price * item.quantity, item.currency ?? 'EUR');
+      }
+    }
+
+    setGalleryStats(stats);
+  }, [galleries, ratesReady, toCHF]);
 
   useEffect(() => {
-    fetchArtworkCounts();
-  }, [fetchArtworkCounts]);
+    fetchGalleryStats();
+  }, [fetchGalleryStats]);
 
   // Reset to page 1 when search changes
   function handleSearchChange(value: string) {
@@ -159,7 +229,7 @@ export function GalleriesPage() {
               <GalleryCard
                 key={gallery.id}
                 gallery={gallery}
-                artworkCount={artworkCounts[gallery.id] ?? 0}
+                stats={galleryStats[gallery.id]}
                 onClick={() => navigate(`/galleries/${gallery.id}`)}
               />
             ))}
