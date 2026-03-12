@@ -10,6 +10,7 @@ import { SearchInput } from '../components/ui/SearchInput';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Pagination } from '../components/ui/Pagination';
+import { GALLERY_TYPES } from '../lib/constants';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -36,6 +37,26 @@ export function GalleriesPage() {
   });
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // ---- Fetch category counts (unfiltered) -----------------------------------
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  const [totalGalleries, setTotalGalleries] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('galleries')
+        .select('type');
+      if (!data) return;
+      setTotalGalleries(data.length);
+      const counts: Record<string, number> = {};
+      for (const row of data) {
+        const t = row.type || 'unknown';
+        counts[t] = (counts[t] || 0) + 1;
+      }
+      setCategoryCounts(counts);
+    })();
+  }, [galleries]); // refetch when galleries list changes
 
   // ---- Fetch per-gallery stats ----------------------------------------------
   const [galleryStats, setGalleryStats] = useState<Record<string, GalleryStats>>({});
@@ -147,10 +168,29 @@ export function GalleriesPage() {
         <div>
           <h1 className="font-display text-2xl font-bold text-primary-900">
             Galleries
+            {!loading && totalGalleries > 0 && (
+              <span className="ml-2 align-middle text-base font-normal text-primary-400">
+                ({totalGalleries})
+              </span>
+            )}
           </h1>
-          <p className="mt-1 text-sm text-primary-500">
-            Manage your gallery contacts and consignment partners.
-          </p>
+          {!loading && totalGalleries > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {GALLERY_TYPES.map((gt) => {
+                const count = categoryCounts[gt.value] || 0;
+                if (count === 0) return null;
+                return (
+                  <span
+                    key={gt.value}
+                    className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-600"
+                  >
+                    {gt.label}
+                    <span className="font-semibold text-primary-800">{count}</span>
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <Button onClick={() => navigate('/galleries/new')}>

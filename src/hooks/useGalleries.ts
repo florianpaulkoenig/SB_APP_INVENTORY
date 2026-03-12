@@ -71,7 +71,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
       }
 
       // Sorting (whitelist to prevent injection)
-      const VALID_SORT_COLUMNS = ['name', 'city', 'country', 'commission_rate', 'created_at', 'updated_at'] as const;
+      const VALID_SORT_COLUMNS = ['name', 'city', 'country', 'type', 'status_color', 'commission_rate', 'created_at', 'updated_at'] as const;
       const rawSortBy = filters.sortBy || 'name';
       const sortBy = (VALID_SORT_COLUMNS as readonly string[]).includes(rawSortBy) ? rawSortBy : 'name';
       const sortOrder = filters.sortOrder || 'asc';

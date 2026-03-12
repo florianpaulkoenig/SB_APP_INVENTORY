@@ -26,6 +26,7 @@ CREATE TABLE galleries (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  type TEXT DEFAULT 'representative',
   contact_person TEXT,
   email TEXT,
   phone TEXT,
@@ -33,6 +34,10 @@ CREATE TABLE galleries (
   city TEXT,
   country TEXT,
   commission_rate NUMERIC(5,2),
+  commission_gallery NUMERIC(5,2),
+  commission_noa NUMERIC(5,2),
+  commission_artist NUMERIC(5,2),
+  status_color TEXT CHECK (status_color IN ('green', 'yellow', 'red')),
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
