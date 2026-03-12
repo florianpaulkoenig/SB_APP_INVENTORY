@@ -35,8 +35,8 @@ export function useSeriesPerformance() {
       if (!session?.user) { setLoading(false); return; }
 
       const [artworksRes, salesRes] = await Promise.all([
-        supabase.from('artworks').select('id, series, status, consigned_since, created_at'),
-        supabase.from('sales').select('id, artwork_id, sale_price, sale_date, artworks(series, consigned_since)'),
+        supabase.from('artworks').select('id, series, status, released_at, consigned_since, created_at'),
+        supabase.from('sales').select('id, artwork_id, sale_price, sale_date, artworks(series, released_at, consigned_since)'),
       ]);
 
       if (artworksRes.error) throw artworksRes.error;
@@ -61,13 +61,13 @@ export function useSeriesPerformance() {
       }
 
       for (const sale of sales) {
-        const art = sale.artworks as { series: string | null; consigned_since: string | null } | null;
+        const art = sale.artworks as { series: string | null; released_at: string | null; consigned_since: string | null } | null;
         const s = art?.series || 'Other';
         const d = ensure(s);
         d.sold += 1;
         d.revenue += Number(sale.sale_price) || 0;
 
-        const start = art?.consigned_since;
+        const start = art?.released_at || art?.consigned_since;
         if (start && sale.sale_date) {
           const days = Math.max(0, (new Date(sale.sale_date).getTime() - new Date(start).getTime()) / 86400000);
           d.daysSum += days;

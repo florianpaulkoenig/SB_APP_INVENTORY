@@ -59,7 +59,7 @@ export function useSupplyPlanning() {
       const [artworksRes, salesRes, productionRes] = await Promise.all([
         supabase.from('artworks').select('id, status, series, created_at'),
         supabase.from('sales').select('id, artwork_id, sale_date'),
-        supabase.from('production_orders').select('id, title, status, ordered_date, deadline'),
+        supabase.from('production_orders').select('id, title, status, planned_release_date, ordered_date, deadline'),
       ]);
 
       if (artworksRes.error) throw artworksRes.error;
@@ -106,16 +106,16 @@ export function useSupplyPlanning() {
           };
         });
 
-      // Upcoming releases (use deadline as fallback since planned_release_date not yet in DB)
+      // Upcoming releases
       const now = new Date().toISOString().slice(0, 10);
       const upcomingReleases: UpcomingRelease[] = orders
-        .filter((o) => o.deadline && o.deadline >= now)
-        .sort((a, b) => (a.deadline ?? '').localeCompare(b.deadline ?? ''))
+        .filter((o) => (o.planned_release_date && o.planned_release_date >= now) || (o.deadline && o.deadline >= now))
+        .sort((a, b) => (a.planned_release_date ?? a.deadline ?? '').localeCompare(b.planned_release_date ?? b.deadline ?? ''))
         .slice(0, 20)
         .map((o) => ({
           id: o.id,
           title: o.title,
-          plannedDate: o.deadline!,
+          plannedDate: o.planned_release_date || o.deadline!,
           status: o.status,
         }));
 

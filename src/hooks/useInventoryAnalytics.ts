@@ -48,7 +48,7 @@ export function useInventoryAnalytics() {
       const [artworksRes, salesRes] = await Promise.all([
         supabase
           .from('artworks')
-          .select('id, status, category, series, created_at, consigned_since'),
+          .select('id, status, category, series, size_category, created_at, released_at, consigned_since'),
         supabase
           .from('sales')
           .select('id, artwork_id, sale_date'),
@@ -87,7 +87,7 @@ export function useInventoryAnalytics() {
       let totalDays = 0;
       let dayCount = 0;
       for (const a of unsold) {
-        const start = a.consigned_since || a.created_at;
+        const start = a.released_at || a.consigned_since || a.created_at;
         if (start) {
           totalDays += (now.getTime() - new Date(start).getTime()) / 86400000;
           dayCount++;
@@ -119,8 +119,15 @@ export function useInventoryAnalytics() {
         .map(([series, v]) => ({ series, count: v.count, sold: v.sold }))
         .sort((a, b) => b.count - a.count);
 
-      // Size distribution (placeholder until size_category column is added)
-      const sizeDistribution: { size: string; count: number }[] = [{ size: 'unspecified', count: total }];
+      // Size distribution
+      const sizeMap = new Map<string, number>();
+      for (const a of artworks) {
+        const sz = (a.size_category as string) || 'unspecified';
+        sizeMap.set(sz, (sizeMap.get(sz) ?? 0) + 1);
+      }
+      const sizeDistribution = [...sizeMap.entries()]
+        .map(([size, count]) => ({ size, count }))
+        .sort((a, b) => b.count - a.count);
 
       // Monthly production (by created_at)
       const monthMap = new Map<string, number>();

@@ -34,7 +34,7 @@ export function useCollectorIntelligence() {
       // Get sales with buyer info and artwork series
       const { data: salesData, error } = await supabase
         .from('sales')
-        .select('id, buyer_name, sale_price, currency, sale_date, contact_id, artworks(series), contacts(first_name, last_name, country, city)')
+        .select('id, buyer_name, sale_price, currency, sale_date, collector_anonymity_mode, contact_id, artworks(series), contacts(first_name, last_name, country, city)')
         .not('sale_date', 'is', null);
 
       if (error) throw error;
@@ -55,7 +55,7 @@ export function useCollectorIntelligence() {
       for (const s of sales) {
         const contact = s.contacts as { first_name: string; last_name: string; country: string | null; city: string | null } | null;
         const artData = s.artworks as { series: string | null } | null;
-        const isAnon = false; // collector_anonymity_mode not yet in DB
+        const isAnon = (s.collector_anonymity_mode as string) === 'anonymous' || (s.collector_anonymity_mode as string) === 'private';
         const key = s.contact_id || s.buyer_name || `anon-${s.id}`;
         const name = contact ? `${contact.first_name} ${contact.last_name}`.trim() : s.buyer_name;
 

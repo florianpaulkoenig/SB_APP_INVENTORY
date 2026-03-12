@@ -31,7 +31,7 @@ export function usePriceLadder() {
 
       const { data: artworks, error } = await supabase
         .from('artworks')
-        .select('id, price, currency, series')
+        .select('id, price, currency, series, size_category')
         .gt('price', 0);
 
       if (error) throw error;
@@ -46,10 +46,18 @@ export function usePriceLadder() {
       const avgPrice = totalPriced > 0 ? prices.reduce((a, b) => a + b, 0) / totalPriced : 0;
       const medianPrice = totalPriced > 0 ? sorted[Math.floor(totalPriced / 2)] : 0;
 
-      // Price by size (placeholder until size_category column is added)
-      const priceBySize: { size: string; avgPrice: number; count: number }[] = [
-        { size: 'all', avgPrice: Math.round(avgPrice), count: totalPriced },
-      ];
+      // Price by size
+      const sizeMap = new Map<string, { total: number; count: number }>();
+      for (const a of items) {
+        const sz = (a.size_category as string) || 'unspecified';
+        const ex = sizeMap.get(sz) ?? { total: 0, count: 0 };
+        ex.total += Number(a.price) || 0;
+        ex.count += 1;
+        sizeMap.set(sz, ex);
+      }
+      const priceBySize = [...sizeMap.entries()]
+        .map(([size, v]) => ({ size, avgPrice: Math.round(v.total / v.count), count: v.count }))
+        .sort((a, b) => b.avgPrice - a.avgPrice);
 
       // Price by series
       const seriesMap = new Map<string, { total: number; count: number }>();

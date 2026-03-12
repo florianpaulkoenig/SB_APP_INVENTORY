@@ -62,7 +62,7 @@ export function useExhibitionImpact() {
       const [exhRes, eaRes, salesRes, contactsRes] = await Promise.all([
         supabase.from('exhibitions').select('id, title, type, venue, city, country, start_date, end_date, budget, budget_currency'),
         supabase.from('exhibition_artworks').select('exhibition_id, artwork_id'),
-        supabase.from('sales').select('id, artwork_id, sale_price, currency, sale_date, contact_id, buyer_name'),
+        supabase.from('sales').select('id, artwork_id, sale_price, currency, sale_date, source_exhibition_id, contact_id, buyer_name'),
         supabase.from('contacts').select('id, created_at'),
       ]);
 
@@ -114,7 +114,14 @@ export function useExhibitionImpact() {
           }
         }
 
-        // Attributed sales: source_exhibition_id not yet in DB, skip for now
+        // Attributed sales: source_exhibition_id matches
+        for (const s of sales) {
+          if (s.source_exhibition_id === exh.id) {
+            attributedSales++;
+            attributedRevenue += Number(s.sale_price) || 0;
+            if (s.contact_id) exhibitionCollectors.add(s.contact_id);
+          }
+        }
 
         // New collectors: contacts created around the exhibition period
         let newCollectors = 0;
