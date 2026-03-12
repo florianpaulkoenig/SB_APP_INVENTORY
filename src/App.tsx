@@ -263,6 +263,12 @@ const AuctionTrackingPage = React.lazy(() =>
 const GalleryAvailableWorksPage = React.lazy(() =>
   import('./pages/GalleryAvailableWorksPage').then((m) => ({ default: m.GalleryAvailableWorksPage })),
 );
+const InventoryHealthPage = React.lazy(() =>
+  import('./pages/analytics/InventoryHealthPage').then((m) => ({ default: m.InventoryHealthPage })),
+);
+const GalleryPerformancePage = React.lazy(() =>
+  import('./pages/analytics/GalleryPerformancePage').then((m) => ({ default: m.GalleryPerformancePage })),
+);
 
 // ---------------------------------------------------------------------------
 // Suspense fallback with error boundary
@@ -644,6 +650,26 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <AnalyticsPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/inventory-health',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <InventoryHealthPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/gallery-performance',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <GalleryPerformancePage />
               </Suspense>
             </RoleGuard>
           ),

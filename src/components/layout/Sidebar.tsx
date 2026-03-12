@@ -169,6 +169,16 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M14 3l3 3-8 8-3-3 8-8zM11 6l3 3M4 17h12M6 14l-2 3" />
     </svg>
   ),
+  inventoryHealth: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h3v12H4zM9 8h3v8H9zM14 2h3v14h-3z" />
+    </svg>
+  ),
+  galleryPerformance: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 3 2 4-5 3 3M10 3l2 2.5h3v3L17 10l-2 1.5v3h-3L10 17l-2-2.5H5v-3L3 10l2-1.5v-3h3L10 3z" />
+    </svg>
+  ),
   collapse: (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4l-5 6 5 6" />
@@ -233,6 +243,8 @@ const navSections: NavSection[] = [
     title: 'ANALYTICS',
     items: [
       { label: 'Analytics', to: '/analytics', icon: icons.analytics, roles: ['admin'] },
+      { label: 'Inventory Health', to: '/analytics/inventory-health', icon: icons.inventoryHealth, roles: ['admin'] },
+      { label: 'Gallery Performance', to: '/analytics/gallery-performance', icon: icons.galleryPerformance, roles: ['admin'] },
     ],
   },
   {
