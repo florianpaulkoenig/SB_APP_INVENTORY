@@ -55,30 +55,47 @@ export function useInsightFeedback() {
           return;
         }
 
-        const payload = {
-          user_id: session.user.id,
-          insight_id: insightId,
-          rating,
-          comment: comment || null,
-          insight_category: category,
-          insight_priority: priority,
-        };
+        const existing = feedbackMap[insightId];
 
-        const { data, error } = await supabase
-          .from('ai_insight_feedback')
-          .upsert(payload as never, { onConflict: 'user_id,insight_id' })
-          .select()
-          .single();
+        if (existing) {
+          // Update existing feedback
+          const { error } = await supabase
+            .from('ai_insight_feedback')
+            .update({ rating, comment: comment || null } as never)
+            .eq('id', existing.id);
 
-        if (error) {
-          console.error('Feedback save error:', error.message);
-          showToast('Failed to save feedback', 'error');
-          return;
+          if (error) {
+            console.error('Feedback update error:', error.message);
+            showToast('Failed to save feedback', 'error');
+            return;
+          }
+          setFeedbackMap((prev) => ({
+            ...prev,
+            [insightId]: { ...existing, rating, comment: comment || null },
+          }));
+        } else {
+          // Insert new feedback
+          const { data, error } = await supabase
+            .from('ai_insight_feedback')
+            .insert({
+              user_id: session.user.id,
+              insight_id: insightId,
+              rating,
+              comment: comment || null,
+              insight_category: category,
+              insight_priority: priority,
+            } as never)
+            .select()
+            .single();
+
+          if (error) {
+            console.error('Feedback insert error:', error.message);
+            showToast('Failed to save feedback', 'error');
+            return;
+          }
+          const row = data as unknown as AiInsightFeedbackRow;
+          setFeedbackMap((prev) => ({ ...prev, [insightId]: row }));
         }
-
-        // Update local state
-        const row = data as unknown as AiInsightFeedbackRow;
-        setFeedbackMap((prev) => ({ ...prev, [insightId]: row }));
         showToast('Feedback saved', 'success');
       } catch (err) {
         console.error('Feedback error:', err);
