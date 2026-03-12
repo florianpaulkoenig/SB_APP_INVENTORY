@@ -119,7 +119,7 @@ export function ProductionOrdersPage() {
     const orderIds = productionOrders.map((o) => o.id);
     const { data: allItems } = await supabase
       .from('production_order_items')
-      .select('production_order_id, price, currency, quantity, artwork_id')
+      .select('*')
       .in('production_order_id', orderIds);
 
     const valMap: Record<string, number> = {};

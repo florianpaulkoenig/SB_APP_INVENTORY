@@ -240,7 +240,7 @@ export function DashboardPage() {
       activeOrderIds.length > 0
         ? supabase
             .from('production_order_items')
-            .select('production_order_id, quantity, price, currency, artwork_id')
+            .select('*')
             .in('production_order_id', activeOrderIds)
         : Promise.resolve({ data: null }),
       galleryIds.length > 0
