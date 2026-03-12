@@ -135,11 +135,21 @@ export function useStrategicAgent() {
         });
 
         if (response.error) {
-          const msg = typeof response.error === 'object' && 'message' in response.error
-            ? (response.error as { message: string }).message
-            : 'Question failed';
-          showToast(msg, 'error');
-          return null;
+          // Try to extract detailed error from response context
+          let msg = 'Question failed';
+          try {
+            if ('context' in response.error && response.error.context) {
+              const ctx = response.error.context as Response;
+              const body = await ctx.json();
+              msg = body?.error || msg;
+            } else {
+              msg = response.error.message || msg;
+            }
+          } catch {
+            msg = response.error.message || msg;
+          }
+          console.error('Ask error:', msg);
+          return { answer: `Error: ${msg}`, conversation_id: '' } as AskResponse;
         }
 
         const data = response.data;
@@ -148,8 +158,7 @@ export function useStrategicAgent() {
           return data as AskResponse;
         }
 
-        showToast('No response received', 'error');
-        return null;
+        return { answer: 'No response received. Please try again.', conversation_id: '' } as AskResponse;
       } catch (err) {
         console.error('ask error:', err);
         const message = err instanceof Error ? err.message : 'Question failed';

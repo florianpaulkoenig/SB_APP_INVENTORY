@@ -272,8 +272,18 @@ async function callClaudeWithHistory(
     }),
   });
 
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error('Claude API error (history):', response.status, errorBody);
+    throw new Error(`Claude API error: ${response.status} - ${errorBody.slice(0, 200)}`);
+  }
+
   const result = await response.json();
-  return result.content?.[0]?.text || '';
+  const text = result.content?.[0]?.text || '';
+  if (!text) {
+    console.error('Claude returned empty response:', JSON.stringify(result).slice(0, 500));
+  }
+  return text;
 }
 
 // ---------------------------------------------------------------------------
@@ -465,41 +475,48 @@ async function handleAsk(
     messages.push({ role: 'user', content: cleanQuestion });
   }
 
+  console.log('Calling Claude for ask mode...');
   const aiAnswer = await callClaudeWithHistory(ASK_SYSTEM_PROMPT, messages, 1024);
   const cleanAnswer = stripPII(aiAnswer);
+  console.log('Claude answered, length:', cleanAnswer.length);
 
-  // Save conversation
-  const now = new Date().toISOString();
-  const newMessages = [
-    ...messages,
-    { role: 'assistant', content: cleanAnswer },
-  ].map((m) => ({ ...m, timestamp: now }));
-
+  // Save conversation (non-blocking — don't let save failure break the response)
   let savedConversationId = conversationId;
-  if (conversationId) {
-    await supabaseAdmin
-      .from('ai_conversations')
-      .update({ messages: newMessages, updated_at: now })
-      .eq('id', conversationId)
-      .eq('user_id', userId);
-  } else {
-    const { data: newConv } = await supabaseAdmin
-      .from('ai_conversations')
-      .insert({
-        user_id: userId,
-        title: cleanQuestion.slice(0, 100),
-        messages: newMessages,
-        updated_at: now,
-      })
-      .select('id')
-      .single();
-    savedConversationId = newConv?.id;
+  try {
+    const now = new Date().toISOString();
+    const newMessages = [
+      ...messages,
+      { role: 'assistant', content: cleanAnswer },
+    ].map((m) => ({ ...m, timestamp: now }));
+
+    if (conversationId) {
+      await supabaseAdmin
+        .from('ai_conversations')
+        .update({ messages: newMessages, updated_at: now } as never)
+        .eq('id', conversationId)
+        .eq('user_id', userId);
+    } else {
+      const { data: newConv, error: convError } = await supabaseAdmin
+        .from('ai_conversations')
+        .insert({
+          user_id: userId,
+          title: cleanQuestion.slice(0, 100),
+          messages: newMessages,
+          updated_at: now,
+        } as never)
+        .select('id')
+        .single();
+      if (convError) console.error('Conversation save error:', convError.message);
+      savedConversationId = newConv?.id;
+    }
+  } catch (saveErr) {
+    console.error('Failed to save conversation:', saveErr);
   }
 
   return new Response(
     JSON.stringify({
-      answer: cleanAnswer,
-      conversation_id: savedConversationId,
+      answer: cleanAnswer || 'I was unable to generate a response. Please try again.',
+      conversation_id: savedConversationId || null,
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
   );
