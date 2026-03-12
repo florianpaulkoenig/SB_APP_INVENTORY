@@ -383,8 +383,8 @@ async function handleAnalyze(
   supabaseAdmin: ReturnType<typeof createClient>,
   userId: string,
 ): Promise<Response> {
-  // Check cooldown: don't re-analyze if < 6 hours old
-  const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+  // Check cooldown: don't re-analyze if < 30 minutes old
+  const sixHoursAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
   const { data: recent } = await supabaseAdmin
     .from('ai_insights')
     .select('id')

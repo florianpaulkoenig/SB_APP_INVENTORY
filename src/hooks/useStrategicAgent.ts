@@ -18,7 +18,7 @@ interface AskResponse {
 }
 
 export function useStrategicAgent() {
-  const { showToast } = useToast();
+  const { toast } = useToast();
   const [insights, setInsights] = useState<AiInsightRow[]>([]);
   const [conversations, setConversations] = useState<AiConversationRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +86,7 @@ export function useStrategicAgent() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        showToast('Not authenticated. Please log in again.', 'error');
+        toast('Not authenticated. Please log in again.', 'error');
         return;
       }
 
@@ -99,26 +99,26 @@ export function useStrategicAgent() {
         const msg = typeof response.error === 'object' && 'message' in response.error
           ? (response.error as { message: string }).message
           : 'Analysis failed';
-        showToast(msg, 'error');
+        toast(msg, 'error');
         return;
       }
 
       const data = response.data;
       if (data?.cooldown) {
-        showToast('Analysis was run recently. Please wait before running again.', 'info');
+        toast('Analysis was run recently. Please wait before running again.', 'info');
         return;
       }
 
-      showToast(`Generated ${data?.count || 0} new insights`, 'success');
+      toast(`Generated ${data?.count || 0} new insights`, 'success');
       await fetchInsights();
     } catch (err) {
       console.error('refreshInsights error:', err);
       const message = err instanceof Error ? err.message : 'Analysis failed';
-      showToast(message, 'error');
+      toast(message, 'error');
     } finally {
       setAnalyzing(false);
     }
-  }, [fetchInsights, showToast]);
+  }, [fetchInsights, toast]);
 
   // ---- Ask a question -------------------------------------------------------
   const ask = useCallback(
@@ -127,7 +127,7 @@ export function useStrategicAgent() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          showToast('Not authenticated. Please log in again.', 'error');
+          toast('Not authenticated. Please log in again.', 'error');
           return null;
         }
 
@@ -163,13 +163,13 @@ export function useStrategicAgent() {
       } catch (err) {
         console.error('ask error:', err);
         const message = err instanceof Error ? err.message : 'Question failed';
-        showToast(message, 'error');
+        toast(message, 'error');
         return null;
       } finally {
         setAsking(false);
       }
     },
-    [fetchConversations, showToast],
+    [fetchConversations, toast],
   );
 
   // ---- Update insight status ------------------------------------------------
@@ -234,7 +234,7 @@ export function useStrategicAgent() {
 
         if (error) {
           console.error('Failed to delete conversation:', error.message);
-          showToast('Failed to delete conversation', 'error');
+          toast('Failed to delete conversation', 'error');
           return;
         }
         setConversations((prev) => prev.filter((c) => c.id !== id));
@@ -242,7 +242,7 @@ export function useStrategicAgent() {
         console.error('Failed to delete conversation:', err);
       }
     },
-    [showToast],
+    [toast],
   );
 
   return {

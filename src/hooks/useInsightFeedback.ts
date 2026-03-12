@@ -8,7 +8,7 @@ import { useToast } from '../components/ui/Toast';
 import type { AiInsightFeedbackRow, AiFeedbackRating } from '../types/database';
 
 export function useInsightFeedback() {
-  const { showToast } = useToast();
+  const { toast } = useToast();
   const [feedbackMap, setFeedbackMap] = useState<Record<string, AiInsightFeedbackRow>>({});
 
   // ---- Fetch existing feedback for current user ----------------------------
@@ -51,7 +51,7 @@ export function useInsightFeedback() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          showToast('Not authenticated', 'error');
+          toast('Not authenticated', 'error');
           return;
         }
 
@@ -66,7 +66,7 @@ export function useInsightFeedback() {
 
           if (error) {
             console.error('Feedback update error:', error.message);
-            showToast('Failed to save feedback', 'error');
+            toast('Failed to save feedback', 'error');
             return;
           }
           setFeedbackMap((prev) => ({
@@ -90,19 +90,19 @@ export function useInsightFeedback() {
 
           if (error) {
             console.error('Feedback insert error:', error.message);
-            showToast('Failed to save feedback', 'error');
+            toast('Failed to save feedback', 'error');
             return;
           }
           const row = data as unknown as AiInsightFeedbackRow;
           setFeedbackMap((prev) => ({ ...prev, [insightId]: row }));
         }
-        showToast('Feedback saved', 'success');
+        toast('Feedback saved', 'success');
       } catch (err) {
         console.error('Feedback error:', err);
-        showToast('Failed to save feedback', 'error');
+        toast('Failed to save feedback', 'error');
       }
     },
-    [showToast],
+    [toast],
   );
 
   // ---- Computed: feedback summary by category ------------------------------
