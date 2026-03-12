@@ -6,7 +6,13 @@
 import { useState } from 'react';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell, Legend,
+} from 'recharts';
+import { formatCurrency } from '../lib/utils';
 
 // Chart & table components
 import { DashboardSummaryCards } from '../components/analytics/DashboardSummaryCards';
@@ -17,6 +23,16 @@ import { StatusOverviewChart } from '../components/analytics/StatusOverviewChart
 import { RevenueByCountryChart } from '../components/analytics/RevenueByCountryChart';
 import { RecentSalesTable } from '../components/analytics/RecentSalesTable';
 import { OpenInvoicesTable } from '../components/analytics/OpenInvoicesTable';
+
+// Colors for charts
+const SERIES_COLORS = ['#1a1a2e', '#16213e', '#0f3460', '#533483', '#e94560', '#f5a623', '#7c3aed', '#059669'];
+const REPORTING_COLORS: Record<string, string> = {
+  draft: '#94a3b8', reserved: '#f59e0b', sold_pending_details: '#f97316',
+  sold_reported: '#3b82f6', verified: '#10b981',
+};
+const PAYMENT_COLORS: Record<string, string> = {
+  pending: '#94a3b8', partial: '#f59e0b', paid: '#10b981', overdue: '#ef4444',
+};
 
 // ---------------------------------------------------------------------------
 // Page
@@ -142,10 +158,102 @@ export function AnalyticsPage() {
             <StatusOverviewChart data={data.statusOverview} />
           </div>
 
-          {/* Charts Row 3 -- Revenue by country */}
+          {/* Charts Row 3 -- Revenue by country + Sell-through rate */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <RevenueByCountryChart data={data.revenueByCountry} />
-            <div>{/* Spacer */}</div>
+            <Card className="p-6">
+              <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">
+                Sell-Through Rate
+              </h3>
+              <div className="flex items-center justify-center h-40">
+                <div className="text-center">
+                  <p className="text-5xl font-bold text-accent">
+                    {data.sellThroughRate.toFixed(1)}%
+                  </p>
+                  <p className="mt-2 text-sm text-primary-500">
+                    {data.totalSold} of {data.totalArtworks} artworks sold
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Charts Row 4 -- Revenue by series */}
+          {data.revenueBySeries.length > 0 && (
+            <Card className="p-6">
+              <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">
+                Revenue by Series
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={data.revenueBySeries}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="series" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
+                  <Tooltip formatter={(value: number) => formatCurrency(value, 'CHF')} />
+                  <Bar dataKey="revenue" fill="#1a1a2e" radius={[4, 4, 0, 0]}>
+                    {data.revenueBySeries.map((_, i) => (
+                      <Cell key={i} fill={SERIES_COLORS[i % SERIES_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+          )}
+
+          {/* Charts Row 5 -- Reporting & Payment status breakdown */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {data.reportingBreakdown.length > 0 && (
+              <Card className="p-6">
+                <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">
+                  Reporting Status
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={data.reportingBreakdown}
+                      dataKey="count"
+                      nameKey="label"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      label={({ label, count }) => `${label}: ${count}`}
+                    >
+                      {data.reportingBreakdown.map((entry) => (
+                        <Cell key={entry.status} fill={REPORTING_COLORS[entry.status] || '#94a3b8'} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Card>
+            )}
+            {data.paymentBreakdown.length > 0 && (
+              <Card className="p-6">
+                <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">
+                  Payment Status
+                </h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={data.paymentBreakdown}
+                      dataKey="count"
+                      nameKey="label"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      label={({ label, count }) => `${label}: ${count}`}
+                    >
+                      {data.paymentBreakdown.map((entry) => (
+                        <Cell key={entry.status} fill={PAYMENT_COLORS[entry.status] || '#94a3b8'} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Card>
+            )}
           </div>
 
           {/* Tables Row -- Recent sales + Open invoices */}

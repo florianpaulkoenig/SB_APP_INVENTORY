@@ -31,6 +31,18 @@ export interface AnalyticsData {
   // Revenue by country
   revenueByCountry: { country: string; revenue: number }[];
 
+  // Revenue by series
+  revenueBySeries: { series: string; revenue: number; count: number }[];
+
+  // Reporting status breakdown
+  reportingBreakdown: { status: string; label: string; count: number }[];
+
+  // Payment status breakdown
+  paymentBreakdown: { status: string; label: string; count: number }[];
+
+  // Sell-through rate
+  sellThroughRate: number;
+
   // Recent sales
   recentSales: {
     id: string;
@@ -117,16 +129,16 @@ export function useAnalytics(): UseAnalyticsReturn {
 
       // Build queries in parallel ------------------------------------------
 
-      // 1. Artworks: id, status, category, created_at
+      // 1. Artworks: id, status, category, series, created_at
       const artworksQuery = supabase
         .from('artworks')
-        .select('id, status, category, created_at');
+        .select('id, status, category, series, created_at');
 
-      // 2. Sales: with joins to artworks (title, created_at), galleries (name, country), contacts (first_name, last_name)
+      // 2. Sales: with joins + reporting fields
       let salesQuery = supabase
         .from('sales')
         .select(
-          'id, artwork_id, gallery_id, contact_id, sale_date, sale_price, currency, buyer_name, artworks(title, created_at), galleries(name, country), contacts(first_name, last_name)',
+          'id, artwork_id, gallery_id, contact_id, sale_date, sale_price, currency, buyer_name, reporting_status, payment_status, artworks(title, created_at, series), galleries(name, country), contacts(first_name, last_name)',
         )
         .order('sale_date', { ascending: false });
 
@@ -306,6 +318,60 @@ export function useAnalytics(): UseAnalyticsReturn {
         };
       });
 
+      // ---- Revenue by series -----------------------------------------------
+
+      const seriesMap = new Map<string, { revenue: number; count: number }>();
+      for (const sale of sales) {
+        const artworkData = sale.artworks as { title: string; created_at: string; series: string | null } | null;
+        const series = artworkData?.series ?? 'Other';
+        const existing = seriesMap.get(series) ?? { revenue: 0, count: 0 };
+        existing.revenue += Number(sale.sale_price) || 0;
+        existing.count += 1;
+        seriesMap.set(series, existing);
+      }
+      const revenueBySeries = Array.from(seriesMap.entries())
+        .map(([series, val]) => ({ series, revenue: val.revenue, count: val.count }))
+        .sort((a, b) => b.revenue - a.revenue);
+
+      // ---- Reporting status breakdown ------------------------------------
+
+      const REPORTING_LABELS: Record<string, string> = {
+        draft: 'Draft',
+        reserved: 'Reserved',
+        sold_pending_details: 'Pending Details',
+        sold_reported: 'Reported',
+        verified: 'Verified',
+      };
+
+      const reportingMap = new Map<string, number>();
+      for (const sale of sales) {
+        const st = (sale as { reporting_status?: string }).reporting_status || 'draft';
+        reportingMap.set(st, (reportingMap.get(st) ?? 0) + 1);
+      }
+      const reportingBreakdown = Array.from(reportingMap.entries())
+        .map(([status, count]) => ({ status, label: REPORTING_LABELS[status] || status, count }));
+
+      // ---- Payment status breakdown --------------------------------------
+
+      const PAYMENT_LABELS: Record<string, string> = {
+        pending: 'Pending',
+        partial: 'Partial',
+        paid: 'Paid',
+        overdue: 'Overdue',
+      };
+
+      const paymentMap = new Map<string, number>();
+      for (const sale of sales) {
+        const st = (sale as { payment_status?: string }).payment_status || 'pending';
+        paymentMap.set(st, (paymentMap.get(st) ?? 0) + 1);
+      }
+      const paymentBreakdown = Array.from(paymentMap.entries())
+        .map(([status, count]) => ({ status, label: PAYMENT_LABELS[status] || status, count }));
+
+      // ---- Sell-through rate ---------------------------------------------
+
+      const sellThroughRate = totalArtworks > 0 ? (totalSold / totalArtworks) * 100 : 0;
+
       // ---- Set aggregated data --------------------------------------------
 
       setData({
@@ -321,6 +387,10 @@ export function useAnalytics(): UseAnalyticsReturn {
         categoryBreakdown,
         statusOverview,
         revenueByCountry,
+        revenueBySeries,
+        reportingBreakdown,
+        paymentBreakdown,
+        sellThroughRate,
         recentSales,
         openInvoices,
       });

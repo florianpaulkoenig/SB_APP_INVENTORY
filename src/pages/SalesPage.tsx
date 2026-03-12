@@ -12,10 +12,26 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { GallerySelect } from '../components/galleries/GallerySelect';
 import { Textarea } from '../components/ui/Textarea';
+import { Badge } from '../components/ui/Badge';
 import { formatCurrency, formatDate } from '../lib/utils';
-import { CURRENCIES, SALE_TYPES } from '../lib/constants';
+import { CURRENCIES, SALE_TYPES, SALE_LOCATION_TYPES, PAYMENT_STATUSES, REPORTING_STATUSES, COLLECTOR_ANONYMITY_MODES } from '../lib/constants';
 import { supabase } from '../lib/supabase';
-import type { SaleInsert, Currency } from '../types/database';
+import type { SaleInsert, Currency, ReportingStatus, SaleLocationT, PaymentStatus, CollectorAnonymityMode } from '../types/database';
+
+const REPORTING_STATUS_COLORS: Record<string, string> = {
+  draft: 'bg-gray-100 text-gray-700',
+  reserved: 'bg-blue-100 text-blue-700',
+  sold_pending_details: 'bg-amber-100 text-amber-700',
+  sold_reported: 'bg-emerald-100 text-emerald-700',
+  verified: 'bg-green-100 text-green-700',
+};
+
+const PAYMENT_STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-gray-100 text-gray-700',
+  partial: 'bg-amber-100 text-amber-700',
+  paid: 'bg-emerald-100 text-emerald-700',
+  overdue: 'bg-red-100 text-red-700',
+};
 
 // ---------------------------------------------------------------------------
 // Page
@@ -28,6 +44,7 @@ export function SalesPage() {
 
   const [search, setSearch] = useState('');
   const [galleryFilter, setGalleryFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
 
   const { sales, loading, refetch, createSale } = useSales({
     filters: {
@@ -35,6 +52,11 @@ export function SalesPage() {
       galleryId: galleryFilter || undefined,
     },
   });
+
+  // Client-side status filter (useSales doesn't support it natively)
+  const filteredSales = statusFilter
+    ? sales.filter((s) => s.reporting_status === statusFilter)
+    : sales;
 
   // ---- Data for the form --------------------------------------------------
 
@@ -61,6 +83,14 @@ export function SalesPage() {
   const [saleCountry, setSaleCountry] = useState('');
   const [saleType, setSaleType] = useState('');
   const [notes, setNotes] = useState('');
+  // Reporting fields
+  const [reportingStatus, setReportingStatus] = useState<ReportingStatus>('draft');
+  const [saleLocationType, setSaleLocationType] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('pending');
+  const [discountPercent, setDiscountPercent] = useState('');
+  const [salesChannel, setSalesChannel] = useState('');
+  const [collectorAnonymityMode, setCollectorAnonymityMode] = useState<CollectorAnonymityMode>('named');
+  const [negotiationNotes, setNegotiationNotes] = useState('');
 
   // ---- Handlers -----------------------------------------------------------
 
@@ -78,6 +108,13 @@ export function SalesPage() {
     setSaleCountry('');
     setSaleType('');
     setNotes('');
+    setReportingStatus('draft');
+    setSaleLocationType('');
+    setPaymentStatus('pending');
+    setDiscountPercent('');
+    setSalesChannel('');
+    setCollectorAnonymityMode('named');
+    setNegotiationNotes('');
   }
 
   function handleSearchChange(value: string) {
@@ -105,6 +142,14 @@ export function SalesPage() {
       sale_country: saleCountry.trim() || null,
       sale_type: saleType || null,
       notes: notes.trim() || null,
+      reporting_status: reportingStatus,
+      sale_location_type: (saleLocationType || null) as SaleLocationT | null,
+      payment_status: paymentStatus,
+      discount_percent: discountPercent ? parseFloat(discountPercent) : null,
+      sales_channel: salesChannel.trim() || null,
+      collector_anonymity_mode: collectorAnonymityMode,
+      negotiation_notes: negotiationNotes.trim() || null,
+      reporting_due_date: saleDate ? new Date(new Date(saleDate).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() : null,
     };
 
     const created = await createSale(data);
@@ -159,6 +204,18 @@ export function SalesPage() {
             label="Gallery"
           />
         </div>
+
+        <div className="w-full sm:w-40">
+          <Select
+            label="Status"
+            options={[
+              { value: '', label: 'All Statuses' },
+              ...REPORTING_STATUSES,
+            ]}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Loading */}
@@ -169,7 +226,7 @@ export function SalesPage() {
       )}
 
       {/* Empty state */}
-      {!loading && sales.length === 0 && (
+      {!loading && filteredSales.length === 0 && (
         <EmptyState
           icon={
             <svg
@@ -186,14 +243,14 @@ export function SalesPage() {
               />
             </svg>
           }
-          title={search || galleryFilter ? 'No sales found' : 'No sales yet'}
+          title={search || galleryFilter || statusFilter ? 'No sales found' : 'No sales yet'}
           description={
-            search || galleryFilter
+            search || galleryFilter || statusFilter
               ? 'Try adjusting your search terms or filters.'
               : 'Record your first sale to start tracking revenue.'
           }
           action={
-            !search && !galleryFilter ? (
+            !search && !galleryFilter && !statusFilter ? (
               <Button onClick={() => setShowModal(true)}>
                 Record First Sale
               </Button>
@@ -203,7 +260,7 @@ export function SalesPage() {
       )}
 
       {/* Sales table */}
-      {!loading && sales.length > 0 && (
+      {!loading && filteredSales.length > 0 && (
         <div className="overflow-x-auto rounded-lg border border-primary-100">
           <table className="min-w-full divide-y divide-primary-100">
             <thead className="bg-primary-50">
@@ -226,10 +283,16 @@ export function SalesPage() {
                 <th className="hidden sm:table-cell px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
                   Commission
                 </th>
+                <th className="hidden lg:table-cell px-2 py-2 sm:px-4 sm:py-3 text-center text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Status
+                </th>
+                <th className="hidden lg:table-cell px-2 py-2 sm:px-4 sm:py-3 text-center text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Payment
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-primary-50 bg-white">
-              {sales.map((sale) => (
+              {filteredSales.map((sale) => (
                 <tr
                   key={sale.id}
                   className="cursor-pointer hover:bg-primary-50 transition-colors"
@@ -261,6 +324,16 @@ export function SalesPage() {
                     {sale.commission_percent != null
                       ? `${sale.commission_percent}%`
                       : '-'}
+                  </td>
+                  <td className="hidden lg:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-center">
+                    <Badge className={REPORTING_STATUS_COLORS[sale.reporting_status] || 'bg-gray-100 text-gray-700'}>
+                      {REPORTING_STATUSES.find((s) => s.value === sale.reporting_status)?.label || sale.reporting_status}
+                    </Badge>
+                  </td>
+                  <td className="hidden lg:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-center">
+                    <Badge className={PAYMENT_STATUS_COLORS[sale.payment_status] || 'bg-gray-100 text-gray-700'}>
+                      {PAYMENT_STATUSES.find((s) => s.value === sale.payment_status)?.label || sale.payment_status}
+                    </Badge>
                   </td>
                 </tr>
               ))}
@@ -382,11 +455,72 @@ export function SalesPage() {
             onChange={(e) => setSaleType(e.target.value)}
           />
 
+          {/* --- Reporting Section --- */}
+          <div className="border-t border-primary-100 pt-4 mt-2">
+            <p className="text-xs font-medium uppercase tracking-wider text-primary-400 mb-3">Reporting Details</p>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Select
+                label="Reporting Status"
+                options={[...REPORTING_STATUSES]}
+                value={reportingStatus}
+                onChange={(e) => setReportingStatus(e.target.value as ReportingStatus)}
+              />
+              <Select
+                label="Payment Status"
+                options={[...PAYMENT_STATUSES]}
+                value={paymentStatus}
+                onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
+              <Select
+                label="Sale Location"
+                options={[
+                  { value: '', label: 'Select location type' },
+                  ...SALE_LOCATION_TYPES,
+                ]}
+                value={saleLocationType}
+                onChange={(e) => setSaleLocationType(e.target.value)}
+              />
+              <Select
+                label="Collector Privacy"
+                options={[...COLLECTOR_ANONYMITY_MODES]}
+                value={collectorAnonymityMode}
+                onChange={(e) => setCollectorAnonymityMode(e.target.value as CollectorAnonymityMode)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
+              <Input
+                label="Discount %"
+                type="number"
+                placeholder="e.g. 10"
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+              />
+              <Input
+                label="Sales Channel"
+                placeholder="e.g. Direct, Referral, Online"
+                value={salesChannel}
+                onChange={(e) => setSalesChannel(e.target.value)}
+              />
+            </div>
+          </div>
+
           <Textarea
             label="Notes"
             placeholder="Any additional information..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
+          />
+
+          <Textarea
+            label="Negotiation Notes"
+            placeholder="Internal negotiation details..."
+            value={negotiationNotes}
+            onChange={(e) => setNegotiationNotes(e.target.value)}
           />
 
           {/* Actions */}
