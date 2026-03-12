@@ -5,7 +5,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { PackingListPDF } from '../pdf/PackingListPDF';
-import { formatDate, formatDimensions } from '../../lib/utils';
+import { formatDate, formatDimensions, downloadBlob } from '../../lib/utils';
 import type { PackingListRow, PackingListItemRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -144,14 +144,7 @@ export function PackingListDetail({
         />,
       ).toBlob();
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${packingList.packing_number}_packing-list.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${packingList.packing_number}_packing-list.pdf`);
     } finally {
       setDownloading(false);
     }

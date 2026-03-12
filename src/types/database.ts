@@ -91,6 +91,8 @@ export type DealStage = 'lead' | 'contacted' | 'quoted' | 'negotiating' | 'sold'
 
 export type GalleryType = 'representative' | 'project' | 'agent';
 
+export type GalleryStatusColor = 'green' | 'yellow' | 'red';
+
 export type InstitutionType = 'museum' | 'foundation' | 'corporate' | 'university' | 'government' | 'other';
 
 // ---- Table row / insert / update types -------------------------------------
@@ -112,6 +114,7 @@ export interface GalleryRow {
   commission_gallery: number | null;
   commission_noa: number | null;
   commission_artist: number | null;
+  status_color: GalleryStatusColor | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -132,6 +135,7 @@ export interface GalleryInsert {
   commission_gallery?: number | null;
   commission_noa?: number | null;
   commission_artist?: number | null;
+  status_color?: GalleryStatusColor | null;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;

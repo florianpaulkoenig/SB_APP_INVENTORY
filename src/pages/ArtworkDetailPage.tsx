@@ -19,7 +19,7 @@ import { ExpenseTracker } from '../components/artworks/ExpenseTracker';
 import { CertificatePDF } from '../components/pdf/CertificatePDF';
 import { useDocumentNumber } from '../hooks/useDocumentNumber';
 import { useAuth } from '../hooks/useAuth';
-import { generateArtworkRefCode } from '../lib/utils';
+import { generateArtworkRefCode, downloadBlob } from '../lib/utils';
 import { DOC_PREFIXES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
@@ -177,14 +177,7 @@ export function ArtworkDetailPage() {
         />,
       ).toBlob();
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${certificate.certificate_number}_certificate.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${certificate.certificate_number}_certificate.pdf`);
     } finally {
       setDownloading(false);
     }

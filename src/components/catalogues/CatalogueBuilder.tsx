@@ -11,6 +11,7 @@ import { Tabs } from '../ui/Tabs';
 import { CatalogueArtworkPicker } from './CatalogueArtworkPicker';
 import { CataloguePDF } from '../pdf/CataloguePDF';
 import { pdf } from '@react-pdf/renderer';
+import { downloadBlob } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
 
 // ---------------------------------------------------------------------------
@@ -207,14 +208,7 @@ export function CatalogueBuilder({ onGenerated }: CatalogueBuilderProps) {
       ).toBlob();
 
       // 6. Trigger download
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${settings.title.replace(/\s+/g, '_')}_Catalogue.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${settings.title.replace(/\s+/g, '_')}_Catalogue.pdf`);
 
       onGenerated?.();
     } catch (err: unknown) {

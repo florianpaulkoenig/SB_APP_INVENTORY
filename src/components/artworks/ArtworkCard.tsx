@@ -1,3 +1,4 @@
+import React from 'react';
 import { Card } from '../ui/Card';
 import { StatusBadge } from '../ui/StatusBadge';
 import { formatCurrency, formatDimensions, truncate } from '../../lib/utils';
@@ -19,7 +20,7 @@ export interface ArtworkCardProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function ArtworkCard({ artwork, imageUrl, onClick, onDownloadCertificate, downloadingCertificate }: ArtworkCardProps) {
+export const ArtworkCard = React.memo(function ArtworkCard({ artwork, imageUrl, onClick, onDownloadCertificate, downloadingCertificate }: ArtworkCardProps) {
   const dimensions = formatDimensions(
     artwork.height,
     artwork.width,
@@ -137,4 +138,4 @@ export function ArtworkCard({ artwork, imageUrl, onClick, onDownloadCertificate,
       </div>
     </Card>
   );
-}
+});

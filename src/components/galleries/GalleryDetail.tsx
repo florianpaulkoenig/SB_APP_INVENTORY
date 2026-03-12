@@ -183,9 +183,22 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-primary-900">
-            {gallery.name}
-          </h1>
+          <div className="flex items-center gap-2.5">
+            {gallery.status_color && (
+              <span
+                className={`inline-block h-3 w-3 flex-shrink-0 rounded-full ${
+                  gallery.status_color === 'green'
+                    ? 'bg-green-500'
+                    : gallery.status_color === 'yellow'
+                      ? 'bg-yellow-400'
+                      : 'bg-red-500'
+                }`}
+              />
+            )}
+            <h1 className="font-display text-2xl font-bold text-primary-900">
+              {gallery.name}
+            </h1>
+          </div>
           {location && (
             <p className="mt-1 text-sm text-primary-500">{location}</p>
           )}

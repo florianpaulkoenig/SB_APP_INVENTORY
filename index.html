@@ -7,9 +7,22 @@
     <meta name="theme-color" content="#1a1a1a" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.supabase.co; connect-src 'self' https://*.supabase.co https://api.exchangerate-api.com data: blob:; font-src 'self' data:; worker-src 'self' blob:; frame-src 'none';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.supabase.co; connect-src 'self' https://*.supabase.co https://api.exchangerate-api.com https://api.mapbox.com https://*.tiles.mapbox.com https://events.mapbox.com data: blob:; font-src 'self' data:; worker-src 'self' blob:; frame-src 'none';" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <title>NOA Inventory</title>
+    <!-- GitHub Pages SPA redirect handler: restores path from 404.html redirect -->
+    <script type="text/javascript">
+      (function(l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search.slice(1).split('&').map(function(s) {
+            return s.replace(/~and~/g, '&')
+          }).join('?');
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location))
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -9,6 +9,7 @@ import JSZip from 'jszip';
 import { CertificatePDF } from '../pdf/CertificatePDF';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
+import { downloadBlob } from '../../lib/utils';
 import type { CertificateRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -116,14 +117,7 @@ export default function BulkCertificateExport({
       const zipBlob = await zip.generateAsync({ type: 'blob' });
 
       // Trigger download
-      const url = URL.createObjectURL(zipBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `certificates_export_${new Date().toISOString().split('T')[0]}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(zipBlob, `certificates_export_${new Date().toISOString().split('T')[0]}.zip`);
     } finally {
       setExporting(false);
       setProgress({ current: 0, total: 0 });

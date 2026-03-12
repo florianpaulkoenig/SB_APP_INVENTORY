@@ -11,7 +11,7 @@ import { useCertificates } from '../../hooks/useCertificates';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { DOC_PREFIXES } from '../../lib/constants';
-import { formatDate } from '../../lib/utils';
+import { formatDate, downloadBlob } from '../../lib/utils';
 import type { CertificateRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -92,14 +92,7 @@ export function CertificateGenerator({
         <CertificatePDF certificate={existingCertificate} language={language} />,
       ).toBlob();
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${existingCertificate.certificate_number}_${artworkReferenceCode}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${existingCertificate.certificate_number}_${artworkReferenceCode}.pdf`);
     } finally {
       setDownloading(false);
     }

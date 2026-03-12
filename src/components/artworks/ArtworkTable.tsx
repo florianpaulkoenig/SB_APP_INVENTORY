@@ -1,3 +1,4 @@
+import React from 'react';
 import { StatusBadge } from '../ui/StatusBadge';
 import { formatCurrency, formatDimensions } from '../../lib/utils';
 import type { ArtworkRow } from '../../types/database';
@@ -81,6 +82,89 @@ function SortIndicator({ active, order }: { active: boolean; order: 'asc' | 'des
 }
 
 // ---------------------------------------------------------------------------
+// Memoised table row – avoids re-rendering every row on sort/filter changes
+// ---------------------------------------------------------------------------
+
+interface ArtworkRowProps {
+  artwork: ArtworkRow;
+  onRowClick: (id: string) => void;
+}
+
+const ArtworkRowItem = React.memo(function ArtworkRowItem({ artwork, onRowClick }: ArtworkRowProps) {
+  const dimensions = formatDimensions(
+    artwork.height,
+    artwork.width,
+    artwork.depth,
+    artwork.dimension_unit,
+  );
+
+  return (
+    <tr
+      onClick={() => onRowClick(artwork.id)}
+      className="cursor-pointer border-b border-primary-100 transition-colors hover:bg-primary-50"
+    >
+      {/* Inventory # */}
+      <td className="hidden px-2 py-2 font-mono text-xs text-primary-700 sm:table-cell sm:px-4 sm:py-3">
+        {artwork.inventory_number}
+      </td>
+
+      {/* Ref Code */}
+      <td className="hidden px-2 py-2 font-mono text-xs text-primary-500 lg:table-cell sm:px-4 sm:py-3">
+        {artwork.reference_code}
+      </td>
+
+      {/* Title */}
+      <td className="px-2 py-2 text-sm font-medium text-primary-900 sm:px-4 sm:py-3">
+        {artwork.title}
+      </td>
+
+      {/* Medium */}
+      <td className="hidden px-2 py-2 text-sm text-primary-600 md:table-cell sm:px-4 sm:py-3">
+        {artwork.medium ?? '\u2014'}
+      </td>
+
+      {/* Year */}
+      <td className="px-2 py-2 text-sm text-primary-600 sm:px-4 sm:py-3">
+        {artwork.year ?? '\u2014'}
+      </td>
+
+      {/* Dimensions */}
+      <td className="hidden px-2 py-2 text-sm text-primary-600 lg:table-cell sm:px-4 sm:py-3">
+        {dimensions || '\u2014'}
+      </td>
+
+      {/* Status */}
+      <td className="px-2 py-2 sm:px-4 sm:py-3">
+        <StatusBadge status={artwork.status} />
+      </td>
+
+      {/* Partners */}
+      <td className="hidden px-2 py-2 md:table-cell sm:px-4 sm:py-3">
+        {artwork.available_for_partners ? (
+          <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+            Yes
+          </span>
+        ) : (
+          <span className="text-xs text-primary-400">{'\u2014'}</span>
+        )}
+      </td>
+
+      {/* Price */}
+      <td className="px-2 py-2 text-sm text-primary-800 sm:px-4 sm:py-3">
+        {artwork.price != null
+          ? formatCurrency(artwork.price, artwork.currency)
+          : '\u2014'}
+      </td>
+
+      {/* Location */}
+      <td className="hidden px-2 py-2 text-sm text-primary-600 md:table-cell sm:px-4 sm:py-3">
+        {artwork.current_location ?? '\u2014'}
+      </td>
+    </tr>
+  );
+});
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -123,80 +207,9 @@ export function ArtworkTable({
 
         {/* Body */}
         <tbody>
-          {artworks.map((artwork) => {
-            const dimensions = formatDimensions(
-              artwork.height,
-              artwork.width,
-              artwork.depth,
-              artwork.dimension_unit,
-            );
-
-            return (
-              <tr
-                key={artwork.id}
-                onClick={() => onRowClick(artwork.id)}
-                className="cursor-pointer border-b border-primary-100 transition-colors hover:bg-primary-50"
-              >
-                {/* Inventory # */}
-                <td className="hidden px-2 py-2 font-mono text-xs text-primary-700 sm:table-cell sm:px-4 sm:py-3">
-                  {artwork.inventory_number}
-                </td>
-
-                {/* Ref Code */}
-                <td className="hidden px-2 py-2 font-mono text-xs text-primary-500 lg:table-cell sm:px-4 sm:py-3">
-                  {artwork.reference_code}
-                </td>
-
-                {/* Title */}
-                <td className="px-2 py-2 text-sm font-medium text-primary-900 sm:px-4 sm:py-3">
-                  {artwork.title}
-                </td>
-
-                {/* Medium */}
-                <td className="hidden px-2 py-2 text-sm text-primary-600 md:table-cell sm:px-4 sm:py-3">
-                  {artwork.medium ?? '\u2014'}
-                </td>
-
-                {/* Year */}
-                <td className="px-2 py-2 text-sm text-primary-600 sm:px-4 sm:py-3">
-                  {artwork.year ?? '\u2014'}
-                </td>
-
-                {/* Dimensions */}
-                <td className="hidden px-2 py-2 text-sm text-primary-600 lg:table-cell sm:px-4 sm:py-3">
-                  {dimensions || '\u2014'}
-                </td>
-
-                {/* Status */}
-                <td className="px-2 py-2 sm:px-4 sm:py-3">
-                  <StatusBadge status={artwork.status} />
-                </td>
-
-                {/* Partners */}
-                <td className="hidden px-2 py-2 md:table-cell sm:px-4 sm:py-3">
-                  {artwork.available_for_partners ? (
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                      Yes
-                    </span>
-                  ) : (
-                    <span className="text-xs text-primary-400">{'\u2014'}</span>
-                  )}
-                </td>
-
-                {/* Price */}
-                <td className="px-2 py-2 text-sm text-primary-800 sm:px-4 sm:py-3">
-                  {artwork.price != null
-                    ? formatCurrency(artwork.price, artwork.currency)
-                    : '\u2014'}
-                </td>
-
-                {/* Location */}
-                <td className="hidden px-2 py-2 text-sm text-primary-600 md:table-cell sm:px-4 sm:py-3">
-                  {artwork.current_location ?? '\u2014'}
-                </td>
-              </tr>
-            );
-          })}
+          {artworks.map((artwork) => (
+            <ArtworkRowItem key={artwork.id} artwork={artwork} onRowClick={onRowClick} />
+          ))}
         </tbody>
       </table>
 

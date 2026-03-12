@@ -6,7 +6,7 @@ import { StatusBadge } from '../ui/StatusBadge';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { ProductionOrderPDF } from '../pdf/ProductionOrderPDF';
-import { formatDate, formatDimensions, formatCurrency } from '../../lib/utils';
+import { formatDate, formatDimensions, formatCurrency, downloadBlob } from '../../lib/utils';
 import { PRODUCTION_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
 import type {
@@ -269,14 +269,7 @@ export function ProductionOrderDetail({
         />,
       ).toBlob();
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${order.order_number}_production-order.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${order.order_number}_production-order.pdf`);
     } finally {
       setDownloading(false);
     }
@@ -325,14 +318,7 @@ export function ProductionOrderDetail({
       }
 
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(zipBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${order.order_number}_reference-photos.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(zipBlob, `${order.order_number}_reference-photos.zip`);
     } finally {
       setDownloadingPhotos(false);
     }

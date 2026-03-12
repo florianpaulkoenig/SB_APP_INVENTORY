@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, createElement } from 'react'
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../components/ui/Toast';
 import { supabase } from '../lib/supabase';
+import { downloadBlob } from '../lib/utils';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -144,12 +145,7 @@ export function GalleryCertificatesPage() {
           })
         ).toBlob();
 
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `COA-${certNumber}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
+        downloadBlob(blob, `COA-${certNumber}.pdf`);
 
         toast({ title: 'Success', description: 'Certificate downloaded.' });
       } catch (err) {

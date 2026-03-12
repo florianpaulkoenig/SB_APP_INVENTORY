@@ -4,7 +4,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { GALLERY_TYPES } from '../../lib/constants';
-import type { GalleryRow, GalleryInsert, GalleryType } from '../../types/database';
+import type { GalleryRow, GalleryInsert, GalleryType, GalleryStatusColor } from '../../types/database';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -52,6 +52,7 @@ export function GalleryForm({
   const [commissionArtist, setCommissionArtist] = useState(
     gallery?.commission_artist != null ? String(gallery.commission_artist) : '',
   );
+  const [statusColor, setStatusColor] = useState<GalleryStatusColor | ''>(gallery?.status_color ?? '');
   const [notes, setNotes] = useState(gallery?.notes ?? '');
 
   // ---- Validation ---------------------------------------------------------
@@ -111,6 +112,7 @@ export function GalleryForm({
       commission_gallery: commissionGallery !== '' ? parseFloat(commissionGallery) : null,
       commission_noa: commissionNoa !== '' ? parseFloat(commissionNoa) : null,
       commission_artist: commissionArtist !== '' ? parseFloat(commissionArtist) : null,
+      status_color: statusColor || null,
       notes: notes.trim() || null,
     };
 
@@ -248,6 +250,41 @@ export function GalleryForm({
         <p className="mt-2 text-xs text-primary-400">
           Must total 100%. Leave all empty if not applicable.
         </p>
+      </div>
+
+      {/* Status Color */}
+      <div>
+        <label className="mb-2 block text-sm font-medium text-primary-700">
+          Status
+        </label>
+        <div className="flex items-center gap-3">
+          {([
+            { value: 'green', bg: 'bg-green-500', ring: 'ring-green-300' },
+            { value: 'yellow', bg: 'bg-yellow-400', ring: 'ring-yellow-200' },
+            { value: 'red', bg: 'bg-red-500', ring: 'ring-red-300' },
+          ] as const).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setStatusColor(statusColor === opt.value ? '' : opt.value)}
+              className={`h-6 w-6 rounded-full ${opt.bg} transition-all ${
+                statusColor === opt.value
+                  ? `ring-2 ${opt.ring} ring-offset-2`
+                  : 'opacity-40 hover:opacity-70'
+              }`}
+              aria-label={opt.value}
+            />
+          ))}
+          {statusColor && (
+            <button
+              type="button"
+              onClick={() => setStatusColor('')}
+              className="text-xs text-primary-400 hover:text-primary-600"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Notes */}

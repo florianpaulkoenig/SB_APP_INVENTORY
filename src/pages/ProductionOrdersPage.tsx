@@ -16,7 +16,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { PRODUCTION_STATUSES } from '../lib/constants';
-import { formatDate, formatDimensions, formatCurrency, sanitizeFilterTerm } from '../lib/utils';
+import { formatDate, formatDimensions, formatCurrency, sanitizeFilterTerm, downloadBlob } from '../lib/utils';
 import { useExchangeRates } from '../hooks/useExchangeRates';
 import type { ProductionStatus, ProductionOrderRow } from '../types/database';
 
@@ -257,14 +257,7 @@ export function ProductionOrdersPage() {
         />,
       ).toBlob();
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `NOA_SB_Production_${new Date().toISOString().slice(0, 10)}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `NOA_SB_Production_${new Date().toISOString().slice(0, 10)}.pdf`);
     } finally {
       setDownloadingId(null);
     }
@@ -448,14 +441,7 @@ export function ProductionOrdersPage() {
       }
 
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(zipBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `NOA_SB_Production_Artist_${dateSuffix}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(zipBlob, `NOA_SB_Production_Artist_${dateSuffix}.zip`);
     } finally {
       setDownloadingArtist(false);
     }
@@ -553,14 +539,7 @@ export function ProductionOrdersPage() {
         />,
       ).toBlob();
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `NOA_SB_Production_Overview_${new Date().toISOString().slice(0, 10)}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `NOA_SB_Production_Overview_${new Date().toISOString().slice(0, 10)}.pdf`);
     } finally {
       setDownloadingOverview(false);
     }

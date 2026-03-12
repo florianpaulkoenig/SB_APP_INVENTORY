@@ -20,10 +20,23 @@ export function GalleryCard({ gallery, artworkCount, onClick }: GalleryCardProps
 
   return (
     <Card hoverable onClick={onClick} className="p-5">
-      {/* Name */}
-      <h3 className="font-display text-base font-semibold text-primary-900 truncate">
-        {gallery.name}
-      </h3>
+      {/* Name + status dot */}
+      <div className="flex items-center gap-2">
+        {gallery.status_color && (
+          <span
+            className={`inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full ${
+              gallery.status_color === 'green'
+                ? 'bg-green-500'
+                : gallery.status_color === 'yellow'
+                  ? 'bg-yellow-400'
+                  : 'bg-red-500'
+            }`}
+          />
+        )}
+        <h3 className="font-display text-base font-semibold text-primary-900 truncate">
+          {gallery.name}
+        </h3>
+      </div>
 
       {/* Location */}
       {location && (

@@ -10,7 +10,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { FORWARDING_STATUSES } from '../lib/constants';
-import { formatDate, formatDimensions } from '../lib/utils';
+import { formatDate, formatDimensions, downloadBlob } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import type { ForwardingStatus } from '../types/database';
 
@@ -111,14 +111,7 @@ export function GalleryForwardingOrdersPage() {
       />,
     ).toBlob();
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${order.forwarding_number}_forwarding-order.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${order.forwarding_number}_forwarding-order.pdf`);
   }
 
   // ---- Render -------------------------------------------------------------

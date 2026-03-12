@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, createElement } from 'react';
 import { supabase } from '../lib/supabase';
+import { downloadBlob } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
 import { ARTIST_NAME } from '../lib/constants';
 
@@ -283,14 +284,7 @@ export function useCVEntries() {
       );
 
       const blob = await pdf(doc).toBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${ARTIST_NAME.replace(/\s+/g, '_')}_CV.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${ARTIST_NAME.replace(/\s+/g, '_')}_CV.pdf`);
 
       toast({
         title: 'PDF Exported',

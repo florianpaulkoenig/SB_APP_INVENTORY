@@ -106,6 +106,9 @@ export function useGalleryAnalytics(
     const sales = raw.sales as Array<Record<string, unknown>>;
     const artworks = raw.artworks as Array<Record<string, unknown>>;
 
+    // Build lookup map for O(1) artwork access (instead of .find() per sale)
+    const artworkById = new Map(artworks.map((a) => [a.id as string, a]));
+
     // --- KPIs ---
     const consignedCount = artworks.filter((a) =>
       ['available', 'on_consignment', 'reserved'].includes(a.status as string),
@@ -127,7 +130,7 @@ export function useGalleryAnalytics(
     let totalDays = 0;
     let daysCount = 0;
     for (const s of sales) {
-      const artwork = artworks.find((a) => a.id === s.artwork_id);
+      const artwork = artworkById.get(s.artwork_id as string);
       if (artwork && artwork.consigned_since && s.sale_date) {
         const d = Math.abs(
           (new Date(s.sale_date as string).getTime() - new Date(artwork.consigned_since as string).getTime()) /
@@ -170,7 +173,7 @@ export function useGalleryAnalytics(
     // --- Top Artworks ---
     const topArtworks = sales
       .map((s) => {
-        const artwork = artworks.find((a) => a.id === s.artwork_id);
+        const artwork = artworkById.get(s.artwork_id as string);
         return {
           artworkId: s.artwork_id as string,
           title: (artwork?.title as string) || 'Unknown',

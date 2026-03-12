@@ -42,7 +42,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
     try {
       const { data, error: fetchError } = await supabase
         .from('artwork_images')
-        .select('*')
+        .select('id, artwork_id, user_id, storage_path, file_name, file_size, mime_type, image_type, is_primary, sort_order, created_at')
         .eq('artwork_id', artworkId)
         .order('sort_order', { ascending: true });
 

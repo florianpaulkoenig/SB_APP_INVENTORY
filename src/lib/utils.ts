@@ -141,3 +141,42 @@ export function sanitizeStoragePath(filename: string): string {
     .replace(/^_|_$/g, '');
   return (sanitized || 'file') + ext.toLowerCase();
 }
+
+// ---------------------------------------------------------------------------
+// Safe file download helper
+// Opens PDFs in a new browser tab (avoids Chrome "unsafe download" warnings
+// for blob: downloads, especially on HTTP origins). For other file types,
+// falls back to the standard anchor-click approach.
+// ---------------------------------------------------------------------------
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const isPdf = blob.type === 'application/pdf' || filename.endsWith('.pdf');
+
+  if (isPdf) {
+    // Open PDF in a new tab — the browser's built-in viewer lets the user
+    // save, print, or copy.  This avoids the "unsafe download" warning that
+    // Chrome shows for programmatic blob downloads on HTTP origins.
+    const w = window.open(url, '_blank');
+    // If popup was blocked, fall back to anchor download
+    if (!w) {
+      triggerAnchorDownload(url, filename);
+    } else {
+      // Revoke after a delay so the tab has time to load
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }
+  } else {
+    triggerAnchorDownload(url, filename);
+  }
+}
+
+function triggerAnchorDownload(url: string, filename: string): void {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  // Small delay before revoking so the browser can start the download
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

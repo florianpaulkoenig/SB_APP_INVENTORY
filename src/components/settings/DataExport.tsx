@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { sanitizeFilterTerm } from '../../lib/utils';
+import { sanitizeFilterTerm, downloadBlob } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/Button';
 import { Select, type SelectOption } from '../ui/Select';
@@ -127,14 +127,7 @@ export function DataExport() {
       }
 
       const blob = new Blob([content], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${selectedTable}_export.${extension}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${selectedTable}_export.${extension}`);
 
       toast({
         title: 'Export successful',

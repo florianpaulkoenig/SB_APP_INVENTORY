@@ -5,7 +5,7 @@ import { StatusBadge } from '../ui/StatusBadge';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { DeliveryReceiptPDF } from '../pdf/DeliveryReceiptPDF';
-import { formatDate, formatDimensions } from '../../lib/utils';
+import { formatDate, formatDimensions, downloadBlob } from '../../lib/utils';
 import { DELIVERY_STATUSES, ARTWORK_CATEGORIES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
 import type { DeliveryRow, DeliveryItemRow, DeliveryStatus } from '../../types/database';
@@ -212,14 +212,7 @@ export function DeliveryDetail({
         />,
       ).toBlob();
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${delivery.delivery_number}_delivery-receipt.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${delivery.delivery_number}_delivery-receipt.pdf`);
     } finally {
       setDownloading(false);
     }

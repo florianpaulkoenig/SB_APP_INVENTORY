@@ -124,65 +124,151 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const { toCHF, ready: ratesReady } = useExchangeRates();
   const { data: analyticsData, loading: analyticsLoading } = useDashboardAnalytics(toCHF, ratesReady);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [galleryCounts, setGalleryCounts] = useState<GalleryCount[]>([]);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalPotential, setTotalPotential] = useState(0);
-  const [confirmedOrdersRevenue, setConfirmedOrdersRevenue] = useState(0);
-  const [galleryRevenues, setGalleryRevenues] = useState<GalleryRevenue[]>([]);
-  const [galleryPotentials, setGalleryPotentials] = useState<GalleryPotential[]>([]);
-  const [galleryOrderRevenues, setGalleryOrderRevenues] = useState<GalleryOrderRevenue[]>([]);
-  const [galleryPerformance, setGalleryPerformance] = useState<GalleryPerformance[]>([]);
-  const [revenueSplit, setRevenueSplit] = useState<RevenueSplit>({ gallery: 0, noa: 0, artist: 0, total: 0 });
-  const [potentialSplit, setPotentialSplit] = useState<RevenueSplit>({ gallery: 0, noa: 0, artist: 0, total: 0 });
-  const [ordersSplit, setOrdersSplit] = useState<RevenueSplit>({ gallery: 0, noa: 0, artist: 0, total: 0 });
-  const [loading, setLoading] = useState(true);
+  // Consolidated dashboard state — single useState to batch all updates
+  interface DashboardRawState {
+    stats: DashboardStats | null;
+    galleryCounts: GalleryCount[];
+    totalRevenue: number;
+    totalPotential: number;
+    confirmedOrdersRevenue: number;
+    galleryRevenues: GalleryRevenue[];
+    galleryPotentials: GalleryPotential[];
+    galleryOrderRevenues: GalleryOrderRevenue[];
+    galleryPerformance: GalleryPerformance[];
+    revenueSplit: RevenueSplit;
+    potentialSplit: RevenueSplit;
+    ordersSplit: RevenueSplit;
+    loading: boolean;
+    rawArtworks: RawArtwork[];
+    rawSales: RawSale[];
+    rawProdOrders: RawProdOrder[];
+    // Per-order value from unconverted items only (excludes items already converted to artworks)
+    prodOrderItemValues: Record<string, { value: number; currency: string }>;
+    galleryNameMap: Record<string, string>;
+    galleryTypeMap: Record<string, string>;
+    galleryCommissionRates: Record<string, number>;
+    galleryCommissionSplits: Record<string, { gallery: number; noa: number; artist: number }>;
+    consignmentDates: Record<string, string>;
+  }
 
-  // Store raw data so we can re-compute when exchange rates arrive
-  const [rawArtworks, setRawArtworks] = useState<RawArtwork[]>([]);
-  const [rawSales, setRawSales] = useState<RawSale[]>([]);
-  const [rawProdOrders, setRawProdOrders] = useState<RawProdOrder[]>([]);
-  // Per-order value from unconverted items only (excludes items already converted to artworks)
-  const [prodOrderItemValues, setProdOrderItemValues] = useState<Record<string, { value: number; currency: string }>>({});
-  const [galleryNameMap, setGalleryNameMap] = useState<Record<string, string>>({});
-  const [galleryTypeMap, setGalleryTypeMap] = useState<Record<string, string>>({});
-  const [galleryCommissionRates, setGalleryCommissionRates] = useState<Record<string, number>>({});
-  const [galleryCommissionSplits, setGalleryCommissionSplits] = useState<Record<string, { gallery: number; noa: number; artist: number }>>({});
-  const [consignmentDates, setConsignmentDates] = useState<Record<string, string>>({});
+  const initialSplit: RevenueSplit = { gallery: 0, noa: 0, artist: 0, total: 0 };
+
+  const [state, setState] = useState<DashboardRawState>({
+    stats: null,
+    galleryCounts: [],
+    totalRevenue: 0,
+    totalPotential: 0,
+    confirmedOrdersRevenue: 0,
+    galleryRevenues: [],
+    galleryPotentials: [],
+    galleryOrderRevenues: [],
+    galleryPerformance: [],
+    revenueSplit: initialSplit,
+    potentialSplit: initialSplit,
+    ordersSplit: initialSplit,
+    loading: true,
+    rawArtworks: [],
+    rawSales: [],
+    rawProdOrders: [],
+    prodOrderItemValues: {},
+    galleryNameMap: {},
+    galleryTypeMap: {},
+    galleryCommissionRates: {},
+    galleryCommissionSplits: {},
+    consignmentDates: {},
+  });
+
+  // Destructure for convenience (used by JSX, useMemo, useEffect deps)
+  const {
+    stats, galleryCounts, totalRevenue, totalPotential, confirmedOrdersRevenue,
+    galleryRevenues, galleryPotentials, galleryOrderRevenues, galleryPerformance,
+    revenueSplit, potentialSplit, ordersSplit, loading,
+    rawArtworks, rawSales, rawProdOrders, prodOrderItemValues,
+    galleryNameMap, galleryTypeMap, galleryCommissionRates, galleryCommissionSplits,
+    consignmentDates,
+  } = state;
 
   // ---- Fetch raw data from Supabase (currency-agnostic) -------------------
 
   const fetchRawData = useCallback(async () => {
-    // Fetch artworks
-    const { data: artworks, error } = await supabase
-      .from('artworks')
-      .select('status, gallery_id, price, currency');
+    // Phase 1: Run three independent queries in parallel
+    const [artworksResult, prodOrdersResult, salesResult] = await Promise.all([
+      supabase
+        .from('artworks')
+        .select('status, gallery_id, price, currency')
+        .limit(5000),
+      supabase
+        .from('production_orders')
+        .select('id, price, currency, status, gallery_id')
+        .not('status', 'in', '("draft","completed")'),
+      supabase
+        .from('sales')
+        .select('sale_price, currency, gallery_id, sale_date, commission_percent, artwork_id')
+        .limit(5000),
+    ]);
 
-    if (error || !artworks) {
-      setLoading(false);
+    const artworks = artworksResult.data;
+    if (artworksResult.error || !artworks) {
+      setState((prev) => ({ ...prev, loading: false }));
       return;
     }
 
-    setRawArtworks(artworks);
+    const prodOrders = prodOrdersResult.data ?? [];
+    const sales = salesResult.data ?? [];
 
-    // Fetch production orders (include gallery_id for per-gallery breakdown)
-    const { data: prodOrders } = await supabase
-      .from('production_orders')
-      .select('id, price, currency, status, gallery_id')
-      .not('status', 'in', '("draft","completed")');
-    setRawProdOrders(prodOrders ?? []);
+    // Collect all gallery IDs (artworks, sales, AND production orders)
+    const allGalleryIds = new Set<string>();
+    for (const row of artworks) {
+      if (row.gallery_id) allGalleryIds.add(row.gallery_id);
+    }
+    for (const sale of sales) {
+      if (sale.gallery_id) allGalleryIds.add(sale.gallery_id);
+    }
+    for (const po of prodOrders) {
+      if (po.gallery_id) allGalleryIds.add(po.gallery_id);
+    }
 
-    // Fetch production order items (count + per-item values excluding converted)
-    const activeOrderIds = (prodOrders ?? []).map((o) => o.id);
+    // Compute dependent query inputs
+    const activeOrderIds = prodOrders.map((o) => o.id);
+    const soldArtworkIds = sales
+      .filter((s) => s.artwork_id)
+      .map((s) => s.artwork_id as string);
+    const galleryIds = Array.from(allGalleryIds);
+
+    // Phase 2: Run three dependent queries in parallel
+    const [orderItemsResult, galleriesResult, movementsResult] = await Promise.all([
+      activeOrderIds.length > 0
+        ? supabase
+            .from('production_order_items')
+            .select('production_order_id, quantity, price, currency, artwork_id')
+            .in('production_order_id', activeOrderIds)
+        : Promise.resolve({ data: null }),
+      galleryIds.length > 0
+        ? supabase
+            .from('galleries')
+            .select('id, name, type, commission_rate, commission_gallery, commission_noa, commission_artist')
+            .in('id', galleryIds)
+        : Promise.resolve({ data: null }),
+      soldArtworkIds.length > 0
+        ? supabase
+            .from('artwork_movements')
+            .select('artwork_id, movement_date, movement_type')
+            .in('artwork_id', soldArtworkIds)
+            .eq('movement_type', 'consignment')
+            .order('movement_date', { ascending: true })
+        : Promise.resolve({ data: null }),
+    ]);
+
+    // Process production order items
     let orderedItemCount = 0;
+    const inProductionOrderIds = new Set(prodOrders.filter((o) => o.status === 'in_production').map((o) => o.id));
     const itemValMap: Record<string, { value: number; currency: string }> = {};
-    if (activeOrderIds.length > 0) {
-      const { data: orderItems } = await supabase
-        .from('production_order_items')
-        .select('production_order_id, quantity, price, currency, artwork_id')
-        .in('production_order_id', activeOrderIds);
-      orderedItemCount = (orderItems ?? []).reduce((sum, item) => sum + (item.quantity || 1), 0);
-      for (const item of orderItems ?? []) {
+    const orderItems = orderItemsResult.data;
+    if (orderItems) {
+      orderedItemCount = orderItems
+        .filter((item) => !inProductionOrderIds.has(item.production_order_id))
+        .reduce((sum, item) => sum + (item.quantity || 1), 0);
+      for (const item of orderItems) {
         if (item.artwork_id) continue; // converted → value moved to artwork potential revenue
         if (item.price != null && item.price > 0) {
           const qty = item.quantity ?? 1;
@@ -194,19 +280,34 @@ export function DashboardPage() {
         }
       }
     }
-    setProdOrderItemValues(itemValMap);
 
-    // Stat counts (no currency needed)
-    setStats({
-      total: artworks.length,
-      available: artworks.filter((a) => a.status === 'available').length,
-      onConsignment: artworks.filter((a) => a.status === 'on_consignment').length,
-      sold: artworks.filter((a) => a.status === 'sold').length,
-      reserved: artworks.filter((a) => a.status === 'reserved').length,
-      inProduction: (prodOrders ?? []).length,
-      inTransit: artworks.filter((a) => a.status === 'in_transit').length,
-      ordered: orderedItemCount,
-    });
+    // Process gallery data
+    const nameMap: Record<string, string> = {};
+    const typeMap: Record<string, string> = {};
+    const commissionMap: Record<string, number> = {};
+    const splitMap: Record<string, { gallery: number; noa: number; artist: number }> = {};
+    for (const g of galleriesResult.data ?? []) {
+      nameMap[g.id] = g.name;
+      typeMap[g.id] = g.type ?? 'primary_flagship';
+      if (g.commission_rate != null) {
+        commissionMap[g.id] = g.commission_rate;
+      }
+      if (g.commission_gallery != null || g.commission_noa != null || g.commission_artist != null) {
+        splitMap[g.id] = {
+          gallery: g.commission_gallery ?? 0,
+          noa: g.commission_noa ?? 0,
+          artist: g.commission_artist ?? 0,
+        };
+      }
+    }
+
+    // Process consignment movements
+    const dateMap: Record<string, string> = {};
+    for (const m of movementsResult.data ?? []) {
+      if (!dateMap[m.artwork_id]) {
+        dateMap[m.artwork_id] = m.movement_date;
+      }
+    }
 
     // Gallery counts (no currency needed)
     const galleryIdCounts: Record<string, number> = {};
@@ -226,78 +327,6 @@ export function DashboardPage() {
       }
     }
 
-    // Fetch sales with commission data
-    const { data: sales } = await supabase
-      .from('sales')
-      .select('sale_price, currency, gallery_id, sale_date, commission_percent, artwork_id');
-    setRawSales(sales ?? []);
-
-    // Collect all gallery IDs (artworks, sales, AND production orders)
-    const allGalleryIds = new Set<string>();
-    for (const row of artworks) {
-      if (row.gallery_id) allGalleryIds.add(row.gallery_id);
-    }
-    for (const sale of sales ?? []) {
-      if (sale.gallery_id) allGalleryIds.add(sale.gallery_id);
-    }
-    for (const po of prodOrders ?? []) {
-      if (po.gallery_id) allGalleryIds.add(po.gallery_id);
-    }
-
-    // Fetch gallery names + commission rates + splits
-    const galleryIds = Array.from(allGalleryIds);
-    const nameMap: Record<string, string> = {};
-    const typeMap: Record<string, string> = {};
-    const commissionMap: Record<string, number> = {};
-    const splitMap: Record<string, { gallery: number; noa: number; artist: number }> = {};
-    if (galleryIds.length > 0) {
-      const { data: galleries } = await supabase
-        .from('galleries')
-        .select('id, name, type, commission_rate, commission_gallery, commission_noa, commission_artist')
-        .in('id', galleryIds);
-      for (const g of galleries ?? []) {
-        nameMap[g.id] = g.name;
-        typeMap[g.id] = g.type ?? 'primary_flagship';
-        if (g.commission_rate != null) {
-          commissionMap[g.id] = g.commission_rate;
-        }
-        if (g.commission_gallery != null || g.commission_noa != null || g.commission_artist != null) {
-          splitMap[g.id] = {
-            gallery: g.commission_gallery ?? 0,
-            noa: g.commission_noa ?? 0,
-            artist: g.commission_artist ?? 0,
-          };
-        }
-      }
-    }
-    setGalleryNameMap(nameMap);
-    setGalleryTypeMap(typeMap);
-    setGalleryCommissionRates(commissionMap);
-    setGalleryCommissionSplits(splitMap);
-
-    // Fetch consignment movements for avg-days-to-sell calculation
-    // Get the earliest consignment date per artwork
-    const soldArtworkIds = (sales ?? [])
-      .filter((s) => s.artwork_id)
-      .map((s) => s.artwork_id as string);
-    if (soldArtworkIds.length > 0) {
-      const { data: movements } = await supabase
-        .from('artwork_movements')
-        .select('artwork_id, movement_date, movement_type')
-        .in('artwork_id', soldArtworkIds)
-        .eq('movement_type', 'consignment')
-        .order('movement_date', { ascending: true });
-      // Store earliest consignment date per artwork
-      const dateMap: Record<string, string> = {};
-      for (const m of movements ?? []) {
-        if (!dateMap[m.artwork_id]) {
-          dateMap[m.artwork_id] = m.movement_date;
-        }
-      }
-      setConsignmentDates(dateMap);
-    }
-
-    // Set gallery counts
     const counts: GalleryCount[] = galleryIds
       .filter((gId) => galleryIdCounts[gId])
       .map((gId) => ({
@@ -309,9 +338,32 @@ export function DashboardPage() {
         available: galleryAvailable[gId] || 0,
       }))
       .sort((a, b) => b.count - a.count);
-    setGalleryCounts(counts);
 
-    setLoading(false);
+    // Build complete state update in one call
+    setState((prev) => ({
+      ...prev,
+      rawArtworks: artworks,
+      rawSales: sales,
+      rawProdOrders: prodOrders,
+      prodOrderItemValues: itemValMap,
+      galleryNameMap: nameMap,
+      galleryTypeMap: typeMap,
+      galleryCommissionRates: commissionMap,
+      galleryCommissionSplits: splitMap,
+      consignmentDates: dateMap,
+      galleryCounts: counts,
+      stats: {
+        total: artworks.length,
+        available: artworks.filter((a) => a.status === 'available').length,
+        onConsignment: artworks.filter((a) => a.status === 'on_consignment').length,
+        sold: artworks.filter((a) => a.status === 'sold').length,
+        reserved: artworks.filter((a) => a.status === 'reserved').length,
+        inProduction: prodOrders.filter((o) => o.status === 'in_production').length,
+        inTransit: artworks.filter((a) => a.status === 'in_transit').length,
+        ordered: orderedItemCount,
+      },
+      loading: false,
+    }));
   }, []);
 
   useEffect(() => {
@@ -329,7 +381,7 @@ export function DashboardPage() {
       (sum, a) => sum + toCHF(a.price ?? 0, a.currency ?? 'EUR'),
       0,
     );
-    setTotalPotential(potentialTotal);
+    // potentialTotal used below
 
     // Potential per gallery (CHF)
     const galleryPotentialMap: Record<string, number> = {};
@@ -347,7 +399,6 @@ export function DashboardPage() {
         potential: pot,
       }))
       .sort((a, b) => b.potential - a.potential);
-    setGalleryPotentials(potentials);
 
     // ---- Confirmed production orders revenue (CHF) — total + per gallery ----
     // Use per-item values excluding converted items (artwork_id set)
@@ -356,7 +407,7 @@ export function DashboardPage() {
       if (itemVal && itemVal.value > 0) return sum + toCHF(itemVal.value, itemVal.currency);
       return sum;
     }, 0);
-    setConfirmedOrdersRevenue(confirmedTotal);
+    // confirmedTotal used below
 
     // Orders revenue per gallery (CHF)
     const galleryOrderMap: Record<string, { revenue: number; count: number }> = {};
@@ -379,14 +430,13 @@ export function DashboardPage() {
         orderCount: data.count,
       }))
       .sort((a, b) => b.revenue - a.revenue);
-    setGalleryOrderRevenues(orderRevs);
 
     // ---- Sales revenue (CHF) ----
     const revenueTotal = rawSales.reduce(
       (sum, s) => sum + toCHF(s.sale_price ?? 0, s.currency ?? 'EUR'),
       0,
     );
-    setTotalRevenue(revenueTotal);
+    // revenueTotal used below
 
     // Revenue per gallery (CHF)
     const galleryRevenueMap: Record<string, number> = {};
@@ -404,7 +454,6 @@ export function DashboardPage() {
         revenue: rev,
       }))
       .sort((a, b) => b.revenue - a.revenue);
-    setGalleryRevenues(revenues);
 
     // ---- Revenue split: Gallery / NOA / Artist (CHF) ----
     let splitGallery = 0;
@@ -422,7 +471,7 @@ export function DashboardPage() {
         splitArtist += chfPrice;
       }
     }
-    setRevenueSplit({ gallery: splitGallery, noa: splitNoa, artist: splitArtist, total: revenueTotal });
+    const computedRevenueSplit: RevenueSplit = { gallery: splitGallery, noa: splitNoa, artist: splitArtist, total: revenueTotal };
 
     // ---- Potential Revenue Split: Gallery / NOA / Artist (CHF) ----
     let potSplitGallery = 0;
@@ -439,7 +488,7 @@ export function DashboardPage() {
         potSplitArtist += chfPrice;
       }
     }
-    setPotentialSplit({ gallery: potSplitGallery, noa: potSplitNoa, artist: potSplitArtist, total: potentialTotal });
+    const computedPotentialSplit: RevenueSplit = { gallery: potSplitGallery, noa: potSplitNoa, artist: potSplitArtist, total: potentialTotal };
 
     // ---- Confirmed Orders Revenue Split: Gallery / NOA / Artist (CHF) ----
     let ordSplitGallery = 0;
@@ -458,7 +507,7 @@ export function DashboardPage() {
         ordSplitArtist += chfPrice;
       }
     }
-    setOrdersSplit({ gallery: ordSplitGallery, noa: ordSplitNoa, artist: ordSplitArtist, total: confirmedTotal });
+    const computedOrdersSplit: RevenueSplit = { gallery: ordSplitGallery, noa: ordSplitNoa, artist: ordSplitArtist, total: confirmedTotal };
 
     // ---- Gallery Performance Analysis ----
     // Collect per-gallery: sell-through rate, revenue, commission, avg days to sell
@@ -533,7 +582,21 @@ export function DashboardPage() {
       })
       .filter((p) => p.totalArtworks > 0 || p.revenue > 0)
       .sort((a, b) => b.sellThroughRate - a.sellThroughRate);
-    setGalleryPerformance(performances);
+
+    // Single consolidated state update for all currency-converted values
+    setState((prev) => ({
+      ...prev,
+      totalPotential: potentialTotal,
+      galleryPotentials: potentials,
+      confirmedOrdersRevenue: confirmedTotal,
+      galleryOrderRevenues: orderRevs,
+      totalRevenue: revenueTotal,
+      galleryRevenues: revenues,
+      revenueSplit: computedRevenueSplit,
+      potentialSplit: computedPotentialSplit,
+      ordersSplit: computedOrdersSplit,
+      galleryPerformance: performances,
+    }));
   }, [ratesReady, toCHF, rawArtworks, rawSales, rawProdOrders, prodOrderItemValues, galleryNameMap, galleryCommissionRates, galleryCommissionSplits, consignmentDates]);
 
   // ---- Stat cards ---------------------------------------------------------
@@ -686,7 +749,7 @@ export function DashboardPage() {
                       <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium text-primary-500">Revenue Type</th>
                       <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-sky-600">Gallery</th>
                       <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-amber-600">NOA</th>
-                      <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-emerald-600">Artist</th>
+                      <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-emerald-600">Simon Berger</th>
                       <th className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-primary-500">Total</th>
                     </tr>
                   </thead>
@@ -795,13 +858,48 @@ export function DashboardPage() {
                         </td>
                       </tr>
                     )}
+
+                    {/* Totals Row */}
+                    {(() => {
+                      const totalGallery = revenueSplit.gallery + potentialSplit.gallery + ordersSplit.gallery;
+                      const totalNoa = revenueSplit.noa + potentialSplit.noa + ordersSplit.noa;
+                      const totalArtist = revenueSplit.artist + potentialSplit.artist + ordersSplit.artist;
+                      const grandTotal = revenueSplit.total + potentialSplit.total + ordersSplit.total;
+                      if (grandTotal <= 0) return null;
+                      return (
+                        <tr className="border-t-2 border-primary-200 bg-primary-50/50">
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 font-bold text-primary-900">Total</td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 text-right font-bold text-sky-600">
+                            {formatCurrency(totalGallery, 'CHF')}
+                            <span className="ml-1 text-xs font-normal text-primary-400">
+                              ({((totalGallery / grandTotal) * 100).toFixed(0)}%)
+                            </span>
+                          </td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 text-right font-bold text-amber-600">
+                            {formatCurrency(totalNoa, 'CHF')}
+                            <span className="ml-1 text-xs font-normal text-primary-400">
+                              ({((totalNoa / grandTotal) * 100).toFixed(0)}%)
+                            </span>
+                          </td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 text-right font-bold text-emerald-600">
+                            {formatCurrency(totalArtist, 'CHF')}
+                            <span className="ml-1 text-xs font-normal text-primary-400">
+                              ({((totalArtist / grandTotal) * 100).toFixed(0)}%)
+                            </span>
+                          </td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 text-right font-bold text-primary-900">
+                            {formatCurrency(grandTotal, 'CHF')}
+                          </td>
+                        </tr>
+                      );
+                    })()}
                   </tbody>
                 </table>
               </div>
               <div className="mt-2 flex items-center gap-4 text-xs text-primary-400">
                 <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-sky-500" /> Gallery</span>
                 <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-amber-500" /> NOA</span>
-                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Artist</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Simon Berger</span>
                 <span className="ml-auto">Based on commission splits per gallery profile</span>
               </div>
             </>
@@ -918,7 +1016,7 @@ export function DashboardPage() {
           })}
 
           <p className="mt-2 text-xs text-primary-400">
-            Sorted by total revenue. Sell-through = Sold / (Sold + Consigned). Commission Split = Gallery / NOA / Artist.
+            Sorted by total revenue. Sell-through = Sold / (Sold + Consigned). Commission Split = Gallery / NOA / Simon Berger.
           </p>
         </div>
       )}

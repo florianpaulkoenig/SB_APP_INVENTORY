@@ -5,7 +5,7 @@ import { StatusBadge } from '../ui/StatusBadge';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { GalleryForwardingPDF } from '../pdf/GalleryForwardingPDF';
-import { formatDate, formatDimensions, formatCurrency } from '../../lib/utils';
+import { formatDate, formatDimensions, formatCurrency, downloadBlob } from '../../lib/utils';
 import { FORWARDING_STATUSES } from '../../lib/constants';
 import type {
   GalleryForwardingOrderRow,
@@ -174,14 +174,7 @@ export function GalleryForwardingDetail({
         />,
       ).toBlob();
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${order.forwarding_number}_forwarding-order.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${order.forwarding_number}_forwarding-order.pdf`);
     } finally {
       setDownloading(false);
     }

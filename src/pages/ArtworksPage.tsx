@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, createElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { downloadBlob } from '../lib/utils';
 import { useArtworks } from '../hooks/useArtworks';
 import type { ArtworkFilters as ArtworkFiltersType } from '../hooks/useArtworks';
 import { ArtworkCard } from '../components/artworks/ArtworkCard';
@@ -23,8 +24,24 @@ const PAGE_SIZE = 24;
 
 // Module-level signed URL cache – persists across re-renders / page changes.
 // Key = artwork_id, value = { url, expiresAt } (1 hour TTL).
+// Bounded to MAX_CACHE entries to avoid unbounded memory growth.
 const urlCache = new Map<string, { url: string; expiresAt: number }>();
 const URL_TTL = 55 * 60 * 1000; // 55 minutes (URLs expire at 60)
+const MAX_CACHE = 500;
+
+/** Evict oldest entries when cache exceeds MAX_CACHE */
+function cacheSet(key: string, value: { url: string; expiresAt: number }) {
+  urlCache.set(key, value);
+  if (urlCache.size > MAX_CACHE) {
+    // Map iteration order is insertion order — delete the first (oldest) entries
+    const excess = urlCache.size - MAX_CACHE;
+    const iter = urlCache.keys();
+    for (let i = 0; i < excess; i++) {
+      const oldest = iter.next().value;
+      if (oldest !== undefined) urlCache.delete(oldest);
+    }
+  }
+}
 
 const SORT_OPTIONS = [
   { value: 'created_at:desc', label: 'Newest First' },
@@ -134,7 +151,7 @@ export function ArtworksPage() {
     for (const { artworkId, url } of results) {
       if (url) {
         urlMap[artworkId] = url;
-        urlCache.set(artworkId, { url, expiresAt });
+        cacheSet(artworkId, { url, expiresAt });
       }
     }
 
@@ -237,14 +254,7 @@ export function ArtworksPage() {
       ).toBlob();
 
       // Download
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${cert.certificate_number}_certificate.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${cert.certificate_number}_certificate.pdf`);
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to download certificate.', variant: 'error' });
     } finally {

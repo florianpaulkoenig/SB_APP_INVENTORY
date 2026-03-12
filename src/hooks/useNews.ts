@@ -33,8 +33,9 @@ export function useNews(options?: UseNewsOptions) {
     try {
       let query = supabase
         .from('news_posts')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, title, body, image_url, external_link, published, published_at, created_by, created_at, updated_at')
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (publishedOnly) {
         query = query.eq('published', true);
