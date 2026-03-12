@@ -1895,6 +1895,111 @@ export interface CareerMilestoneInsert {
 
 export type CareerMilestoneUpdate = Partial<CareerMilestoneInsert>;
 
+// -- ai_insights -------------------------------------------------------------
+
+export type AiInsightCategory =
+  | 'pricing'
+  | 'inventory'
+  | 'sales'
+  | 'collector'
+  | 'gallery'
+  | 'exhibition'
+  | 'production'
+  | 'market'
+  | 'strategic';
+
+export type AiInsightPriority = 'critical' | 'high' | 'medium' | 'low';
+
+export type AiInsightStatus = 'new' | 'read' | 'acted' | 'dismissed' | 'expired';
+
+export type AiInsightTrigger = 'scheduled' | 'on_demand' | 'threshold';
+
+export interface AiInsightRow {
+  id: string;
+  user_id: string;
+  category: AiInsightCategory;
+  priority: AiInsightPriority;
+  title: string;
+  summary: string;
+  analysis: string;
+  recommendations: string[] | null;
+  data_snapshot: Record<string, unknown> | null;
+  status: AiInsightStatus;
+  expires_at: string | null;
+  acted_at: string | null;
+  trigger: AiInsightTrigger;
+  ai_model: string | null;
+  created_at: string;
+}
+
+export interface AiInsightInsert {
+  id?: string;
+  user_id?: string;
+  category: AiInsightCategory;
+  priority?: AiInsightPriority;
+  title: string;
+  summary: string;
+  analysis: string;
+  recommendations?: string[] | null;
+  data_snapshot?: Record<string, unknown> | null;
+  status?: AiInsightStatus;
+  expires_at?: string | null;
+  acted_at?: string | null;
+  trigger: AiInsightTrigger;
+  ai_model?: string | null;
+  created_at?: string;
+}
+
+export type AiInsightUpdate = Partial<AiInsightInsert>;
+
+// -- ai_conversations --------------------------------------------------------
+
+export interface AiConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+export interface AiConversationRow {
+  id: string;
+  user_id: string;
+  title: string | null;
+  messages: AiConversationMessage[];
+  context_snapshot: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AiConversationInsert {
+  id?: string;
+  user_id?: string;
+  title?: string | null;
+  messages?: AiConversationMessage[];
+  context_snapshot?: Record<string, unknown> | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type AiConversationUpdate = Partial<AiConversationInsert>;
+
+// -- ai_rate_limits ----------------------------------------------------------
+
+export interface AiRateLimitRow {
+  user_id: string;
+  mode: string;
+  window_date: string;
+  call_count: number;
+}
+
+export interface AiRateLimitInsert {
+  user_id?: string;
+  mode: string;
+  window_date?: string;
+  call_count?: number;
+}
+
+export type AiRateLimitUpdate = Partial<AiRateLimitInsert>;
+
 // ---- Supabase Database type (standard pattern) -----------------------------
 
 export interface Database {
@@ -2144,6 +2249,22 @@ export interface Database {
         Row: CareerMilestoneRow;
         Insert: CareerMilestoneInsert;
         Update: CareerMilestoneUpdate;
+      };
+    };
+      ai_insights: {
+        Row: AiInsightRow;
+        Insert: AiInsightInsert;
+        Update: AiInsightUpdate;
+      };
+      ai_conversations: {
+        Row: AiConversationRow;
+        Insert: AiConversationInsert;
+        Update: AiConversationUpdate;
+      };
+      ai_rate_limits: {
+        Row: AiRateLimitRow;
+        Insert: AiRateLimitInsert;
+        Update: AiRateLimitUpdate;
       };
     };
     Views: Record<string, never>;

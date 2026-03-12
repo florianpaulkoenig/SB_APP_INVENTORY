@@ -252,6 +252,7 @@ const navSections: NavSection[] = [
       { label: 'Exhibition Impact', to: '/analytics/exhibition-impact', icon: icons.artworks, roles: ['admin'] },
       { label: 'Supply Planning', to: '/analytics/supply-planning', icon: icons.inventoryHealth, roles: ['admin'] },
       { label: 'Career Trajectory', to: '/analytics/career-trajectory', icon: icons.sales, roles: ['admin'] },
+      { label: 'Strategic Intelligence', to: '/analytics/strategic-intelligence', icon: icons.analytics, roles: ['admin'] },
     ],
   },
   {
