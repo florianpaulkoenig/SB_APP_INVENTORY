@@ -96,14 +96,12 @@ export function TwoFactorSettings() {
       });
       if (verifyError) throw verifyError;
 
-      // Refresh session so the token reflects aal2 before onAuthStateChange fires
-      await supabase.auth.refreshSession();
-
-      // Successfully enrolled
+      // Successfully enrolled — update local state immediately
       setVerifyCode('');
       setQrCode(null);
       setEnrollFactorId(null);
-      await checkMfaStatus();
+      setFactorId(enrollFactorId);
+      setIsEnrolled(true);
     } catch {
       setError('Invalid verification code. Please try again.');
     } finally {
