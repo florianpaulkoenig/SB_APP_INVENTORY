@@ -8,6 +8,7 @@ import { ArtworkCard } from '../components/artworks/ArtworkCard';
 import { ArtworkTable } from '../components/artworks/ArtworkTable';
 import { ArtworkFilters } from '../components/artworks/ArtworkFilters';
 import { ExcelImporter } from '../components/artworks/ExcelImporter';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { SearchInput } from '../components/ui/SearchInput';
@@ -80,11 +81,56 @@ export function ArtworksPage() {
   const [filters, setFilters] = useState<ArtworkFiltersType>({});
   const [excelImporterOpen, setExcelImporterOpen] = useState(false);
 
-  const { artworks, loading, totalCount, refetch } = useArtworks({
+  const { artworks, loading, totalCount, refetch, bulkDeleteArtworks } = useArtworks({
     filters: { ...filters, search, sortBy, sortOrder },
     page,
     pageSize: PAGE_SIZE,
   });
+
+  // ---- Bulk selection -------------------------------------------------------
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  // Clear selection when page/filters/search change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, search, filters, sortBy, sortOrder]);
+
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleToggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      const allOnPage = artworks.map((a) => a.id);
+      const allSelected = allOnPage.every((id) => prev.has(id));
+      if (allSelected) {
+        return new Set();
+      }
+      return new Set(allOnPage);
+    });
+  }, [artworks]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setBulkDeleting(true);
+    const ok = await bulkDeleteArtworks(Array.from(selectedIds));
+    setBulkDeleting(false);
+    if (ok) {
+      setSelectedIds(new Set());
+      refetch();
+    }
+  }, [selectedIds, bulkDeleteArtworks, refetch]);
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
@@ -425,6 +471,30 @@ export function ArtworksPage() {
         )}
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5">
+          <span className="text-sm font-medium text-primary-700">
+            {selectedIds.size} selected
+          </span>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={bulkDeleting}
+          >
+            {bulkDeleting ? 'Deleting...' : 'Delete Selected'}
+          </Button>
+          <button
+            type="button"
+            className="ml-auto text-sm text-primary-500 hover:text-primary-700"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
+
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-20">
@@ -504,6 +574,9 @@ export function ArtworksPage() {
             sortOrder={sortOrder}
             onSort={handleTableSort}
             onRowClick={(id) => navigate(`/artworks/${id}`)}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onToggleSelectAll={handleToggleSelectAll}
           />
 
           {/* Pagination */}
@@ -524,6 +597,17 @@ export function ArtworksPage() {
         isOpen={excelImporterOpen}
         onClose={() => setExcelImporterOpen(false)}
         onImportComplete={() => refetch()}
+      />
+
+      {/* Bulk Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleBulkDelete}
+        title="Delete Artworks"
+        message={`Are you sure you want to permanently delete ${selectedIds.size} artwork${selectedIds.size > 1 ? 's' : ''}? This will also remove any associated sales records, images, and certificates. This action cannot be undone.`}
+        confirmLabel={`Delete ${selectedIds.size} Artwork${selectedIds.size > 1 ? 's' : ''}`}
+        variant="danger"
       />
     </div>
   );

@@ -49,6 +49,7 @@ export interface UseArtworksReturn {
   createArtwork: (data: ArtworkInsert) => Promise<ArtworkRow | null>;
   updateArtwork: (id: string, data: ArtworkUpdate) => Promise<ArtworkRow | null>;
   deleteArtwork: (id: string) => Promise<boolean>;
+  bulkDeleteArtworks: (ids: string[]) => Promise<boolean>;
 }
 
 // ---------------------------------------------------------------------------
@@ -304,6 +305,34 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
     [toast],
   );
 
+  // ---- Bulk delete artworks --------------------------------------------------
+
+  const bulkDeleteArtworks = useCallback(
+    async (ids: string[]): Promise<boolean> => {
+      if (ids.length === 0) return true;
+      try {
+        const { error: deleteError } = await supabase
+          .from('artworks')
+          .delete()
+          .in('id', ids);
+
+        if (deleteError) throw deleteError;
+
+        toast({
+          title: 'Artworks deleted',
+          description: `${ids.length} artwork${ids.length > 1 ? 's' : ''} deleted.`,
+          variant: 'success',
+        });
+
+        return true;
+      } catch (err: unknown) {
+        toast({ title: 'Error', description: 'Failed to delete artworks. Please try again.', variant: 'error' });
+        return false;
+      }
+    },
+    [toast],
+  );
+
   return {
     artworks,
     loading,
@@ -313,6 +342,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
     createArtwork,
     updateArtwork,
     deleteArtwork,
+    bulkDeleteArtworks,
   };
 }
 

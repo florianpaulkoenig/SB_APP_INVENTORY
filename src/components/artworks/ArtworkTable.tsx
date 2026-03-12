@@ -13,6 +13,9 @@ export interface ArtworkTableProps {
   sortOrder?: 'asc' | 'desc';
   onSort: (column: string) => void;
   onRowClick: (id: string) => void;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onToggleSelectAll?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -88,9 +91,16 @@ function SortIndicator({ active, order }: { active: boolean; order: 'asc' | 'des
 interface ArtworkRowProps {
   artwork: ArtworkRow;
   onRowClick: (id: string) => void;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
-const ArtworkRowItem = React.memo(function ArtworkRowItem({ artwork, onRowClick }: ArtworkRowProps) {
+const ArtworkRowItem = React.memo(function ArtworkRowItem({
+  artwork,
+  onRowClick,
+  selected,
+  onToggleSelect,
+}: ArtworkRowProps) {
   const dimensions = formatDimensions(
     artwork.height,
     artwork.width,
@@ -101,8 +111,26 @@ const ArtworkRowItem = React.memo(function ArtworkRowItem({ artwork, onRowClick 
   return (
     <tr
       onClick={() => onRowClick(artwork.id)}
-      className="cursor-pointer border-b border-primary-100 transition-colors hover:bg-primary-50"
+      className={`cursor-pointer border-b border-primary-100 transition-colors hover:bg-primary-50 ${
+        selected ? 'bg-accent-50' : ''
+      }`}
     >
+      {/* Checkbox */}
+      {onToggleSelect && (
+        <td className="w-10 px-2 py-2 sm:px-3 sm:py-3">
+          <input
+            type="checkbox"
+            checked={selected ?? false}
+            onChange={(e) => {
+              e.stopPropagation();
+              onToggleSelect(artwork.id);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="h-4 w-4 rounded border-primary-300 text-accent-600 focus:ring-accent-500"
+          />
+        </td>
+      )}
+
       {/* Inventory # */}
       <td className="hidden px-2 py-2 font-mono text-xs text-primary-700 sm:table-cell sm:px-4 sm:py-3">
         {artwork.inventory_number}
@@ -174,13 +202,33 @@ export function ArtworkTable({
   sortOrder = 'asc',
   onSort,
   onRowClick,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
 }: ArtworkTableProps) {
+  const selectable = !!onToggleSelect;
+  const allSelected = selectable && artworks.length > 0 && artworks.every((a) => selectedIds?.has(a.id));
+  const someSelected = selectable && artworks.some((a) => selectedIds?.has(a.id)) && !allSelected;
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
         {/* Header */}
         <thead>
           <tr>
+            {selectable && (
+              <th className="w-10 px-2 py-2 sm:px-3 sm:py-3">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected;
+                  }}
+                  onChange={onToggleSelectAll}
+                  className="h-4 w-4 rounded border-primary-300 text-accent-600 focus:ring-accent-500"
+                />
+              </th>
+            )}
             {COLUMNS.map((col) => (
               <th
                 key={col.key}
@@ -208,7 +256,13 @@ export function ArtworkTable({
         {/* Body */}
         <tbody>
           {artworks.map((artwork) => (
-            <ArtworkRowItem key={artwork.id} artwork={artwork} onRowClick={onRowClick} />
+            <ArtworkRowItem
+              key={artwork.id}
+              artwork={artwork}
+              onRowClick={onRowClick}
+              selected={selectedIds?.has(artwork.id)}
+              onToggleSelect={onToggleSelect}
+            />
           ))}
         </tbody>
       </table>
