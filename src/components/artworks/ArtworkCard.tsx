@@ -9,7 +9,7 @@ import type { ArtworkRow } from '../../types/database';
 // ---------------------------------------------------------------------------
 
 export interface ArtworkCardProps {
-  artwork: ArtworkRow;
+  artwork: ArtworkRow & { galleries?: { name: string } | null };
   imageUrl?: string | null;
   onClick?: () => void;
   onDownloadCertificate?: (artworkId: string) => void;
@@ -108,6 +108,13 @@ export const ArtworkCard = React.memo(function ArtworkCard({ artwork, imageUrl, 
         <p className="font-mono text-xs text-primary-400">
           {artwork.reference_code}
         </p>
+
+        {/* Gallery name */}
+        {(artwork as ArtworkCardProps['artwork']).galleries?.name && (
+          <p className="text-xs text-accent truncate">
+            {(artwork as ArtworkCardProps['artwork']).galleries!.name}
+          </p>
+        )}
 
         {/* Medium + Year */}
         {mediumYear && (

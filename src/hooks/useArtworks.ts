@@ -75,7 +75,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       let query = supabase
         .from('artworks')
         .select(
-          'id, title, inventory_number, reference_code, medium, year, height, width, depth, dimension_unit, price, currency, status, category, motif, series, edition_type, edition_number, edition_total, gallery_id, current_location, created_at',
+          'id, title, inventory_number, reference_code, medium, year, height, width, depth, dimension_unit, price, currency, status, category, motif, series, edition_type, edition_number, edition_total, gallery_id, current_location, created_at, galleries:gallery_id(name)',
           { count: 'exact' },
         );
 
