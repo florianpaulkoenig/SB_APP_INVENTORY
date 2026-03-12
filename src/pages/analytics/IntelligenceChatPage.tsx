@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useStrategicAgent } from '../../hooks/useStrategicAgent';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
@@ -125,6 +126,7 @@ function relativeTime(dateStr: string): string {
 // Main Component
 // ---------------------------------------------------------------------------
 export function IntelligenceChatPage() {
+  const location = useLocation();
   const {
     conversations,
     asking,
@@ -138,6 +140,7 @@ export function IntelligenceChatPage() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const initialQuestionHandled = useRef(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -228,6 +231,17 @@ export function IntelligenceChatPage() {
       handleSubmit(input);
     }
   };
+
+  // ---- Auto-submit from location state (e.g., "Research" button) ----------
+  useEffect(() => {
+    const state = location.state as { initialQuestion?: string } | null;
+    if (state?.initialQuestion && !initialQuestionHandled.current) {
+      initialQuestionHandled.current = true;
+      // Clear state to prevent re-triggering on back/forward navigation
+      window.history.replaceState({}, '');
+      handleSubmit(state.initialQuestion);
+    }
+  }, [location.state, handleSubmit]);
 
   // ---- Render --------------------------------------------------------------
   return (

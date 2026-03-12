@@ -26,6 +26,7 @@ interface InsightsPanelProps {
     category: string,
     priority: string,
   ) => void;
+  onResearch?: (insight: AiInsightRow) => void;
 }
 
 const priorityConfig: Record<AiInsightPriority, { color: string; bg: string; label: string }> = {
@@ -56,6 +57,7 @@ export function InsightsPanel({
   onDismiss,
   feedbackMap = {},
   onFeedback,
+  onResearch,
 }: InsightsPanelProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'new' | 'high'>('all');
@@ -244,6 +246,21 @@ export function InsightsPanel({
                         >
                           Dismiss
                         </button>
+                        {onResearch && (
+                          <button
+                            type="button"
+                            onClick={() => onResearch(insight)}
+                            className="rounded-md bg-blue-100 px-2 py-1 text-[10px] font-medium text-blue-700 transition-colors hover:bg-blue-200"
+                          >
+                            <span className="flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-3 w-3">
+                                <circle cx="7" cy="7" r="4.5" />
+                                <path strokeLinecap="round" d="M10.5 10.5L14 14" />
+                              </svg>
+                              Research
+                            </span>
+                          </button>
+                        )}
                       </div>
 
                       {/* Feedback thumbs */}

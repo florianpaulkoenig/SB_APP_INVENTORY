@@ -8,6 +8,7 @@ import { useInsightFeedback } from '../../hooks/useInsightFeedback';
 import { InsightsPanel } from '../../components/ai/InsightsPanel';
 import { AskAgent } from '../../components/ai/AskAgent';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import type { AiInsightRow } from '../../types/database';
 
 export function StrategicIntelligencePage() {
   const navigate = useNavigate();
@@ -24,6 +25,14 @@ export function StrategicIntelligencePage() {
   } = useStrategicAgent();
 
   const { feedbackMap, submitFeedback } = useInsightFeedback();
+
+  const handleResearch = (insight: AiInsightRow) => {
+    const recs = Array.isArray(insight.recommendations) && insight.recommendations.length > 0
+      ? `\n\nRecommendations:\n${insight.recommendations.map((r) => `- ${r}`).join('\n')}`
+      : '';
+    const question = `I'd like to research this insight further:\n\n"${insight.title}"\n\n${insight.summary}\n\nAnalysis: ${insight.analysis}${recs}\n\nPlease provide deeper analysis, additional context, and specific actionable steps I can take.`;
+    navigate('/analytics/intelligence-chat', { state: { initialQuestion: question } });
+  };
 
   if (loading) {
     return (
@@ -140,6 +149,7 @@ export function StrategicIntelligencePage() {
           onDismiss={dismiss}
           feedbackMap={feedbackMap}
           onFeedback={submitFeedback}
+          onResearch={handleResearch}
         />
       </div>
 
