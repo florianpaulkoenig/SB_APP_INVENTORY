@@ -68,23 +68,18 @@ async function checkRateLimit(
   if (data && data.call_count >= maxCalls) return false;
 
   // Upsert rate limit counter
-  await supabase.rpc('increment_rate_limit', { p_user_id: userId, p_mode: mode }).catch(() => {
-    // Fallback: direct upsert if RPC not available
-    if (data) {
-      supabase
-        .from('ai_rate_limits')
-        .update({ call_count: (data.call_count || 0) + 1 })
-        .eq('user_id', userId)
-        .eq('mode', mode)
-        .eq('window_date', today)
-        .then(() => {});
-    } else {
-      supabase
-        .from('ai_rate_limits')
-        .insert({ user_id: userId, mode, window_date: today, call_count: 1 })
-        .then(() => {});
-    }
-  });
+  if (data) {
+    await supabase
+      .from('ai_rate_limits')
+      .update({ call_count: (data.call_count || 0) + 1 } as never)
+      .eq('user_id', userId)
+      .eq('mode', mode)
+      .eq('window_date', today);
+  } else {
+    await supabase
+      .from('ai_rate_limits')
+      .insert({ user_id: userId, mode, window_date: today, call_count: 1 } as never);
+  }
 
   return true;
 }
