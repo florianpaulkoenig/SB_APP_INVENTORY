@@ -385,3 +385,66 @@ export const AUCTION_HOUSES = [
   'Grisebach',
   'Lempertz',
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Intelligence Platform — Reporting & Analytics enums
+// ---------------------------------------------------------------------------
+
+export const REPORTING_STATUSES = [
+  { value: 'draft', label: 'Draft', color: 'bg-gray-100 text-gray-800' },
+  { value: 'reserved', label: 'Reserved', color: 'bg-blue-100 text-blue-800' },
+  { value: 'sold_pending_details', label: 'Pending Details', color: 'bg-amber-100 text-amber-800' },
+  { value: 'sold_reported', label: 'Reported', color: 'bg-emerald-100 text-emerald-800' },
+  { value: 'verified', label: 'Verified', color: 'bg-green-100 text-green-800' },
+] as const;
+
+export const SALE_LOCATION_TYPES = [
+  { value: 'gallery', label: 'Gallery' },
+  { value: 'fair', label: 'Art Fair' },
+  { value: 'exhibition', label: 'Exhibition' },
+  { value: 'private', label: 'Private Sale' },
+  { value: 'online', label: 'Online' },
+] as const;
+
+export const PAYMENT_STATUSES = [
+  { value: 'pending', label: 'Pending', color: 'bg-gray-100 text-gray-800' },
+  { value: 'partial', label: 'Partial', color: 'bg-amber-100 text-amber-800' },
+  { value: 'paid', label: 'Paid', color: 'bg-emerald-100 text-emerald-800' },
+  { value: 'overdue', label: 'Overdue', color: 'bg-red-100 text-red-800' },
+] as const;
+
+export const COLLECTOR_ANONYMITY_MODES = [
+  { value: 'named', label: 'Named Collector' },
+  { value: 'anonymous', label: 'Anonymous (Metadata Only)' },
+  { value: 'private', label: 'Private (Internal Only)' },
+] as const;
+
+export const SIZE_CATEGORIES = [
+  { value: 'small', label: 'Small', description: 'Up to 50cm' },
+  { value: 'medium', label: 'Medium', description: '50-120cm' },
+  { value: 'large', label: 'Large', description: '120-200cm' },
+  { value: 'monumental', label: 'Monumental', description: '200cm+' },
+] as const;
+
+export const MILESTONE_TYPES = [
+  { value: 'exhibition', label: 'Exhibition' },
+  { value: 'museum_show', label: 'Museum Show' },
+  { value: 'publication', label: 'Publication' },
+  { value: 'award', label: 'Award' },
+  { value: 'institutional', label: 'Institutional' },
+  { value: 'collection', label: 'Collection' },
+  { value: 'fair', label: 'Art Fair' },
+] as const;
+
+export const ACCESS_TIERS = [
+  { value: 'standard', label: 'Standard', color: 'bg-gray-100 text-gray-800' },
+  { value: 'priority', label: 'Priority', color: 'bg-blue-100 text-blue-800' },
+  { value: 'premium', label: 'Premium', color: 'bg-amber-100 text-amber-800' },
+] as const;
+
+export const COLLECTOR_SEGMENTS = [
+  { value: 'new', label: 'New' },
+  { value: 'returning', label: 'Returning' },
+  { value: 'vip', label: 'VIP' },
+  { value: 'institutional', label: 'Institutional' },
+] as const;

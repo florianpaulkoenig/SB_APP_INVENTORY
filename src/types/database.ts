@@ -59,6 +59,8 @@ export type ArtworkColor =
   | 'dark_grey'
   | 'other';
 
+export type SizeCategory = 'small' | 'medium' | 'large' | 'monumental';
+
 export type DimensionUnit = 'cm' | 'inches';
 
 export type Currency = 'EUR' | 'USD' | 'CHF' | 'GBP';
@@ -180,6 +182,8 @@ export interface ArtworkRow {
   notes: string | null;
   consigned_since: string | null;
   available_for_partners: boolean;
+  released_at: string | null;
+  size_category: SizeCategory | null;
   created_at: string;
   updated_at: string;
 }
@@ -219,6 +223,8 @@ export interface ArtworkInsert {
   notes?: string | null;
   consigned_since?: string | null;
   available_for_partners?: boolean;
+  released_at?: string | null;
+  size_category?: SizeCategory | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -286,6 +292,10 @@ export type ArtworkMovementUpdate = Partial<ArtworkMovementInsert>;
 // -- sales -------------------------------------------------------------------
 
 export type SaleType = 'art_fair' | 'exhibition' | 'direct';
+export type ReportingStatus = 'draft' | 'reserved' | 'sold_pending_details' | 'sold_reported' | 'verified';
+export type SaleLocationT = 'gallery' | 'fair' | 'exhibition' | 'private' | 'online';
+export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'overdue';
+export type CollectorAnonymityMode = 'named' | 'anonymous' | 'private';
 
 export interface SaleRow {
   id: string;
@@ -304,6 +314,16 @@ export interface SaleRow {
   sale_type: string | null;
   source_exhibition_id: string | null;
   notes: string | null;
+  reporting_status: ReportingStatus;
+  reporting_due_date: string | null;
+  reported_at: string | null;
+  sale_location_type: SaleLocationT | null;
+  discount_percent: number | null;
+  final_invoiced_amount: number | null;
+  negotiation_notes: string | null;
+  payment_status: PaymentStatus;
+  sales_channel: string | null;
+  collector_anonymity_mode: CollectorAnonymityMode;
   created_at: string;
   updated_at: string;
 }
@@ -325,6 +345,16 @@ export interface SaleInsert {
   sale_type?: string | null;
   source_exhibition_id?: string | null;
   notes?: string | null;
+  reporting_status?: ReportingStatus;
+  reporting_due_date?: string | null;
+  reported_at?: string | null;
+  sale_location_type?: SaleLocationT | null;
+  discount_percent?: number | null;
+  final_invoiced_amount?: number | null;
+  negotiation_notes?: string | null;
+  payment_status?: PaymentStatus;
+  sales_channel?: string | null;
+  collector_anonymity_mode?: CollectorAnonymityMode;
   created_at?: string;
   updated_at?: string;
 }
@@ -460,6 +490,7 @@ export interface ProductionOrderRow {
   contact_id: string | null;
   price: number | null;
   currency: Currency;
+  planned_release_date: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -478,6 +509,7 @@ export interface ProductionOrderInsert {
   contact_id?: string | null;
   price?: number | null;
   currency?: Currency;
+  planned_release_date?: string | null;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -1716,6 +1748,153 @@ export interface PriceIntelligenceReportRow {
   created_at: string;
 }
 
+// -- anonymous_collectors ----------------------------------------------------
+
+export type CollectorSegment = 'new' | 'returning' | 'vip' | 'institutional';
+
+export interface AnonymousCollectorRow {
+  id: string;
+  user_id: string;
+  anonymous_id: string;
+  city: string | null;
+  country: string | null;
+  collector_type: string | null;
+  segment: CollectorSegment | null;
+  acquisition_pattern: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnonymousCollectorInsert {
+  id?: string;
+  user_id?: string;
+  anonymous_id: string;
+  city?: string | null;
+  country?: string | null;
+  collector_type?: string | null;
+  segment?: CollectorSegment | null;
+  acquisition_pattern?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type AnonymousCollectorUpdate = Partial<AnonymousCollectorInsert>;
+
+// -- partner_score_snapshots -------------------------------------------------
+
+export interface PartnerScoreSnapshotRow {
+  id: string;
+  user_id: string;
+  gallery_id: string;
+  score: number;
+  factors_json: Record<string, unknown> | null;
+  calculated_at: string;
+}
+
+export interface PartnerScoreSnapshotInsert {
+  id?: string;
+  user_id?: string;
+  gallery_id: string;
+  score: number;
+  factors_json?: Record<string, unknown> | null;
+  calculated_at?: string;
+}
+
+export type PartnerScoreSnapshotUpdate = Partial<PartnerScoreSnapshotInsert>;
+
+// -- reporting_reminders -----------------------------------------------------
+
+export type ReminderType = 'upcoming' | 'due' | 'overdue';
+export type ReminderStatus = 'pending' | 'sent' | 'dismissed';
+
+export interface ReportingReminderRow {
+  id: string;
+  user_id: string;
+  sale_id: string;
+  reminder_type: ReminderType;
+  due_date: string;
+  sent_at: string | null;
+  status: ReminderStatus;
+  created_at: string;
+}
+
+export interface ReportingReminderInsert {
+  id?: string;
+  user_id?: string;
+  sale_id: string;
+  reminder_type: ReminderType;
+  due_date: string;
+  sent_at?: string | null;
+  status?: ReminderStatus;
+  created_at?: string;
+}
+
+export type ReportingReminderUpdate = Partial<ReportingReminderInsert>;
+
+// -- gallery_access_tiers ----------------------------------------------------
+
+export type AccessTier = 'standard' | 'priority' | 'premium';
+
+export interface GalleryAccessTierRow {
+  id: string;
+  user_id: string;
+  gallery_id: string;
+  tier: AccessTier;
+  unlocked_features: string[] | null;
+  valid_until: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GalleryAccessTierInsert {
+  id?: string;
+  user_id?: string;
+  gallery_id: string;
+  tier?: AccessTier;
+  unlocked_features?: string[] | null;
+  valid_until?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type GalleryAccessTierUpdate = Partial<GalleryAccessTierInsert>;
+
+// -- career_milestones -------------------------------------------------------
+
+export type MilestoneType = 'exhibition' | 'museum_show' | 'publication' | 'award' | 'institutional' | 'collection' | 'fair';
+
+export interface CareerMilestoneRow {
+  id: string;
+  user_id: string;
+  year: number;
+  milestone_type: MilestoneType;
+  title: string;
+  description: string | null;
+  institution: string | null;
+  city: string | null;
+  country: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CareerMilestoneInsert {
+  id?: string;
+  user_id?: string;
+  year: number;
+  milestone_type: MilestoneType;
+  title: string;
+  description?: string | null;
+  institution?: string | null;
+  city?: string | null;
+  country?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type CareerMilestoneUpdate = Partial<CareerMilestoneInsert>;
+
 // ---- Supabase Database type (standard pattern) -----------------------------
 
 export interface Database {
@@ -1940,6 +2119,31 @@ export interface Database {
         Row: ProjectRow;
         Insert: ProjectInsert;
         Update: ProjectUpdate;
+      };
+      anonymous_collectors: {
+        Row: AnonymousCollectorRow;
+        Insert: AnonymousCollectorInsert;
+        Update: AnonymousCollectorUpdate;
+      };
+      partner_score_snapshots: {
+        Row: PartnerScoreSnapshotRow;
+        Insert: PartnerScoreSnapshotInsert;
+        Update: PartnerScoreSnapshotUpdate;
+      };
+      reporting_reminders: {
+        Row: ReportingReminderRow;
+        Insert: ReportingReminderInsert;
+        Update: ReportingReminderUpdate;
+      };
+      gallery_access_tiers: {
+        Row: GalleryAccessTierRow;
+        Insert: GalleryAccessTierInsert;
+        Update: GalleryAccessTierUpdate;
+      };
+      career_milestones: {
+        Row: CareerMilestoneRow;
+        Insert: CareerMilestoneInsert;
+        Update: CareerMilestoneUpdate;
       };
     };
     Views: Record<string, never>;
