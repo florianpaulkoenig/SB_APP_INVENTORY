@@ -59,6 +59,13 @@ export function TwoFactorSettings() {
     setError('');
     setLoading(true);
     try {
+      // Remove any unverified factors from previous attempts
+      const { data: existing } = await supabase.auth.mfa.listFactors();
+      const unverified = existing?.totp?.filter((f) => f.status === 'unverified') ?? [];
+      for (const f of unverified) {
+        await supabase.auth.mfa.unenroll({ factorId: f.id });
+      }
+
       const { data, error: enrollError } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
         friendlyName: 'NOA Authenticator',
