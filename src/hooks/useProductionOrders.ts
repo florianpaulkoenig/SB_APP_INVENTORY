@@ -80,10 +80,7 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
     try {
       let query = supabase
         .from('production_orders')
-        .select(
-          'id, order_number, title, status, deadline, gallery_id, contact_id, price, currency, total_value, notes, user_id, created_at, updated_at',
-          { count: 'exact' },
-        );
+        .select('*', { count: 'exact' });
 
       // Status filter
       if (filters.status) {
