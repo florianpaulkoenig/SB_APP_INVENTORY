@@ -40,11 +40,25 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
     setLoading(true);
 
     try {
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('artwork_images')
-        .select('id, artwork_id, user_id, storage_path, file_name, file_size, mime_type, image_type, is_primary, sort_order, created_at')
+        .select('id, artwork_id, user_id, storage_path, file_name, image_type, is_primary, sort_order, created_at')
         .eq('artwork_id', artworkId)
         .order('sort_order', { ascending: true });
+
+      let { data, error: fetchError } = await query;
+
+      // Fallback: if sort_order column doesn't exist yet, retry without it
+      if (fetchError && fetchError.message?.includes('sort_order')) {
+        const fallback = await supabase
+          .from('artwork_images')
+          .select('id, artwork_id, user_id, storage_path, file_name, image_type, is_primary, created_at')
+          .eq('artwork_id', artworkId)
+          .order('created_at', { ascending: true });
+
+        data = fallback.data;
+        fetchError = fallback.error;
+      }
 
       if (fetchError) throw fetchError;
 

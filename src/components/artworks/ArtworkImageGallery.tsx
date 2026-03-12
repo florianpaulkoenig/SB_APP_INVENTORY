@@ -63,11 +63,23 @@ export function ArtworkImageGallery({
     setLoading(true);
     setError(null);
 
-    const { data: rows, error: fetchError } = await supabase
+    let { data: rows, error: fetchError } = await supabase
       .from('artwork_images')
-      .select('*')
+      .select('id, artwork_id, user_id, storage_path, file_name, image_type, is_primary, sort_order, created_at')
       .eq('artwork_id', artworkId)
       .order('sort_order', { ascending: true });
+
+    // Fallback: if sort_order column doesn't exist yet, retry without it
+    if (fetchError && fetchError.message?.includes('sort_order')) {
+      const fallback = await supabase
+        .from('artwork_images')
+        .select('id, artwork_id, user_id, storage_path, file_name, image_type, is_primary, created_at')
+        .eq('artwork_id', artworkId)
+        .order('created_at', { ascending: true });
+
+      rows = fallback.data;
+      fetchError = fallback.error;
+    }
 
     if (fetchError) {
       setError(fetchError.message);
