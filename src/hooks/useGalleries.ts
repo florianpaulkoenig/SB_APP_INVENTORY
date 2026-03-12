@@ -70,8 +70,10 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         query = query.eq('country', filters.country);
       }
 
-      // Sorting
-      const sortBy = filters.sortBy || 'name';
+      // Sorting (whitelist to prevent injection)
+      const VALID_SORT_COLUMNS = ['name', 'city', 'country', 'commission_rate', 'created_at', 'updated_at'] as const;
+      const rawSortBy = filters.sortBy || 'name';
+      const sortBy = (VALID_SORT_COLUMNS as readonly string[]).includes(rawSortBy) ? rawSortBy : 'name';
       const sortOrder = filters.sortOrder || 'asc';
       query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
@@ -117,7 +119,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
 
         const { data: created, error: insertError } = await supabase
           .from('galleries')
-          .insert({ ...data, user_id: session.user.id })
+          .insert({ ...data, user_id: session.user.id } as never)
           .select()
           .single();
 
@@ -129,7 +131,8 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create gallery';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        console.error('createGallery error:', err);
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -143,7 +146,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
       try {
         const { data: updated, error: updateError } = await supabase
           .from('galleries')
-          .update(data)
+          .update(data as never)
           .eq('id', id)
           .select()
           .single();
@@ -156,7 +159,8 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update gallery';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        console.error('updateGallery error:', err);
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -181,7 +185,8 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete gallery';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        console.error('deleteGallery error:', err);
+        toast({ title: 'Error', description: message, variant: 'error' });
         return false;
       }
     },
