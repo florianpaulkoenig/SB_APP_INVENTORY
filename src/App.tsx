@@ -281,6 +281,15 @@ const CollectorIntelligencePage = React.lazy(() =>
 const SeriesPerformancePage = React.lazy(() =>
   import('./pages/analytics/SeriesPerformancePage').then((m) => ({ default: m.SeriesPerformancePage })),
 );
+const ExhibitionImpactPage = React.lazy(() =>
+  import('./pages/analytics/ExhibitionImpactPage').then((m) => ({ default: m.ExhibitionImpactPage })),
+);
+const SupplyPlanningPage = React.lazy(() =>
+  import('./pages/analytics/SupplyPlanningPage').then((m) => ({ default: m.SupplyPlanningPage })),
+);
+const CareerTrajectoryPage = React.lazy(() =>
+  import('./pages/analytics/CareerTrajectoryPage').then((m) => ({ default: m.CareerTrajectoryPage })),
+);
 
 // ---------------------------------------------------------------------------
 // Suspense fallback with error boundary
@@ -722,6 +731,36 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <SeriesPerformancePage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/exhibition-impact',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <ExhibitionImpactPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/supply-planning',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <SupplyPlanningPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/career-trajectory',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <CareerTrajectoryPage />
               </Suspense>
             </RoleGuard>
           ),

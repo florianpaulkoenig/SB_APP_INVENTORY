@@ -249,6 +249,9 @@ const navSections: NavSection[] = [
       { label: 'Price Ladder', to: '/analytics/price-ladder', icon: icons.priceTag, roles: ['admin'] },
       { label: 'Collector Intelligence', to: '/analytics/collector-intelligence', icon: icons.contacts, roles: ['admin'] },
       { label: 'Series Performance', to: '/analytics/series-performance', icon: icons.artworks, roles: ['admin'] },
+      { label: 'Exhibition Impact', to: '/analytics/exhibition-impact', icon: icons.artworks, roles: ['admin'] },
+      { label: 'Supply Planning', to: '/analytics/supply-planning', icon: icons.inventoryHealth, roles: ['admin'] },
+      { label: 'Career Trajectory', to: '/analytics/career-trajectory', icon: icons.sales, roles: ['admin'] },
     ],
   },
   {
