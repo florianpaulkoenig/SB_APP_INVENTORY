@@ -3,13 +3,14 @@
 // Dashboard view for gallery-role users with KPIs, charts, and top artworks.
 // ---------------------------------------------------------------------------
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useGalleryAnalytics } from '../hooks/useGalleryAnalytics';
 import { useExchangeRates } from '../hooks/useExchangeRates';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Button } from '../components/ui/Button';
 import { formatCurrency, formatDate } from '../lib/utils';
@@ -64,23 +65,100 @@ export function GalleryDashboardPage() {
 
   const [galleryName, setGalleryName] = useState<string>('Gallery');
 
-  // ---- Fetch gallery name -------------------------------------------------
+  // Pending reporting sales
+  const [pendingSales, setPendingSales] = useState<
+    { id: string; title: string; sale_date: string; reporting_status: string }[]
+  >([]);
 
-  useEffect(() => {
+  // Consignment aging
+  const [consignmentAging, setConsignmentAging] = useState<
+    { id: string; title: string; consigned_since: string; days: number }[]
+  >([]);
+
+  // Series trend (safe shared analytics)
+  const [seriesTrend, setSeriesTrend] = useState<
+    { series: string; count: number }[]
+  >([]);
+
+  // ---- Fetch gallery name + extended data ---------------------------------
+
+  const fetchExtendedData = useCallback(async () => {
     if (!galleryId) return;
 
-    async function fetchGalleryName() {
-      const { data: gallery } = await supabase
-        .from('galleries')
-        .select('name')
-        .eq('id', galleryId!)
-        .single();
+    // Gallery name
+    const { data: gallery } = await supabase
+      .from('galleries')
+      .select('name')
+      .eq('id', galleryId)
+      .single();
+    if (gallery?.name) setGalleryName(gallery.name);
 
-      if (gallery?.name) setGalleryName(gallery.name);
+    // Pending reporting sales (not yet reported/verified)
+    const { data: salesData } = await supabase
+      .from('sales')
+      .select('id, sale_date, reporting_status, artworks(title)')
+      .eq('gallery_id', galleryId)
+      .in('reporting_status', ['draft', 'reserved', 'sold_pending_details'])
+      .order('sale_date', { ascending: false })
+      .limit(10);
+
+    if (salesData) {
+      setPendingSales(
+        salesData.map((s) => ({
+          id: s.id,
+          title: (s.artworks as { title: string } | null)?.title ?? 'Untitled',
+          sale_date: s.sale_date,
+          reporting_status: (s.reporting_status as string) || 'draft',
+        })),
+      );
     }
 
-    fetchGalleryName();
+    // Consignment aging (unsold works assigned to this gallery)
+    const { data: consigned } = await supabase
+      .from('artworks')
+      .select('id, title, consigned_since')
+      .eq('gallery_id', galleryId)
+      .in('status', ['available', 'on_consignment', 'reserved'])
+      .not('consigned_since', 'is', null)
+      .order('consigned_since', { ascending: true })
+      .limit(20);
+
+    if (consigned) {
+      const now = Date.now();
+      setConsignmentAging(
+        consigned.map((a) => ({
+          id: a.id,
+          title: a.title || 'Untitled',
+          consigned_since: a.consigned_since!,
+          days: Math.floor((now - new Date(a.consigned_since!).getTime()) / 86400000),
+        })),
+      );
+    }
+
+    // Series trend (how many works per series are at this gallery — safe, no comparative data)
+    const { data: seriesData } = await supabase
+      .from('artworks')
+      .select('series')
+      .eq('gallery_id', galleryId)
+      .not('series', 'is', null);
+
+    if (seriesData) {
+      const map = new Map<string, number>();
+      for (const a of seriesData) {
+        const s = (a.series as string) || 'Other';
+        map.set(s, (map.get(s) ?? 0) + 1);
+      }
+      setSeriesTrend(
+        [...map.entries()]
+          .map(([series, count]) => ({ series, count }))
+          .sort((a, b) => b.count - a.count),
+      );
+    }
   }, [galleryId]);
+
+  useEffect(() => {
+    fetchExtendedData();
+  }, [fetchExtendedData]);
 
   // ---- Render: no gallery configured --------------------------------------
 
@@ -375,6 +453,93 @@ export function GalleryDashboardPage() {
           </div>
         )}
       </Card>
+
+      {/* Row 4: Pending Reporting Tasks */}
+      {pendingSales.length > 0 && (
+        <Card className="mb-8 p-4">
+          <h3 className="font-display text-sm font-semibold text-primary-900 mb-3">
+            Pending Reporting
+          </h3>
+          <p className="text-xs text-primary-500 mb-3">
+            These sales need your attention — complete reporting to unlock better partnership benefits.
+          </p>
+          <div className="overflow-x-auto rounded-lg border border-primary-100">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-primary-50 text-left">
+                  <th className="px-3 py-2 font-medium text-primary-600">Artwork</th>
+                  <th className="px-3 py-2 font-medium text-primary-600">Sale Date</th>
+                  <th className="px-3 py-2 font-medium text-primary-600">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingSales.map((s) => (
+                  <tr key={s.id} className="border-t border-primary-50">
+                    <td className="px-3 py-2 text-primary-900 font-medium">{s.title}</td>
+                    <td className="px-3 py-2 text-primary-600">{s.sale_date ? formatDate(s.sale_date) : '—'}</td>
+                    <td className="px-3 py-2">
+                      <Badge variant={s.reporting_status === 'draft' ? 'default' : 'warning'}>
+                        {s.reporting_status.replace(/_/g, ' ')}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Row 5: Consignment Aging */}
+      {consignmentAging.length > 0 && (
+        <Card className="mb-8 p-4">
+          <h3 className="font-display text-sm font-semibold text-primary-900 mb-3">
+            Consignment Aging
+          </h3>
+          <div className="overflow-x-auto rounded-lg border border-primary-100">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-primary-50 text-left">
+                  <th className="px-3 py-2 font-medium text-primary-600">Artwork</th>
+                  <th className="px-3 py-2 font-medium text-primary-600">Consigned Since</th>
+                  <th className="px-3 py-2 font-medium text-primary-600 text-right">Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                {consignmentAging.map((a) => (
+                  <tr key={a.id} className="border-t border-primary-50">
+                    <td className="px-3 py-2 text-primary-900 font-medium">{a.title}</td>
+                    <td className="px-3 py-2 text-primary-600">{formatDate(a.consigned_since)}</td>
+                    <td className="px-3 py-2 text-right">
+                      <span className={`font-medium ${a.days > 180 ? 'text-red-600' : a.days > 90 ? 'text-amber-600' : 'text-primary-700'}`}>
+                        {a.days}d
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Row 6: Series Distribution (safe shared analytics) */}
+      {seriesTrend.length > 0 && (
+        <Card className="mb-8 p-4">
+          <h3 className="font-display text-sm font-semibold text-primary-900 mb-3">
+            Works by Series
+          </h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={seriesTrend.slice(0, 8)}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+              <XAxis dataKey="series" tick={{ fontSize: 11, fill: '#737373' }} />
+              <YAxis tick={{ fontSize: 11, fill: '#737373' }} />
+              <Tooltip />
+              <Bar dataKey="count" name="Works" fill="#c9a96e" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
 
       {/* Quick Links */}
       <div className="flex flex-wrap gap-3">
