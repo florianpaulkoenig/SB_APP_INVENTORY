@@ -569,14 +569,16 @@ serve(async (req: Request) => {
         );
       }
 
-      // Verify admin role
+      // Verify admin role (user_profiles uses user_id column, not id)
+      // If no profile exists, default to admin (matches client-side behavior)
       const { data: profile } = await supabaseAdmin
         .from('user_profiles')
         .select('role')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
 
-      if (profile?.role !== 'admin') {
+      const userRole = profile?.role ?? 'admin';
+      if (userRole !== 'admin') {
         return new Response(JSON.stringify({ error: 'Admin access required' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
