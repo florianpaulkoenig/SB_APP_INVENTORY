@@ -275,6 +275,12 @@ const DemandVelocityPage = React.lazy(() =>
 const PriceLadderPage = React.lazy(() =>
   import('./pages/analytics/PriceLadderPage').then((m) => ({ default: m.PriceLadderPage })),
 );
+const CollectorIntelligencePage = React.lazy(() =>
+  import('./pages/analytics/CollectorIntelligencePage').then((m) => ({ default: m.CollectorIntelligencePage })),
+);
+const SeriesPerformancePage = React.lazy(() =>
+  import('./pages/analytics/SeriesPerformancePage').then((m) => ({ default: m.SeriesPerformancePage })),
+);
 
 // ---------------------------------------------------------------------------
 // Suspense fallback with error boundary
@@ -696,6 +702,26 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <PriceLadderPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/collector-intelligence',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <CollectorIntelligencePage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/series-performance',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <SeriesPerformancePage />
               </Suspense>
             </RoleGuard>
           ),
