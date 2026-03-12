@@ -2,25 +2,28 @@
 // StrategicIntelligencePage — AI-powered strategic insights dashboard
 // ---------------------------------------------------------------------------
 
+import { useNavigate } from 'react-router-dom';
 import { useStrategicAgent } from '../../hooks/useStrategicAgent';
+import { useInsightFeedback } from '../../hooks/useInsightFeedback';
 import { InsightsPanel } from '../../components/ai/InsightsPanel';
 import { AskAgent } from '../../components/ai/AskAgent';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 export function StrategicIntelligencePage() {
+  const navigate = useNavigate();
   const {
     insights,
     loading,
     analyzing,
-    asking,
     unreadCount,
     criticalCount,
     refreshInsights,
-    ask,
     markRead,
     markActed,
     dismiss,
   } = useStrategicAgent();
+
+  const { feedbackMap, submitFeedback } = useInsightFeedback();
 
   if (loading) {
     return (
@@ -64,6 +67,19 @@ export function StrategicIntelligencePage() {
             AI-powered portfolio analysis and recommendations
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => navigate('/analytics/intelligence-chat')}
+          className="flex items-center gap-2 rounded-lg border border-primary-200 bg-white px-4 py-2 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-50"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 2a6 6 0 00-5.42 8.61L2 14l3.39-.58A6 6 0 108 2z" />
+            <circle cx="5.5" cy="8" r="0.5" fill="currentColor" />
+            <circle cx="8" cy="8" r="0.5" fill="currentColor" />
+            <circle cx="10.5" cy="8" r="0.5" fill="currentColor" />
+          </svg>
+          Open Chat
+        </button>
       </div>
 
       {/* KPI row */}
@@ -122,11 +138,13 @@ export function StrategicIntelligencePage() {
           onMarkRead={markRead}
           onMarkActed={markActed}
           onDismiss={dismiss}
+          feedbackMap={feedbackMap}
+          onFeedback={submitFeedback}
         />
       </div>
 
-      {/* Chat agent */}
-      <AskAgent asking={asking} onAsk={ask} />
+      {/* Chat FAB */}
+      <AskAgent />
     </div>
   );
 }

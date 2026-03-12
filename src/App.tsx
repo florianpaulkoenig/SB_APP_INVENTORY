@@ -293,6 +293,9 @@ const CareerTrajectoryPage = React.lazy(() =>
 const StrategicIntelligencePage = React.lazy(() =>
   import('./pages/analytics/StrategicIntelligencePage').then((m) => ({ default: m.StrategicIntelligencePage })),
 );
+const IntelligenceChatPage = React.lazy(() =>
+  import('./pages/analytics/IntelligenceChatPage').then((m) => ({ default: m.IntelligenceChatPage })),
+);
 
 // ---------------------------------------------------------------------------
 // Suspense fallback with error boundary
@@ -774,6 +777,16 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <StrategicIntelligencePage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/intelligence-chat',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <IntelligenceChatPage />
               </Suspense>
             </RoleGuard>
           ),

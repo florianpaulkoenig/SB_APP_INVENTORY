@@ -1,0 +1,108 @@
+// ---------------------------------------------------------------------------
+// useInsightFeedback — thumbs up/down + comment on AI insights
+// ---------------------------------------------------------------------------
+
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../components/ui/Toast';
+import type { AiInsightFeedbackRow, AiFeedbackRating } from '../types/database';
+
+export function useInsightFeedback() {
+  const { showToast } = useToast();
+  const [feedbackMap, setFeedbackMap] = useState<Record<string, AiInsightFeedbackRow>>({});
+
+  // ---- Fetch existing feedback for current user ----------------------------
+  const fetchFeedback = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ai_insight_feedback')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) {
+        console.warn('Failed to fetch feedback:', error.message);
+        return;
+      }
+
+      const map: Record<string, AiInsightFeedbackRow> = {};
+      for (const row of (data || []) as unknown as AiInsightFeedbackRow[]) {
+        map[row.insight_id] = row;
+      }
+      setFeedbackMap(map);
+    } catch (err) {
+      console.warn('Failed to fetch feedback:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFeedback();
+  }, [fetchFeedback]);
+
+  // ---- Submit feedback (upsert) --------------------------------------------
+  const submitFeedback = useCallback(
+    async (
+      insightId: string,
+      rating: AiFeedbackRating,
+      comment: string | null,
+      category: string,
+      priority: string,
+    ) => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          showToast('Not authenticated', 'error');
+          return;
+        }
+
+        const payload = {
+          user_id: session.user.id,
+          insight_id: insightId,
+          rating,
+          comment: comment || null,
+          insight_category: category,
+          insight_priority: priority,
+        };
+
+        const { data, error } = await supabase
+          .from('ai_insight_feedback')
+          .upsert(payload as never, { onConflict: 'user_id,insight_id' })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Feedback save error:', error.message);
+          showToast('Failed to save feedback', 'error');
+          return;
+        }
+
+        // Update local state
+        const row = data as unknown as AiInsightFeedbackRow;
+        setFeedbackMap((prev) => ({ ...prev, [insightId]: row }));
+        showToast('Feedback saved', 'success');
+      } catch (err) {
+        console.error('Feedback error:', err);
+        showToast('Failed to save feedback', 'error');
+      }
+    },
+    [showToast],
+  );
+
+  // ---- Computed: feedback summary by category ------------------------------
+  const feedbackSummary = Object.values(feedbackMap).reduce(
+    (acc, fb) => {
+      const cat = fb.insight_category;
+      if (!acc[cat]) acc[cat] = { positive: 0, negative: 0 };
+      acc[cat][fb.rating]++;
+      return acc;
+    },
+    {} as Record<string, { positive: number; negative: number }>,
+  );
+
+  return {
+    feedbackMap,
+    feedbackSummary,
+    submitFeedback,
+    fetchFeedback,
+  };
+}

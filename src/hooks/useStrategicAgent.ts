@@ -9,6 +9,7 @@ import type {
   AiInsightRow,
   AiInsightStatus,
   AiConversationRow,
+  AiConversationMessage,
 } from '../types/database';
 
 interface AskResponse {
@@ -199,6 +200,51 @@ export function useStrategicAgent() {
   const markActed = useCallback((id: string) => updateInsightStatus(id, 'acted'), [updateInsightStatus]);
   const dismiss = useCallback((id: string) => updateInsightStatus(id, 'dismissed'), [updateInsightStatus]);
 
+  // ---- Load single conversation messages -----------------------------------
+  const loadConversation = useCallback(
+    async (id: string): Promise<AiConversationMessage[] | null> => {
+      try {
+        const { data, error } = await supabase
+          .from('ai_conversations')
+          .select('messages')
+          .eq('id', id)
+          .single();
+
+        if (error || !data) {
+          console.warn('Failed to load conversation:', error?.message);
+          return null;
+        }
+        return (data.messages || []) as unknown as AiConversationMessage[];
+      } catch (err) {
+        console.warn('Failed to load conversation:', err);
+        return null;
+      }
+    },
+    [],
+  );
+
+  // ---- Delete conversation -------------------------------------------------
+  const deleteConversation = useCallback(
+    async (id: string) => {
+      try {
+        const { error } = await supabase
+          .from('ai_conversations')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          console.error('Failed to delete conversation:', error.message);
+          showToast('Failed to delete conversation', 'error');
+          return;
+        }
+        setConversations((prev) => prev.filter((c) => c.id !== id));
+      } catch (err) {
+        console.error('Failed to delete conversation:', err);
+      }
+    },
+    [showToast],
+  );
+
   return {
     insights,
     conversations,
@@ -214,5 +260,7 @@ export function useStrategicAgent() {
     dismiss,
     fetchInsights,
     fetchConversations,
+    loadConversation,
+    deleteConversation,
   };
 }

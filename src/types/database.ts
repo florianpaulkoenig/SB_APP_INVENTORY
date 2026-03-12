@@ -2000,6 +2000,34 @@ export interface AiRateLimitInsert {
 
 export type AiRateLimitUpdate = Partial<AiRateLimitInsert>;
 
+// -- ai_insight_feedback -----------------------------------------------------
+
+export type AiFeedbackRating = 'positive' | 'negative';
+
+export interface AiInsightFeedbackRow {
+  id: string;
+  user_id: string;
+  insight_id: string;
+  rating: AiFeedbackRating;
+  comment: string | null;
+  insight_category: string;
+  insight_priority: string;
+  created_at: string;
+}
+
+export interface AiInsightFeedbackInsert {
+  id?: string;
+  user_id?: string;
+  insight_id: string;
+  rating: AiFeedbackRating;
+  comment?: string | null;
+  insight_category: string;
+  insight_priority: string;
+  created_at?: string;
+}
+
+export type AiInsightFeedbackUpdate = Partial<AiInsightFeedbackInsert>;
+
 // ---- Supabase Database type (standard pattern) -----------------------------
 
 export interface Database {
@@ -2265,6 +2293,11 @@ export interface Database {
         Row: AiRateLimitRow;
         Insert: AiRateLimitInsert;
         Update: AiRateLimitUpdate;
+      };
+      ai_insight_feedback: {
+        Row: AiInsightFeedbackRow;
+        Insert: AiInsightFeedbackInsert;
+        Update: AiInsightFeedbackUpdate;
       };
     };
     Views: Record<string, never>;

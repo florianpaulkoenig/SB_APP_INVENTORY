@@ -1,9 +1,15 @@
 // ---------------------------------------------------------------------------
-// InsightsPanel — collapsible panel showing AI strategic insights
+// InsightsPanel — collapsible panel showing AI strategic insights with feedback
 // ---------------------------------------------------------------------------
 
 import { useState } from 'react';
-import type { AiInsightRow, AiInsightPriority, AiInsightCategory } from '../../types/database';
+import type {
+  AiInsightRow,
+  AiInsightPriority,
+  AiInsightCategory,
+  AiInsightFeedbackRow,
+  AiFeedbackRating,
+} from '../../types/database';
 
 interface InsightsPanelProps {
   insights: AiInsightRow[];
@@ -12,6 +18,14 @@ interface InsightsPanelProps {
   onMarkRead: (id: string) => void;
   onMarkActed: (id: string) => void;
   onDismiss: (id: string) => void;
+  feedbackMap?: Record<string, AiInsightFeedbackRow>;
+  onFeedback?: (
+    insightId: string,
+    rating: AiFeedbackRating,
+    comment: string | null,
+    category: string,
+    priority: string,
+  ) => void;
 }
 
 const priorityConfig: Record<AiInsightPriority, { color: string; bg: string; label: string }> = {
@@ -40,9 +54,13 @@ export function InsightsPanel({
   onMarkRead,
   onMarkActed,
   onDismiss,
+  feedbackMap = {},
+  onFeedback,
 }: InsightsPanelProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'new' | 'high'>('all');
+  const [feedbackInputId, setFeedbackInputId] = useState<string | null>(null);
+  const [feedbackComment, setFeedbackComment] = useState('');
 
   const filtered = insights.filter((i) => {
     if (filter === 'new') return i.status === 'new';
@@ -58,6 +76,20 @@ export function InsightsPanel({
   );
 
   const newCount = insights.filter((i) => i.status === 'new').length;
+
+  const handleThumbClick = (insightId: string, rating: AiFeedbackRating, category: string, priority: string) => {
+    if (!onFeedback) return;
+    onFeedback(insightId, rating, null, category, priority);
+    setFeedbackInputId(insightId);
+    setFeedbackComment('');
+  };
+
+  const handleCommentSubmit = (insightId: string, rating: AiFeedbackRating, category: string, priority: string) => {
+    if (!onFeedback || !feedbackComment.trim()) return;
+    onFeedback(insightId, rating, feedbackComment.trim(), category, priority);
+    setFeedbackInputId(null);
+    setFeedbackComment('');
+  };
 
   return (
     <div className="flex flex-col">
@@ -127,6 +159,7 @@ export function InsightsPanel({
             const pConfig = priorityConfig[insight.priority];
             const isExpanded = expandedId === insight.id;
             const isNew = insight.status === 'new';
+            const existingFeedback = feedbackMap[insight.id];
 
             return (
               <div
@@ -194,23 +227,115 @@ export function InsightsPanel({
                       </div>
                     )}
 
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onMarkActed(insight.id)}
-                        className="rounded-md bg-green-100 px-2 py-1 text-[10px] font-medium text-green-700 transition-colors hover:bg-green-200"
-                      >
-                        ✓ Mark Acted
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDismiss(insight.id)}
-                        className="rounded-md bg-primary-100 px-2 py-1 text-[10px] font-medium text-primary-500 transition-colors hover:bg-primary-200"
-                      >
-                        Dismiss
-                      </button>
+                    {/* Actions + Feedback row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onMarkActed(insight.id)}
+                          className="rounded-md bg-green-100 px-2 py-1 text-[10px] font-medium text-green-700 transition-colors hover:bg-green-200"
+                        >
+                          ✓ Mark Acted
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDismiss(insight.id)}
+                          className="rounded-md bg-primary-100 px-2 py-1 text-[10px] font-medium text-primary-500 transition-colors hover:bg-primary-200"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+
+                      {/* Feedback thumbs */}
+                      {onFeedback && (
+                        <div className="flex items-center gap-1">
+                          <span className="mr-1 text-[10px] text-primary-400">Helpful?</span>
+                          <button
+                            type="button"
+                            onClick={() => handleThumbClick(insight.id, 'positive', insight.category, insight.priority)}
+                            disabled={!!existingFeedback}
+                            className={`rounded p-1 transition-colors ${
+                              existingFeedback?.rating === 'positive'
+                                ? 'bg-green-100 text-green-600'
+                                : existingFeedback
+                                  ? 'cursor-default text-primary-200'
+                                  : 'text-primary-400 hover:bg-green-50 hover:text-green-600'
+                            }`}
+                            title="Helpful"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
+                              <path d="M2.5 9.5a1 1 0 01-1-1v-4a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-1zm3-5.5v5.5l2 2.5h3.5a1 1 0 001-.8l.8-4a1 1 0 00-1-1.2H9.5l.5-2.5a1 1 0 00-1-1.2L5.5 4z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleThumbClick(insight.id, 'negative', insight.category, insight.priority)}
+                            disabled={!!existingFeedback}
+                            className={`rounded p-1 transition-colors ${
+                              existingFeedback?.rating === 'negative'
+                                ? 'bg-red-100 text-red-500'
+                                : existingFeedback
+                                  ? 'cursor-default text-primary-200'
+                                  : 'text-primary-400 hover:bg-red-50 hover:text-red-500'
+                            }`}
+                            title="Not helpful"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 rotate-180">
+                              <path d="M2.5 9.5a1 1 0 01-1-1v-4a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-1zm3-5.5v5.5l2 2.5h3.5a1 1 0 001-.8l.8-4a1 1 0 00-1-1.2H9.5l.5-2.5a1 1 0 00-1-1.2L5.5 4z" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Feedback comment input (shows after clicking a thumb) */}
+                    {feedbackInputId === insight.id && existingFeedback && !existingFeedback.comment && (
+                      <div className="mt-2 flex gap-2">
+                        <input
+                          type="text"
+                          value={feedbackComment}
+                          onChange={(e) => setFeedbackComment(e.target.value)}
+                          placeholder={
+                            existingFeedback.rating === 'positive'
+                              ? 'What made this useful? (optional)'
+                              : 'How could this be better? (optional)'
+                          }
+                          maxLength={500}
+                          className="flex-1 rounded-md border border-primary-200 px-2 py-1 text-[11px] text-primary-900 placeholder:text-primary-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleCommentSubmit(insight.id, existingFeedback.rating, insight.category, insight.priority);
+                            }
+                            if (e.key === 'Escape') {
+                              setFeedbackInputId(null);
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleCommentSubmit(insight.id, existingFeedback.rating, insight.category, insight.priority)}
+                          disabled={!feedbackComment.trim()}
+                          className="rounded-md bg-primary-900 px-2 py-1 text-[10px] font-medium text-white transition-colors hover:bg-primary-800 disabled:opacity-50"
+                        >
+                          Send
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFeedbackInputId(null)}
+                          className="rounded-md px-1.5 py-1 text-[10px] text-primary-400 hover:text-primary-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Show existing feedback comment */}
+                    {existingFeedback?.comment && (
+                      <div className="mt-2 flex items-start gap-1.5 rounded-md bg-primary-50 px-2 py-1.5">
+                        <span className="text-[10px] text-primary-400">Your feedback:</span>
+                        <span className="text-[11px] text-primary-600">{existingFeedback.comment}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
