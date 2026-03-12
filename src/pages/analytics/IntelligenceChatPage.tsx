@@ -41,19 +41,19 @@ function renderMarkdown(text: string) {
     // Headers
     if (line.startsWith('### ')) {
       elements.push(
-        <h4 key={key} className="mb-1 mt-3 text-xs font-bold text-primary-900 first:mt-0">
+        <h4 key={key} className="mb-2 mt-6 text-[15px] font-semibold text-primary-900 first:mt-0">
           {line.slice(4)}
         </h4>,
       );
     } else if (line.startsWith('## ')) {
       elements.push(
-        <h3 key={key} className="mb-1 mt-3 text-sm font-bold text-primary-900 first:mt-0">
+        <h3 key={key} className="mb-2 mt-6 text-base font-bold text-primary-900 first:mt-0">
           {line.slice(3)}
         </h3>,
       );
     } else if (line.startsWith('# ')) {
       elements.push(
-        <h2 key={key} className="mb-2 mt-3 text-sm font-bold text-primary-900 first:mt-0">
+        <h2 key={key} className="mb-3 mt-6 text-lg font-bold text-primary-900 first:mt-0">
           {line.slice(2)}
         </h2>,
       );
@@ -61,30 +61,29 @@ function renderMarkdown(text: string) {
     // Bullet points
     else if (/^[-•*]\s/.test(line)) {
       elements.push(
-        <p key={key} className="ml-3 text-xs leading-relaxed">
-          <span className="mr-1.5 text-primary-400">•</span>
+        <li key={key} className="ml-5 list-disc text-[15px] leading-7 text-primary-700">
           {renderInline(line.replace(/^[-•*]\s/, ''))}
-        </p>,
+        </li>,
       );
     }
     // Numbered lists
     else if (/^\d+\.\s/.test(line)) {
       const num = line.match(/^(\d+)\./)?.[1] || '';
       elements.push(
-        <p key={key} className="ml-3 text-xs leading-relaxed">
-          <span className="mr-1.5 font-medium text-primary-500">{num}.</span>
+        <li key={key} className="ml-5 text-[15px] leading-7 text-primary-700">
+          <span className="mr-1 font-medium text-primary-900">{num}.</span>
           {renderInline(line.replace(/^\d+\.\s/, ''))}
-        </p>,
+        </li>,
       );
     }
     // Empty line
     else if (line.trim() === '') {
-      elements.push(<div key={key} className="h-2" />);
+      elements.push(<div key={key} className="h-3" />);
     }
     // Regular paragraph
     else {
       elements.push(
-        <p key={key} className="text-xs leading-relaxed">
+        <p key={key} className="text-[15px] leading-7 text-primary-700">
           {renderInline(line)}
         </p>,
       );
@@ -99,7 +98,7 @@ function renderInline(text: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
+      return <strong key={i} className="font-semibold text-primary-900">{part.slice(2, -2)}</strong>;
     }
     return part;
   });
@@ -385,25 +384,28 @@ export function IntelligenceChatPage() {
               </div>
             ) : (
               // Message list
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {messages.map((msg, i) => (
                   <div key={i}>
                     {msg.role === 'user' ? (
-                      // User message
+                      // User message — right-aligned bubble
                       <div className="flex justify-end">
-                        <div className="max-w-[80%] rounded-2xl rounded-br-md bg-primary-900 px-4 py-3 text-xs leading-relaxed text-white">
+                        <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary-900 px-5 py-3.5 text-[15px] leading-7 text-white">
                           {msg.content}
                         </div>
                       </div>
                     ) : (
-                      // Assistant message
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4 text-primary-600">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                          </svg>
+                      // Assistant message — full-width, clean layout like Claude
+                      <div className="space-y-1">
+                        <div className="mb-2 flex items-center gap-2">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-900">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="1.5" className="h-3.5 w-3.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                            </svg>
+                          </div>
+                          <span className="text-sm font-medium text-primary-900">NOA Intelligence</span>
                         </div>
-                        <div className="min-w-0 flex-1 text-primary-800">
+                        <div className="pl-8">
                           {renderMarkdown(msg.content)}
                         </div>
                       </div>
@@ -413,15 +415,18 @@ export function IntelligenceChatPage() {
 
                 {/* Typing indicator */}
                 {asking && (
-                  <div className="flex gap-3">
-                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4 text-primary-600">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                      </svg>
+                  <div className="space-y-1">
+                    <div className="mb-2 flex items-center gap-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="1.5" className="h-3.5 w-3.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-primary-900">NOA Intelligence</span>
                     </div>
-                    <div className="flex items-center gap-1 rounded-2xl bg-primary-50 px-4 py-3">
+                    <div className="flex items-center gap-2 pl-8">
                       <LoadingSpinner size="sm" />
-                      <span className="ml-2 text-xs text-primary-500">Thinking…</span>
+                      <span className="text-sm text-primary-500">Thinking…</span>
                     </div>
                   </div>
                 )}
@@ -433,33 +438,33 @@ export function IntelligenceChatPage() {
         </div>
 
         {/* Input area */}
-        <div className="border-t border-primary-100 bg-white px-4 py-3">
+        <div className="border-t border-primary-100 bg-white px-4 py-4">
           <div className="mx-auto max-w-3xl">
-            <div className="flex items-end gap-2 rounded-xl border border-primary-200 bg-white px-3 py-2 transition-colors focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400">
+            <div className="flex items-end gap-3 rounded-2xl border border-primary-200 bg-white px-4 py-3 shadow-sm transition-colors focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100">
               <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about your portfolio…"
-                maxLength={2000}
+                maxLength={4000}
                 rows={1}
                 disabled={asking}
-                className="max-h-40 min-h-[24px] flex-1 resize-none border-0 bg-transparent text-sm text-primary-900 placeholder:text-primary-400 focus:outline-none focus:ring-0 disabled:opacity-50"
+                className="max-h-40 min-h-[28px] flex-1 resize-none border-0 bg-transparent text-[15px] leading-7 text-primary-900 placeholder:text-primary-400 focus:outline-none focus:ring-0 disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={() => handleSubmit(input)}
                 disabled={!input.trim() || asking}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-900 text-white transition-colors hover:bg-primary-800 disabled:opacity-30"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-900 text-white transition-colors hover:bg-primary-800 disabled:opacity-30"
                 title="Send message"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 13V3l10 5-10 5z" />
                 </svg>
               </button>
             </div>
-            <p className="mt-1.5 text-center text-[10px] text-primary-300">
+            <p className="mt-2 text-center text-xs text-primary-300">
               NOA Intelligence can make mistakes. Verify important strategic decisions.
             </p>
           </div>
