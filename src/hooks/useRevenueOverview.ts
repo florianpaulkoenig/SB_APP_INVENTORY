@@ -42,6 +42,12 @@ export interface YearPrognosis {
   priorYearSamePeriodRevenue: number | null; // prior year revenue up to same day-of-year
   vsLastYearPace: number | null;  // % difference vs prior year same period
   monthlyBreakdown: { month: number; revenue: number; count: number }[];
+  // Pipeline data
+  potentialRevenue: number;       // unsold artworks total price (CHF)
+  potentialCount: number;         // number of unsold artworks with price
+  confirmedOrdersRevenue: number; // active production orders value (CHF)
+  confirmedOrdersCount: number;   // number of active production orders
+  totalPipeline: number;          // potentialRevenue + confirmedOrdersRevenue
 }
 
 export interface RevenueOverviewData {
@@ -57,6 +63,16 @@ export interface RevenueOverviewData {
 // Hook
 // ---------------------------------------------------------------------------
 
+// Simple CHF conversion using fallback rates (no API call needed here)
+const FALLBACK_RATES: Record<string, number> = { CHF: 1, EUR: 0.94, USD: 0.88, GBP: 1.12 };
+function toCHF(amount: number, currency: string): number {
+  if (!amount) return 0;
+  const cur = currency?.toUpperCase() || 'EUR';
+  if (cur === 'CHF') return amount;
+  const rate = FALLBACK_RATES[cur];
+  return rate && rate > 0 ? amount / rate : amount;
+}
+
 export function useRevenueOverview() {
   const [data, setData] = useState<RevenueOverviewData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,14 +87,39 @@ export function useRevenueOverview() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setLoading(false); return; }
 
-      const { data: sales, error: salesErr } = await supabase
-        .from('sales')
-        .select('id, gallery_id, sale_date, sale_price, currency, galleries(name)')
-        .order('sale_date', { ascending: true });
+      // Fetch sales, unsold artworks, and active production orders in parallel
+      const [salesResult, artworksResult, prodOrdersResult] = await Promise.all([
+        supabase
+          .from('sales')
+          .select('id, gallery_id, sale_date, sale_price, currency, galleries(name)')
+          .order('sale_date', { ascending: true }),
+        supabase
+          .from('artworks')
+          .select('id, status, price, currency')
+          .not('status', 'in', '("sold","archived","destroyed")')
+          .gt('price', 0),
+        supabase
+          .from('production_orders')
+          .select('id, price, currency, status, gallery_id')
+          .not('status', 'in', '("draft","completed")'),
+      ]);
 
-      if (salesErr) throw salesErr;
+      if (salesResult.error) throw salesResult.error;
+      const sales = salesResult.data ?? [];
+      const unsoldArtworks = artworksResult.data ?? [];
+      const activeProdOrders = prodOrdersResult.data ?? [];
 
-      if (!sales || sales.length === 0) {
+      // Fetch production order items for active orders (to get accurate per-item values)
+      const activeOrderIds = activeProdOrders.map((o) => o.id);
+      const orderItemsResult = activeOrderIds.length > 0
+        ? await supabase
+            .from('production_order_items')
+            .select('production_order_id, price, currency, quantity, artwork_id')
+            .in('production_order_id', activeOrderIds)
+        : { data: [] as { production_order_id: string; price: number | null; currency: string | null; quantity: number | null; artwork_id: string | null }[] };
+      const orderItems = orderItemsResult.data ?? [];
+
+      if (sales.length === 0) {
         setData({
           years: [],
           yearSummaries: [],
@@ -230,6 +271,29 @@ export function useRevenueOverview() {
         .map(([month, val]) => ({ month, ...val }))
         .sort((a, b) => a.month - b.month);
 
+      // ---- Potential revenue (unsold artworks → CHF) ---------------------------
+
+      const potentialRevenue = unsoldArtworks.reduce(
+        (sum, a) => sum + toCHF(a.price ?? 0, a.currency ?? 'EUR'), 0,
+      );
+      const potentialCount = unsoldArtworks.length;
+
+      // ---- Confirmed production orders revenue (CHF) --------------------------
+      // Sum per-item values, excluding items already converted to artworks
+
+      const itemValMap: Record<string, number> = {};
+      for (const item of orderItems) {
+        if (item.artwork_id) continue; // already converted to artwork → counted in potential
+        if (item.price != null && item.price > 0) {
+          const qty = item.quantity ?? 1;
+          const chf = toCHF(item.price * qty, item.currency ?? 'EUR');
+          itemValMap[item.production_order_id] = (itemValMap[item.production_order_id] ?? 0) + chf;
+        }
+      }
+      const confirmedOrdersRevenue = Object.values(itemValMap).reduce((sum, v) => sum + v, 0);
+      const confirmedOrdersCount = activeProdOrders.length;
+      const totalPipeline = potentialRevenue + confirmedOrdersRevenue;
+
       const prognosis: YearPrognosis = {
         currentYear,
         revenueToDate,
@@ -243,6 +307,11 @@ export function useRevenueOverview() {
         priorYearSamePeriodRevenue,
         vsLastYearPace,
         monthlyBreakdown,
+        potentialRevenue,
+        potentialCount,
+        confirmedOrdersRevenue,
+        confirmedOrdersCount,
+        totalPipeline,
       };
 
       setData({

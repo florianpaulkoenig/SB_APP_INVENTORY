@@ -248,6 +248,28 @@ export function RevenueOverviewPage() {
             </div>
           </div>
 
+          {/* Pipeline: Potential + Confirmed Orders */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-primary-700 mb-3">Revenue Pipeline</h4>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="rounded-lg border border-primary-100 bg-primary-50 p-4 text-center">
+                <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Potential Revenue</p>
+                <p className="mt-1 text-lg font-bold text-primary-900">{formatCurrency(data.prognosis.potentialRevenue, 'CHF')}</p>
+                <p className="text-xs text-primary-400">{data.prognosis.potentialCount} unsold artworks</p>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-center">
+                <p className="text-xs font-medium uppercase tracking-wider text-amber-700">Confirmed Orders</p>
+                <p className="mt-1 text-lg font-bold text-amber-900">{formatCurrency(data.prognosis.confirmedOrdersRevenue, 'CHF')}</p>
+                <p className="text-xs text-amber-600">{data.prognosis.confirmedOrdersCount} active orders</p>
+              </div>
+              <div className="rounded-lg border border-accent/30 bg-accent/5 p-4 text-center">
+                <p className="text-xs font-medium uppercase tracking-wider text-accent">Total Pipeline</p>
+                <p className="mt-1 text-lg font-bold text-accent">{formatCurrency(data.prognosis.totalPipeline, 'CHF')}</p>
+                <p className="text-xs text-primary-400">potential + orders</p>
+              </div>
+            </div>
+          </div>
+
           {/* Monthly breakdown bar chart */}
           <h4 className="text-sm font-semibold text-primary-700 mb-2">Monthly Breakdown — {data.prognosis.currentYear}</h4>
           <ResponsiveContainer width="100%" height={180}>
