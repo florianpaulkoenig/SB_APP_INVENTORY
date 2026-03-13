@@ -349,12 +349,13 @@ export function useRevenueOverview() {
         .map(([month, val]) => ({ month, ...val }))
         .sort((a, b) => a.month - b.month);
 
-      // ---- Potential revenue (unsold artworks → CHF) ---------------------------
+      // ---- Available artwork revenue potential (only status = 'available') ------
 
-      const potentialRevenue = unsoldArtworks.reduce(
+      const availableArtworks = unsoldArtworks.filter((a) => a.status === 'available');
+      const potentialRevenue = availableArtworks.reduce(
         (sum, a) => sum + toCHF(a.price ?? 0, a.currency ?? 'EUR'), 0,
       );
-      const potentialCount = unsoldArtworks.length;
+      const potentialCount = availableArtworks.length;
 
       // ---- Confirmed production orders revenue (CHF) --------------------------
       const confirmedOrdersRevenue = Object.values(itemValMap).reduce((sum, v) => sum + v, 0);

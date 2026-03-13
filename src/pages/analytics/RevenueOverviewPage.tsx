@@ -273,7 +273,7 @@ export function RevenueOverviewPage() {
                 <p className="text-[10px] text-cyan-600">{data.prognosis.consignmentCount} orders — exhibited</p>
               </div>
               <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-center">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-sky-700">Artworks at Galleries</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-sky-700">Artworks on Consignment</p>
                 <p className="mt-1 text-lg font-bold text-sky-800">{formatCurrency(data.prognosis.artworksAtGalleriesRevenue, 'CHF')}</p>
                 <p className="text-[10px] text-sky-600">{data.prognosis.artworksAtGalleriesCount} artworks</p>
               </div>
@@ -283,9 +283,9 @@ export function RevenueOverviewPage() {
                 <p className="text-[10px] text-amber-600">{data.prognosis.confirmedOrdersCount - data.prognosis.preSoldCount - data.prognosis.consignmentCount} in production</p>
               </div>
               <div className="rounded-lg border border-primary-100 bg-primary-50 p-3 text-center">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-primary-500">Potential Revenue</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-primary-500">Available Artwork Revenue</p>
                 <p className="mt-1 text-lg font-bold text-primary-900">{formatCurrency(data.prognosis.potentialRevenue, 'CHF')}</p>
-                <p className="text-[10px] text-primary-400">{data.prognosis.potentialCount} unsold artworks</p>
+                <p className="text-[10px] text-primary-400">{data.prognosis.potentialCount} available artworks</p>
               </div>
               <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 text-center col-span-2 sm:col-span-1">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-accent">Total Pipeline</p>
