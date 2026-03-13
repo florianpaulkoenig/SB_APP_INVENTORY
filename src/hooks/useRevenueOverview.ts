@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { useExchangeRates } from './useExchangeRates';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -103,21 +104,12 @@ export interface RevenueOverviewData {
 // Hook
 // ---------------------------------------------------------------------------
 
-// Simple CHF conversion using fallback rates (no API call needed here)
-const FALLBACK_RATES: Record<string, number> = { CHF: 1, EUR: 0.94, USD: 0.88, GBP: 1.12 };
-function toCHF(amount: number, currency: string): number {
-  if (!amount) return 0;
-  const cur = currency?.toUpperCase() || 'EUR';
-  if (cur === 'CHF') return amount;
-  const rate = FALLBACK_RATES[cur];
-  return rate && rate > 0 ? amount / rate : amount;
-}
-
 export function useRevenueOverview() {
   const [data, setData] = useState<RevenueOverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { toCHF, ready: ratesReady } = useExchangeRates();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -548,9 +540,10 @@ export function useRevenueOverview() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, toCHF]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // Wait for exchange rates before fetching data
+  useEffect(() => { if (ratesReady) fetchData(); }, [fetchData, ratesReady]);
 
   return { data, loading, error, refresh: fetchData };
 }
