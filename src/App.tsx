@@ -269,6 +269,9 @@ const InventoryHealthPage = React.lazy(() =>
 const GalleryPerformancePage = React.lazy(() =>
   import('./pages/analytics/GalleryPerformancePage').then((m) => ({ default: m.GalleryPerformancePage })),
 );
+const RevenueOverviewPage = React.lazy(() =>
+  import('./pages/analytics/RevenueOverviewPage').then((m) => ({ default: m.RevenueOverviewPage })),
+);
 const DemandVelocityPage = React.lazy(() =>
   import('./pages/analytics/DemandVelocityPage').then((m) => ({ default: m.DemandVelocityPage })),
 );
@@ -687,6 +690,16 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <InventoryHealthPage />
+              </Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/revenue-overview',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <RevenueOverviewPage />
               </Suspense>
             </RoleGuard>
           ),

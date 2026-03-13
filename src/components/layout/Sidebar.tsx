@@ -243,6 +243,7 @@ const navSections: NavSection[] = [
     title: 'ANALYTICS',
     items: [
       { label: 'Analytics', to: '/analytics', icon: icons.analytics, roles: ['admin'] },
+      { label: 'Revenue Overview', to: '/analytics/revenue-overview', icon: icons.sales, roles: ['admin'] },
       { label: 'Inventory Health', to: '/analytics/inventory-health', icon: icons.inventoryHealth, roles: ['admin'] },
       { label: 'Gallery Performance', to: '/analytics/gallery-performance', icon: icons.galleryPerformance, roles: ['admin'] },
       { label: 'Demand Velocity', to: '/analytics/demand-velocity', icon: icons.sales, roles: ['admin'] },
