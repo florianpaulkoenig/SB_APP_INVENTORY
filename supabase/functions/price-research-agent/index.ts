@@ -38,6 +38,20 @@ serve(async (req: Request) => {
       });
     }
 
+    // Verify admin role
+    const supabaseRoleCheck = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const { data: profileData } = await supabaseRoleCheck
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+    if (profileData?.role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Admin access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (!ANTHROPIC_API_KEY) {
       return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
         status: 500,

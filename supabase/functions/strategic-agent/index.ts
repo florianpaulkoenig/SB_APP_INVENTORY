@@ -10,7 +10,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || '*';
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.noacontemporary.com';
 const CRON_SECRET = Deno.env.get('CRON_SECRET') || '';
 
 const corsHeaders = {
@@ -638,7 +638,7 @@ serve(async (req: Request) => {
         .eq('user_id', user.id)
         .single();
 
-      const userRole = profile?.role ?? 'admin';
+      const userRole = profile?.role ?? null;
       if (userRole !== 'admin') {
         return new Response(JSON.stringify({ error: 'Admin access required' }), {
           status: 403,

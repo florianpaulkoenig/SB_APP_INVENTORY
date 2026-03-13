@@ -15,7 +15,7 @@ export function cn(...inputs: ClassValue[]): string {
 // .ilike() calls (commas, parentheses, dots preceded by identifier chars).
 // ---------------------------------------------------------------------------
 export function sanitizeFilterTerm(input: string): string {
-  return input.replace(/[,()%_\\]/g, '').trim();
+  return input.replace(/[,()%_\\.]/g, '').trim();
 }
 
 // ---------------------------------------------------------------------------

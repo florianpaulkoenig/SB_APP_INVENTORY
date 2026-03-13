@@ -38,7 +38,18 @@ serve(async (req: Request) => {
         global: { headers: { Authorization: authHeader } },
       });
       const { data: { user } } = await supabaseAuth.auth.getUser();
-      userId = user?.id || null;
+      if (user) {
+        // Verify admin role for JWT auth path
+        const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: profileData } = await supabaseAdmin
+          .from('user_profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        if (profileData?.role === 'admin') {
+          userId = user.id;
+        }
+      }
     }
 
     if (!userId) {

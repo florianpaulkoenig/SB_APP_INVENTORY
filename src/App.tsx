@@ -353,71 +353,71 @@ const router = createBrowserRouter(
           ),
         },
 
-        // Artworks
+        // Artworks (admin only)
         {
           path: 'artworks',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ArtworksPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ArtworksPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'artworks/new',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ArtworkCreatePage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ArtworkCreatePage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'artworks/:id',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ArtworkDetailPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ArtworkDetailPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'artworks/:id/edit',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ArtworkEditPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ArtworkEditPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Galleries
+        // Galleries (admin only)
         {
           path: 'galleries',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <GalleriesPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><GalleriesPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'galleries/new',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <GalleryCreatePage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><GalleryCreatePage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'galleries/:id',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <GalleryDetailPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><GalleryDetailPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'galleries/:id/edit',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <GalleryEditPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><GalleryEditPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
@@ -433,243 +433,243 @@ const router = createBrowserRouter(
           ),
         },
 
-        // Deliveries
+        // Deliveries (admin only)
         {
           path: 'deliveries',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <DeliveriesPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><DeliveriesPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'deliveries/new',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <DeliveryCreatePage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><DeliveryCreatePage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'deliveries/:id',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <DeliveryDetailPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><DeliveryDetailPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Packing Lists
+        // Packing Lists (admin only)
         {
           path: 'packing-lists',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <PackingListsPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><PackingListsPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'packing-lists/new',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <PackingListCreatePage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><PackingListCreatePage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'packing-lists/:id',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <PackingListDetailPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><PackingListDetailPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Production
+        // Production (admin only)
         {
           path: 'production',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ProductionOrdersPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ProductionOrdersPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'production/new',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ProductionOrderCreatePage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ProductionOrderCreatePage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'production/:id',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ProductionOrderDetailPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ProductionOrderDetailPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Gallery Forwarding
+        // Gallery Forwarding (admin only)
         {
           path: 'forwarding',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <GalleryForwardingOrdersPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><GalleryForwardingOrdersPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'forwarding/new',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <GalleryForwardingCreatePage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><GalleryForwardingCreatePage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'forwarding/:id',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <GalleryForwardingDetailPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><GalleryForwardingDetailPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Certificates
+        // Certificates (admin only)
         {
           path: 'certificates',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <CertificatesPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><CertificatesPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Sales
+        // Sales (admin only)
         {
           path: 'sales',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <SalesPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><SalesPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Contacts
+        // Contacts (admin only)
         {
           path: 'contacts',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ContactsPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ContactsPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'contacts/new',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ContactCreatePage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ContactCreatePage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'contacts/:id',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ContactDetailPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ContactDetailPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'contacts/:id/edit',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ContactEditPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ContactEditPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Deals
+        // Deals (admin only)
         {
           path: 'deals',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <DealsPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><DealsPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Invoices
+        // Invoices (admin only)
         {
           path: 'invoices',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <InvoicesPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><InvoicesPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'invoices/new',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <InvoiceCreatePage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><InvoiceCreatePage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'invoices/:id',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <InvoiceDetailPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><InvoiceDetailPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Viewing Rooms
+        // Viewing Rooms (admin only)
         {
           path: 'viewing-rooms',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ViewingRoomsPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ViewingRoomsPage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'viewing-rooms/new',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ViewingRoomCreatePage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ViewingRoomCreatePage /></LazyPage>
+            </RoleGuard>
           ),
         },
         {
           path: 'viewing-rooms/:id',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <ViewingRoomDetailPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ViewingRoomDetailPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Catalogues
+        // Catalogues (admin only)
         {
           path: 'catalogues',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <CataloguesPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><CataloguesPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 
-        // Sharing
+        // Sharing (admin only)
         {
           path: 'sharing',
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <SharingPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><SharingPage /></LazyPage>
+            </RoleGuard>
           ),
         },
 

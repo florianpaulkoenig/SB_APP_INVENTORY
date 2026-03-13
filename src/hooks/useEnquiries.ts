@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type { EnquiryRow, EnquiryInsert, EnquiryUpdate } from '../types/database';
 
 interface UseEnquiriesOptions {
@@ -27,9 +28,12 @@ export function useEnquiries(options?: UseEnquiriesOptions) {
     if (options?.source) query = query.eq('source', options.source);
     if (options?.priority) query = query.eq('priority', options.priority);
     if (options?.search) {
-      query = query.or(
-        `sender_name.ilike.%${options.search}%,sender_email.ilike.%${options.search}%,subject.ilike.%${options.search}%,interest_description.ilike.%${options.search}%`,
-      );
+      const term = sanitizeFilterTerm(options.search);
+      if (term) {
+        query = query.or(
+          `sender_name.ilike.%${term}%,sender_email.ilike.%${term}%,subject.ilike.%${term}%,interest_description.ilike.%${term}%`,
+        );
+      }
     }
 
     const { data, error } = await query;

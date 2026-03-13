@@ -282,8 +282,9 @@ Deno.serve(async (req: Request) => {
       .order('trigger_date', { ascending: true });
 
     if (queryError) {
+      console.error('Failed to query reminders:', queryError.message);
       return new Response(
-        JSON.stringify({ error: `Failed to query reminders: ${queryError.message}` }),
+        JSON.stringify({ error: 'Failed to query reminders' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
