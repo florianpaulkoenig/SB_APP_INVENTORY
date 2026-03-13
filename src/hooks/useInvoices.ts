@@ -248,6 +248,8 @@ export interface UseInvoiceReturn {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  updateInvoice: (data: InvoiceUpdate) => Promise<InvoiceRow | null>;
+  deleteInvoice: () => Promise<boolean>;
 }
 
 export function useInvoice(id: string): UseInvoiceReturn {
@@ -293,11 +295,62 @@ export function useInvoice(id: string): UseInvoiceReturn {
     fetchInvoice();
   }, [fetchInvoice]);
 
+  // ---- Update invoice (single-record) ------------------------------------
+
+  const updateInvoice = useCallback(
+    async (data: InvoiceUpdate): Promise<InvoiceRow | null> => {
+      if (!id) return null;
+      try {
+        const { data: updated, error: updateError } = await supabase
+          .from('invoices')
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+
+        toast({ title: 'Invoice updated', description: `Invoice ${updated.invoice_number} has been saved.`, variant: 'success' });
+        await fetchInvoice();
+        return updated as InvoiceRow;
+      } catch {
+        toast({ title: 'Error', description: 'Failed to update invoice. Please try again.', variant: 'error' });
+        return null;
+      }
+    },
+    [id, toast, fetchInvoice],
+  );
+
+  // ---- Delete invoice (single-record) ------------------------------------
+
+  const deleteInvoice = useCallback(
+    async (): Promise<boolean> => {
+      if (!id) return false;
+      try {
+        const { error: deleteError } = await supabase
+          .from('invoices')
+          .delete()
+          .eq('id', id);
+
+        if (deleteError) throw deleteError;
+
+        toast({ title: 'Invoice deleted', variant: 'success' });
+        return true;
+      } catch {
+        toast({ title: 'Error', description: 'Failed to delete invoice. Please try again.', variant: 'error' });
+        return false;
+      }
+    },
+    [id, toast],
+  );
+
   return {
     invoice,
     loading,
     error,
     refetch: fetchInvoice,
+    updateInvoice,
+    deleteInvoice,
   };
 }
 

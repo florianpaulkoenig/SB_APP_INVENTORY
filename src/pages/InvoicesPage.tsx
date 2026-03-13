@@ -122,8 +122,14 @@ export function InvoicesPage() {
       {/* Invoice list */}
       {!loading && invoices.length > 0 && (
         <InvoiceList
-          invoices={invoices}
-          onInvoiceClick={(invoice) => navigate(`/invoices/${invoice.id}`)}
+          invoices={invoices.map((inv) => ({
+            ...inv,
+            contact_name: inv.contacts
+              ? `${inv.contacts.first_name} ${inv.contacts.last_name}`
+              : undefined,
+            gallery_name: inv.galleries?.name ?? undefined,
+          }))}
+          onView={(id) => navigate(`/invoices/${id}`)}
         />
       )}
     </div>

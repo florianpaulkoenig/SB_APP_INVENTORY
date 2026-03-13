@@ -30,6 +30,16 @@ function getDotColor(statusValue: string): string {
       return 'bg-purple-500';
     case 'on_consignment':
       return 'bg-sky-500';
+    case 'paid':
+      return 'bg-emerald-600';
+    case 'pending_sale':
+      return 'bg-orange-500';
+    case 'archived':
+      return 'bg-gray-400';
+    case 'destroyed':
+      return 'bg-red-700';
+    case 'donated':
+      return 'bg-violet-500';
     default:
       return 'bg-primary-400';
   }

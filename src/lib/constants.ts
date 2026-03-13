@@ -39,6 +39,7 @@ export const ARTWORK_STATUSES = [
   { value: 'pending_sale', label: 'Pending Sale', color: 'bg-orange-100 text-orange-800' },
   { value: 'archived', label: 'Archived', color: 'bg-gray-100 text-gray-500' },
   { value: 'destroyed', label: 'Destroyed', color: 'bg-red-200 text-red-900' },
+  { value: 'donated', label: 'Donated', color: 'bg-violet-100 text-violet-800' },
 ] as const;
 
 // ---------------------------------------------------------------------------

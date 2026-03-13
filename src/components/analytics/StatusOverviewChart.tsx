@@ -2,7 +2,7 @@
 // StatusOverviewChart -- Horizontal bar chart of artwork count by status
 // ---------------------------------------------------------------------------
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -35,6 +35,16 @@ const STATUS_COLOR_MAP: Record<string, string> = {
 
 const FALLBACK_COLOR = '#a3a3a3';
 
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < breakpoint);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 // Format status value to human-readable label
 function formatStatusLabel(status: string): string {
   return status
@@ -43,6 +53,7 @@ function formatStatusLabel(status: string): string {
 }
 
 export function StatusOverviewChart({ data }: StatusOverviewChartProps) {
+  const isMobile = useIsMobile();
   const chartData = useMemo(
     () =>
       data.map((d) => ({
@@ -54,29 +65,30 @@ export function StatusOverviewChart({ data }: StatusOverviewChartProps) {
   );
 
   const hasData = chartData.length > 0;
-  const chartHeight = Math.max(250, chartData.length * 48 + 60);
+  const chartHeight = Math.max(isMobile ? 220 : 250, chartData.length * (isMobile ? 36 : 48) + 60);
 
   return (
-    <Card className="p-6">
+    <Card className="overflow-hidden p-4 sm:p-6">
       <h3 className="mb-4 font-display text-lg font-semibold text-primary-900">
         Artwork Status Overview
       </h3>
 
       {!hasData ? (
-        <div className="flex h-[250px] items-center justify-center">
+        <div className="flex h-[220px] sm:h-[250px] items-center justify-center">
           <p className="text-sm text-primary-400">No status data</p>
         </div>
       ) : (
+        <div className="min-h-[220px] overflow-x-auto">
         <ResponsiveContainer width="100%" height={chartHeight}>
           <BarChart
             data={chartData}
             layout="vertical"
-            margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
+            margin={{ top: 8, right: 16, left: 4, bottom: 8 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" horizontal={false} />
             <XAxis
               type="number"
-              tick={{ fill: '#737373', fontSize: 12 }}
+              tick={{ fill: '#737373', fontSize: isMobile ? 10 : 12 }}
               axisLine={{ stroke: '#d4d4d4' }}
               tickLine={false}
               allowDecimals={false}
@@ -84,8 +96,8 @@ export function StatusOverviewChart({ data }: StatusOverviewChartProps) {
             <YAxis
               type="category"
               dataKey="label"
-              width={130}
-              tick={{ fill: '#404040', fontSize: 12 }}
+              width={isMobile ? 90 : 130}
+              tick={{ fill: '#404040', fontSize: isMobile ? 10 : 12 }}
               axisLine={{ stroke: '#d4d4d4' }}
               tickLine={false}
             />
@@ -98,13 +110,14 @@ export function StatusOverviewChart({ data }: StatusOverviewChartProps) {
                 fontSize: 13,
               }}
             />
-            <Bar dataKey="count" name="Count" radius={[0, 4, 4, 0]} barSize={24}>
+            <Bar dataKey="count" name="Count" radius={[0, 4, 4, 0]} barSize={isMobile ? 18 : 24}>
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+        </div>
       )}
     </Card>
   );

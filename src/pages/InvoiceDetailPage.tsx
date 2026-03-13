@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useInvoice, useInvoiceItems, useInvoices } from '../hooks/useInvoices';
+import { useInvoice, useInvoiceItems } from '../hooks/useInvoices';
 import { useArtworks } from '../hooks/useArtworks';
 import { InvoiceDetail } from '../components/invoices/InvoiceDetail';
 import { InvoiceItemForm } from '../components/invoices/InvoiceItemForm';
 import { InvoiceForm } from '../components/invoices/InvoiceForm';
+import { TaskList } from '../components/crm/TaskList';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Modal } from '../components/ui/Modal';
@@ -18,9 +19,8 @@ export function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { invoice, loading, refetch: refetchInvoice } = useInvoice(id!);
+  const { invoice, loading, refetch: refetchInvoice, updateInvoice, deleteInvoice } = useInvoice(id!);
   const { items, loading: itemsLoading, addItem, removeItem } = useInvoiceItems(id!);
-  const { deleteInvoice, updateInvoice } = useInvoices();
   const { artworks } = useArtworks();
 
   // ---- Modal state --------------------------------------------------------
@@ -47,24 +47,19 @@ export function InvoiceDetailPage() {
   }
 
   async function handleDelete() {
-    if (!id) return;
-
-    const success = await deleteInvoice(id);
+    const success = await deleteInvoice();
     if (success) {
       navigate('/invoices');
     }
   }
 
   async function handleEdit(data: InvoiceUpdate) {
-    if (!id) return;
-
     setEditLoading(true);
-    const updated = await updateInvoice(id, data);
+    const updated = await updateInvoice(data);
     setEditLoading(false);
 
     if (updated) {
       setShowEditModal(false);
-      await refetchInvoice();
     }
   }
 
@@ -147,6 +142,11 @@ export function InvoiceDetailPage() {
         onAddItem={() => setShowAddItem(true)}
         onRemoveItem={handleRemoveItem}
       />
+
+      {/* Related Tasks */}
+      <div className="mt-6 rounded-lg border border-primary-100 bg-white p-6">
+        <TaskList invoiceId={id} compact />
+      </div>
 
       {/* Add Item Modal */}
       <Modal

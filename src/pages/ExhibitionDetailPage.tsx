@@ -14,6 +14,7 @@ import { EXHIBITION_TYPES } from '../lib/constants';
 import { MapView } from '../components/maps/MapView';
 import { getCoordinates } from '../lib/geocoding';
 import { CatalogueArtworkPicker } from '../components/catalogues/CatalogueArtworkPicker';
+import { TaskList } from '../components/crm/TaskList';
 
 interface Exhibition {
   id: string;
@@ -560,6 +561,11 @@ export function ExhibitionDetailPage() {
           />
         </Card>
       )}
+
+      {/* Related Tasks */}
+      <Card>
+        <TaskList exhibitionId={id} compact />
+      </Card>
 
       {/* Production Order Selector Modal */}
       <Modal isOpen={poModalOpen} onClose={() => setPOModalOpen(false)} title="Add Production Order">

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useGalleries } from '../hooks/useGalleries';
 import { GalleryDetail } from '../components/galleries/GalleryDetail';
+import { TaskList } from '../components/crm/TaskList';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import type { GalleryRow } from '../types/database';
@@ -121,6 +122,11 @@ export function GalleryDetailPage() {
         onEdit={() => navigate(`/galleries/${id}/edit`)}
         onDelete={handleDelete}
       />
+
+      {/* Related Tasks */}
+      <div className="mt-6 rounded-lg border border-primary-100 bg-white p-6">
+        <TaskList galleryId={id} compact />
+      </div>
     </div>
   );
 }

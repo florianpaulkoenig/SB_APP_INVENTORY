@@ -108,7 +108,7 @@ export function TwoFactorSettings() {
       setQrCode(null);
       setEnrollFactorId(null);
       setFactorId(enrollFactorId);
-      setIsEnrolled(true);
+      setStatus('enrolled');
     } catch {
       setError('Invalid verification code. Please try again.');
     } finally {

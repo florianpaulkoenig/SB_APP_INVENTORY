@@ -82,6 +82,7 @@ export function RevenueOverviewPage() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedGalleries, setSelectedGalleries] = useState<Set<string>>(new Set());
   const [expandedGalleryId, setExpandedGalleryId] = useState<string | null>(null);
+  const [scenarioPct, setScenarioPct] = useState(15);
   const [editingSellThrough, setEditingSellThrough] = useState<string | null>(null);
   const [sellThroughInput, setSellThroughInput] = useState('');
   const [savingSellThrough, setSavingSellThrough] = useState(false);
@@ -263,12 +264,13 @@ export function RevenueOverviewPage() {
             <div className="text-center">
               <p className="text-xs font-medium uppercase tracking-wider text-accent">Projected Full Year</p>
               <p className="mt-1 text-xl font-bold text-accent">{formatCurrency(data.prognosis.projectedRevenue, 'CHF')}</p>
-              <p className="text-xs text-primary-400">pace + consignment</p>
+              <p className="mt-0.5 text-sm font-semibold text-accent/80">~{data.prognosis.projectedSalesCount + data.prognosis.preSoldCount + data.prognosis.consignmentCount} artworks</p>
+              <p className="text-[10px] text-primary-400">pace + pre-sold + consignment</p>
             </div>
             <div className="text-center">
               <p className="text-xs font-medium uppercase tracking-wider text-primary-400">Pace Only (excl. consignment)</p>
               <p className="mt-1 text-lg font-semibold text-primary-500">{formatCurrency(data.prognosis.projectedRevenue - data.prognosis.weightedConsignmentRevenue, 'CHF')}</p>
-              <p className="text-xs text-primary-400">~{data.prognosis.projectedSalesCount} sales</p>
+              <p className="mt-0.5 text-sm font-medium text-primary-500">~{data.prognosis.projectedSalesCount} artworks</p>
             </div>
             <div className="text-center">
               <p className="text-xs font-medium uppercase tracking-wider text-primary-500">{data.prognosis.currentYear - 1} Same Period</p>
@@ -448,37 +450,78 @@ export function RevenueOverviewPage() {
             </div>
           )}
 
-          {/* Price increase scenario (+15%) */}
-          <div className="mb-6">
-            <h4 className="text-sm font-semibold text-primary-700 mb-3">
-              Scenario: +{data.prognosis.priceScenario.priceIncreasePct}% Price Increase
-              <span className="ml-2 text-xs font-normal text-primary-400">
-                elasticity {data.prognosis.priceScenario.elasticity} — art market estimate
-              </span>
-            </h4>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-center">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-violet-700">Price Change</p>
-                <p className="mt-1 text-lg font-bold text-violet-800">+{data.prognosis.priceScenario.priceIncreasePct}%</p>
+          {/* Price increase scenario (adjustable slider) */}
+          {(() => {
+            const elasticity = data.prognosis.priceScenario.elasticity;
+            const baseRevenue = data.prognosis.projectedRevenue;
+            const baseSalesCount = data.prognosis.projectedSalesCount;
+            const volumeChangePct = scenarioPct * elasticity;
+            const revenueMultiplier = (1 + scenarioPct / 100) * (1 + volumeChangePct / 100);
+            const scenarioRevenue = baseRevenue * revenueMultiplier;
+            const scenarioSales = Math.round(baseSalesCount * (1 + volumeChangePct / 100));
+            const netEffect = (revenueMultiplier - 1) * 100;
+            return (
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-primary-700 mb-3">
+                  Scenario: Price Increase
+                  <span className="ml-2 text-xs font-normal text-primary-400">
+                    elasticity {elasticity} — art market estimate
+                  </span>
+                </h4>
+                <div className="mb-4 flex items-center gap-4">
+                  <label className="text-sm font-medium text-primary-700 whitespace-nowrap">
+                    +{scenarioPct}%
+                  </label>
+                  <input
+                    type="range"
+                    min={5}
+                    max={50}
+                    step={5}
+                    value={scenarioPct}
+                    onChange={(e) => setScenarioPct(Number(e.target.value))}
+                    className="w-full max-w-xs accent-violet-600"
+                  />
+                  <div className="flex gap-1">
+                    {[10, 15, 20, 30, 50].map((pct) => (
+                      <button
+                        key={pct}
+                        onClick={() => setScenarioPct(pct)}
+                        className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                          scenarioPct === pct
+                            ? 'bg-violet-600 text-white'
+                            : 'bg-primary-100 text-primary-600 hover:bg-primary-200'
+                        }`}
+                      >
+                        +{pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-center">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-violet-700">Price Change</p>
+                    <p className="mt-1 text-lg font-bold text-violet-800">+{scenarioPct}%</p>
+                  </div>
+                  <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-center">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-violet-700">Volume Impact</p>
+                    <p className="mt-1 text-lg font-bold text-red-600">{volumeChangePct.toFixed(1)}%</p>
+                    <p className="text-[10px] text-violet-500">~{scenarioSales} sales</p>
+                  </div>
+                  <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-center">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-violet-700">Net Revenue Effect</p>
+                    <p className={`mt-1 text-lg font-bold ${netEffect >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                      {netEffect >= 0 ? '+' : ''}{netEffect.toFixed(1)}%
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-violet-300 bg-violet-100 p-3 text-center">
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-violet-800">Projected Revenue</p>
+                    <p className="mt-1 text-lg font-bold text-violet-900">{formatCurrency(scenarioRevenue, 'CHF')}</p>
+                    <p className="text-[10px] text-violet-600">vs {formatCurrency(baseRevenue, 'CHF')} current</p>
+                  </div>
+                </div>
               </div>
-              <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-center">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-violet-700">Volume Impact</p>
-                <p className="mt-1 text-lg font-bold text-red-600">{data.prognosis.priceScenario.volumeChangePct.toFixed(1)}%</p>
-                <p className="text-[10px] text-violet-500">~{data.prognosis.priceScenario.projectedSalesCount} sales</p>
-              </div>
-              <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-center">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-violet-700">Net Revenue Effect</p>
-                <p className={`mt-1 text-lg font-bold ${data.prognosis.priceScenario.netRevenueChangePct >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
-                  {data.prognosis.priceScenario.netRevenueChangePct >= 0 ? '+' : ''}{data.prognosis.priceScenario.netRevenueChangePct.toFixed(1)}%
-                </p>
-              </div>
-              <div className="rounded-lg border border-violet-300 bg-violet-100 p-3 text-center">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-violet-800">Projected Revenue</p>
-                <p className="mt-1 text-lg font-bold text-violet-900">{formatCurrency(data.prognosis.priceScenario.projectedRevenue, 'CHF')}</p>
-                <p className="text-[10px] text-violet-600">vs {formatCurrency(data.prognosis.projectedRevenue, 'CHF')} current</p>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Monthly breakdown bar chart */}
           <h4 className="text-sm font-semibold text-primary-700 mb-2">Monthly Breakdown — {data.prognosis.currentYear}</h4>
@@ -854,9 +897,13 @@ export function RevenueOverviewPage() {
               </thead>
               <tbody>
                 {galleryRanking.map((g) => (
-                  <tr key={g.galleryId} className="border-b border-primary-100 hover:bg-primary-50">
+                  <tr
+                    key={g.galleryId}
+                    className={`border-b border-primary-100 hover:bg-primary-50 cursor-pointer transition-colors ${expandedGalleryId === g.galleryId ? 'bg-primary-50' : ''}`}
+                    onClick={() => setExpandedGalleryId((prev) => prev === g.galleryId ? null : g.galleryId)}
+                  >
                     <td className="py-3 pr-4 font-medium text-primary-500">{g.rank}</td>
-                    <td className="py-3 pr-4 font-medium text-primary-900">{g.galleryName}</td>
+                    <td className="py-3 pr-4 font-medium text-primary-900 underline-offset-2 hover:underline">{g.galleryName}</td>
                     <td className="py-3 pr-4 text-right text-primary-700">{formatCurrency(g.revenue, 'CHF')}</td>
                     <td className="py-3 pr-4 text-right text-primary-700">{g.count}</td>
                     <td className="py-3 pr-4 text-right text-primary-700">{formatCurrency(g.avgPrice, 'CHF')}</td>

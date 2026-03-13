@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   startOfISOWeek,
@@ -7,12 +7,15 @@ import {
   addDays,
   format,
 } from 'date-fns';
+import * as XLSX from 'xlsx';
+import { pdf } from '@react-pdf/renderer';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useAnnualSchedule } from '../hooks/useAnnualSchedule';
 import type { ScheduleEvent, ScheduleEventType } from '../hooks/useAnnualSchedule';
 import { SCHEDULE_EVENT_COLORS } from '../lib/constants';
+import { SchedulePDF } from '../components/pdf/SchedulePDF';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -112,6 +115,67 @@ function isCurrentWeek(monday: Date): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Export helpers
+// ---------------------------------------------------------------------------
+
+const TYPE_LABELS: Record<ScheduleEventType, string> = {
+  exhibition: 'Exhibition',
+  art_fair: 'Art Fair',
+  solo_show: 'Solo Show',
+  group_show: 'Group Show',
+  production_order: 'Production',
+  project: 'Project',
+};
+
+function exportExcel(events: ScheduleEvent[], weekGroups: WeekGroup[], year: number) {
+  const rows = weekGroups.flatMap((group) => {
+    if (group.events.length === 0) {
+      return [{ KW: group.weekNumber, Monday: fmtDate(group.monday), Dates: '', Type: '', Partner: '', Venue: '', Title: '', City: '', Country: '', Notes: '' }];
+    }
+    return group.events.map((event, idx) => ({
+      KW: idx === 0 ? group.weekNumber : '',
+      Monday: idx === 0 ? fmtDate(group.monday) : '',
+      Dates: fmtDateRange(event.startDate, event.endDate),
+      Type: TYPE_LABELS[event.type] || event.type,
+      Partner: event.partner || '',
+      Venue: event.venue || '',
+      Title: event.title,
+      City: event.city || '',
+      Country: event.country || '',
+      Notes: event.notes || '',
+    }));
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  // Auto-width columns
+  const colKeys = ['KW', 'Monday', 'Dates', 'Type', 'Partner', 'Venue', 'Title', 'City', 'Country', 'Notes'];
+  ws['!cols'] = colKeys.map((key) => {
+    const maxLen = Math.max(
+      key.length,
+      ...rows.map((r) => String((r as Record<string, unknown>)[key] ?? '').length),
+    );
+    return { wch: Math.min(maxLen + 2, 40) };
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `Schedule ${year}`);
+  XLSX.writeFile(wb, `NOA_Schedule_${year}.xlsx`);
+}
+
+async function exportPDF(events: ScheduleEvent[], weekGroups: WeekGroup[], year: number) {
+  const blob = await pdf(
+    <SchedulePDF events={events} year={year} weekGroups={weekGroups} />,
+  ).toBlob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `NOA_Schedule_${year}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------------------------------------------------------------------------
 // AnnualSchedulePage
 // ---------------------------------------------------------------------------
 
@@ -119,6 +183,9 @@ export function AnnualSchedulePage() {
   const navigate = useNavigate();
   const [year, setYear] = useState(new Date().getFullYear());
   const [visibleTypes, setVisibleTypes] = useState<ScheduleEventType[]>([...ALL_TYPES]);
+
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const { events, loading } = useAnnualSchedule({ year, visibleTypes });
 
@@ -129,6 +196,17 @@ export function AnnualSchedulePage() {
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
     );
   }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setExportOpen(false);
+      }
+    }
+    if (exportOpen) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [exportOpen]);
 
   if (loading) return <LoadingSpinner />;
 
@@ -145,6 +223,40 @@ export function AnnualSchedulePage() {
           <Button variant="primary" onClick={() => setYear((y) => y + 1)}>
             →
           </Button>
+
+          {/* Export dropdown */}
+          <div className="relative" ref={exportRef}>
+            <Button
+              variant="primary"
+              onClick={() => setExportOpen((v) => !v)}
+            >
+              Export ▾
+            </Button>
+            {exportOpen && (
+              <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <button
+                  type="button"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
+                  onClick={() => {
+                    exportExcel(events, weekGroups, year);
+                    setExportOpen(false);
+                  }}
+                >
+                  Export Excel (.xlsx)
+                </button>
+                <button
+                  type="button"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg"
+                  onClick={() => {
+                    void exportPDF(events, weekGroups, year);
+                    setExportOpen(false);
+                  }}
+                >
+                  Export PDF
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

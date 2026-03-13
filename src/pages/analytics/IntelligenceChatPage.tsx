@@ -41,7 +41,7 @@ function renderMarkdown(text: string) {
     // Headers
     if (line.startsWith('### ')) {
       elements.push(
-        <h4 key={key} className="mb-2 mt-6 text-[15px] font-semibold text-primary-900 first:mt-0">
+        <h4 key={key} className="mb-2 mt-6 text-base font-semibold text-primary-900 first:mt-0">
           {line.slice(4)}
         </h4>,
       );
@@ -61,7 +61,7 @@ function renderMarkdown(text: string) {
     // Bullet points
     else if (/^[-•*]\s/.test(line)) {
       elements.push(
-        <li key={key} className="ml-5 list-disc text-[15px] leading-7 text-primary-700">
+        <li key={key} className="ml-5 list-disc text-base leading-8 text-primary-700">
           {renderInline(line.replace(/^[-•*]\s/, ''))}
         </li>,
       );
@@ -70,7 +70,7 @@ function renderMarkdown(text: string) {
     else if (/^\d+\.\s/.test(line)) {
       const num = line.match(/^(\d+)\./)?.[1] || '';
       elements.push(
-        <li key={key} className="ml-5 text-[15px] leading-7 text-primary-700">
+        <li key={key} className="ml-5 text-base leading-8 text-primary-700">
           <span className="mr-1 font-medium text-primary-900">{num}.</span>
           {renderInline(line.replace(/^\d+\.\s/, ''))}
         </li>,
@@ -83,7 +83,7 @@ function renderMarkdown(text: string) {
     // Regular paragraph
     else {
       elements.push(
-        <p key={key} className="text-[15px] leading-7 text-primary-700">
+        <p key={key} className="text-base leading-8 text-primary-700">
           {renderInline(line)}
         </p>,
       );
@@ -94,11 +94,17 @@ function renderMarkdown(text: string) {
 }
 
 function renderInline(text: string): React.ReactNode {
-  // Bold: **text**
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  // Split on bold **text**, italic *text*, and inline code `text`
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={i} className="font-semibold text-primary-900">{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+    }
+    if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+      return <code key={i} className="rounded bg-primary-100 px-1.5 py-0.5 font-mono text-[0.9em] text-primary-800">{part.slice(1, -1)}</code>;
     }
     return part;
   });

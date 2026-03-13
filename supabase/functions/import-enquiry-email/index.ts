@@ -66,12 +66,20 @@ function parseSquarespaceEmail(raw: string): {
     .replace(/&#39;/g, "'")
     .replace(/&quot;/g, '"');
 
-  const name = text.match(/Name:\s*(.+)/i)?.[1]?.trim() || null;
-  const email = text.match(/Email:\s*(\S+@\S+)/i)?.[1]?.trim() || null;
-  const inquirySubject = text.match(/Subject of Inquiry:\s*(.+)/i)?.[1]?.trim() || null;
+  // Flexible name field: "Name", "Your Name", "Full Name", "First Name", "Contact Name", etc.
+  const name = text.match(/(?:your\s+|full\s+|first\s+|contact\s+)?name:\s*(.+)/i)?.[1]?.trim() || null;
 
-  // Extract message — everything between "Message:" and "Manage Submissions"
-  const msgMatch = text.match(/Message:\s*([\s\S]+?)(?=\s*Manage Submissions|Does this submission|$)/i);
+  // Flexible email field: "Email", "Email Address", "Your Email", "Contact Email", etc.
+  const email = text.match(/(?:your\s+|contact\s+)?e?-?mail(?:\s+address)?:\s*(\S+@\S+)/i)?.[1]?.trim() || null;
+
+  // Flexible subject/inquiry field: "Subject of Inquiry", "Subject", "Inquiry", "Topic", "Regarding", etc.
+  const inquirySubject =
+    text.match(/subject\s+of\s+inquiry:\s*(.+)/i)?.[1]?.trim() ||
+    text.match(/(?:inquiry|enquiry|topic|regarding|subject):\s*(.+)/i)?.[1]?.trim() ||
+    null;
+
+  // Extract message — everything between "Message:"/"Comments:"/"Details:" and "Manage Submissions"
+  const msgMatch = text.match(/(?:message|comments|details|inquiry):\s*([\s\S]+?)(?=\s*Manage Submissions|Does this submission|Sent via|$)/i);
   const message = msgMatch?.[1]?.trim() || null;
 
   return { name, email, inquirySubject, message };
@@ -153,9 +161,11 @@ serve(async (req: Request) => {
     }
 
     const payload = await req.json();
+    console.log('[import-enquiry-email] Received webhook, type:', payload.type);
 
     // Resend sends { type: "email.received", data: { ... } }
     if (payload.type !== 'email.received') {
+      console.log('[import-enquiry-email] Skipping non-email event:', payload.type);
       return new Response(JSON.stringify({ ok: true, skipped: 'not email.received' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -166,6 +176,7 @@ serve(async (req: Request) => {
     const emailSubject = emailData.subject || '';
     const emailText = emailData.text || '';
     const emailHtml = emailData.html || '';
+    console.log('[import-enquiry-email] Email subject:', emailSubject, '| Has text:', !!emailText, '| Has html:', !!emailHtml);
 
     // Use text body if available, fall back to HTML (truncate to prevent abuse)
     const rawContent = (emailText || emailHtml).slice(0, 50000);
@@ -179,12 +190,14 @@ serve(async (req: Request) => {
 
     // Parse Squarespace form fields
     const parsed = parseSquarespaceEmail(rawContent);
+    console.log('[import-enquiry-email] Parsed fields — name:', parsed.name, '| email:', parsed.email, '| subject:', parsed.inquirySubject, '| hasMessage:', !!parsed.message);
 
     // Use parsed fields, fall back to email-level fields
     const senderName = parsed.name || emailData.from || null;
     const senderEmail = parsed.email || null;
     const subject = parsed.inquirySubject || emailSubject || null;
     const body = parsed.message || rawContent;
+    console.log('[import-enquiry-email] Final sender:', senderName, '| email:', senderEmail, '| subject:', subject);
 
     // Connect to Supabase with service role (no user JWT available in webhooks)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -209,21 +222,33 @@ serve(async (req: Request) => {
     }
 
     // Get admin user_id (same pattern as auction-monitor)
-    const { data: profiles } = await supabase
+    const { data: profiles, error: profileError } = await supabase
       .from('user_profiles')
       .select('user_id')
       .eq('role', 'admin')
       .limit(1);
-    const adminUserId = profiles?.[0]?.user_id || null;
 
-    if (!adminUserId) {
-      return new Response(JSON.stringify({ error: 'No admin user found' }), {
+    if (profileError) {
+      console.error('[import-enquiry-email] Failed to query user_profiles:', profileError.message);
+      return new Response(JSON.stringify({ error: 'Failed to look up admin user', detail: profileError.message }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
+    const adminUserId = profiles?.[0]?.user_id || null;
+
+    if (!adminUserId) {
+      console.error('[import-enquiry-email] No admin user found in user_profiles table. Ensure at least one user has role=admin.');
+      return new Response(JSON.stringify({ error: 'No admin user found in user_profiles. Please create an admin user first.' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    console.log('[import-enquiry-email] Admin user_id:', adminUserId);
+
     // Insert enquiry
+    console.log('[import-enquiry-email] Inserting enquiry record...');
     const { data: enquiry, error: insertError } = await supabase
       .from('enquiries')
       .insert({
@@ -241,25 +266,39 @@ serve(async (req: Request) => {
       .single();
 
     if (insertError || !enquiry) {
+      console.error('[import-enquiry-email] Insert failed:', insertError?.message);
       return new Response(JSON.stringify({ error: 'Failed to create enquiry', detail: insertError?.message }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
     }
+    console.log('[import-enquiry-email] Enquiry created successfully, id:', enquiry.id);
 
     // AI Analysis (non-blocking — if it fails, enquiry still exists)
-    const aiResult = await analyzeWithClaude(subject || '', body);
-    if (aiResult) {
-      await supabase
-        .from('enquiries')
-        .update({
-          interest_description: aiResult.interest_description || null,
-          location_city: aiResult.location_city || null,
-          location_country: aiResult.location_country || null,
-          estimated_value: aiResult.estimated_value || null,
-          priority: aiResult.priority || 'normal',
-        })
-        .eq('id', enquiry.id);
+    let aiResult = null;
+    try {
+      console.log('[import-enquiry-email] Starting AI analysis for enquiry:', enquiry.id);
+      aiResult = await analyzeWithClaude(subject || '', body);
+      if (aiResult) {
+        console.log('[import-enquiry-email] AI analysis succeeded, updating enquiry with results');
+        const { error: updateError } = await supabase
+          .from('enquiries')
+          .update({
+            interest_description: aiResult.interest_description || null,
+            location_city: aiResult.location_city || null,
+            location_country: aiResult.location_country || null,
+            estimated_value: aiResult.estimated_value || null,
+            priority: aiResult.priority || 'normal',
+          })
+          .eq('id', enquiry.id);
+        if (updateError) {
+          console.error('[import-enquiry-email] Failed to update enquiry with AI results:', updateError.message);
+        }
+      } else {
+        console.log('[import-enquiry-email] AI analysis returned no results (API key missing or empty response)');
+      }
+    } catch (aiError) {
+      console.error('[import-enquiry-email] AI analysis failed (enquiry still created):', aiError);
     }
 
     // Send admin notification email
@@ -310,6 +349,7 @@ serve(async (req: Request) => {
       }
     }
 
+    console.log('[import-enquiry-email] Complete. enquiry_id:', enquiry.id, '| ai_analyzed:', !!aiResult);
     return new Response(
       JSON.stringify({
         ok: true,

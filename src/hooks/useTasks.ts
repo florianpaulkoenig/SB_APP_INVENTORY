@@ -11,6 +11,9 @@ export interface TaskFilters {
   completed?: boolean;
   contact_id?: string;
   artwork_id?: string;
+  gallery_id?: string;
+  exhibition_id?: string;
+  invoice_id?: string;
   overdue?: boolean; // due_date < today and not completed
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
@@ -72,6 +75,17 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         query = query.eq('artwork_id', filters.artwork_id);
       }
 
+      // Entity filters
+      if (filters.gallery_id) {
+        query = query.eq('gallery_id', filters.gallery_id);
+      }
+      if (filters.exhibition_id) {
+        query = query.eq('exhibition_id', filters.exhibition_id);
+      }
+      if (filters.invoice_id) {
+        query = query.eq('invoice_id', filters.invoice_id);
+      }
+
       // Overdue filter: due_date < today and not completed
       if (filters.overdue) {
         const today = new Date().toISOString().split('T')[0];
@@ -106,7 +120,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     } finally {
       setLoading(false);
     }
-  }, [filters.completed, filters.contact_id, filters.artwork_id, filters.overdue, filters.sortBy, filters.sortOrder, page, pageSize, toast]);
+  }, [filters.completed, filters.contact_id, filters.artwork_id, filters.gallery_id, filters.exhibition_id, filters.invoice_id, filters.overdue, filters.sortBy, filters.sortOrder, page, pageSize, toast]);
 
   useEffect(() => {
     fetchTasks();

@@ -52,7 +52,9 @@ const emptyUpdateForm: UpdateForm = {
 };
 
 export function AuctionTrackingPage() {
-  const { showSuccess, showError } = useToast();
+  const { toast } = useToast();
+  const showSuccess = (msg: string) => toast({ title: msg, variant: 'success' });
+  const showError = (msg: string) => toast({ title: msg, variant: 'error' });
   const { alerts, loading, createAlert, updateAlert, deleteAlert, matchToDatabase } = useAuctionAlerts();
 
   const [filterHouse, setFilterHouse] = useState('');
@@ -207,7 +209,7 @@ export function AuctionTrackingPage() {
           label="Auction House"
           value={filterHouse}
           onChange={(e) => setFilterHouse(e.target.value)}
-          options={[{value: '', label: 'All Houses'}, ...AUCTION_HOUSES]}
+          options={[{value: '', label: 'All Houses'}, ...AUCTION_HOUSES.map((h) => ({ value: h, label: h }))]}
         />
         <Select
           label="Result"
@@ -312,7 +314,7 @@ export function AuctionTrackingPage() {
             label="Auction House"
             value={alertForm.auction_house}
             onChange={(e) => setAlertForm({ ...alertForm, auction_house: e.target.value })}
-            options={[{value: '', label: 'Select house'}, ...AUCTION_HOUSES]}
+            options={[{value: '', label: 'Select house'}, ...AUCTION_HOUSES.map((h) => ({ value: h, label: h }))]}
           />
           <Input
             label="Sale Title"

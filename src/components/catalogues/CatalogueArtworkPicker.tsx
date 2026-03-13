@@ -1,17 +1,22 @@
 // ---------------------------------------------------------------------------
 // NOA Inventory -- Catalogue Artwork Picker
-// Allows selecting artworks to include in a generated catalogue PDF.
+// Grid-based artwork picker with thumbnails, search, filters, shift-click
+// bulk selection, and pagination. Used by Catalogues, Sharing, Viewing Rooms.
 // ---------------------------------------------------------------------------
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { SearchInput } from '../ui/SearchInput';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { GallerySelect } from '../galleries/GallerySelect';
-import { ARTWORK_CATEGORIES, ARTWORK_STATUSES } from '../../lib/constants';
+import {
+  ARTWORK_CATEGORIES,
+  ARTWORK_STATUSES,
+  ARTWORK_SERIES,
+} from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
-import { formatCurrency, sanitizeFilterTerm } from '../../lib/utils';
+import { sanitizeFilterTerm } from '../../lib/utils';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -23,7 +28,7 @@ export interface CatalogueArtworkPickerProps {
 }
 
 // ---------------------------------------------------------------------------
-// Lightweight artwork record for the picker list
+// Lightweight artwork record for the picker grid
 // ---------------------------------------------------------------------------
 
 interface PickerArtwork {
@@ -36,8 +41,16 @@ interface PickerArtwork {
   currency: string;
   status: string;
   category: string | null;
+  series: string | null;
+  artist_name: string | null;
   imageUrl: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const PAGE_SIZE = 24;
 
 // ---------------------------------------------------------------------------
 // Component
@@ -49,51 +62,84 @@ export function CatalogueArtworkPicker({
 }: CatalogueArtworkPickerProps) {
   const [artworks, setArtworks] = useState<PickerArtwork[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Filters
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [seriesFilter, setSeriesFilter] = useState('');
   const [galleryFilter, setGalleryFilter] = useState<string | null>(null);
+
+  // Pagination
+  const [page, setPage] = useState(0);
+
+  // Shift-click tracking
+  const lastClickedRef = useRef<string | null>(null);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [search, categoryFilter, statusFilter, seriesFilter, galleryFilter]);
 
   // ---- Fetch artworks with filters ------------------------------------------
 
   const fetchArtworks = useCallback(async () => {
     setLoading(true);
 
+    // First get the total count for pagination
+    let countQuery = supabase
+      .from('artworks')
+      .select('id', { count: 'exact', head: true });
+
     let query = supabase
       .from('artworks')
       .select(
-        'id, title, reference_code, medium, year, price, currency, status, category',
+        'id, title, reference_code, medium, year, price, currency, status, category, series, artist_name',
       )
-      .order('title', { ascending: true });
+      .order('title', { ascending: true })
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
     if (search) {
       const term = `%${sanitizeFilterTerm(search)}%`;
-      query = query.or(
-        `title.ilike.${term},reference_code.ilike.${term}`,
-      );
+      const filter = `title.ilike.${term},reference_code.ilike.${term},artist_name.ilike.${term}`;
+      query = query.or(filter);
+      countQuery = countQuery.or(filter);
     }
 
     if (categoryFilter) {
       query = query.eq('category', categoryFilter);
+      countQuery = countQuery.eq('category', categoryFilter);
     }
 
     if (statusFilter) {
       query = query.eq('status', statusFilter);
+      countQuery = countQuery.eq('status', statusFilter);
+    }
+
+    if (seriesFilter) {
+      query = query.eq('series', seriesFilter);
+      countQuery = countQuery.eq('series', seriesFilter);
     }
 
     if (galleryFilter) {
       query = query.eq('gallery_id', galleryFilter);
+      countQuery = countQuery.eq('gallery_id', galleryFilter);
     }
 
-    const { data, error } = await query;
+    const [{ data, error }, { count }] = await Promise.all([
+      query,
+      countQuery,
+    ]);
 
     if (error) {
       setArtworks([]);
+      setTotalCount(0);
       setLoading(false);
       return;
     }
+
+    setTotalCount(count ?? 0);
 
     // Fetch primary image URLs for all fetched artworks
     const artworkIds = (data ?? []).map((a) => a.id);
@@ -108,7 +154,6 @@ export function CatalogueArtworkPicker({
         .eq('is_primary', true);
 
       if (images && images.length > 0) {
-        // Generate signed URLs in parallel
         const urlPromises = images.map(async (img) => {
           const { data: urlData } = await supabase.storage
             .from('artwork-images')
@@ -140,12 +185,14 @@ export function CatalogueArtworkPicker({
       currency: a.currency ?? 'EUR',
       status: a.status,
       category: a.category,
+      series: a.series ?? null,
+      artist_name: a.artist_name ?? null,
       imageUrl: imageMap[a.id] ?? null,
     }));
 
     setArtworks(mapped);
     setLoading(false);
-  }, [search, categoryFilter, statusFilter, galleryFilter]);
+  }, [search, categoryFilter, statusFilter, seriesFilter, galleryFilter, page]);
 
   useEffect(() => {
     fetchArtworks();
@@ -153,27 +200,77 @@ export function CatalogueArtworkPicker({
 
   // ---- Selection handlers ---------------------------------------------------
 
-  const allSelected =
+  const allVisibleSelected =
     artworks.length > 0 && artworks.every((a) => selectedIds.includes(a.id));
 
   function handleToggleAll() {
-    if (allSelected) {
-      // Deselect all currently visible artworks
+    if (allVisibleSelected) {
       const visibleIds = new Set(artworks.map((a) => a.id));
       onSelectionChange(selectedIds.filter((id) => !visibleIds.has(id)));
     } else {
-      // Select all currently visible artworks (merge with existing)
       const merged = new Set([...selectedIds, ...artworks.map((a) => a.id)]);
       onSelectionChange(Array.from(merged));
     }
   }
 
-  function handleToggle(id: string) {
+  function handleToggle(id: string, event?: React.MouseEvent) {
+    // Shift-click: select range
+    if (event?.shiftKey && lastClickedRef.current) {
+      const lastIdx = artworks.findIndex(
+        (a) => a.id === lastClickedRef.current,
+      );
+      const currentIdx = artworks.findIndex((a) => a.id === id);
+      if (lastIdx !== -1 && currentIdx !== -1) {
+        const start = Math.min(lastIdx, currentIdx);
+        const end = Math.max(lastIdx, currentIdx);
+        const rangeIds = artworks.slice(start, end + 1).map((a) => a.id);
+        const merged = new Set([...selectedIds, ...rangeIds]);
+        onSelectionChange(Array.from(merged));
+        lastClickedRef.current = id;
+        return;
+      }
+    }
+
+    lastClickedRef.current = id;
+
     if (selectedIds.includes(id)) {
       onSelectionChange(selectedIds.filter((sid) => sid !== id));
     } else {
       onSelectionChange([...selectedIds, id]);
     }
+  }
+
+  // ---- Clear filters --------------------------------------------------------
+
+  function handleClearFilters() {
+    setSearch('');
+    setCategoryFilter('');
+    setStatusFilter('');
+    setSeriesFilter('');
+    setGalleryFilter(null);
+  }
+
+  const hasActiveFilters =
+    search || categoryFilter || statusFilter || seriesFilter || galleryFilter;
+
+  // ---- Pagination -----------------------------------------------------------
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // ---- Status badge helper --------------------------------------------------
+
+  function getStatusLabel(status: string) {
+    return (
+      ARTWORK_STATUSES.find((s) => s.value === status)?.label ??
+      status.replace(/_/g, ' ')
+    );
+  }
+
+  function getStatusColor(status: string) {
+    return (
+      ARTWORK_STATUSES.find((s) => s.value === status)?.color ??
+      'bg-gray-100 text-gray-600'
+    );
   }
 
   // ---- Filter options -------------------------------------------------------
@@ -188,6 +285,11 @@ export function CatalogueArtworkPicker({
     ...ARTWORK_STATUSES.map((s) => ({ value: s.value, label: s.label })),
   ];
 
+  const seriesOptions = [
+    { value: '', label: 'All Series' },
+    ...ARTWORK_SERIES.map((s) => ({ value: s.value, label: s.label })),
+  ];
+
   // ---- Render ---------------------------------------------------------------
 
   return (
@@ -196,11 +298,11 @@ export function CatalogueArtworkPicker({
       <SearchInput
         value={search}
         onChange={setSearch}
-        placeholder="Search by title or reference code..."
+        placeholder="Search by title, reference code, or artist..."
       />
 
-      {/* Filters */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* Filters row */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Select
           options={categoryOptions}
           value={categoryFilter}
@@ -211,6 +313,11 @@ export function CatalogueArtworkPicker({
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         />
+        <Select
+          options={seriesOptions}
+          value={seriesFilter}
+          onChange={(e) => setSeriesFilter(e.target.value)}
+        />
         <GallerySelect
           value={galleryFilter}
           onChange={setGalleryFilter}
@@ -218,16 +325,36 @@ export function CatalogueArtworkPicker({
         />
       </div>
 
-      {/* Select All / Deselect All + Count */}
+      {/* Toolbar: Select All / Clear Filters / Count */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={handleToggleAll}>
-          {allSelected ? 'Deselect All' : 'Select All'}
-        </Button>
-        <span className="text-sm font-medium text-primary-700">
-          {selectedIds.length} artwork{selectedIds.length !== 1 ? 's' : ''}{' '}
-          selected
-        </span>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleToggleAll}>
+            {allVisibleSelected ? 'Deselect All' : 'Select All'}
+          </Button>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+              Clear Filters
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {selectedIds.length > 0 && (
+            <span className="inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-sm font-semibold text-accent">
+              {selectedIds.length} selected
+            </span>
+          )}
+          <span className="text-xs text-primary-400">
+            {totalCount} artwork{totalCount !== 1 ? 's' : ''} total
+          </span>
+        </div>
       </div>
+
+      {/* Shift-click hint */}
+      {artworks.length > 0 && (
+        <p className="text-xs text-primary-400">
+          Tip: Hold Shift and click to select a range of artworks.
+        </p>
+      )}
 
       {/* Loading */}
       {loading && (
@@ -243,39 +370,62 @@ export function CatalogueArtworkPicker({
         </div>
       )}
 
-      {/* Artwork list */}
+      {/* Artwork grid */}
       {!loading && artworks.length > 0 && (
-        <div className="max-h-[480px] divide-y divide-primary-100 overflow-y-auto rounded-lg border border-primary-200">
+        <div className="grid max-h-[520px] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
           {artworks.map((artwork) => {
             const isSelected = selectedIds.includes(artwork.id);
 
             return (
-              <label
+              <div
                 key={artwork.id}
-                className={`flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-primary-50 ${
-                  isSelected ? 'bg-accent/5' : ''
+                role="button"
+                tabIndex={0}
+                onClick={(e) => handleToggle(artwork.id, e)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleToggle(artwork.id);
+                  }
+                }}
+                className={`group relative cursor-pointer rounded-lg border-2 p-2 transition-all hover:shadow-md ${
+                  isSelected
+                    ? 'border-accent bg-accent/5 shadow-sm'
+                    : 'border-primary-200 bg-white hover:border-primary-300'
                 }`}
               >
-                {/* Checkbox */}
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => handleToggle(artwork.id)}
-                  className="h-4 w-4 rounded border-primary-300 text-accent focus:ring-accent"
-                />
+                {/* Checkmark overlay */}
+                {isSelected && (
+                  <div className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white shadow-sm">
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2.5"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
+                    </svg>
+                  </div>
+                )}
 
                 {/* Thumbnail */}
-                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded bg-primary-100">
+                <div className="aspect-square w-full overflow-hidden rounded bg-primary-100">
                   {artwork.imageUrl ? (
                     <img
                       src={artwork.imageUrl}
                       alt={artwork.title}
                       className="h-full w-full object-cover"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
                       <svg
-                        className="h-5 w-5 text-primary-300"
+                        className="h-8 w-8 text-primary-300"
                         fill="none"
                         viewBox="0 0 24 24"
                         strokeWidth="1"
@@ -292,37 +442,52 @@ export function CatalogueArtworkPicker({
                 </div>
 
                 {/* Info */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="truncate text-sm font-medium text-primary-900">
-                      {artwork.title}
-                    </span>
-                    <span className="flex-shrink-0 text-xs text-primary-400">
-                      {artwork.reference_code}
-                    </span>
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-2 text-xs text-primary-500">
-                    {artwork.medium && <span>{artwork.medium}</span>}
-                    {artwork.medium && artwork.year && (
-                      <span className="text-primary-300">&middot;</span>
-                    )}
-                    {artwork.year && <span>{artwork.year}</span>}
-                  </div>
-                </div>
-
-                {/* Price */}
-                <div className="flex-shrink-0 text-right">
-                  {artwork.price != null ? (
-                    <span className="text-sm font-medium text-primary-700">
-                      {formatCurrency(artwork.price, artwork.currency)}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-primary-300">No price</span>
+                <div className="mt-2 space-y-1">
+                  <p className="truncate text-sm font-medium text-primary-900">
+                    {artwork.title}
+                  </p>
+                  <p className="truncate text-xs text-primary-500">
+                    {artwork.reference_code}
+                    {artwork.artist_name && ` \u00b7 ${artwork.artist_name}`}
+                  </p>
+                  {artwork.year && (
+                    <p className="text-xs text-primary-400">{artwork.year}</p>
                   )}
+                  {/* Status badge */}
+                  <span
+                    className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${getStatusColor(artwork.status)}`}
+                  >
+                    {getStatusLabel(artwork.status)}
+                  </span>
                 </div>
-              </label>
+              </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-primary-100 pt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page === 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-primary-600">
+            Page {page + 1} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages - 1}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
         </div>
       )}
     </div>

@@ -81,7 +81,7 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
   );
 
   return (
-    <Card className="p-4 sm:p-6">
+    <Card className="overflow-hidden p-4 sm:p-6">
       <h3 className="mb-4 font-display text-lg font-semibold text-primary-900">
         Category Breakdown
       </h3>
@@ -91,6 +91,7 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
           <p className="text-sm text-primary-400">No category data</p>
         </div>
       ) : (
+        <div className="min-h-[260px]">
         <ResponsiveContainer width="100%" height={isMobile ? 260 : 320}>
           <PieChart>
             <Pie
@@ -131,6 +132,7 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
             />
           </PieChart>
         </ResponsiveContainer>
+        </div>
       )}
     </Card>
   );

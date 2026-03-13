@@ -51,7 +51,7 @@ export function GalleryPerformanceChart({ data }: GalleryPerformanceChartProps) 
   const chartHeight = Math.max(isMobile ? 250 : 300, sorted.length * (isMobile ? 40 : 48) + 60);
 
   return (
-    <Card className="p-4 sm:p-6">
+    <Card className="overflow-hidden p-4 sm:p-6">
       <h3 className="mb-4 font-display text-lg font-semibold text-primary-900">
         Gallery Performance
       </h3>
@@ -61,6 +61,7 @@ export function GalleryPerformanceChart({ data }: GalleryPerformanceChartProps) 
           <p className="text-sm text-primary-400">No gallery data</p>
         </div>
       ) : (
+        <div className="min-h-[250px] overflow-x-auto">
         <ResponsiveContainer width="100%" height={chartHeight}>
           <BarChart
             data={sorted}
@@ -104,6 +105,7 @@ export function GalleryPerformanceChart({ data }: GalleryPerformanceChartProps) 
             />
           </BarChart>
         </ResponsiveContainer>
+        </div>
       )}
     </Card>
   );

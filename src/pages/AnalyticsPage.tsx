@@ -144,24 +144,30 @@ export function AnalyticsPage() {
 
           {/* Charts Row 1 -- Sales over time + Category breakdown */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+            <div className="min-w-0 lg:col-span-2">
               <SalesOverTimeChart data={data.salesByMonth} />
             </div>
-            <div>
+            <div className="min-w-0">
               <CategoryBreakdownChart data={data.categoryBreakdown} />
             </div>
           </div>
 
           {/* Charts Row 2 -- Gallery performance + Status overview */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <GalleryPerformanceChart data={data.revenueByGallery} />
-            <StatusOverviewChart data={data.statusOverview} />
+            <div className="min-w-0">
+              <GalleryPerformanceChart data={data.revenueByGallery} />
+            </div>
+            <div className="min-w-0">
+              <StatusOverviewChart data={data.statusOverview} />
+            </div>
           </div>
 
           {/* Charts Row 3 -- Revenue by country + Sell-through rate */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <RevenueByCountryChart data={data.revenueByCountry} />
-            <Card className="p-6">
+            <div className="min-w-0">
+              <RevenueByCountryChart data={data.revenueByCountry} />
+            </div>
+            <Card className="min-w-0 p-4 sm:p-6">
               <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">
                 Sell-Through Rate
               </h3>
@@ -180,10 +186,11 @@ export function AnalyticsPage() {
 
           {/* Charts Row 4 -- Revenue by series */}
           {data.revenueBySeries.length > 0 && (
-            <Card className="p-6">
+            <Card className="overflow-hidden p-4 sm:p-6">
               <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">
                 Revenue by Series
               </h3>
+              <div className="min-h-[300px] overflow-x-auto">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.revenueBySeries}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -197,16 +204,18 @@ export function AnalyticsPage() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              </div>
             </Card>
           )}
 
           {/* Charts Row 5 -- Reporting & Payment status breakdown */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {data.reportingBreakdown.length > 0 && (
-              <Card className="p-6">
+              <Card className="min-w-0 overflow-hidden p-4 sm:p-6">
                 <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">
                   Reporting Status
                 </h3>
+                <div className="min-h-[250px]">
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie
@@ -226,13 +235,15 @@ export function AnalyticsPage() {
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
+                </div>
               </Card>
             )}
             {data.paymentBreakdown.length > 0 && (
-              <Card className="p-6">
+              <Card className="min-w-0 overflow-hidden p-4 sm:p-6">
                 <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">
                   Payment Status
                 </h3>
+                <div className="min-h-[250px]">
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie
@@ -252,14 +263,19 @@ export function AnalyticsPage() {
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
+                </div>
               </Card>
             )}
           </div>
 
           {/* Tables Row -- Recent sales + Open invoices */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <RecentSalesTable sales={data.recentSales} />
-            <OpenInvoicesTable invoices={data.openInvoices} />
+            <div className="min-w-0">
+              <RecentSalesTable sales={data.recentSales} />
+            </div>
+            <div className="min-w-0">
+              <OpenInvoicesTable invoices={data.openInvoices} />
+            </div>
           </div>
         </div>
       )}

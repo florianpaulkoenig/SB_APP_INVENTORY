@@ -48,7 +48,7 @@ export function useInventoryAnalytics() {
       const [artworksRes, salesRes] = await Promise.all([
         supabase
           .from('artworks')
-          .select('id, status, category, series, size_category, created_at, released_at, consigned_since'),
+          .select('id, status, category, series, size_category, height, width, created_at, released_at, consigned_since'),
         supabase
           .from('sales')
           .select('id, artwork_id, sale_date'),
@@ -119,15 +119,36 @@ export function useInventoryAnalytics() {
         .map(([series, v]) => ({ series, count: v.count, sold: v.sold }))
         .sort((a, b) => b.count - a.count);
 
-      // Size distribution
+      // Size distribution — compute from dimensions when size_category is missing
+      const SIZE_ORDER = ['small', 'medium', 'large', 'monumental', 'unspecified'];
+      const SIZE_LABELS: Record<string, string> = {
+        small: 'Small (<50cm)',
+        medium: 'Medium (50-120cm)',
+        large: 'Large (120-200cm)',
+        monumental: 'Monumental (>200cm)',
+        unspecified: 'Unspecified',
+      };
       const sizeMap = new Map<string, number>();
       for (const a of artworks) {
-        const sz = (a.size_category as string) || 'unspecified';
+        let sz = (a.size_category as string) || '';
+        if (!sz) {
+          const h = a.height as number | null;
+          const w = a.width as number | null;
+          if (h != null || w != null) {
+            const maxDim = Math.max(h ?? 0, w ?? 0);
+            if (maxDim < 50) sz = 'small';
+            else if (maxDim <= 120) sz = 'medium';
+            else if (maxDim <= 200) sz = 'large';
+            else sz = 'monumental';
+          } else {
+            sz = 'unspecified';
+          }
+        }
         sizeMap.set(sz, (sizeMap.get(sz) ?? 0) + 1);
       }
-      const sizeDistribution = [...sizeMap.entries()]
-        .map(([size, count]) => ({ size, count }))
-        .sort((a, b) => b.count - a.count);
+      const sizeDistribution = SIZE_ORDER
+        .filter((k) => sizeMap.has(k))
+        .map((k) => ({ size: SIZE_LABELS[k], count: sizeMap.get(k)! }));
 
       // Monthly production (by created_at)
       const monthMap = new Map<string, number>();

@@ -14,7 +14,8 @@ export type ArtworkStatus =
   | 'paid'
   | 'pending_sale'
   | 'archived'
-  | 'destroyed';
+  | 'destroyed'
+  | 'donated';
 
 export type ArtworkCategory =
   | 'painting'
@@ -820,6 +821,9 @@ export interface TaskRow {
   contact_id: string | null;
   artwork_id: string | null;
   deal_id: string | null;
+  gallery_id: string | null;
+  exhibition_id: string | null;
+  invoice_id: string | null;
   completed: boolean;
   created_at: string;
   updated_at: string;
@@ -834,6 +838,9 @@ export interface TaskInsert {
   contact_id?: string | null;
   artwork_id?: string | null;
   deal_id?: string | null;
+  gallery_id?: string | null;
+  exhibition_id?: string | null;
+  invoice_id?: string | null;
   completed?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -1349,6 +1356,7 @@ export type ShareLinkUpdate = Partial<ShareLinkInsert>;
 // -- viewing_rooms ------------------------------------------------------------
 
 export type ViewingRoomVisibility = 'public' | 'link_only' | 'password';
+export type ViewingRoomTemplate = 'grid' | 'carousel' | 'editorial';
 
 export interface ViewingRoomRow {
   id: string;
@@ -1358,6 +1366,7 @@ export interface ViewingRoomRow {
   slug: string;
   artwork_ids: string[];
   visibility: ViewingRoomVisibility;
+  template: ViewingRoomTemplate;
   password_hash: string | null;
   contact_id: string | null;
   published: boolean;
@@ -1373,6 +1382,7 @@ export interface ViewingRoomInsert {
   slug: string;
   artwork_ids?: string[];
   visibility?: ViewingRoomVisibility;
+  template?: ViewingRoomTemplate;
   password_hash?: string | null;
   contact_id?: string | null;
   published?: boolean;

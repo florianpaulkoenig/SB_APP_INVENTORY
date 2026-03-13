@@ -16,14 +16,19 @@ import { formatDate, truncate } from '../../lib/utils';
 
 export interface TaskListProps {
   contactId?: string;
+  galleryId?: string;
+  exhibitionId?: string;
+  invoiceId?: string;
   showCompleted?: boolean;
+  /** Compact mode for embedding on detail pages */
+  compact?: boolean;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function TaskList({ contactId, showCompleted: initialShowCompleted }: TaskListProps) {
+export function TaskList({ contactId, galleryId, exhibitionId, invoiceId, showCompleted: initialShowCompleted, compact }: TaskListProps) {
   // Local toggle for showing completed tasks
   const [showCompleted, setShowCompleted] = useState(initialShowCompleted ?? false);
 
@@ -31,6 +36,9 @@ export function TaskList({ contactId, showCompleted: initialShowCompleted }: Tas
     useTasks({
       filters: {
         contact_id: contactId,
+        gallery_id: galleryId,
+        exhibition_id: exhibitionId,
+        invoice_id: invoiceId,
         completed: showCompleted ? undefined : false,
       },
     });
@@ -91,7 +99,10 @@ export function TaskList({ contactId, showCompleted: initialShowCompleted }: Tas
         description: description || null,
         due_date: dueDate || null,
         contact_id: contactId ?? null,
-      });
+        gallery_id: galleryId ?? null,
+        exhibition_id: exhibitionId ?? null,
+        invoice_id: invoiceId ?? null,
+      } as never);
       if (result) {
         resetForm();
         setModalOpen(false);
@@ -120,8 +131,8 @@ export function TaskList({ contactId, showCompleted: initialShowCompleted }: Tas
 
   if (loading) {
     return (
-      <section className="rounded-lg border border-primary-100 bg-white p-6">
-        <div className="flex justify-center py-12">
+      <section className={compact ? 'py-4' : 'rounded-lg border border-primary-100 bg-white p-6'}>
+        <div className="flex justify-center py-8">
           <LoadingSpinner />
         </div>
       </section>
@@ -131,11 +142,11 @@ export function TaskList({ contactId, showCompleted: initialShowCompleted }: Tas
   // -- Render ---------------------------------------------------------------
 
   return (
-    <section className="rounded-lg border border-primary-100 bg-white p-6">
+    <section className={compact ? '' : 'rounded-lg border border-primary-100 bg-white p-6'}>
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-display text-base font-semibold text-primary-900">
-          Tasks
+        <h2 className={compact ? 'text-sm font-semibold text-primary-900' : 'font-display text-base font-semibold text-primary-900'}>
+          {compact ? 'Related Tasks' : 'Tasks'}
         </h2>
         <div className="flex items-center gap-3">
           {/* Show completed toggle */}

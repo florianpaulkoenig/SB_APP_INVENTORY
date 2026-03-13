@@ -255,6 +255,7 @@ const navSections: NavSection[] = [
       { label: 'Career Trajectory', to: '/analytics/career-trajectory', icon: icons.sales, roles: ['admin'] },
       { label: 'Strategic Intelligence', to: '/analytics/strategic-intelligence', icon: icons.analytics, roles: ['admin'] },
       { label: 'Intelligence Chat', to: '/analytics/intelligence-chat', icon: icons.contacts, roles: ['admin'] },
+      { label: 'Liquidity Planning', to: '/liquidity', icon: icons.invoices, roles: ['admin'] },
     ],
   },
   {

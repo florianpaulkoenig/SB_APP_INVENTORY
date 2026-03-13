@@ -21,6 +21,7 @@ export interface GalleryPerformanceRow {
   id: string;
   name: string;
   country: string | null;
+  type: string | null;
   totalAllocated: number;
   soldCount: number;
   sellThrough: number;
@@ -57,7 +58,7 @@ export function useGalleryPerformanceAnalytics() {
       if (!session?.user) { setLoading(false); return; }
 
       const [galleriesRes, artworksRes, salesRes] = await Promise.all([
-        supabase.from('galleries').select('id, name, country'),
+        supabase.from('galleries').select('id, name, country, type'),
         supabase.from('artworks').select('id, gallery_id, status, consigned_since, created_at'),
         supabase.from('sales').select('id, gallery_id, sale_price, currency, sale_date, reporting_status, artwork_id, artworks(consigned_since)'),
       ]);
@@ -136,6 +137,7 @@ export function useGalleryPerformanceAnalytics() {
           id: g.id,
           name: g.name,
           country: g.country,
+          type: (g as Record<string, unknown>).type as string | null ?? null,
           totalAllocated,
           soldCount,
           sellThrough: Math.round(sellThru * 10) / 10,

@@ -27,6 +27,7 @@ const STATUS_COLORS: Record<string, string> = {
   pending_sale: '#f97316',
   archived: '#94a3b8',
   destroyed: '#ef4444',
+  donated: '#8b5cf6',
 };
 
 const AGING_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#f97316', '#ef4444'];
@@ -208,7 +209,7 @@ export function InventoryHealthPage() {
             <div className="space-y-2">
               {data.sizeDistribution.map((s) => (
                 <div key={s.size} className="flex items-center justify-between text-sm">
-                  <span className="capitalize text-primary-700">{s.size.replace(/_/g, ' ')}</span>
+                  <span className="text-primary-700">{s.size}</span>
                   <span className="font-medium text-primary-900">{s.count}</span>
                 </div>
               ))}

@@ -13,12 +13,16 @@ import { CataloguePDF } from '../pdf/CataloguePDF';
 import { pdf } from '@react-pdf/renderer';
 import { downloadBlob } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
+import { useCatalogues } from '../../hooks/useCatalogues';
+import type { CatalogueConfig } from '../../hooks/useCatalogues';
 
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
 export interface CatalogueBuilderProps {
+  initialConfig?: CatalogueConfig;
+  catalogueId?: string;
   onGenerated?: () => void;
 }
 
@@ -89,21 +93,25 @@ const LANGUAGE_OPTIONS = [
 // Component
 // ---------------------------------------------------------------------------
 
-export function CatalogueBuilder({ onGenerated }: CatalogueBuilderProps) {
+export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: CatalogueBuilderProps) {
   // ---- State ----------------------------------------------------------------
 
+  const { saveCatalogue, updateCatalogue } = useCatalogues();
   const [step, setStep] = useState('settings');
+  const [saving, setSaving] = useState(false);
 
   const [settings, setSettings] = useState<CatalogueSettings>({
-    title: '',
-    subtitle: '',
-    catalogueType: 'exhibition',
-    layout: 'grid-2',
-    language: 'en',
-    showPrices: false,
+    title: initialConfig?.title ?? '',
+    subtitle: initialConfig?.subtitle ?? '',
+    catalogueType: initialConfig?.catalogueType ?? 'exhibition',
+    layout: initialConfig?.layout ?? 'grid-2',
+    language: initialConfig?.language ?? 'en',
+    showPrices: initialConfig?.showPrices ?? false,
   });
 
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    initialConfig?.artworkIds ?? [],
+  );
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -484,13 +492,36 @@ export function CatalogueBuilder({ onGenerated }: CatalogueBuilderProps) {
               Back
             </Button>
 
-            <Button
-              onClick={handleGenerate}
-              loading={generating}
-              disabled={generating}
-            >
-              {generating ? 'Generating PDF...' : 'Generate PDF'}
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  setSaving(true);
+                  const config: CatalogueConfig = {
+                    ...settings,
+                    artworkIds: selectedIds,
+                  };
+                  if (catalogueId) {
+                    await updateCatalogue(catalogueId, { name: settings.title, config });
+                  } else {
+                    await saveCatalogue({ name: settings.title, config });
+                  }
+                  setSaving(false);
+                }}
+                loading={saving}
+                disabled={saving || generating}
+              >
+                {catalogueId ? 'Save Changes' : 'Save Catalogue'}
+              </Button>
+
+              <Button
+                onClick={handleGenerate}
+                loading={generating}
+                disabled={generating}
+              >
+                {generating ? 'Generating PDF...' : 'Generate PDF'}
+              </Button>
+            </div>
           </div>
 
           {/* Progress hint */}
