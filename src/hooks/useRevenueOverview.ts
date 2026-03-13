@@ -45,8 +45,12 @@ export interface YearPrognosis {
   // Pipeline data
   potentialRevenue: number;       // unsold artworks total price (CHF)
   potentialCount: number;         // number of unsold artworks with price
-  confirmedOrdersRevenue: number; // active production orders value (CHF)
+  confirmedOrdersRevenue: number; // active production orders value (CHF) — all non-draft/completed
   confirmedOrdersCount: number;   // number of active production orders
+  preSoldRevenue: number;         // pre-sold orders — revenue confirmed (CHF)
+  preSoldCount: number;
+  consignmentRevenue: number;     // consignment orders — exhibited for sale (CHF)
+  consignmentCount: number;
   totalPipeline: number;          // potentialRevenue + confirmedOrdersRevenue
 }
 
@@ -292,6 +296,23 @@ export function useRevenueOverview() {
       }
       const confirmedOrdersRevenue = Object.values(itemValMap).reduce((sum, v) => sum + v, 0);
       const confirmedOrdersCount = activeProdOrders.length;
+
+      // Break down by order type: pre-sold (confirmed) vs consignment (exhibited for sale)
+      let preSoldRevenue = 0;
+      let preSoldCount = 0;
+      let consignmentRevenue = 0;
+      let consignmentCount = 0;
+      for (const order of activeProdOrders) {
+        const val = itemValMap[order.id] ?? 0;
+        if (order.status === 'pre_sold') {
+          preSoldRevenue += val;
+          preSoldCount += 1;
+        } else if (order.status === 'consignment') {
+          consignmentRevenue += val;
+          consignmentCount += 1;
+        }
+      }
+
       const totalPipeline = potentialRevenue + confirmedOrdersRevenue;
 
       const prognosis: YearPrognosis = {
@@ -311,6 +332,10 @@ export function useRevenueOverview() {
         potentialCount,
         confirmedOrdersRevenue,
         confirmedOrdersCount,
+        preSoldRevenue,
+        preSoldCount,
+        consignmentRevenue,
+        consignmentCount,
         totalPipeline,
       };
 

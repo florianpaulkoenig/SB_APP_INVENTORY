@@ -146,6 +146,8 @@ export const PRODUCTION_STATUSES = [
   { value: 'ordered', label: 'Ordered', color: 'bg-amber-100 text-amber-800' },
   { value: 'in_production', label: 'In Production', color: 'bg-blue-100 text-blue-800' },
   { value: 'quality_check', label: 'Quality Check', color: 'bg-purple-100 text-purple-800' },
+  { value: 'consignment', label: 'Ordered for Consignment', color: 'bg-cyan-100 text-cyan-800' },
+  { value: 'pre_sold', label: 'Pre-Sold Order', color: 'bg-emerald-100 text-emerald-800' },
   { value: 'completed', label: 'Completed', color: 'bg-emerald-100 text-emerald-800' },
 ] as const;
 

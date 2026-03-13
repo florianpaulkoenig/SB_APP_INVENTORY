@@ -79,7 +79,9 @@ export type ProductionStatus =
   | 'ordered'
   | 'in_production'
   | 'quality_check'
-  | 'completed';
+  | 'completed'
+  | 'consignment'    // ordered for consignment — exhibited & offered for sale
+  | 'pre_sold';      // pre-sold order — collector already purchased, revenue confirmed
 
 export type ImageType = 'raw' | 'retouched' | 'detail';
 

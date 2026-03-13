@@ -248,24 +248,34 @@ export function RevenueOverviewPage() {
             </div>
           </div>
 
-          {/* Pipeline: Potential + Confirmed Orders */}
+          {/* Pipeline: Potential + Orders breakdown */}
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-primary-700 mb-3">Revenue Pipeline</h4>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-lg border border-primary-100 bg-primary-50 p-4 text-center">
-                <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Potential Revenue</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-center">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-emerald-700">Pre-Sold Orders</p>
+                <p className="mt-1 text-lg font-bold text-emerald-800">{formatCurrency(data.prognosis.preSoldRevenue, 'CHF')}</p>
+                <p className="text-[10px] text-emerald-600">{data.prognosis.preSoldCount} orders — confirmed</p>
+              </div>
+              <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-3 text-center">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-cyan-700">Consignment Orders</p>
+                <p className="mt-1 text-lg font-bold text-cyan-800">{formatCurrency(data.prognosis.consignmentRevenue, 'CHF')}</p>
+                <p className="text-[10px] text-cyan-600">{data.prognosis.consignmentCount} orders — exhibited</p>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-center">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-amber-700">Other Active Orders</p>
+                <p className="mt-1 text-lg font-bold text-amber-900">{formatCurrency(data.prognosis.confirmedOrdersRevenue - data.prognosis.preSoldRevenue - data.prognosis.consignmentRevenue, 'CHF')}</p>
+                <p className="text-[10px] text-amber-600">{data.prognosis.confirmedOrdersCount - data.prognosis.preSoldCount - data.prognosis.consignmentCount} in production</p>
+              </div>
+              <div className="rounded-lg border border-primary-100 bg-primary-50 p-3 text-center">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-primary-500">Potential Revenue</p>
                 <p className="mt-1 text-lg font-bold text-primary-900">{formatCurrency(data.prognosis.potentialRevenue, 'CHF')}</p>
-                <p className="text-xs text-primary-400">{data.prognosis.potentialCount} unsold artworks</p>
+                <p className="text-[10px] text-primary-400">{data.prognosis.potentialCount} unsold artworks</p>
               </div>
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-center">
-                <p className="text-xs font-medium uppercase tracking-wider text-amber-700">Confirmed Orders</p>
-                <p className="mt-1 text-lg font-bold text-amber-900">{formatCurrency(data.prognosis.confirmedOrdersRevenue, 'CHF')}</p>
-                <p className="text-xs text-amber-600">{data.prognosis.confirmedOrdersCount} active orders</p>
-              </div>
-              <div className="rounded-lg border border-accent/30 bg-accent/5 p-4 text-center">
-                <p className="text-xs font-medium uppercase tracking-wider text-accent">Total Pipeline</p>
+              <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 text-center col-span-2 sm:col-span-1">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-accent">Total Pipeline</p>
                 <p className="mt-1 text-lg font-bold text-accent">{formatCurrency(data.prognosis.totalPipeline, 'CHF')}</p>
-                <p className="text-xs text-primary-400">potential + orders</p>
+                <p className="text-[10px] text-primary-400">all sources combined</p>
               </div>
             </div>
           </div>
