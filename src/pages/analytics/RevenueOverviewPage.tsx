@@ -261,7 +261,7 @@ export function RevenueOverviewPage() {
           {/* Pipeline: Potential + Orders breakdown */}
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-primary-700 mb-3">Revenue Pipeline</h4>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-center">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-emerald-700">Pre-Sold Orders</p>
                 <p className="mt-1 text-lg font-bold text-emerald-800">{formatCurrency(data.prognosis.preSoldRevenue, 'CHF')}</p>
@@ -271,6 +271,11 @@ export function RevenueOverviewPage() {
                 <p className="text-[10px] font-medium uppercase tracking-wider text-cyan-700">Consignment Orders</p>
                 <p className="mt-1 text-lg font-bold text-cyan-800">{formatCurrency(data.prognosis.consignmentRevenue, 'CHF')}</p>
                 <p className="text-[10px] text-cyan-600">{data.prognosis.consignmentCount} orders — exhibited</p>
+              </div>
+              <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-center">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-sky-700">Artworks at Galleries</p>
+                <p className="mt-1 text-lg font-bold text-sky-800">{formatCurrency(data.prognosis.artworksAtGalleriesRevenue, 'CHF')}</p>
+                <p className="text-[10px] text-sky-600">{data.prognosis.artworksAtGalleriesCount} artworks</p>
               </div>
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-center">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-amber-700">Other Active Orders</p>
@@ -290,18 +295,25 @@ export function RevenueOverviewPage() {
             </div>
           </div>
 
-          {/* Consignment sell-through per gallery */}
+          {/* Consignment sell-through per gallery (orders + artworks at gallery) */}
           {data.prognosis.consignmentGalleryDetails.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-sm font-semibold text-primary-700 mb-3">Consignment Sell-Through by Gallery</h4>
+              <h4 className="text-sm font-semibold text-primary-700 mb-3">
+                Consignment Sell-Through by Gallery
+                <span className="ml-2 text-xs font-normal text-primary-400">
+                  orders + artworks at gallery × sell-through rate
+                </span>
+              </h4>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-primary-200 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                       <th className="pb-2 pr-4">Gallery</th>
-                      <th className="pb-2 pr-4 text-right">Consignment Value</th>
-                      <th className="pb-2 pr-4 text-right">Sell-Through Rate</th>
-                      <th className="pb-2 pr-4 text-right">Weighted Value</th>
+                      <th className="pb-2 pr-4 text-right">Orders</th>
+                      <th className="pb-2 pr-4 text-right">Artworks</th>
+                      <th className="pb-2 pr-4 text-right">Total Value</th>
+                      <th className="pb-2 pr-4 text-right">Sell-Through</th>
+                      <th className="pb-2 pr-4 text-right">Weighted</th>
                       <th className="pb-2 text-right">History</th>
                     </tr>
                   </thead>
@@ -309,7 +321,13 @@ export function RevenueOverviewPage() {
                     {data.prognosis.consignmentGalleryDetails.map((g) => (
                       <tr key={g.galleryId} className="border-b border-primary-100">
                         <td className="py-2 pr-4 font-medium text-primary-900">{g.galleryName}</td>
-                        <td className="py-2 pr-4 text-right text-primary-700">{formatCurrency(g.consignmentValue, 'CHF')}</td>
+                        <td className="py-2 pr-4 text-right text-primary-600">
+                          {g.consignmentOrderCount > 0 ? `${formatCurrency(g.consignmentOrderValue, 'CHF')} (${g.consignmentOrderCount})` : '—'}
+                        </td>
+                        <td className="py-2 pr-4 text-right text-primary-600">
+                          {g.artworksAtGalleryCount > 0 ? `${formatCurrency(g.artworksAtGalleryValue, 'CHF')} (${g.artworksAtGalleryCount})` : '—'}
+                        </td>
+                        <td className="py-2 pr-4 text-right text-primary-700 font-medium">{formatCurrency(g.totalConsignmentValue, 'CHF')}</td>
                         <td className="py-2 pr-4 text-right">
                           <span className={`font-semibold ${g.sellThroughRate >= 0.5 ? 'text-emerald-600' : g.sellThroughRate >= 0.3 ? 'text-amber-600' : 'text-red-500'}`}>
                             {(g.sellThroughRate * 100).toFixed(0)}%
@@ -322,8 +340,10 @@ export function RevenueOverviewPage() {
                   </tbody>
                   <tfoot>
                     <tr className="border-t border-primary-200 font-semibold">
-                      <td className="pt-2 pr-4 text-primary-700">Total Weighted</td>
-                      <td className="pt-2 pr-4 text-right text-primary-700">{formatCurrency(data.prognosis.consignmentRevenue, 'CHF')}</td>
+                      <td className="pt-2 pr-4 text-primary-700">Total</td>
+                      <td className="pt-2 pr-4 text-right text-primary-600">{formatCurrency(data.prognosis.consignmentRevenue, 'CHF')}</td>
+                      <td className="pt-2 pr-4 text-right text-primary-600">{formatCurrency(data.prognosis.artworksAtGalleriesRevenue, 'CHF')}</td>
+                      <td className="pt-2 pr-4 text-right text-primary-700">{formatCurrency(data.prognosis.consignmentRevenue + data.prognosis.artworksAtGalleriesRevenue, 'CHF')}</td>
                       <td className="pt-2 pr-4" />
                       <td className="pt-2 pr-4 text-right text-cyan-700">{formatCurrency(data.prognosis.weightedConsignmentRevenue, 'CHF')}</td>
                       <td className="pt-2" />
@@ -333,6 +353,38 @@ export function RevenueOverviewPage() {
               </div>
             </div>
           )}
+
+          {/* Price increase scenario (+15%) */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-primary-700 mb-3">
+              Scenario: +{data.prognosis.priceScenario.priceIncreasePct}% Price Increase
+              <span className="ml-2 text-xs font-normal text-primary-400">
+                elasticity {data.prognosis.priceScenario.elasticity} — art market estimate
+              </span>
+            </h4>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-center">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-violet-700">Price Change</p>
+                <p className="mt-1 text-lg font-bold text-violet-800">+{data.prognosis.priceScenario.priceIncreasePct}%</p>
+              </div>
+              <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-center">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-violet-700">Volume Impact</p>
+                <p className="mt-1 text-lg font-bold text-red-600">{data.prognosis.priceScenario.volumeChangePct.toFixed(1)}%</p>
+                <p className="text-[10px] text-violet-500">~{data.prognosis.priceScenario.projectedSalesCount} sales</p>
+              </div>
+              <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-center">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-violet-700">Net Revenue Effect</p>
+                <p className={`mt-1 text-lg font-bold ${data.prognosis.priceScenario.netRevenueChangePct >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                  {data.prognosis.priceScenario.netRevenueChangePct >= 0 ? '+' : ''}{data.prognosis.priceScenario.netRevenueChangePct.toFixed(1)}%
+                </p>
+              </div>
+              <div className="rounded-lg border border-violet-300 bg-violet-100 p-3 text-center">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-violet-800">Projected Revenue</p>
+                <p className="mt-1 text-lg font-bold text-violet-900">{formatCurrency(data.prognosis.priceScenario.projectedRevenue, 'CHF')}</p>
+                <p className="text-[10px] text-violet-600">vs {formatCurrency(data.prognosis.projectedRevenue, 'CHF')} current</p>
+              </div>
+            </div>
+          </div>
 
           {/* Monthly breakdown bar chart */}
           <h4 className="text-sm font-semibold text-primary-700 mb-2">Monthly Breakdown — {data.prognosis.currentYear}</h4>
