@@ -16,7 +16,7 @@ export function useInsightFeedback() {
     try {
       const { data, error } = await supabase
         .from('ai_insight_feedback')
-        .select('*')
+        .select('id, user_id, insight_id, rating, comment, insight_category, insight_priority, created_at')
         .order('created_at', { ascending: false })
         .limit(200);
 

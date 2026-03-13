@@ -60,7 +60,7 @@ export function useViewingRooms() {
 
       const { data, error: fetchError } = await supabase
         .from('viewing_rooms')
-        .select('*')
+        .select('id, user_id, title, description, slug, artwork_ids, visibility, contact_id, published, created_at, updated_at')
         .eq('user_id', session.user.id)
         .order('updated_at', { ascending: false });
 
@@ -178,7 +178,7 @@ export function useViewingRoom(id: string) {
     try {
       const { data, error: fetchError } = await supabase
         .from('viewing_rooms')
-        .select('*')
+        .select('id, user_id, title, description, slug, artwork_ids, visibility, contact_id, published, created_at, updated_at')
         .eq('id', id)
         .single();
 
@@ -277,7 +277,7 @@ export function usePublicViewingRoom(slug: string) {
     try {
       const { data, error: fetchError } = await supabase
         .from('viewing_rooms')
-        .select('*')
+        .select('id, user_id, title, description, slug, artwork_ids, visibility, contact_id, published, created_at, updated_at')
         .eq('slug', slug)
         .eq('published', true)
         .single();

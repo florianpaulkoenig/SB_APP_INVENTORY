@@ -33,7 +33,7 @@ export function useStrategicAgent() {
 
       const { data, error } = await supabase
         .from('ai_insights')
-        .select('*')
+        .select('id, user_id, category, priority, title, summary, detail, data, status, created_at, updated_at')
         .in('status', ['new', 'read', 'acted'])
         .order('created_at', { ascending: false })
         .limit(50);
@@ -55,7 +55,7 @@ export function useStrategicAgent() {
     try {
       const { data, error } = await supabase
         .from('ai_conversations')
-        .select('*')
+        .select('id, user_id, title, messages, model, created_at, updated_at')
         .order('updated_at', { ascending: false })
         .limit(20);
 

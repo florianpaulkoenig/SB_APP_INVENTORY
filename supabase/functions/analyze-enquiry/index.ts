@@ -52,6 +52,16 @@ serve(async (req: Request) => {
       });
     }
 
+    // Rate limiting: 30 requests per minute
+    const { data: withinLimit } = await supabaseAdmin
+      .rpc('check_rate_limit', { p_user_id: user.id, p_function_name: 'analyze-enquiry', p_max_requests: 30 });
+    if (withinLimit === false) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { subject, body } = await req.json();
 
     if (!ANTHROPIC_API_KEY) {

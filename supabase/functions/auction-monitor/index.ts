@@ -68,6 +68,16 @@ serve(async (req: Request) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Rate limiting: 10 requests per minute
+    const { data: withinLimit } = await supabase
+      .rpc('check_rate_limit', { p_user_id: userId, p_function_name: 'auction-monitor', p_max_requests: 10 });
+    if (withinLimit === false) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Get existing alerts to avoid duplicates
     const { data: existingAlerts } = await supabase
       .from('auction_alerts')

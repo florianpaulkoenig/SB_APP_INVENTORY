@@ -45,7 +45,7 @@ export function useActivityLog(filters: ActivityLogFilters = {}): UseActivityLog
     try {
       let query = supabase
         .from('activity_log')
-        .select('*')
+        .select('id, user_id, action, entity_type, entity_id, changes, created_at')
         .order('created_at', { ascending: false })
         .limit(limit);
 

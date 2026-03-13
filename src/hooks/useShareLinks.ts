@@ -37,7 +37,7 @@ export function useShareLinks() {
 
       const { data, error: fetchError } = await supabase
         .from('share_links')
-        .select('*')
+        .select('id, user_id, token, artwork_ids, image_types, expiry, download_count, created_at')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
 
@@ -131,15 +131,16 @@ export function useShareLink(token: string) {
     setError(null);
 
     try {
+      // Use secure RPC function instead of direct table query
       const { data, error: fetchError } = await supabase
-        .from('share_links')
-        .select('*')
-        .eq('token', token)
-        .single();
+        .rpc('get_share_link_by_token', { p_token: token });
 
       if (fetchError) throw fetchError;
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        throw new Error('Share link not found');
+      }
 
-      const row = data as ShareLinkRow;
+      const row = (Array.isArray(data) ? data[0] : data) as ShareLinkRow;
       setLink(row);
 
       // Check expiry
@@ -164,10 +165,9 @@ export function useShareLink(token: string) {
     if (!link) return false;
 
     try {
+      // Use secure RPC function instead of direct table update
       const { error: updateError } = await supabase
-        .from('share_links')
-        .update({ download_count: link.download_count + 1 })
-        .eq('id', link.id);
+        .rpc('increment_share_link_download', { p_token: link.token });
 
       if (updateError) throw updateError;
 

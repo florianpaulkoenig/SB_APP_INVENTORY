@@ -52,6 +52,16 @@ serve(async (req: Request) => {
       });
     }
 
+    // Rate limiting: 20 requests per minute
+    const { data: withinLimit } = await supabaseRoleCheck
+      .rpc('check_rate_limit', { p_user_id: user.id, p_function_name: 'price-research-agent', p_max_requests: 20 });
+    if (withinLimit === false) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (!ANTHROPIC_API_KEY) {
       return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
         status: 500,

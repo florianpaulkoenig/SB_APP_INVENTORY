@@ -116,6 +116,17 @@ serve(async (req: Request) => {
       );
     }
 
+    // ---- Rate limiting (5 invites per minute) --------------------------------
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+    const { data: withinLimit } = await supabaseAdmin
+      .rpc('check_rate_limit', { p_user_id: callerUser.id, p_function_name: 'invite-user', p_max_requests: 5 });
+    if (withinLimit === false) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+        { status: 429, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
+    }
+
     // ---- Parse request body -------------------------------------------------
     const payload: InviteUserPayload = await req.json();
 

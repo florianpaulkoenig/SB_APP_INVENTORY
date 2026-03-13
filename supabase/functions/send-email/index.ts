@@ -71,6 +71,20 @@ serve(async (req: Request) => {
       );
     }
 
+    // ---- Rate limiting (10 emails per minute) --------------------------------
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    if (serviceRoleKey) {
+      const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+      const { data: withinLimit } = await supabaseAdmin
+        .rpc('check_rate_limit', { p_user_id: callerUser.id, p_function_name: 'send-email', p_max_requests: 10 });
+      if (withinLimit === false) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+          { status: 429, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+        );
+      }
+    }
+
     // ---- Parse request body -------------------------------------------------
     const payload: SendEmailPayload = await req.json();
 

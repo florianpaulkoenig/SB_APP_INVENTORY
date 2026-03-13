@@ -35,7 +35,7 @@ export function useUserProfiles() {
 
       const { data, error: fetchError } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select('id, user_id, role, gallery_id, contact_id, display_name, created_at')
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
