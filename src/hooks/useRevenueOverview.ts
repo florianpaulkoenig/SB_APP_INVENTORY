@@ -407,11 +407,12 @@ export function useRevenueOverview() {
         }
       }
 
-      // Build unsold artworks at galleries: count + value per gallery
+      // Build artworks on consignment at galleries: count + value per gallery
+      // Only include artworks with status 'on_consignment' (matches dashboard definition)
       const galleryArtworks = new Map<string, { count: number; value: number }>();
       for (const a of unsoldArtworks) {
         const gid = (a as { gallery_id?: string | null }).gallery_id;
-        if (gid) {
+        if (gid && a.status === 'on_consignment') {
           const existing = galleryArtworks.get(gid) ?? { count: 0, value: 0 };
           existing.count += 1;
           existing.value += toCHF(a.price ?? 0, a.currency ?? 'EUR');
