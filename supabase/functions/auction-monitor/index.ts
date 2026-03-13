@@ -8,6 +8,16 @@ const CRON_SECRET = Deno.env.get('CRON_SECRET');
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.noacontemporary.com';
 
+function timingSafeEqual(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const aBuf = encoder.encode(a);
+  const bBuf = encoder.encode(b);
+  if (aBuf.length !== bBuf.length) return false;
+  let result = 0;
+  for (let i = 0; i < aBuf.length; i++) { result |= aBuf[i] ^ bBuf[i]; }
+  return result === 0;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -29,7 +39,7 @@ serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization');
     let userId: string | null = null;
 
-    if (cronHeader === CRON_SECRET && CRON_SECRET) {
+    if (CRON_SECRET && cronHeader && timingSafeEqual(cronHeader, CRON_SECRET)) {
       // Cron invocation — get admin user
       const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const { data: profiles } = await supabaseAdmin

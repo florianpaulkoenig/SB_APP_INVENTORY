@@ -288,6 +288,7 @@ export function ArtworkForm({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             error={errors.title}
+            maxLength={256}
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -321,6 +322,7 @@ export function ArtworkForm({
               placeholder="e.g. Oil on canvas"
               value={medium}
               onChange={(e) => setMedium(e.target.value)}
+              maxLength={256}
             />
           </div>
         </div>
@@ -561,6 +563,7 @@ export function ArtworkForm({
             placeholder="e.g. Studio Zurich"
             value={currentLocation}
             onChange={(e) => setCurrentLocation(e.target.value)}
+            maxLength={256}
           />
           <GallerySelect value={galleryId} onChange={setGalleryId} />
         </div>
@@ -614,6 +617,7 @@ export function ArtworkForm({
           placeholder="Any additional information about this artwork..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+          maxLength={10000}
         />
       </section>
 

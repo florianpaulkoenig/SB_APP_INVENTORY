@@ -137,6 +137,7 @@ export function InvoiceItemForm({
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         error={errors.description}
+        maxLength={500}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

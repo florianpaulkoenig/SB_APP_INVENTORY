@@ -167,6 +167,7 @@ export function ProductionOrderForm({
             readOnly={!isEdit && !!orderNumber}
             disabled={!isEdit && !!orderNumber}
             helperText={isEdit ? undefined : 'Auto-generated'}
+            maxLength={50}
           />
 
           <Input
@@ -175,6 +176,7 @@ export function ProductionOrderForm({
             onChange={(e) => setTitle(e.target.value)}
             error={errors.title}
             placeholder="Production order title"
+            maxLength={256}
           />
 
           <Textarea
@@ -182,6 +184,7 @@ export function ProductionOrderForm({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe what needs to be produced..."
+            maxLength={5000}
           />
 
           <Select
@@ -275,6 +278,7 @@ export function ProductionOrderForm({
           placeholder="Any additional notes for this production order..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+          maxLength={5000}
         />
       </section>
 

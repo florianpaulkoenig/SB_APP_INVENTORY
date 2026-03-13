@@ -131,6 +131,7 @@ export function DeliveryForm({
             readOnly={!isEdit && !!deliveryNumber}
             disabled={!isEdit && !!deliveryNumber}
             helperText={isEdit ? undefined : 'Auto-generated'}
+            maxLength={50}
           />
 
           <Select
@@ -162,6 +163,7 @@ export function DeliveryForm({
             onChange={(e) => setRecipientName(e.target.value)}
             error={errors.recipientName}
             placeholder="Name of the recipient"
+            maxLength={256}
           />
 
           <Textarea
@@ -169,6 +171,7 @@ export function DeliveryForm({
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
             placeholder="Street, city, country..."
+            maxLength={1000}
           />
 
           <GallerySelect value={galleryId} onChange={setGalleryId} />
@@ -185,6 +188,7 @@ export function DeliveryForm({
           placeholder="Any additional notes for this delivery..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+          maxLength={5000}
         />
       </section>
 

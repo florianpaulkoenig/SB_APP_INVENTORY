@@ -259,12 +259,12 @@ export function ExhibitionsPage() {
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? 'Edit Exhibition' : 'Add Exhibition'}>
         <div className="space-y-4">
-          <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} maxLength={256} />
           <Select label="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} options={[{value: '', label: 'Select type'}, ...EXHIBITION_TYPES]} />
-          <Input label="Venue" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} />
+          <Input label="Venue" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} maxLength={256} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-            <Input label="Country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
+            <Input label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} maxLength={256} />
+            <Input label="Country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} maxLength={256} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Start Date" type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
@@ -278,7 +278,7 @@ export function ExhibitionsPage() {
             <Select label="Gallery" value={form.gallery_id} onChange={(e) => setForm({ ...form, gallery_id: e.target.value })} options={[{ value: '', label: 'None' }, ...galleryOptions]} />
             <Select label="Contact" value={form.contact_id} onChange={(e) => setForm({ ...form, contact_id: e.target.value })} options={[{ value: '', label: 'None' }, ...contactOptions]} />
           </div>
-          <Input label="Catalogue Reference" value={form.catalogue_reference} onChange={(e) => setForm({ ...form, catalogue_reference: e.target.value })} />
+          <Input label="Catalogue Reference" value={form.catalogue_reference} onChange={(e) => setForm({ ...form, catalogue_reference: e.target.value })} maxLength={256} />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <textarea
@@ -286,6 +286,7 @@ export function ExhibitionsPage() {
               rows={3}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              maxLength={5000}
             />
           </div>
           <div className="flex justify-end gap-3 pt-4">

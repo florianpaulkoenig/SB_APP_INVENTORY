@@ -199,10 +199,10 @@ export function EnquiriesPage() {
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add Enquiry">
         <div className="space-y-4">
           <Select label="Source" value={formData.source} onChange={(e) => updateField('source', e.target.value)} options={[{value: '', label: 'Select source...'}, ...ENQUIRY_SOURCES]} />
-          <Input label="Sender Name" value={formData.sender_name} onChange={(e) => updateField('sender_name', e.target.value)} />
-          <Input label="Sender Email" value={formData.sender_email} onChange={(e) => updateField('sender_email', e.target.value)} />
-          <Input label="Sender Phone" value={formData.sender_phone} onChange={(e) => updateField('sender_phone', e.target.value)} />
-          <Input label="Subject" value={formData.subject} onChange={(e) => updateField('subject', e.target.value)} />
+          <Input label="Sender Name" value={formData.sender_name} onChange={(e) => updateField('sender_name', e.target.value)} maxLength={256} />
+          <Input label="Sender Email" value={formData.sender_email} onChange={(e) => updateField('sender_email', e.target.value)} maxLength={320} />
+          <Input label="Sender Phone" value={formData.sender_phone} onChange={(e) => updateField('sender_phone', e.target.value)} maxLength={50} />
+          <Input label="Subject" value={formData.subject} onChange={(e) => updateField('subject', e.target.value)} maxLength={256} />
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">Body</label>
             <textarea
@@ -210,6 +210,7 @@ export function EnquiriesPage() {
               rows={3}
               value={formData.body}
               onChange={(e) => updateField('body', e.target.value)}
+              maxLength={5000}
             />
           </div>
           <div>
@@ -219,11 +220,12 @@ export function EnquiriesPage() {
               rows={3}
               value={formData.interest_description}
               onChange={(e) => updateField('interest_description', e.target.value)}
+              maxLength={5000}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="City" value={formData.location_city} onChange={(e) => updateField('location_city', e.target.value)} />
-            <Input label="Country" value={formData.location_country} onChange={(e) => updateField('location_country', e.target.value)} />
+            <Input label="City" value={formData.location_city} onChange={(e) => updateField('location_city', e.target.value)} maxLength={256} />
+            <Input label="Country" value={formData.location_country} onChange={(e) => updateField('location_country', e.target.value)} maxLength={256} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Estimated Value" type="number" value={formData.estimated_value} onChange={(e) => updateField('estimated_value', e.target.value)} />

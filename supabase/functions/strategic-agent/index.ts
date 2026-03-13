@@ -13,6 +13,17 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.noacontemporary.com';
 const CRON_SECRET = Deno.env.get('CRON_SECRET');
 
+// Timing-safe string comparison to prevent timing attacks on secrets
+function timingSafeEqual(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const aBuf = encoder.encode(a);
+  const bBuf = encoder.encode(b);
+  if (aBuf.length !== bBuf.length) return false;
+  let result = 0;
+  for (let i = 0; i < aBuf.length; i++) { result |= aBuf[i] ^ bBuf[i]; }
+  return result === 0;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
@@ -589,7 +600,7 @@ serve(async (req: Request) => {
     const cronSecret = req.headers.get('x-cron-secret');
     let userId: string;
 
-    if (CRON_SECRET && cronSecret && cronSecret === CRON_SECRET) {
+    if (CRON_SECRET && cronSecret && timingSafeEqual(cronSecret, CRON_SECRET)) {
       // Cron-triggered: use a system user ID or the first admin
       const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const { data: adminProfile } = await supabaseAdmin

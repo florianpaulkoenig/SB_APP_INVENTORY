@@ -166,6 +166,7 @@ export function DealsPage() {
                 placeholder="Any additional information..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
+                maxLength={5000}
               />
 
               {/* Actions */}

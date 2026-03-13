@@ -318,6 +318,7 @@ export function AuctionTrackingPage() {
             label="Sale Title"
             value={alertForm.sale_title}
             onChange={(e) => setAlertForm({ ...alertForm, sale_title: e.target.value })}
+            maxLength={256}
           />
           <div className="grid grid-cols-2 gap-4">
             <Input
@@ -330,12 +331,14 @@ export function AuctionTrackingPage() {
               label="Lot Number"
               value={alertForm.lot_number}
               onChange={(e) => setAlertForm({ ...alertForm, lot_number: e.target.value })}
+              maxLength={50}
             />
           </div>
           <Input
             label="Artwork Title"
             value={alertForm.artwork_title}
             onChange={(e) => setAlertForm({ ...alertForm, artwork_title: e.target.value })}
+            maxLength={256}
           />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Artwork Description</label>
@@ -344,6 +347,7 @@ export function AuctionTrackingPage() {
               rows={3}
               value={alertForm.artwork_description}
               onChange={(e) => setAlertForm({ ...alertForm, artwork_description: e.target.value })}
+              maxLength={5000}
             />
           </div>
           <div className="grid grid-cols-3 gap-4">
@@ -370,6 +374,7 @@ export function AuctionTrackingPage() {
             label="Source URL"
             value={alertForm.source_url}
             onChange={(e) => setAlertForm({ ...alertForm, source_url: e.target.value })}
+            maxLength={2048}
           />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -378,6 +383,7 @@ export function AuctionTrackingPage() {
               rows={3}
               value={alertForm.notes}
               onChange={(e) => setAlertForm({ ...alertForm, notes: e.target.value })}
+              maxLength={5000}
             />
           </div>
           <div className="flex justify-end gap-3 pt-4">
@@ -411,6 +417,7 @@ export function AuctionTrackingPage() {
               rows={3}
               value={updateForm.notes}
               onChange={(e) => setUpdateForm({ ...updateForm, notes: e.target.value })}
+              maxLength={5000}
             />
           </div>
           <div className="flex justify-end gap-3 pt-4">

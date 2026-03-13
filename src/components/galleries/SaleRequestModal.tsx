@@ -124,6 +124,7 @@ export function SaleRequestModal({
             placeholder="Optional"
             value={buyerName}
             onChange={(e) => setBuyerName(e.target.value)}
+            maxLength={256}
           />
         </div>
 
@@ -138,6 +139,7 @@ export function SaleRequestModal({
             placeholder="Any additional information..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
+            maxLength={5000}
           />
         </div>
 

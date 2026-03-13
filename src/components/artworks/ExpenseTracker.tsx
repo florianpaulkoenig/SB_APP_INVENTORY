@@ -276,6 +276,7 @@ export function ExpenseTracker({ artworkId }: ExpenseTrackerProps) {
             value={vendor}
             onChange={(e) => setVendor(e.target.value)}
             placeholder="Company or individual name"
+            maxLength={256}
           />
 
           <Textarea
@@ -283,6 +284,7 @@ export function ExpenseTracker({ artworkId }: ExpenseTrackerProps) {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Description of the expense..."
+            maxLength={5000}
           />
 
           <div className="flex justify-end gap-3 pt-2">

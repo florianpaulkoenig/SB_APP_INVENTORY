@@ -327,6 +327,7 @@ export function PublicCollectionsPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Collection or institution name"
             required
+            maxLength={256}
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -335,12 +336,14 @@ export function PublicCollectionsPage() {
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="e.g., New York"
+              maxLength={256}
             />
             <Input
               label="Country"
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               placeholder="e.g., USA"
+              maxLength={256}
             />
           </div>
 
@@ -357,6 +360,7 @@ export function PublicCollectionsPage() {
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
             placeholder="https://..."
+            maxLength={2048}
           />
 
           <Textarea
@@ -364,6 +368,7 @@ export function PublicCollectionsPage() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Additional notes about this collection..."
+            maxLength={5000}
           />
 
           <div className="flex justify-end gap-3 pt-2">

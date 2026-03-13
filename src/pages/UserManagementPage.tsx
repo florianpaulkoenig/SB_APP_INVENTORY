@@ -358,6 +358,7 @@ export function UserManagementPage() {
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
             placeholder="user@example.com"
+            maxLength={320}
           />
 
           <Input
@@ -366,6 +367,7 @@ export function UserManagementPage() {
             value={inviteDisplayName}
             onChange={(e) => setInviteDisplayName(e.target.value)}
             placeholder="Jane Doe"
+            maxLength={256}
           />
 
           <Select

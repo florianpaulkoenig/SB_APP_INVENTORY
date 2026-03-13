@@ -295,6 +295,7 @@ export function LoanPanel({ artworkId }: LoanPanelProps) {
             onChange={(e) => setBorrower(e.target.value)}
             placeholder="Person or institution borrowing"
             required
+            maxLength={256}
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -352,6 +353,7 @@ export function LoanPanel({ artworkId }: LoanPanelProps) {
             value={terms}
             onChange={(e) => setTerms(e.target.value)}
             placeholder="Loan agreement terms..."
+            maxLength={5000}
           />
 
           <Textarea
@@ -359,6 +361,7 @@ export function LoanPanel({ artworkId }: LoanPanelProps) {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Additional notes..."
+            maxLength={5000}
           />
 
           <div className="flex justify-end gap-3 pt-2">

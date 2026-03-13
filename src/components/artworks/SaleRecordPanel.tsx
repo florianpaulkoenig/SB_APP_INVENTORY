@@ -225,6 +225,7 @@ export function SaleRecordPanel({ artworkId, artworkStatus, onSaleDeleted }: Sal
             label="Buyer Name"
             value={editBuyerName}
             onChange={(e) => setEditBuyerName(e.target.value)}
+            maxLength={256}
           />
           <div>
             <label className="block text-sm font-medium text-primary-700 mb-1">Notes</label>
@@ -232,6 +233,7 @@ export function SaleRecordPanel({ artworkId, artworkStatus, onSaleDeleted }: Sal
               value={editNotes}
               onChange={(e) => setEditNotes(e.target.value)}
               rows={2}
+              maxLength={5000}
               className="w-full rounded-md border border-primary-300 px-3 py-2 text-sm focus:border-accent focus:ring-1 focus:ring-accent"
             />
           </div>

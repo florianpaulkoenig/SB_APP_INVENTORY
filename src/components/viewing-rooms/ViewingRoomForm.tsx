@@ -313,6 +313,7 @@ export function ViewingRoomForm({
         onChange={(e) => setTitle(e.target.value)}
         error={errors.title}
         required
+        maxLength={256}
       />
 
       {/* ---- Slug ---- */}
@@ -332,6 +333,7 @@ export function ViewingRoomForm({
           }}
           error={errors.slug}
           required
+          maxLength={256}
         />
         <p className="mt-1 text-xs text-primary-400">
           URL preview: <span className="font-medium text-primary-600">/view/{slug || '...'}</span>
@@ -352,6 +354,7 @@ export function ViewingRoomForm({
           placeholder="Optional description shown at the top of the viewing room..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          maxLength={5000}
           className="w-full rounded-md border border-primary-200 bg-white px-3 py-2 text-sm text-primary-900 placeholder:text-primary-400 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
         />
       </div>
@@ -392,6 +395,7 @@ export function ViewingRoomForm({
         value={contact}
         onChange={(e) => setContact(e.target.value)}
         helperText="Internal reference only. Not shown publicly."
+        maxLength={256}
       />
 
       {/* ---- Artwork Picker ---- */}

@@ -461,6 +461,7 @@ export function MediaLibraryPage() {
                       placeholder="Reason for rejection..."
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
                       rows={2}
+                      maxLength={5000}
                     />
                     <div className="flex flex-col gap-1">
                       <Button
@@ -588,6 +589,7 @@ export function MediaLibraryPage() {
                 value={uploadTitle}
                 onChange={(e) => setUploadTitle(e.target.value)}
                 placeholder="File title"
+                maxLength={256}
               />
 
               <Select
@@ -602,6 +604,7 @@ export function MediaLibraryPage() {
                 value={uploadDescription}
                 onChange={(e) => setUploadDescription(e.target.value)}
                 placeholder="Optional file description..."
+                maxLength={5000}
               />
 
               {/* Actions */}
@@ -633,6 +636,7 @@ export function MediaLibraryPage() {
                 value={textTitle}
                 onChange={(e) => setTextTitle(e.target.value)}
                 placeholder="Entry title (e.g., article name)"
+                maxLength={256}
               />
 
               <Textarea
@@ -641,6 +645,7 @@ export function MediaLibraryPage() {
                 onChange={(e) => setTextContent(e.target.value)}
                 placeholder="Paste or write the text content here..."
                 rows={6}
+                maxLength={10000}
               />
 
               <Input
@@ -648,6 +653,7 @@ export function MediaLibraryPage() {
                 value={textCredit}
                 onChange={(e) => setTextCredit(e.target.value)}
                 placeholder="Author, photographer, or source credit"
+                maxLength={256}
               />
 
               <Input
@@ -655,6 +661,7 @@ export function MediaLibraryPage() {
                 value={textSourceUrl}
                 onChange={(e) => setTextSourceUrl(e.target.value)}
                 placeholder="https://..."
+                maxLength={2048}
               />
 
               <Select
@@ -669,6 +676,7 @@ export function MediaLibraryPage() {
                 value={textDescription}
                 onChange={(e) => setTextDescription(e.target.value)}
                 placeholder="Short description for this entry..."
+                maxLength={5000}
               />
 
               {/* Actions */}

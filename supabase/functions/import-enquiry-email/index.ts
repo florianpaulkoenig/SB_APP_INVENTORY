@@ -14,6 +14,37 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
 
 // ---------------------------------------------------------------------------
+// Timing-safe string comparison
+// ---------------------------------------------------------------------------
+function timingSafeEqual(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const aBuf = encoder.encode(a);
+  const bBuf = encoder.encode(b);
+  if (aBuf.length !== bBuf.length) return false;
+  let result = 0;
+  for (let i = 0; i < aBuf.length; i++) {
+    result |= aBuf[i] ^ bBuf[i];
+  }
+  return result === 0;
+}
+
+// Simple in-memory rate limiter for webhook calls
+const recentCalls: number[] = [];
+const RATE_LIMIT_WINDOW = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 60; // 60 per minute
+
+function checkWebhookRateLimit(): boolean {
+  const now = Date.now();
+  // Remove old entries
+  while (recentCalls.length > 0 && recentCalls[0] < now - RATE_LIMIT_WINDOW) {
+    recentCalls.shift();
+  }
+  if (recentCalls.length >= RATE_LIMIT_MAX) return false;
+  recentCalls.push(now);
+  return true;
+}
+
+// ---------------------------------------------------------------------------
 // Parse Squarespace form email body
 // ---------------------------------------------------------------------------
 function parseSquarespaceEmail(raw: string): {
@@ -102,15 +133,21 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Verify webhook secret (check header first, then URL query parameter)
-    const url = new URL(req.url);
+    // Verify webhook secret (header only — never accept secrets in URL query params)
     const secret =
       req.headers.get('x-webhook-secret') ||
-      req.headers.get('webhook-secret') ||
-      url.searchParams.get('secret');
-    if (!WEBHOOK_SECRET || secret !== WEBHOOK_SECRET) {
+      req.headers.get('webhook-secret');
+    if (!WEBHOOK_SECRET || !secret || !timingSafeEqual(secret, WEBHOOK_SECRET)) {
       return new Response(JSON.stringify({ error: 'Invalid webhook secret' }), {
         status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Rate limiting
+    if (!checkWebhookRateLimit()) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+        status: 429,
         headers: { 'Content-Type': 'application/json' },
       });
     }

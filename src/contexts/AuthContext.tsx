@@ -39,7 +39,7 @@ async function fetchProfile(userId: string): Promise<UserProfileRow | null> {
   try {
     const { data } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select('id, user_id, role, gallery_id, contact_id, display_name, created_at')
       .eq('user_id', userId)
       .single();
     return data;

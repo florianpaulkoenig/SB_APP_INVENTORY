@@ -290,6 +290,7 @@ export function InsurancePanel({ artworkId }: InsurancePanelProps) {
             value={insurer}
             onChange={(e) => setInsurer(e.target.value)}
             placeholder="Insurance company name"
+            maxLength={256}
           />
 
           <Input
@@ -297,6 +298,7 @@ export function InsurancePanel({ artworkId }: InsurancePanelProps) {
             value={policyNumber}
             onChange={(e) => setPolicyNumber(e.target.value)}
             placeholder="e.g., POL-2024-12345"
+            maxLength={50}
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -319,6 +321,7 @@ export function InsurancePanel({ artworkId }: InsurancePanelProps) {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Coverage details, deductibles, etc."
+            maxLength={5000}
           />
 
           <div className="flex justify-end gap-3 pt-2">

@@ -513,7 +513,7 @@ export function ProjectDetailPage() {
       {/* Edit Modal */}
       <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Project">
         <div className="space-y-4">
-          <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} maxLength={256} />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
@@ -521,6 +521,7 @@ export function ProjectDetailPage() {
               rows={2}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
+              maxLength={5000}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -542,6 +543,7 @@ export function ProjectDetailPage() {
               rows={3}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              maxLength={5000}
             />
           </div>
           <div className="flex justify-end gap-3 pt-4">

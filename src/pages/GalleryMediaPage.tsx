@@ -508,6 +508,7 @@ export function GalleryMediaPage() {
               value={uploadTitle}
               onChange={(e) => setUploadTitle(e.target.value)}
               placeholder="File title"
+              maxLength={256}
             />
           </div>
 
@@ -532,6 +533,7 @@ export function GalleryMediaPage() {
               placeholder="Optional file description..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
               rows={3}
+              maxLength={5000}
             />
           </div>
 

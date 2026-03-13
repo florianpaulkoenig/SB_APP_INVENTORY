@@ -552,6 +552,7 @@ export function SalesPage() {
               placeholder="Buyer's name"
               value={buyerName}
               onChange={(e) => setBuyerName(e.target.value)}
+              maxLength={256}
             />
             <Input
               label="Buyer Email"
@@ -559,6 +560,7 @@ export function SalesPage() {
               placeholder="buyer@example.com"
               value={buyerEmail}
               onChange={(e) => setBuyerEmail(e.target.value)}
+              maxLength={320}
             />
           </div>
 
@@ -568,12 +570,14 @@ export function SalesPage() {
               placeholder="e.g. Basel"
               value={saleCity}
               onChange={(e) => setSaleCity(e.target.value)}
+              maxLength={256}
             />
             <Input
               label="Country"
               placeholder="e.g. Switzerland"
               value={saleCountry}
               onChange={(e) => setSaleCountry(e.target.value)}
+              maxLength={256}
             />
           </div>
 
@@ -637,6 +641,7 @@ export function SalesPage() {
                 placeholder="e.g. Direct, Referral, Online"
                 value={salesChannel}
                 onChange={(e) => setSalesChannel(e.target.value)}
+                maxLength={256}
               />
             </div>
           </div>
@@ -646,6 +651,7 @@ export function SalesPage() {
             placeholder="Any additional information..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
+            maxLength={5000}
           />
 
           <Textarea
@@ -653,6 +659,7 @@ export function SalesPage() {
             placeholder="Internal negotiation details..."
             value={negotiationNotes}
             onChange={(e) => setNegotiationNotes(e.target.value)}
+            maxLength={5000}
           />
 
           {/* Actions */}

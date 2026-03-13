@@ -10,13 +10,34 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+// Custom lock implementation: uses navigator.locks when available (proper
+// cross-tab synchronisation), falls back to a no-op lock in environments
+// where navigator.locks hangs (e.g. some WebViews).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function safeLock(name: string, acquireTimeout: number, fn: () => Promise<any>): Promise<any> {
+  if (typeof navigator !== 'undefined' && navigator.locks) {
+    // Use AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), acquireTimeout);
+    try {
+      return await navigator.locks.request(
+        name,
+        { signal: controller.signal },
+        async () => fn(),
+      );
+    } catch {
+      // If lock request was aborted or failed, execute without lock
+      return await fn();
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+  // No navigator.locks available — execute directly
+  return await fn();
+}
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Bypass navigator.locks which can cause getSession() to hang indefinitely
-    // in certain browser environments. Safe for single-tab usage.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => {
-      return await fn();
-    },
+    lock: safeLock,
   },
 });

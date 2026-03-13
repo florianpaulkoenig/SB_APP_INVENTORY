@@ -297,6 +297,7 @@ export function ArtworkBulkEditModal({
             value={(values.current_location as string) ?? ''}
             onChange={(e) => setValue('current_location', e.target.value)}
             disabled={!isEnabled}
+            maxLength={256}
           />
         );
       case 'gallery_id':
@@ -332,6 +333,7 @@ export function ArtworkBulkEditModal({
             value={(values.medium as string) ?? ''}
             onChange={(e) => setValue('medium', e.target.value)}
             disabled={!isEnabled}
+            maxLength={256}
           />
         );
       case 'year':
@@ -381,6 +383,7 @@ export function ArtworkBulkEditModal({
             value={(values.notes as string) ?? ''}
             onChange={(e) => setValue('notes', e.target.value)}
             disabled={!isEnabled}
+            maxLength={10000}
           />
         );
       default:

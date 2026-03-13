@@ -131,6 +131,7 @@ export function GalleryForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={errors.name}
+          maxLength={256}
         />
         <Select
           label="Gallery Type"
@@ -147,6 +148,7 @@ export function GalleryForm({
           placeholder="Full name"
           value={contactPerson}
           onChange={(e) => setContactPerson(e.target.value)}
+          maxLength={256}
         />
         <Input
           label="Email"
@@ -155,6 +157,7 @@ export function GalleryForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
+          maxLength={320}
         />
       </div>
 
@@ -164,6 +167,7 @@ export function GalleryForm({
         placeholder="+41 44 123 45 67"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
+        maxLength={50}
       />
 
       {/* Address row */}
@@ -172,6 +176,7 @@ export function GalleryForm({
         placeholder="Street and number"
         value={address}
         onChange={(e) => setAddress(e.target.value)}
+        maxLength={512}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -180,12 +185,14 @@ export function GalleryForm({
           placeholder="e.g. Zurich"
           value={city}
           onChange={(e) => setCity(e.target.value)}
+          maxLength={256}
         />
         <Input
           label="Country"
           placeholder="e.g. Switzerland"
           value={country}
           onChange={(e) => setCountry(e.target.value)}
+          maxLength={256}
         />
       </div>
 
@@ -293,6 +300,7 @@ export function GalleryForm({
         placeholder="Any additional information..."
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
+        maxLength={10000}
       />
 
       {/* Actions */}

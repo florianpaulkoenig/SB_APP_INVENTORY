@@ -226,6 +226,7 @@ export function NewsPage() {
               value={formData.title}
               onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
               placeholder="Post title"
+              maxLength={256}
             />
           </div>
           <div>
@@ -237,6 +238,7 @@ export function NewsPage() {
               onChange={(e) => setFormData((prev) => ({ ...prev, body: e.target.value }))}
               placeholder="Write your news post..."
               rows={6}
+              maxLength={10000}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
@@ -248,6 +250,7 @@ export function NewsPage() {
               value={formData.image_url}
               onChange={(e) => setFormData((prev) => ({ ...prev, image_url: e.target.value }))}
               placeholder="https://example.com/image.jpg"
+              maxLength={2048}
             />
           </div>
           <div>
@@ -258,6 +261,7 @@ export function NewsPage() {
               value={formData.external_link}
               onChange={(e) => setFormData((prev) => ({ ...prev, external_link: e.target.value }))}
               placeholder="https://example.com/article"
+              maxLength={2048}
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">

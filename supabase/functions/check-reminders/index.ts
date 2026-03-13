@@ -27,6 +27,17 @@ interface ProcessResult {
   error?: string;
 }
 
+// Timing-safe string comparison
+function timingSafeEqual(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const aBuf = encoder.encode(a);
+  const bBuf = encoder.encode(b);
+  if (aBuf.length !== bBuf.length) return false;
+  let result = 0;
+  for (let i = 0; i < aBuf.length; i++) { result |= aBuf[i] ^ bBuf[i]; }
+  return result === 0;
+}
+
 // ---------------------------------------------------------------------------
 // Entity detail lookups -- build a human-readable message for each type
 // ---------------------------------------------------------------------------
@@ -184,29 +195,42 @@ async function getUserEmail(
 }
 
 // ---------------------------------------------------------------------------
-// Send email via the send-email Edge Function
+// Send email directly via Resend API
+// (Cannot use send-email Edge Function because service role key is not a JWT)
 // ---------------------------------------------------------------------------
 
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
+const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'NOA Contemporary <noreply@noacontemporary.com>';
+
 async function sendReminderEmail(
-  supabaseUrl: string,
-  serviceRoleKey: string,
+  _supabaseUrl: string,
+  _serviceRoleKey: string,
   to: string,
   subject: string,
   body: string,
 ): Promise<void> {
-  const response = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+  if (!RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY not configured');
+  }
+
+  const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${serviceRoleKey}`,
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
     },
-    body: JSON.stringify({ to, subject, body }),
+    body: JSON.stringify({
+      from: FROM_EMAIL,
+      to: [to],
+      subject,
+      html: body,
+    }),
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const message = (errorData as Record<string, string>)?.error ?? `HTTP ${response.status}`;
-    throw new Error(`send-email failed: ${message}`);
+    const message = (errorData as Record<string, string>)?.message ?? `HTTP ${response.status}`;
+    throw new Error(`Resend API failed: ${message}`);
   }
 }
 
@@ -226,7 +250,7 @@ Deno.serve(async (req: Request) => {
     let authorized = false;
 
     // Method 1: shared CRON_SECRET
-    if (cronSecret && reqSecret && cronSecret === reqSecret) {
+    if (cronSecret && reqSecret && timingSafeEqual(reqSecret, cronSecret)) {
       authorized = true;
     }
 

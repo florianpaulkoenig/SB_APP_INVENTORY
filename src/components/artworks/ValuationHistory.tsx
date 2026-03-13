@@ -294,6 +294,7 @@ export function ValuationHistory({ artworkId }: ValuationHistoryProps) {
             value={appraiser}
             onChange={(e) => setAppraiser(e.target.value)}
             placeholder="Name of the appraiser"
+            maxLength={256}
           />
 
           <Input
@@ -309,6 +310,7 @@ export function ValuationHistory({ artworkId }: ValuationHistoryProps) {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Additional context for this valuation..."
+            maxLength={5000}
           />
 
           <div className="flex justify-end gap-3 pt-2">

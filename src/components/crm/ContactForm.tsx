@@ -111,6 +111,7 @@ export function ContactForm({
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           error={errors.firstName}
+          maxLength={256}
         />
         <Input
           label="Last Name *"
@@ -118,6 +119,7 @@ export function ContactForm({
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
           error={errors.lastName}
+          maxLength={256}
         />
         <Select
           label="Type"
@@ -133,6 +135,7 @@ export function ContactForm({
         placeholder="e.g. Art Foundation Basel"
         value={company}
         onChange={(e) => setCompany(e.target.value)}
+        maxLength={256}
       />
 
       {/* Contact info row */}
@@ -144,6 +147,7 @@ export function ContactForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
+          maxLength={320}
         />
         <Input
           label="Phone"
@@ -151,6 +155,7 @@ export function ContactForm({
           placeholder="+41 44 123 45 67"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          maxLength={50}
         />
       </div>
 
@@ -160,6 +165,7 @@ export function ContactForm({
         placeholder="Street and number"
         value={address}
         onChange={(e) => setAddress(e.target.value)}
+        maxLength={512}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -168,12 +174,14 @@ export function ContactForm({
           placeholder="e.g. Zurich"
           value={city}
           onChange={(e) => setCity(e.target.value)}
+          maxLength={256}
         />
         <Input
           label="Country"
           placeholder="e.g. Switzerland"
           value={country}
           onChange={(e) => setCountry(e.target.value)}
+          maxLength={256}
         />
       </div>
 
@@ -185,6 +193,7 @@ export function ContactForm({
           value={source}
           onChange={(e) => setSource(e.target.value)}
           helperText="Where you met or found this contact"
+          maxLength={256}
         />
         <Input
           label="Tags"
@@ -192,6 +201,7 @@ export function ContactForm({
           value={tagsInput}
           onChange={(e) => setTagsInput(e.target.value)}
           helperText="Comma-separated tags"
+          maxLength={1000}
         />
       </div>
 
@@ -201,6 +211,7 @@ export function ContactForm({
         placeholder="Any additional information..."
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
+        maxLength={10000}
       />
 
       {/* Actions */}

@@ -231,6 +231,7 @@ export function ConditionReportPanel({ artworkId }: ConditionReportPanelProps) {
             value={reportedBy}
             onChange={(e) => setReportedBy(e.target.value)}
             placeholder="Name of the person reporting"
+            maxLength={256}
           />
 
           <Textarea
@@ -238,6 +239,7 @@ export function ConditionReportPanel({ artworkId }: ConditionReportPanelProps) {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Additional details about the condition..."
+            maxLength={5000}
           />
 
           <div className="flex justify-end gap-3 pt-2">

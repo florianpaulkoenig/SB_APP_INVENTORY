@@ -342,6 +342,7 @@ export function PriceManagementPage() {
                       placeholder="e.g. Annual price increase 2026"
                       value={applyNote}
                       onChange={(e) => setApplyNote(e.target.value)}
+                      maxLength={256}
                     />
                   </div>
                   <Button onClick={handleApply} disabled={!applyNote.trim()}>

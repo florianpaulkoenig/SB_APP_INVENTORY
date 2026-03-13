@@ -173,6 +173,7 @@ export function InvoiceForm({
             readOnly={!isEdit && !!invoiceNumber}
             disabled={!isEdit && !!invoiceNumber}
             helperText={isEdit ? undefined : 'Auto-generated'}
+            maxLength={50}
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -239,6 +240,7 @@ export function InvoiceForm({
           placeholder="Any additional notes for this invoice..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+          maxLength={5000}
         />
       </section>
 

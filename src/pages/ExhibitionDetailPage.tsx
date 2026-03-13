@@ -431,7 +431,7 @@ export function ExhibitionDetailPage() {
                 ))}
               </select>
             </div>
-            <Input label="Booth #" value={boothNumber} onChange={(e) => setBoothNumber(e.target.value)} />
+            <Input label="Booth #" value={boothNumber} onChange={(e) => setBoothNumber(e.target.value)} maxLength={50} />
             <Button variant="primary" onClick={handleLinkGallery}>Link</Button>
             <Button variant="primary" onClick={() => setAddGalleryOpen(false)}>Cancel</Button>
           </div>

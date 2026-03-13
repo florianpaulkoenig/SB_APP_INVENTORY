@@ -281,6 +281,7 @@ export function CVEditorPage() {
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               placeholder="Exhibition or event title"
+              maxLength={256}
             />
           </div>
 
@@ -293,6 +294,7 @@ export function CVEditorPage() {
                 setForm((f) => ({ ...f, location: e.target.value || null }))
               }
               placeholder="City, Country or Institution"
+              maxLength={256}
             />
           </div>
 
@@ -309,6 +311,7 @@ export function CVEditorPage() {
               placeholder="Additional details..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
               rows={3}
+              maxLength={5000}
             />
           </div>
 
