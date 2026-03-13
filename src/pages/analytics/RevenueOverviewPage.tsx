@@ -10,7 +10,7 @@ import { Card } from '../../components/ui/Card';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { formatCurrency } from '../../lib/utils';
 import {
-  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ComposedChart, Bar, Line, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, BarChart, Cell,
 } from 'recharts';
 
@@ -98,6 +98,55 @@ export function RevenueOverviewPage() {
   const activeYear = selectedYear ?? data.years[data.years.length - 1];
   const galleryRanking: GalleryYearRow[] = data.galleryRankingsByYear[activeYear] ?? [];
   const top10 = galleryRanking.slice(0, 10);
+
+  // ---- Gallery evolution data for multi-line chart --------------------------
+  // Build: [{ year: 2022, "Gallery A": 50000, "Gallery B": 30000 }, ...]
+  const [selectedGalleries, setSelectedGalleries] = useState<Set<string>>(new Set());
+
+  // Get all galleries that ever had revenue, sorted by lifetime total
+  const allGalleryTotals = new Map<string, { name: string; total: number }>();
+  for (const year of data.years) {
+    for (const g of data.galleryRankingsByYear[year] ?? []) {
+      const existing = allGalleryTotals.get(g.galleryId) ?? { name: g.galleryName, total: 0 };
+      existing.total += g.revenue;
+      allGalleryTotals.set(g.galleryId, existing);
+    }
+  }
+  const sortedGalleries = Array.from(allGalleryTotals.entries())
+    .sort((a, b) => b[1].total - a[1].total);
+
+  // Default: show top 5 if nothing selected
+  const activeGalleryIds = selectedGalleries.size > 0
+    ? selectedGalleries
+    : new Set(sortedGalleries.slice(0, 5).map(([id]) => id));
+
+  const galleryEvolutionData = data.years.map((year) => {
+    const row: Record<string, number | string> = { year };
+    for (const [gid] of sortedGalleries) {
+      if (!activeGalleryIds.has(gid)) continue;
+      const gRow = (data.galleryRankingsByYear[year] ?? []).find((g) => g.galleryId === gid);
+      const gName = allGalleryTotals.get(gid)!.name;
+      row[gName] = gRow?.revenue ?? 0;
+    }
+    return row;
+  });
+
+  const activeGalleryNames = sortedGalleries
+    .filter(([id]) => activeGalleryIds.has(id))
+    .map(([, val]) => val.name);
+
+  function toggleGallery(id: string) {
+    setSelectedGalleries((prev) => {
+      const next = new Set(prev);
+      // If nothing was explicitly selected, initialize from defaults
+      if (prev.size === 0) {
+        for (const [gid] of sortedGalleries.slice(0, 5)) next.add(gid);
+      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   // YoY growth for latest year
   const latestSummary = data.yearSummaries[data.yearSummaries.length - 1];
@@ -222,7 +271,60 @@ export function RevenueOverviewPage() {
           </div>
         </Card>
 
-        {/* ---- Section B: Gallery Ranking by Year ---- */}
+        {/* ---- Section B: Gallery Revenue Evolution ---- */}
+        <Card className="p-6">
+          <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">
+            Gallery Revenue Evolution
+          </h3>
+          <p className="text-xs text-primary-500 mb-3">
+            Click galleries below to toggle them on/off. Showing top 5 by default.
+          </p>
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {sortedGalleries.map(([gid, val], i) => (
+              <button
+                key={gid}
+                onClick={() => toggleGallery(gid)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  activeGalleryIds.has(gid)
+                    ? 'text-white'
+                    : 'bg-primary-100 text-primary-500 hover:bg-primary-200'
+                }`}
+                style={activeGalleryIds.has(gid) ? { backgroundColor: GALLERY_COLORS[i % GALLERY_COLORS.length] } : undefined}
+              >
+                {val.name}
+              </button>
+            ))}
+          </div>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={galleryEvolutionData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
+              <Tooltip
+                formatter={(value: number, name: string) => [formatCurrency(value, 'CHF'), name]}
+                labelFormatter={(label) => `Year ${label}`}
+              />
+              <Legend />
+              {activeGalleryNames.map((name, i) => {
+                const gIdx = sortedGalleries.findIndex(([, val]) => val.name === name);
+                return (
+                  <Line
+                    key={name}
+                    type="monotone"
+                    dataKey={name}
+                    stroke={GALLERY_COLORS[gIdx % GALLERY_COLORS.length]}
+                    strokeWidth={2.5}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                    connectNulls
+                  />
+                );
+              })}
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        {/* ---- Section C: Gallery Ranking by Year ---- */}
         <div className="flex items-center gap-3 mt-2">
           <h2 className="font-display text-xl font-bold text-primary-900">
             Gallery Ranking
