@@ -617,8 +617,27 @@ export function RevenueOverviewPage() {
 
               const salesDetails = gallery.details.filter((d) => d.type === 'sale');
               const preSoldDetails = gallery.details.filter((d) => d.type === 'pre_sold');
-              const salesTotal = salesDetails.reduce((sum, d) => sum + d.amount, 0);
-              const preSoldTotal = preSoldDetails.reduce((sum, d) => sum + d.amount, 0);
+              const consignOrderDetails = gallery.details.filter((d) => d.type === 'consignment_order');
+              const consignArtworkDetails = gallery.details.filter((d) => d.type === 'consignment_artwork');
+              const hasConsignment = consignOrderDetails.length > 0 || consignArtworkDetails.length > 0;
+              const hasMultipleTypes = [salesDetails, preSoldDetails, consignOrderDetails, consignArtworkDetails].filter((a) => a.length > 0).length > 1;
+
+              const salesTotal = salesDetails.reduce((sum, d) => sum + d.amountCHF, 0);
+              const preSoldTotal = preSoldDetails.reduce((sum, d) => sum + d.amountCHF, 0);
+              const consignOrderGross = consignOrderDetails.reduce((sum, d) => sum + (d.grossCHF ?? d.amount), 0);
+              const consignOrderWeighted = consignOrderDetails.reduce((sum, d) => sum + d.amountCHF, 0);
+              const consignArtworkGross = consignArtworkDetails.reduce((sum, d) => sum + (d.grossCHF ?? d.amount), 0);
+              const consignArtworkWeighted = consignArtworkDetails.reduce((sum, d) => sum + d.amountCHF, 0);
+
+              const typeBadge = (type: string) => {
+                switch (type) {
+                  case 'sale': return <span className="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">Sale</span>;
+                  case 'pre_sold': return <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Pre-sold</span>;
+                  case 'consignment_order': return <span className="inline-flex items-center rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-medium text-cyan-700">Consignment</span>;
+                  case 'consignment_artwork': return <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">Artwork@Gallery</span>;
+                  default: return null;
+                }
+              };
 
               return (
                 <div className="mt-4 rounded-lg border border-primary-200 bg-primary-50/50 p-4 animate-in fade-in slide-in-from-top-2">
@@ -641,58 +660,80 @@ export function RevenueOverviewPage() {
                       <thead>
                         <tr className="border-b border-primary-200 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
                           <th className="pb-2 pr-4">Type</th>
-                          <th className="pb-2 pr-4">Date</th>
-                          <th className="pb-2 pr-4 text-right">Amount</th>
-                          <th className="pb-2 text-right">CHF</th>
+                          <th className="pb-2 pr-4">Date / Info</th>
+                          {hasConsignment ? (
+                            <>
+                              <th className="pb-2 pr-4 text-right">Gross CHF</th>
+                              <th className="pb-2 text-right">Weighted CHF</th>
+                            </>
+                          ) : (
+                            <>
+                              <th className="pb-2 pr-4 text-right">Amount</th>
+                              <th className="pb-2 text-right">CHF</th>
+                            </>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
-                        {gallery.details.map((d, i) => (
-                          <tr key={`${d.id}-${i}`} className="border-b border-primary-100">
-                            <td className="py-2 pr-4">
-                              {d.type === 'sale' ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">
-                                  Sale
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                                  Pre-sold
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-2 pr-4 text-primary-600">
-                              {d.date ? new Date(d.date).toLocaleDateString('de-CH') : '—'}
-                            </td>
-                            <td className="py-2 pr-4 text-right text-primary-700">
-                              {formatCurrency(d.amount, d.currency)}
-                            </td>
-                            <td className="py-2 text-right font-medium text-primary-900">
-                              {formatCurrency(d.amountCHF, 'CHF')}
-                            </td>
-                          </tr>
-                        ))}
+                        {gallery.details.map((d, i) => {
+                          const isConsignment = d.type === 'consignment_order' || d.type === 'consignment_artwork';
+                          return (
+                            <tr key={`${d.id}-${i}`} className="border-b border-primary-100">
+                              <td className="py-2 pr-4">{typeBadge(d.type)}</td>
+                              <td className="py-2 pr-4 text-primary-600 text-xs">
+                                {d.date ? new Date(d.date).toLocaleDateString('de-CH') : (d.label ?? '—')}
+                              </td>
+                              <td className="py-2 pr-4 text-right text-primary-700">
+                                {isConsignment
+                                  ? formatCurrency(d.grossCHF ?? d.amount, 'CHF')
+                                  : formatCurrency(d.amount, d.currency)}
+                              </td>
+                              <td className={`py-2 text-right font-medium ${isConsignment ? 'text-cyan-700' : 'text-primary-900'}`}>
+                                {formatCurrency(d.amountCHF, 'CHF')}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
-                      <tfoot>
-                        {preSoldDetails.length > 0 && salesDetails.length > 0 && (
-                          <>
+                      {hasMultipleTypes && (
+                        <tfoot>
+                          {salesDetails.length > 0 && (
                             <tr className="border-t border-primary-200 text-xs text-primary-500">
-                              <td className="pt-2 pr-4" colSpan={2}>Sales subtotal ({salesDetails.length})</td>
+                              <td className="pt-2 pr-4" colSpan={2}>Sales ({salesDetails.length})</td>
                               <td className="pt-2 pr-4 text-right">{formatCurrency(salesTotal, 'CHF')}</td>
                               <td className="pt-2 text-right">{formatCurrency(salesTotal, 'CHF')}</td>
                             </tr>
+                          )}
+                          {preSoldDetails.length > 0 && (
                             <tr className="text-xs text-primary-500">
-                              <td className="py-1 pr-4" colSpan={2}>Pre-sold subtotal ({preSoldDetails.length})</td>
+                              <td className="py-1 pr-4" colSpan={2}>Pre-sold ({preSoldDetails.length})</td>
                               <td className="py-1 pr-4 text-right">{formatCurrency(preSoldTotal, 'CHF')}</td>
                               <td className="py-1 text-right">{formatCurrency(preSoldTotal, 'CHF')}</td>
                             </tr>
-                          </>
-                        )}
-                        <tr className="border-t border-primary-300 font-semibold">
-                          <td className="pt-2 pr-4" colSpan={2}>Total ({gallery.details.length} transactions)</td>
-                          <td className="pt-2 pr-4 text-right text-primary-900">{formatCurrency(gallery.revenue, 'CHF')}</td>
-                          <td className="pt-2 text-right text-primary-900">{formatCurrency(gallery.revenue, 'CHF')}</td>
-                        </tr>
-                      </tfoot>
+                          )}
+                          {consignOrderDetails.length > 0 && (
+                            <tr className="text-xs text-cyan-600">
+                              <td className="py-1 pr-4" colSpan={2}>Consignment orders ({consignOrderDetails.length})</td>
+                              <td className="py-1 pr-4 text-right">{formatCurrency(consignOrderGross, 'CHF')}</td>
+                              <td className="py-1 text-right">{formatCurrency(consignOrderWeighted, 'CHF')}</td>
+                            </tr>
+                          )}
+                          {consignArtworkDetails.length > 0 && (
+                            <tr className="text-xs text-sky-600">
+                              <td className="py-1 pr-4" colSpan={2}>Artworks on consignment ({consignArtworkDetails.length})</td>
+                              <td className="py-1 pr-4 text-right">{formatCurrency(consignArtworkGross, 'CHF')}</td>
+                              <td className="py-1 text-right">{formatCurrency(consignArtworkWeighted, 'CHF')}</td>
+                            </tr>
+                          )}
+                          <tr className="border-t border-primary-300 font-semibold">
+                            <td className="pt-2 pr-4" colSpan={2}>Total ({gallery.details.length} items)</td>
+                            <td className="pt-2 pr-4 text-right text-primary-400 text-xs">
+                              {hasConsignment ? formatCurrency(salesTotal + preSoldTotal + consignOrderGross + consignArtworkGross, 'CHF') : ''}
+                            </td>
+                            <td className="pt-2 text-right text-primary-900">{formatCurrency(gallery.revenue, 'CHF')}</td>
+                          </tr>
+                        </tfoot>
+                      )}
                     </table>
                   </div>
                 </div>
