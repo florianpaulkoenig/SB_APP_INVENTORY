@@ -151,11 +151,21 @@ export function RevenueOverviewPage() {
     });
   }
 
-  // YoY growth for latest year
-  const latestSummary = data.yearSummaries[data.yearSummaries.length - 1];
-  const yoyLabel = latestSummary?.yoyChange != null
-    ? `${latestSummary.yoyChange > 0 ? '+' : ''}${latestSummary.yoyChange.toFixed(1)}% vs ${latestSummary.year - 1}`
-    : '';
+  // YoY growth: for current year use projected revenue vs prior year full revenue
+  const prognosis = data.prognosis;
+  const yoyLabel = (() => {
+    if (prognosis && prognosis.priorYearRevenue != null && prognosis.priorYearRevenue > 0) {
+      const change = ((prognosis.projectedRevenue - prognosis.priorYearRevenue) / prognosis.priorYearRevenue) * 100;
+      return `${change > 0 ? '+' : ''}${change.toFixed(1)}% vs ${prognosis.currentYear - 1}`;
+    }
+    // Fallback to last completed year's YoY
+    const completedYears = data.yearSummaries.filter((y) => y.year !== new Date().getFullYear());
+    const latest = completedYears[completedYears.length - 1];
+    if (latest?.yoyChange != null) {
+      return `${latest.yoyChange > 0 ? '+' : ''}${latest.yoyChange.toFixed(1)}% vs ${latest.year - 1}`;
+    }
+    return '';
+  })();
 
   return (
     <div>
@@ -191,8 +201,9 @@ export function RevenueOverviewPage() {
         />
         <KpiBox label="Years Active" value={data.years.length} />
         <KpiBox
-          label="Latest YoY"
+          label={prognosis ? `${prognosis.currentYear} Projected YoY` : 'Latest YoY'}
           value={yoyLabel || '—'}
+          sub={prognosis ? 'projected vs prior year' : undefined}
         />
       </div>
 

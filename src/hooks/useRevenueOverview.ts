@@ -505,8 +505,16 @@ export function useRevenueOverview() {
         })
         .reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0) || null;
 
+      // vsLastYearPace: compare sales + pre-sold to date vs prior year same period
+      // (pre-sold is confirmed revenue, part of the pace)
+      // NOTE: we compute preSoldRevenue below, so use a quick inline sum here
+      let preSoldRevForPace = 0;
+      for (const order of activeProdOrders) {
+        if (order.status === 'pre_sold') preSoldRevForPace += (itemValMap[order.id] ?? 0);
+      }
+      const revenueToDateForPace = revenueToDate + preSoldRevForPace;
       const vsLastYearPace = priorYearSamePeriodRevenue != null && priorYearSamePeriodRevenue > 0
-        ? ((revenueToDate - priorYearSamePeriodRevenue) / priorYearSamePeriodRevenue) * 100
+        ? ((revenueToDateForPace - priorYearSamePeriodRevenue) / priorYearSamePeriodRevenue) * 100
         : null;
 
       // Monthly breakdown for current year
