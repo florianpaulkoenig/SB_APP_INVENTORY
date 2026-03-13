@@ -241,12 +241,17 @@ Deno.serve(async (req: Request) => {
         });
         const { data: { user } } = await callerClient.auth.getUser();
         if (user) {
-          const { data: profile } = await callerClient
-            .from('user_profiles')
-            .select('role')
-            .eq('user_id', user.id)
-            .single();
-          if (profile?.role === 'admin') authorized = true;
+          const serviceUrl = Deno.env.get('SUPABASE_URL');
+          const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+          if (serviceUrl && serviceKey) {
+            const serviceClient = createClient(serviceUrl, serviceKey);
+            const { data: profile } = await serviceClient
+              .from('user_profiles')
+              .select('role')
+              .eq('user_id', user.id)
+              .single();
+            if (profile?.role === 'admin') authorized = true;
+          }
         }
       }
     }
@@ -364,10 +369,9 @@ Deno.serve(async (req: Request) => {
       { headers: { 'Content-Type': 'application/json' } },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    console.error('check-reminders fatal error:', message);
+    console.error('Function error:', error);
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: 'An internal error occurred' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
   }

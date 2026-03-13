@@ -11,11 +11,12 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.noacontemporary.com';
-const CRON_SECRET = Deno.env.get('CRON_SECRET') || '';
+const CRON_SECRET = Deno.env.get('CRON_SECRET');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 // ---------------------------------------------------------------------------
@@ -579,6 +580,10 @@ serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { ...corsHeaders, 'Allow': 'POST, OPTIONS' } });
+  }
+
   try {
     // Auth: JWT or cron secret
     const cronSecret = req.headers.get('x-cron-secret');
@@ -685,8 +690,8 @@ serve(async (req: Request) => {
         );
     }
   } catch (error) {
-    console.error('Strategic agent error:', error);
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    console.error('Function error:', error);
+    return new Response(JSON.stringify({ error: 'An internal error occurred' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

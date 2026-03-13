@@ -5,7 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
-import { formatDate } from '../lib/utils';
+import { formatDate, safeHref } from '../lib/utils';
 
 function NewsCard({ post, onVisible }: { post: NewsPost; onVisible: (id: string) => void }) {
   const [expanded, setExpanded] = useState(false);
@@ -63,7 +63,7 @@ function NewsCard({ post, onVisible }: { post: NewsPost; onVisible: (id: string)
           </p>
           {post.external_link && (
             <a
-              href={post.external_link}
+              href={safeHref(post.external_link)}
               target="_blank"
               rel="noopener noreferrer"
             >

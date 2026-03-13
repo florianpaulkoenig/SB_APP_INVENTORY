@@ -275,16 +275,16 @@ export function usePublicViewingRoom(slug: string) {
     setError(null);
 
     try {
+      // Use secure RPC function — prevents enumeration of link_only/password rooms
       const { data, error: fetchError } = await supabase
-        .from('viewing_rooms')
-        .select('id, user_id, title, description, slug, artwork_ids, visibility, contact_id, published, created_at, updated_at')
-        .eq('slug', slug)
-        .eq('published', true)
-        .single();
+        .rpc('get_viewing_room_by_slug', { p_slug: slug });
 
       if (fetchError) throw fetchError;
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        throw new Error('Viewing room not found');
+      }
 
-      const row = data as ViewingRoomRow;
+      const row = (Array.isArray(data) ? data[0] : data) as ViewingRoomRow;
       setRoom(row);
 
       // Fetch artworks for this room

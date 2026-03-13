@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { sanitizeFilterTerm } from '../lib/utils';
 import type { AuctionAlertRow, AuctionAlertInsert, AuctionAlertUpdate } from '../types/database';
 
 interface UseAuctionAlertsOptions {
@@ -100,7 +101,7 @@ export function useAuctionAlerts(options?: UseAuctionAlertsOptions) {
       const { data: artworks } = await supabase
         .from('artworks')
         .select('id, title, gallery_id')
-        .ilike('title', `%${alert.artwork_title}%`)
+        .ilike('title', `%${sanitizeFilterTerm(alert.artwork_title)}%`)
         .limit(5);
 
       if (!artworks || artworks.length === 0) {

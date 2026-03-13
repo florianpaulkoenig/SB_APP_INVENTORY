@@ -347,9 +347,11 @@ const router = createBrowserRouter(
         {
           index: true,
           element: (
-            <Suspense fallback={<SuspenseFallback />}>
-              <DashboardPage />
-            </Suspense>
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <DashboardPage />
+              </Suspense>
+            </RoleGuard>
           ),
         },
 

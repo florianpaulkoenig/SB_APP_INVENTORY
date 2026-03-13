@@ -4,18 +4,23 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const CRON_SECRET = Deno.env.get('CRON_SECRET') || '';
+const CRON_SECRET = Deno.env.get('CRON_SECRET');
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.noacontemporary.com';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { ...corsHeaders, 'Allow': 'POST, OPTIONS' } });
   }
 
   try {
@@ -146,10 +151,11 @@ Return ONLY valid JSON array, no markdown or explanation.`;
       let matchedGalleryId = null;
 
       if (lot.artwork_title) {
+        const safeTitle = String(lot.artwork_title).replace(/[%_]/g, '\\$&');
         const { data: matchedArtworks } = await supabase
           .from('artworks')
           .select('id, title, gallery_id')
-          .ilike('title', `%${lot.artwork_title}%`)
+          .ilike('title', `%${safeTitle}%`)
           .limit(1);
 
         if (matchedArtworks && matchedArtworks.length > 0) {
@@ -216,7 +222,8 @@ Return ONLY valid JSON array, no markdown or explanation.`;
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    console.error('Function error:', error);
+    return new Response(JSON.stringify({ error: 'An internal error occurred' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

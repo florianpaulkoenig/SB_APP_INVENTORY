@@ -130,8 +130,8 @@ serve(async (req: Request) => {
     const emailText = emailData.text || '';
     const emailHtml = emailData.html || '';
 
-    // Use text body if available, fall back to HTML
-    const rawContent = emailText || emailHtml;
+    // Use text body if available, fall back to HTML (truncate to prevent abuse)
+    const rawContent = (emailText || emailHtml).slice(0, 50000);
 
     if (!rawContent) {
       return new Response(JSON.stringify({ ok: true, skipped: 'empty body' }), {
@@ -285,7 +285,8 @@ serve(async (req: Request) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     );
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    console.error('Function error:', error);
+    return new Response(JSON.stringify({ error: 'An internal error occurred' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

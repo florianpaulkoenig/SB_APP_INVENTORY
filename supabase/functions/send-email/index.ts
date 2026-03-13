@@ -71,10 +71,16 @@ serve(async (req: Request) => {
       );
     }
 
-    // ---- Rate limiting (10 emails per minute) --------------------------------
+    // ---- Verify admin role ----------------------------------------------------
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    if (serviceRoleKey) {
-      const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+    const { data: profile } = await supabaseAdmin.from('user_profiles').select('role').eq('user_id', callerUser.id).single();
+    if (!profile || profile.role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Forbidden: admin role required' }), { status: 403, headers: CORS_HEADERS });
+    }
+
+    // ---- Rate limiting (10 emails per minute) --------------------------------
+    {
       const { data: withinLimit } = await supabaseAdmin
         .rpc('check_rate_limit', { p_user_id: callerUser.id, p_function_name: 'send-email', p_max_requests: 10 });
       if (withinLimit === false) {
@@ -171,9 +177,9 @@ serve(async (req: Request) => {
       { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Internal server error';
+    console.error('Function error:', err);
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: 'An internal error occurred' }),
       { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     );
   }

@@ -192,6 +192,17 @@ export function downloadBlob(blob: Blob, filename: string): void {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Safe URL href — prevents javascript:, data:, and other dangerous protocols
+// ---------------------------------------------------------------------------
+export function safeHref(url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  if (/^mailto:/i.test(url)) return url;
+  // If it looks like a domain (starts with alphanumeric), prepend https://
+  if (/^[a-z0-9]/i.test(url) && !url.includes(':')) return `https://${url}`;
+  return '#'; // reject javascript:, data:, vbscript:, etc.
+}
+
 function triggerAnchorDownload(url: string, filename: string): void {
   const link = document.createElement('a');
   link.href = url;

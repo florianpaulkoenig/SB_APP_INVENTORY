@@ -146,11 +146,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // ---- Create Supabase admin client ---------------------------------------
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
     // ---- Create the auth user -----------------------------------------------
     const tempPassword = generateTempPassword();
 
@@ -235,9 +230,9 @@ serve(async (req: Request) => {
     <li><strong>First Login:</strong> Use the button below to set your own password</li>
   </ul>
   <p style="margin: 24px 0;">
-    <a href="${resetLink}" style="display: inline-block; background-color: #1a1a1a; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 4px; font-weight: bold;">Set Password &amp; Login</a>
+    <a href="${escapeHtml(resetLink)}" style="display: inline-block; background-color: #1a1a1a; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 4px; font-weight: bold;">Set Password &amp; Login</a>
   </p>
-  <p style="font-size: 0.9em; color: #666;">If the button above does not work, copy and paste this link into your browser:<br>${resetLink}</p>
+  <p style="font-size: 0.9em; color: #666;">If the button above does not work, copy and paste this link into your browser:<br>${escapeHtml(resetLink)}</p>
   <br>
   <p>Best regards,<br>NOA Contemporary</p>
 </body>
@@ -273,9 +268,9 @@ serve(async (req: Request) => {
       { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Internal server error';
+    console.error('Function error:', err);
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: 'An internal error occurred' }),
       { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     );
   }

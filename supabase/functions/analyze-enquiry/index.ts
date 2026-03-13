@@ -10,11 +10,16 @@ const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.noacontemp
 const corsHeaders = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { ...corsHeaders, 'Allow': 'POST, OPTIONS' } });
   }
 
   try {
@@ -62,7 +67,9 @@ serve(async (req: Request) => {
       });
     }
 
-    const { subject, body } = await req.json();
+    const rawBody = await req.json();
+    const subject = typeof rawBody.subject === 'string' ? rawBody.subject.slice(0, 500) : rawBody.subject;
+    const body = typeof rawBody.body === 'string' ? rawBody.body.slice(0, 10000) : rawBody.body;
 
     if (!ANTHROPIC_API_KEY) {
       return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
@@ -114,7 +121,8 @@ Return ONLY valid JSON, no markdown or explanation.`;
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    console.error('Function error:', error);
+    return new Response(JSON.stringify({ error: 'An internal error occurred' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
