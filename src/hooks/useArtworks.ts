@@ -333,6 +333,34 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
     [toast],
   );
 
+  // ---- Bulk update artworks --------------------------------------------------
+
+  const bulkUpdateArtworks = useCallback(
+    async (ids: string[], data: ArtworkUpdate): Promise<boolean> => {
+      if (ids.length === 0) return true;
+      try {
+        const { error: updateError } = await supabase
+          .from('artworks')
+          .update(data as never)
+          .in('id', ids);
+
+        if (updateError) throw updateError;
+
+        toast({
+          title: 'Artworks updated',
+          description: `${ids.length} artwork${ids.length > 1 ? 's' : ''} updated.`,
+          variant: 'success',
+        });
+
+        return true;
+      } catch (err: unknown) {
+        toast({ title: 'Error', description: 'Failed to update artworks. Please try again.', variant: 'error' });
+        return false;
+      }
+    },
+    [toast],
+  );
+
   return {
     artworks,
     loading,
@@ -343,6 +371,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
     updateArtwork,
     deleteArtwork,
     bulkDeleteArtworks,
+    bulkUpdateArtworks,
   };
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { useExchangeRates } from './useExchangeRates';
 
 // ---------------------------------------------------------------------------
 // Analytics data types
@@ -108,6 +109,7 @@ export function useAnalytics(): UseAnalyticsReturn {
   const [dateTo, setDateTo] = useState<string | null>(null);
 
   const { toast } = useToast();
+  const { toCHF, ready: ratesReady } = useExchangeRates();
 
   // ---- Set date range helper ------------------------------------------------
 
@@ -193,7 +195,7 @@ export function useAnalytics(): UseAnalyticsReturn {
 
       const totalArtworks = artworks.length;
       const totalSold = artworks.filter((a) => a.status === 'sold').length;
-      const totalRevenue = sales.reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0);
+      const totalRevenue = sales.reduce((sum, s) => sum + toCHF(Number(s.sale_price) || 0, s.currency ?? 'CHF'), 0);
       const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
       // Open invoices KPIs
@@ -224,7 +226,7 @@ export function useAnalytics(): UseAnalyticsReturn {
         if (!sale.sale_date) continue;
         const key = yearMonthKey(sale.sale_date);
         const existing = monthMap.get(key) ?? { revenue: 0, count: 0 };
-        existing.revenue += Number(sale.sale_price) || 0;
+        existing.revenue += toCHF(Number(sale.sale_price) || 0, sale.currency ?? 'CHF');
         existing.count += 1;
         monthMap.set(key, existing);
       }
@@ -243,7 +245,7 @@ export function useAnalytics(): UseAnalyticsReturn {
         const galleryData = sale.galleries as { name: string; country: string | null } | null;
         const galleryName = galleryData?.name ?? 'Direct Sale';
         const existing = galleryMap.get(galleryName) ?? { revenue: 0, count: 0 };
-        existing.revenue += Number(sale.sale_price) || 0;
+        existing.revenue += toCHF(Number(sale.sale_price) || 0, sale.currency ?? 'CHF');
         existing.count += 1;
         galleryMap.set(galleryName, existing);
       }
@@ -279,7 +281,7 @@ export function useAnalytics(): UseAnalyticsReturn {
       for (const sale of sales) {
         const galleryData = sale.galleries as { name: string; country: string | null } | null;
         const country = galleryData?.country ?? 'Unknown';
-        countryMap.set(country, (countryMap.get(country) ?? 0) + (Number(sale.sale_price) || 0));
+        countryMap.set(country, (countryMap.get(country) ?? 0) + toCHF(Number(sale.sale_price) || 0, sale.currency ?? 'CHF'));
       }
       const revenueByCountry = Array.from(countryMap.entries())
         .map(([country, revenue]) => ({ country, revenue }))
@@ -325,7 +327,7 @@ export function useAnalytics(): UseAnalyticsReturn {
         const artworkData = sale.artworks as { title: string; created_at: string; series: string | null } | null;
         const series = artworkData?.series ?? 'Other';
         const existing = seriesMap.get(series) ?? { revenue: 0, count: 0 };
-        existing.revenue += Number(sale.sale_price) || 0;
+        existing.revenue += toCHF(Number(sale.sale_price) || 0, sale.currency ?? 'CHF');
         existing.count += 1;
         seriesMap.set(series, existing);
       }
@@ -402,13 +404,13 @@ export function useAnalytics(): UseAnalyticsReturn {
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo, toast]);
+  }, [dateFrom, dateTo, toast, toCHF]);
 
   // ---- Auto-fetch on mount and when dateRange changes -----------------------
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
+    if (ratesReady) fetchAnalytics();
+  }, [fetchAnalytics, ratesReady]);
 
   return {
     data,

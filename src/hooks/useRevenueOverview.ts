@@ -223,7 +223,7 @@ export function useRevenueOverview() {
 
       for (const year of years) {
         const ySales = byYear.get(year) ?? [];
-        const revenue = ySales.reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0);
+        const revenue = ySales.reduce((sum, s) => sum + toCHF(Number(s.sale_price) || 0, s.currency ?? 'CHF'), 0);
         const count = ySales.length;
         const avgPrice = count > 0 ? revenue / count : 0;
         const yoyChange = prevRevenue != null && prevRevenue > 0
@@ -355,7 +355,8 @@ export function useRevenueOverview() {
           const existing = galleryMap.get(gid) ?? { name: gName, revenue: 0, count: 0, details: [] };
           const saleAmt = Number(s.sale_price) || 0;
           const saleCur = (s as { currency?: string | null }).currency ?? 'CHF';
-          existing.revenue += saleAmt;
+          const saleAmtCHF = toCHF(saleAmt, saleCur);
+          existing.revenue += saleAmtCHF;
           existing.count += 1;
           existing.details.push({
             id: s.id,
@@ -494,7 +495,7 @@ export function useRevenueOverview() {
       const fractionElapsed = daysElapsed / daysInYear;
 
       const currentYearSales = byYear.get(currentYear) ?? [];
-      const revenueToDate = currentYearSales.reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0);
+      const revenueToDate = currentYearSales.reduce((sum, s) => sum + toCHF(Number(s.sale_price) || 0, s.currency ?? 'CHF'), 0);
       const salesCountToDate = currentYearSales.length;
 
       const projectedRevenueSalesOnly = fractionElapsed > 0 ? revenueToDate / fractionElapsed : 0;
@@ -517,7 +518,7 @@ export function useRevenueOverview() {
           const dayOfYear = Math.round((d.getTime() - priorStartOfYear.getTime()) / 86_400_000);
           return dayOfYear <= cutoffDayOfYear;
         })
-        .reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0) || null;
+        .reduce((sum, s) => sum + toCHF(Number(s.sale_price) || 0, s.currency ?? 'CHF'), 0) || null;
 
       // vsLastYearPace: compare sales + pre-sold to date vs prior year same period
       // (pre-sold is confirmed revenue, part of the pace)
@@ -538,7 +539,7 @@ export function useRevenueOverview() {
         if (!s.sale_date) continue;
         const m = new Date(s.sale_date).getMonth();
         const entry = monthlyMap.get(m)!;
-        entry.revenue += Number(s.sale_price) || 0;
+        entry.revenue += toCHF(Number(s.sale_price) || 0, s.currency ?? 'CHF');
         entry.count += 1;
       }
       const monthlyBreakdown = Array.from(monthlyMap.entries())

@@ -8,6 +8,7 @@ import { ArtworkCard } from '../components/artworks/ArtworkCard';
 import { ArtworkTable } from '../components/artworks/ArtworkTable';
 import { ArtworkFilters } from '../components/artworks/ArtworkFilters';
 import { ExcelImporter } from '../components/artworks/ExcelImporter';
+import { ArtworkBulkEditModal } from '../components/artworks/ArtworkBulkEditModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
@@ -81,7 +82,7 @@ export function ArtworksPage() {
   const [filters, setFilters] = useState<ArtworkFiltersType>({});
   const [excelImporterOpen, setExcelImporterOpen] = useState(false);
 
-  const { artworks, loading, totalCount, refetch, bulkDeleteArtworks } = useArtworks({
+  const { artworks, loading, totalCount, refetch, bulkDeleteArtworks, bulkUpdateArtworks } = useArtworks({
     filters: { ...filters, search, sortBy, sortOrder },
     page,
     pageSize: PAGE_SIZE,
@@ -92,6 +93,8 @@ export function ArtworksPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
+  const [bulkEditing, setBulkEditing] = useState(false);
 
   // Clear selection when page/filters/search change
   useEffect(() => {
@@ -131,6 +134,18 @@ export function ArtworksPage() {
       refetch();
     }
   }, [selectedIds, bulkDeleteArtworks, refetch]);
+
+  const handleBulkEdit = useCallback(async (data: import('../types/database').ArtworkUpdate) => {
+    if (selectedIds.size === 0) return;
+    setBulkEditing(true);
+    const ok = await bulkUpdateArtworks(Array.from(selectedIds), data);
+    setBulkEditing(false);
+    if (ok) {
+      setSelectedIds(new Set());
+      setShowBulkEdit(false);
+      refetch();
+    }
+  }, [selectedIds, bulkUpdateArtworks, refetch]);
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
@@ -473,10 +488,16 @@ export function ArtworksPage() {
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5">
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2.5">
           <span className="text-sm font-medium text-primary-700">
             {selectedIds.size} selected
           </span>
+          <Button
+            size="sm"
+            onClick={() => setShowBulkEdit(true)}
+          >
+            Edit Selected
+          </Button>
           <Button
             variant="danger"
             size="sm"
@@ -608,6 +629,15 @@ export function ArtworksPage() {
         message={`Are you sure you want to permanently delete ${selectedIds.size} artwork${selectedIds.size > 1 ? 's' : ''}? This will also remove any associated sales records, images, and certificates. This action cannot be undone.`}
         confirmLabel={`Delete ${selectedIds.size} Artwork${selectedIds.size > 1 ? 's' : ''}`}
         variant="danger"
+      />
+
+      {/* Bulk Edit Modal */}
+      <ArtworkBulkEditModal
+        isOpen={showBulkEdit}
+        onClose={() => setShowBulkEdit(false)}
+        selectedCount={selectedIds.size}
+        onSubmit={handleBulkEdit}
+        loading={bulkEditing}
       />
     </div>
   );
