@@ -119,6 +119,7 @@ export interface GalleryRow {
   commission_noa: number | null;
   commission_artist: number | null;
   status_color: GalleryStatusColor | null;
+  sell_through_override: number | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -140,6 +141,7 @@ export interface GalleryInsert {
   commission_noa?: number | null;
   commission_artist?: number | null;
   status_color?: GalleryStatusColor | null;
+  sell_through_override?: number | null;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;

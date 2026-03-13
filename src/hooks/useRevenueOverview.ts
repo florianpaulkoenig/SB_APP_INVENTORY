@@ -50,7 +50,8 @@ export interface ConsignmentGalleryDetail {
   artworksAtGalleryValue: number;  // unsold artworks physically at this gallery (CHF)
   artworksAtGalleryCount: number;
   totalConsignmentValue: number;   // orders + artworks combined
-  sellThroughRate: number;         // 0–1 ratio based on gallery history
+  sellThroughRate: number;         // 0–1 ratio (manual override or computed)
+  isOverride: boolean;             // true if sell-through was manually set
   weightedValue: number;           // totalConsignmentValue * sellThroughRate
   salesCount: number;              // historical sales from this gallery
   totalHandled: number;            // sales + currently unsold at gallery
@@ -131,8 +132,8 @@ export function useRevenueOverview() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setLoading(false); return; }
 
-      // Fetch sales, unsold artworks, and active production orders in parallel
-      const [salesResult, artworksResult, prodOrdersResult] = await Promise.all([
+      // Fetch sales, unsold artworks, active production orders, and gallery overrides in parallel
+      const [salesResult, artworksResult, prodOrdersResult, galleryOverridesResult] = await Promise.all([
         supabase
           .from('sales')
           .select('id, gallery_id, sale_date, sale_price, currency, galleries(name)')
@@ -146,12 +147,24 @@ export function useRevenueOverview() {
           .from('production_orders')
           .select('id, price, currency, status, gallery_id, galleries(name)')
           .not('status', 'in', '("draft","completed")'),
+        supabase
+          .from('galleries')
+          .select('id, sell_through_override')
+          .not('sell_through_override', 'is', null),
       ]);
 
       if (salesResult.error) throw salesResult.error;
       const sales = salesResult.data ?? [];
       const unsoldArtworks = artworksResult.data ?? [];
       const activeProdOrders = prodOrdersResult.data ?? [];
+
+      // Build sell-through override map
+      const sellThroughOverrides = new Map<string, number>();
+      for (const g of galleryOverridesResult.data ?? []) {
+        if (g.sell_through_override != null) {
+          sellThroughOverrides.set(g.id, Number(g.sell_through_override));
+        }
+      }
 
       // Fetch production order items for active orders (to get accurate per-item values)
       const activeOrderIds = activeProdOrders.map((o) => o.id);
@@ -314,7 +327,8 @@ export function useRevenueOverview() {
         const salesCount = gallerySalesCountsEarly.get(gid) ?? 0;
         const unsoldCount = aData?.count ?? 0;
         const totalHandled = salesCount + unsoldCount;
-        const sellThroughRate = totalHandled > 0 ? salesCount / totalHandled : 0.3;
+        const computedRate = totalHandled > 0 ? salesCount / totalHandled : 0.3;
+        const sellThroughRate = sellThroughOverrides.get(gid) ?? computedRate;
         gallerySellThrough.set(gid, {
           sellThroughRate,
           orderValue,
@@ -618,8 +632,9 @@ export function useRevenueOverview() {
         const salesCount = gallerySalesCounts.get(galleryId) ?? 0;
         const unsoldCount = artworkCount; // artworks currently at this gallery
         const totalHandled = salesCount + unsoldCount;
-        // Default 30% if gallery has no history (conservative estimate)
-        const sellThroughRate = totalHandled > 0 ? salesCount / totalHandled : 0.3;
+        // Use manual override if set, otherwise compute from history (default 30%)
+        const computedRatePrognosis = totalHandled > 0 ? salesCount / totalHandled : 0.3;
+        const sellThroughRate = sellThroughOverrides.get(galleryId) ?? computedRatePrognosis;
         const weightedValue = totalConsignmentValue * sellThroughRate;
         weightedConsignmentRevenue += weightedValue;
         artworksAtGalleriesRevenue += artworkValue;
@@ -634,6 +649,7 @@ export function useRevenueOverview() {
           artworksAtGalleryCount: artworkCount,
           totalConsignmentValue,
           sellThroughRate,
+          isOverride: sellThroughOverrides.has(galleryId),
           weightedValue,
           salesCount,
           totalHandled,

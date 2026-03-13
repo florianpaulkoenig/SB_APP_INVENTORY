@@ -3,9 +3,10 @@
 // Year-by-year revenue analysis + gallery ranking with YoY evolution
 // ---------------------------------------------------------------------------
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRevenueOverview } from '../../hooks/useRevenueOverview';
 import type { GalleryYearRow } from '../../hooks/useRevenueOverview';
+import { supabase } from '../../lib/supabase';
 import { Card } from '../../components/ui/Card';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { formatCurrency } from '../../lib/utils';
@@ -81,6 +82,23 @@ export function RevenueOverviewPage() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedGalleries, setSelectedGalleries] = useState<Set<string>>(new Set());
   const [expandedGalleryId, setExpandedGalleryId] = useState<string | null>(null);
+  const [editingSellThrough, setEditingSellThrough] = useState<string | null>(null);
+  const [sellThroughInput, setSellThroughInput] = useState('');
+  const [savingSellThrough, setSavingSellThrough] = useState(false);
+
+  const saveSellThroughOverride = useCallback(async (galleryId: string, value: number | null) => {
+    setSavingSellThrough(true);
+    try {
+      await supabase
+        .from('galleries')
+        .update({ sell_through_override: value } as never)
+        .eq('id', galleryId);
+      setEditingSellThrough(null);
+      await refresh();
+    } finally {
+      setSavingSellThrough(false);
+    }
+  }, [refresh]);
 
   if (loading) {
     return (
@@ -341,9 +359,73 @@ export function RevenueOverviewPage() {
                         </td>
                         <td className="py-2 pr-4 text-right text-primary-700 font-medium">{formatCurrency(g.totalConsignmentValue, 'CHF')}</td>
                         <td className="py-2 pr-4 text-right">
-                          <span className={`font-semibold ${g.sellThroughRate >= 0.5 ? 'text-emerald-600' : g.sellThroughRate >= 0.3 ? 'text-amber-600' : 'text-red-500'}`}>
-                            {(g.sellThroughRate * 100).toFixed(0)}%
-                          </span>
+                          {editingSellThrough === g.galleryId ? (
+                            <div className="inline-flex items-center gap-1">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="1"
+                                autoFocus
+                                disabled={savingSellThrough}
+                                value={sellThroughInput}
+                                onChange={(e) => setSellThroughInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    const val = parseFloat(sellThroughInput);
+                                    if (!isNaN(val) && val >= 0 && val <= 100) {
+                                      saveSellThroughOverride(g.galleryId, val / 100);
+                                    }
+                                  } else if (e.key === 'Escape') {
+                                    setEditingSellThrough(null);
+                                  }
+                                }}
+                                onBlur={() => {
+                                  const val = parseFloat(sellThroughInput);
+                                  if (!isNaN(val) && val >= 0 && val <= 100) {
+                                    saveSellThroughOverride(g.galleryId, val / 100);
+                                  } else {
+                                    setEditingSellThrough(null);
+                                  }
+                                }}
+                                className="w-14 rounded border border-primary-300 px-1.5 py-0.5 text-right text-sm focus:border-accent focus:outline-none"
+                              />
+                              <span className="text-xs text-primary-400">%</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setEditingSellThrough(g.galleryId);
+                                setSellThroughInput((g.sellThroughRate * 100).toFixed(0));
+                              }}
+                              className="group inline-flex items-center gap-1 hover:bg-primary-100 rounded px-1.5 py-0.5 -mr-1.5 transition-colors"
+                              title="Click to override sell-through %"
+                            >
+                              <span className={`font-semibold ${g.sellThroughRate >= 0.5 ? 'text-emerald-600' : g.sellThroughRate >= 0.3 ? 'text-amber-600' : 'text-red-500'}`}>
+                                {(g.sellThroughRate * 100).toFixed(0)}%
+                              </span>
+                              {g.isOverride ? (
+                                <span className="flex items-center gap-0.5">
+                                  <svg className="h-3 w-3 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  </svg>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); saveSellThroughOverride(g.galleryId, null); }}
+                                    className="text-primary-300 hover:text-red-500 transition-colors"
+                                    title="Reset to auto"
+                                  >
+                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </span>
+                              ) : (
+                                <svg className="h-3 w-3 text-primary-300 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                              )}
+                            </button>
+                          )}
                         </td>
                         <td className="py-2 pr-4 text-right font-medium text-cyan-700">{formatCurrency(g.weightedValue, 'CHF')}</td>
                         <td className="py-2 text-right text-xs text-primary-400">{g.salesCount} sold / {g.totalHandled} handled</td>
