@@ -16,6 +16,7 @@ import { ExhibitionHistory } from '../components/artworks/ExhibitionHistory';
 import { CollectionHistory } from '../components/artworks/CollectionHistory';
 import { LoanPanel } from '../components/artworks/LoanPanel';
 import { ExpenseTracker } from '../components/artworks/ExpenseTracker';
+import { SaleRecordPanel } from '../components/artworks/SaleRecordPanel';
 import { CertificatePDF } from '../components/pdf/CertificatePDF';
 import { useDocumentNumber } from '../hooks/useDocumentNumber';
 import { useAuth } from '../hooks/useAuth';
@@ -434,6 +435,15 @@ export function ArtworkDetailPage() {
         onDuplicate={handleDuplicate}
         onTogglePartnerAvailability={handleTogglePartnerAvailability}
       />
+
+      {/* Sale record (visible when artwork is sold) */}
+      <div className="mt-8">
+        <SaleRecordPanel
+          artworkId={id!}
+          artworkStatus={artwork.status}
+          onSaleDeleted={refetchArtwork}
+        />
+      </div>
 
       {/* Certificate PDF download */}
       {certificate && (
