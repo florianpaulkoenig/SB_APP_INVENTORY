@@ -80,6 +80,7 @@ export function RevenueOverviewPage() {
   };
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedGalleries, setSelectedGalleries] = useState<Set<string>>(new Set());
+  const [expandedGalleryId, setExpandedGalleryId] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -475,7 +476,7 @@ export function RevenueOverviewPage() {
                   <tr
                     key={ys.year}
                     className={`border-b border-primary-100 hover:bg-primary-50 cursor-pointer ${ys.year === activeYear ? 'bg-primary-50 font-medium' : ''}`}
-                    onClick={() => setSelectedYear(ys.year)}
+                    onClick={() => { setSelectedYear(ys.year); setExpandedGalleryId(null); }}
                   >
                     <td className="py-3 pr-4 font-medium text-primary-900">{ys.year}</td>
                     <td className="py-3 pr-4 text-right text-primary-700">{formatCurrency(ys.revenue, 'CHF')}</td>
@@ -559,7 +560,7 @@ export function RevenueOverviewPage() {
             {data.years.map((y) => (
               <button
                 key={y}
-                onClick={() => setSelectedYear(y)}
+                onClick={() => { setSelectedYear(y); setExpandedGalleryId(null); }}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   y === activeYear
                     ? 'bg-primary-900 text-white'
@@ -578,19 +579,125 @@ export function RevenueOverviewPage() {
             <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">
               Top 10 Galleries — {activeYear}
             </h3>
+            <p className="text-xs text-primary-500 mb-3">
+              Click a bar to see the revenue breakdown for that gallery.
+            </p>
             <ResponsiveContainer width="100%" height={Math.max(300, top10.length * 40)}>
-              <BarChart data={top10} layout="vertical">
+              <BarChart
+                data={top10}
+                layout="vertical"
+                onClick={(state) => {
+                  if (state?.activePayload?.[0]) {
+                    const row = state.activePayload[0].payload as GalleryYearRow;
+                    setExpandedGalleryId((prev) => prev === row.galleryId ? null : row.galleryId);
+                  }
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
                 <YAxis dataKey="galleryName" type="category" tick={{ fontSize: 11 }} width={160} />
                 <Tooltip formatter={(value: number) => formatCurrency(value, 'CHF')} />
-                <Bar dataKey="revenue" name="Revenue" radius={[0, 4, 4, 0]}>
-                  {top10.map((_, i) => (
-                    <Cell key={i} fill={GALLERY_COLORS[i % GALLERY_COLORS.length]} />
+                <Bar dataKey="revenue" name="Revenue" radius={[0, 4, 4, 0]} className="cursor-pointer">
+                  {top10.map((g, i) => (
+                    <Cell
+                      key={i}
+                      fill={GALLERY_COLORS[i % GALLERY_COLORS.length]}
+                      stroke={expandedGalleryId === g.galleryId ? '#000' : 'none'}
+                      strokeWidth={expandedGalleryId === g.galleryId ? 2 : 0}
+                    />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+
+            {/* Expanded gallery revenue detail */}
+            {expandedGalleryId && (() => {
+              const gallery = galleryRanking.find((g) => g.galleryId === expandedGalleryId);
+              if (!gallery || gallery.details.length === 0) return null;
+
+              const salesDetails = gallery.details.filter((d) => d.type === 'sale');
+              const preSoldDetails = gallery.details.filter((d) => d.type === 'pre_sold');
+              const salesTotal = salesDetails.reduce((sum, d) => sum + d.amount, 0);
+              const preSoldTotal = preSoldDetails.reduce((sum, d) => sum + d.amount, 0);
+
+              return (
+                <div className="mt-4 rounded-lg border border-primary-200 bg-primary-50/50 p-4 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-display text-base font-semibold text-primary-900">
+                      {gallery.galleryName} — Revenue Breakdown ({activeYear})
+                    </h4>
+                    <button
+                      onClick={() => setExpandedGalleryId(null)}
+                      className="rounded-md p-1 text-primary-400 hover:bg-primary-200 hover:text-primary-700 transition-colors"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-primary-200 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                          <th className="pb-2 pr-4">Type</th>
+                          <th className="pb-2 pr-4">Date</th>
+                          <th className="pb-2 pr-4 text-right">Amount</th>
+                          <th className="pb-2 text-right">CHF</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {gallery.details.map((d, i) => (
+                          <tr key={`${d.id}-${i}`} className="border-b border-primary-100">
+                            <td className="py-2 pr-4">
+                              {d.type === 'sale' ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">
+                                  Sale
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                                  Pre-sold
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2 pr-4 text-primary-600">
+                              {d.date ? new Date(d.date).toLocaleDateString('de-CH') : '—'}
+                            </td>
+                            <td className="py-2 pr-4 text-right text-primary-700">
+                              {formatCurrency(d.amount, d.currency)}
+                            </td>
+                            <td className="py-2 text-right font-medium text-primary-900">
+                              {formatCurrency(d.amountCHF, 'CHF')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        {preSoldDetails.length > 0 && salesDetails.length > 0 && (
+                          <>
+                            <tr className="border-t border-primary-200 text-xs text-primary-500">
+                              <td className="pt-2 pr-4" colSpan={2}>Sales subtotal ({salesDetails.length})</td>
+                              <td className="pt-2 pr-4 text-right">{formatCurrency(salesTotal, 'CHF')}</td>
+                              <td className="pt-2 text-right">{formatCurrency(salesTotal, 'CHF')}</td>
+                            </tr>
+                            <tr className="text-xs text-primary-500">
+                              <td className="py-1 pr-4" colSpan={2}>Pre-sold subtotal ({preSoldDetails.length})</td>
+                              <td className="py-1 pr-4 text-right">{formatCurrency(preSoldTotal, 'CHF')}</td>
+                              <td className="py-1 text-right">{formatCurrency(preSoldTotal, 'CHF')}</td>
+                            </tr>
+                          </>
+                        )}
+                        <tr className="border-t border-primary-300 font-semibold">
+                          <td className="pt-2 pr-4" colSpan={2}>Total ({gallery.details.length} transactions)</td>
+                          <td className="pt-2 pr-4 text-right text-primary-900">{formatCurrency(gallery.revenue, 'CHF')}</td>
+                          <td className="pt-2 text-right text-primary-900">{formatCurrency(gallery.revenue, 'CHF')}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
           </Card>
         )}
 

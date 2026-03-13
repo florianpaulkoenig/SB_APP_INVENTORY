@@ -19,6 +19,16 @@ export interface YearSummary {
   yoyChange: number | null; // percentage change vs prior year, null for first year
 }
 
+export interface GalleryRevenueDetail {
+  id: string;
+  type: 'sale' | 'pre_sold';
+  date: string | null;
+  amount: number;       // original currency amount
+  currency: string;
+  amountCHF: number;    // converted to CHF
+  label?: string;       // optional description (e.g. order ref)
+}
+
 export interface GalleryYearRow {
   galleryId: string;
   galleryName: string;
@@ -28,6 +38,7 @@ export interface GalleryYearRow {
   rank: number;
   priorRank: number | null;
   rankChange: number | null; // positive = improved (lower rank number), negative = declined
+  details: GalleryRevenueDetail[]; // individual sale/pre-sold line items
 }
 
 export interface ConsignmentGalleryDetail {
@@ -239,25 +250,47 @@ export function useRevenueOverview() {
       for (const year of years) {
         const ySales = byYear.get(year) ?? [];
 
-        // Aggregate per gallery
-        const galleryMap = new Map<string, { name: string; revenue: number; count: number }>();
+        // Aggregate per gallery + collect detail records
+        const galleryMap = new Map<string, { name: string; revenue: number; count: number; details: GalleryRevenueDetail[] }>();
         for (const s of ySales) {
           const gid = s.gallery_id ?? 'direct';
           const gData = s.galleries as { name: string } | null;
           const gName = gData?.name ?? 'Direct Sale';
-          const existing = galleryMap.get(gid) ?? { name: gName, revenue: 0, count: 0 };
-          existing.revenue += Number(s.sale_price) || 0;
+          const existing = galleryMap.get(gid) ?? { name: gName, revenue: 0, count: 0, details: [] };
+          const saleAmt = Number(s.sale_price) || 0;
+          const saleCur = (s as { currency?: string | null }).currency ?? 'CHF';
+          existing.revenue += saleAmt;
           existing.count += 1;
+          existing.details.push({
+            id: s.id,
+            type: 'sale',
+            date: s.sale_date ?? null,
+            amount: saleAmt,
+            currency: saleCur,
+            amountCHF: toCHF(saleAmt, saleCur),
+          });
           galleryMap.set(gid, existing);
         }
 
         // For current year: add pre-sold order revenue to respective galleries
         if (year === currentYear) {
-          for (const [gid, { value, count }] of preSoldByGallery) {
+          for (const order of activeProdOrders) {
+            if (order.status !== 'pre_sold' || !order.gallery_id) continue;
+            const gid = order.gallery_id;
+            const val = itemValMap[order.id] ?? 0;
             const gName = prodOrderGalleryNames.get(gid) ?? 'Unknown Gallery';
-            const existing = galleryMap.get(gid) ?? { name: gName, revenue: 0, count: 0 };
-            existing.revenue += value;
-            existing.count += count;
+            const existing = galleryMap.get(gid) ?? { name: gName, revenue: 0, count: 0, details: [] };
+            existing.revenue += val;
+            existing.count += 1;
+            existing.details.push({
+              id: order.id,
+              type: 'pre_sold',
+              date: null,
+              amount: val,
+              currency: 'CHF',
+              amountCHF: val,
+              label: `Pre-sold order`,
+            });
             galleryMap.set(gid, existing);
           }
         }
@@ -274,6 +307,13 @@ export function useRevenueOverview() {
           const priorRank = priorRankMap?.get(g.galleryId) ?? null;
           const rankChange = priorRank != null ? priorRank - rank : null; // positive = improved
 
+          // Sort details: sales by date (newest first), pre-sold at end
+          const sortedDetails = [...g.details].sort((a, b) => {
+            if (a.type !== b.type) return a.type === 'sale' ? -1 : 1;
+            if (a.date && b.date) return b.date.localeCompare(a.date);
+            return 0;
+          });
+
           return {
             galleryId: g.galleryId,
             galleryName: g.name,
@@ -283,6 +323,7 @@ export function useRevenueOverview() {
             rank,
             priorRank,
             rankChange,
+            details: sortedDetails,
           };
         });
 
