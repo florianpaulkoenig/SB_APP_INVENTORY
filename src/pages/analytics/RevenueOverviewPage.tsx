@@ -11,8 +11,10 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { formatCurrency } from '../../lib/utils';
 import {
   ComposedChart, Bar, Line, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, BarChart, Cell,
+  ResponsiveContainer, BarChart, Cell, ReferenceLine,
 } from 'recharts';
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // ---------------------------------------------------------------------------
 // Colors
@@ -193,6 +195,85 @@ export function RevenueOverviewPage() {
         />
       </div>
 
+      {/* ---- Prognosis Section ---- */}
+      {data.prognosis && (
+        <Card className="mb-6 p-6 border-l-4 border-l-accent">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="font-display text-lg font-semibold text-primary-900">
+                {data.prognosis.currentYear} Prognosis
+              </h3>
+              <p className="text-xs text-primary-500 mt-0.5">
+                Based on {data.prognosis.daysElapsed} days elapsed ({(data.prognosis.fractionElapsed * 100).toFixed(1)}% of year)
+              </p>
+            </div>
+            {data.prognosis.vsLastYearPace != null && (
+              <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold ${
+                data.prognosis.vsLastYearPace >= 0
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-red-100 text-red-600'
+              }`}>
+                {data.prognosis.vsLastYearPace >= 0 ? '↑' : '↓'}
+                {Math.abs(data.prognosis.vsLastYearPace).toFixed(1)}% vs {data.prognosis.currentYear - 1} pace
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 mb-6">
+            <div className="text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Revenue to Date</p>
+              <p className="mt-1 text-xl font-bold text-primary-900">{formatCurrency(data.prognosis.revenueToDate, 'CHF')}</p>
+              <p className="text-xs text-primary-400">{data.prognosis.salesCountToDate} sales</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Projected Full Year</p>
+              <p className="mt-1 text-xl font-bold text-accent">{formatCurrency(data.prognosis.projectedRevenue, 'CHF')}</p>
+              <p className="text-xs text-primary-400">~{data.prognosis.projectedSalesCount} sales</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-500">{data.prognosis.currentYear - 1} Same Period</p>
+              <p className="mt-1 text-xl font-bold text-primary-700">
+                {data.prognosis.priorYearSamePeriodRevenue != null
+                  ? formatCurrency(data.prognosis.priorYearSamePeriodRevenue, 'CHF')
+                  : '—'}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-500">{data.prognosis.currentYear - 1} Full Year</p>
+              <p className="mt-1 text-xl font-bold text-primary-700">
+                {data.prognosis.priorYearRevenue != null
+                  ? formatCurrency(data.prognosis.priorYearRevenue, 'CHF')
+                  : '—'}
+              </p>
+            </div>
+          </div>
+
+          {/* Monthly breakdown bar chart */}
+          <h4 className="text-sm font-semibold text-primary-700 mb-2">Monthly Breakdown — {data.prognosis.currentYear}</h4>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={data.prognosis.monthlyBreakdown.map((m) => ({
+              ...m,
+              name: MONTH_NAMES[m.month],
+              isFuture: m.month > new Date().getMonth(),
+            }))}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
+              <Tooltip formatter={(value: number) => [formatCurrency(value, 'CHF'), 'Revenue']} />
+              <Bar dataKey="revenue" name="Revenue" radius={[3, 3, 0, 0]}>
+                {data.prognosis.monthlyBreakdown.map((m, i) => (
+                  <Cell
+                    key={i}
+                    fill={m.month > new Date().getMonth() ? '#e2e8f0' : BAR_COLOR}
+                    opacity={m.month > new Date().getMonth() ? 0.4 : 1}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+
       <div className="space-y-6">
         {/* ---- Section A: Annual Revenue Chart ---- */}
         <Card className="p-6">
@@ -200,7 +281,12 @@ export function RevenueOverviewPage() {
             Annual Revenue
           </h3>
           <ResponsiveContainer width="100%" height={320}>
-            <ComposedChart data={data.yearSummaries}>
+            <ComposedChart data={data.yearSummaries.map((ys) => ({
+              ...ys,
+              projected: data.prognosis && ys.year === data.prognosis.currentYear
+                ? data.prognosis.projectedRevenue - ys.revenue
+                : 0,
+            }))}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="year" tick={{ fontSize: 12 }} />
               <YAxis
@@ -217,12 +303,14 @@ export function RevenueOverviewPage() {
               <Tooltip
                 formatter={(value: number, name: string) => {
                   if (name === 'revenue') return [formatCurrency(value, 'CHF'), 'Revenue'];
+                  if (name === 'projected') return [formatCurrency(value, 'CHF'), 'Projected (remaining)'];
                   if (name === 'count') return [value, 'Sales'];
                   return [value, name];
                 }}
                 labelFormatter={(label) => `Year ${label}`}
               />
-              <Bar yAxisId="revenue" dataKey="revenue" name="revenue" fill={BAR_COLOR} radius={[4, 4, 0, 0]} />
+              <Bar yAxisId="revenue" dataKey="revenue" name="revenue" fill={BAR_COLOR} radius={[4, 4, 0, 0]} stackId="rev" />
+              <Bar yAxisId="revenue" dataKey="projected" name="projected" fill={BAR_COLOR} opacity={0.2} radius={[4, 4, 0, 0]} stackId="rev" />
               <Line yAxisId="count" type="monotone" dataKey="count" name="count" stroke={LINE_COLOR} strokeWidth={2} dot={{ r: 4 }} />
             </ComposedChart>
           </ResponsiveContainer>
