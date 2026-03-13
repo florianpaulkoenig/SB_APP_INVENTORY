@@ -29,15 +29,29 @@ export interface GalleryYearRow {
   rankChange: number | null; // positive = improved (lower rank number), negative = declined
 }
 
+export interface ConsignmentGalleryDetail {
+  galleryId: string;
+  galleryName: string;
+  consignmentValue: number;     // total consignment order value (CHF)
+  orderCount: number;
+  sellThroughRate: number;      // 0–1 ratio based on gallery history
+  weightedValue: number;        // consignmentValue * sellThroughRate
+  salesCount: number;           // historical sales from this gallery
+  totalHandled: number;         // sales + currently unsold at gallery
+}
+
 export interface YearPrognosis {
   currentYear: number;
-  revenueToDate: number;
+  revenueToDate: number;           // sales revenue only (excluding pre-sold)
+  revenueToDateIncPreSold: number; // sales + pre-sold (the "real" pace base)
   salesCountToDate: number;
+  preSoldRevenue: number;          // pre-sold orders — revenue confirmed (CHF)
+  preSoldCount: number;
   daysElapsed: number;
   daysInYear: number;
   fractionElapsed: number;
-  projectedRevenueSalesOnly: number;  // linear extrapolation from sales pace alone
-  projectedRevenue: number;           // sales pace projection + pre-sold (best estimate)
+  projectedRevenueSalesOnly: number;  // linear extrapolation from sales pace alone (excl pre-sold)
+  projectedRevenue: number;           // best estimate: (sales+preSold pace) + weighted consignment
   projectedSalesCount: number;
   priorYearRevenue: number | null;
   priorYearSamePeriodRevenue: number | null; // prior year revenue up to same day-of-year
@@ -48,10 +62,10 @@ export interface YearPrognosis {
   potentialCount: number;         // number of unsold artworks with price
   confirmedOrdersRevenue: number; // active production orders value (CHF) — all non-draft/completed
   confirmedOrdersCount: number;   // number of active production orders
-  preSoldRevenue: number;         // pre-sold orders — revenue confirmed (CHF)
-  preSoldCount: number;
   consignmentRevenue: number;     // consignment orders — exhibited for sale (CHF)
   consignmentCount: number;
+  weightedConsignmentRevenue: number; // consignment value × gallery sell-through rate
+  consignmentGalleryDetails: ConsignmentGalleryDetail[]; // per-gallery breakdown
   totalPipeline: number;          // potentialRevenue + confirmedOrdersRevenue
 }
 
@@ -100,7 +114,7 @@ export function useRevenueOverview() {
           .order('sale_date', { ascending: true }),
         supabase
           .from('artworks')
-          .select('id, status, price, currency')
+          .select('id, status, price, currency, gallery_id')
           .not('status', 'in', '("sold","archived","destroyed")')
           .gt('price', 0),
         supabase
@@ -304,6 +318,8 @@ export function useRevenueOverview() {
       let preSoldCount = 0;
       let consignmentRevenue = 0;
       let consignmentCount = 0;
+      // Track consignment orders per gallery for sell-through weighting
+      const consignmentByGallery = new Map<string, { value: number; count: number }>();
       for (const order of activeProdOrders) {
         const val = itemValMap[order.id] ?? 0;
         if (order.status === 'pre_sold') {
@@ -312,19 +328,89 @@ export function useRevenueOverview() {
         } else if (order.status === 'consignment') {
           consignmentRevenue += val;
           consignmentCount += 1;
+          if (order.gallery_id) {
+            const existing = consignmentByGallery.get(order.gallery_id) ?? { value: 0, count: 0 };
+            existing.value += val;
+            existing.count += 1;
+            consignmentByGallery.set(order.gallery_id, existing);
+          }
         }
       }
 
       const totalPipeline = potentialRevenue + confirmedOrdersRevenue;
 
-      // Best-estimate projection: sales pace extrapolation + pre-sold revenue on top
-      // Pre-sold is locked-in money, so it's additive to the pace-based projection
-      const projectedRevenue = projectedRevenueSalesOnly + preSoldRevenue;
+      // ---- Consignment sell-through rate per gallery -----------------------------
+      // For each gallery with consignment orders, calculate sell-through:
+      //   rate = salesCount / (salesCount + unsoldArtworksAtGallery)
+      // Then weight the consignment value by that rate.
+
+      // Build gallery sales count from all-time sales data
+      const gallerySalesCounts = new Map<string, number>();
+      for (const s of sales) {
+        if (s.gallery_id) {
+          gallerySalesCounts.set(s.gallery_id, (gallerySalesCounts.get(s.gallery_id) ?? 0) + 1);
+        }
+      }
+
+      // Build unsold artworks count per gallery (artworks currently at gallery, not sold)
+      const galleryUnsoldCounts = new Map<string, number>();
+      for (const a of unsoldArtworks) {
+        const gid = (a as { gallery_id?: string | null }).gallery_id;
+        if (gid) {
+          galleryUnsoldCounts.set(gid, (galleryUnsoldCounts.get(gid) ?? 0) + 1);
+        }
+      }
+
+      // Resolve gallery names from sales data (we already have them from the sales query)
+      const galleryNameMap = new Map<string, string>();
+      for (const s of sales) {
+        if (s.gallery_id) {
+          const gData = s.galleries as { name: string } | null;
+          if (gData?.name) galleryNameMap.set(s.gallery_id, gData.name);
+        }
+      }
+
+      const consignmentGalleryDetails: ConsignmentGalleryDetail[] = [];
+      let weightedConsignmentRevenue = 0;
+
+      for (const [galleryId, { value, count }] of consignmentByGallery) {
+        const salesCount = gallerySalesCounts.get(galleryId) ?? 0;
+        const unsoldCount = galleryUnsoldCounts.get(galleryId) ?? 0;
+        const totalHandled = salesCount + unsoldCount;
+        // Default 30% if gallery has no history (conservative estimate)
+        const sellThroughRate = totalHandled > 0 ? salesCount / totalHandled : 0.3;
+        const weightedValue = value * sellThroughRate;
+        weightedConsignmentRevenue += weightedValue;
+
+        consignmentGalleryDetails.push({
+          galleryId,
+          galleryName: galleryNameMap.get(galleryId) ?? 'Unknown Gallery',
+          consignmentValue: value,
+          orderCount: count,
+          sellThroughRate,
+          weightedValue,
+          salesCount,
+          totalHandled,
+        });
+      }
+      // Sort by weighted value descending
+      consignmentGalleryDetails.sort((a, b) => b.weightedValue - a.weightedValue);
+
+      // ---- Best-estimate projected revenue ----------------------------------------
+      // Pre-sold is part of the revenue pace (user confirmed: pre-sold = sales pace)
+      const revenueToDateIncPreSold = revenueToDate + preSoldRevenue;
+      // Pace extrapolation includes pre-sold in the base
+      const projectedFromPace = fractionElapsed > 0 ? revenueToDateIncPreSold / fractionElapsed : 0;
+      // Add weighted consignment on top (probability-adjusted upside)
+      const projectedRevenue = projectedFromPace + weightedConsignmentRevenue;
 
       const prognosis: YearPrognosis = {
         currentYear,
         revenueToDate,
+        revenueToDateIncPreSold,
         salesCountToDate,
+        preSoldRevenue,
+        preSoldCount,
         daysElapsed,
         daysInYear,
         fractionElapsed,
@@ -339,10 +425,10 @@ export function useRevenueOverview() {
         potentialCount,
         confirmedOrdersRevenue,
         confirmedOrdersCount,
-        preSoldRevenue,
-        preSoldCount,
         consignmentRevenue,
         consignmentCount,
+        weightedConsignmentRevenue,
+        consignmentGalleryDetails,
         totalPipeline,
       };
 
