@@ -77,6 +77,7 @@ export function RevenueOverviewPage() {
     setRefreshing(false);
   };
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedGalleries, setSelectedGalleries] = useState<Set<string>>(new Set());
 
   if (loading) {
     return (
@@ -101,7 +102,6 @@ export function RevenueOverviewPage() {
 
   // ---- Gallery evolution data for multi-line chart --------------------------
   // Build: [{ year: 2022, "Gallery A": 50000, "Gallery B": 30000 }, ...]
-  const [selectedGalleries, setSelectedGalleries] = useState<Set<string>>(new Set());
 
   // Get all galleries that ever had revenue, sorted by lifetime total
   const allGalleryTotals = new Map<string, { name: string; total: number }>();
