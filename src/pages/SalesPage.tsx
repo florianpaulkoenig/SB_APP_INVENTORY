@@ -46,7 +46,7 @@ export function SalesPage() {
   const [galleryFilter, setGalleryFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
 
-  const { sales, loading, refetch, createSale } = useSales({
+  const { sales, loading, refetch, createSale, updateSale, deleteSale } = useSales({
     filters: {
       search: search || undefined,
       galleryId: galleryFilter || undefined,
@@ -91,6 +91,45 @@ export function SalesPage() {
   const [salesChannel, setSalesChannel] = useState('');
   const [collectorAnonymityMode, setCollectorAnonymityMode] = useState<CollectorAnonymityMode>('named');
   const [negotiationNotes, setNegotiationNotes] = useState('');
+
+  // ---- Edit / Delete state ------------------------------------------------
+
+  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  function startEdit(sale: { id: string; sale_date: string; sale_price: number }) {
+    setEditingSaleId(sale.id);
+    setEditDate(sale.sale_date ?? '');
+    setEditPrice(String(sale.sale_price ?? ''));
+  }
+
+  function cancelEdit() {
+    setEditingSaleId(null);
+    setEditDate('');
+    setEditPrice('');
+  }
+
+  async function saveEdit() {
+    if (!editingSaleId) return;
+    setEditSaving(true);
+    await updateSale(editingSaleId, {
+      sale_date: editDate || null,
+      sale_price: editPrice ? parseFloat(editPrice) : null,
+    } as never);
+    setEditingSaleId(null);
+    setEditSaving(false);
+  }
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    await deleteSale(id);
+    setDeletingId(null);
+    setConfirmDeleteId(null);
+  }
 
   // ---- Handlers -----------------------------------------------------------
 
@@ -289,16 +328,24 @@ export function SalesPage() {
                 <th className="hidden lg:table-cell px-2 py-2 sm:px-4 sm:py-3 text-center text-xs font-medium uppercase tracking-wider text-primary-500">
                   Payment
                 </th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-primary-50 bg-white">
-              {filteredSales.map((sale) => (
+              {filteredSales.map((sale) => {
+                const isEditing = editingSaleId === sale.id;
+                const isConfirmingDelete = confirmDeleteId === sale.id;
+                return (
                 <tr
                   key={sale.id}
-                  className="cursor-pointer hover:bg-primary-50 transition-colors"
-                  onClick={() => navigate(`/artworks/${sale.artwork_id}`)}
+                  className="hover:bg-primary-50 transition-colors"
                 >
-                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3">
+                  <td
+                    className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 cursor-pointer"
+                    onClick={() => navigate(`/artworks/${sale.artwork_id}`)}
+                  >
                     <div className="text-sm font-medium text-primary-900">
                       {sale.artworks?.title ?? 'Unknown Artwork'}
                     </div>
@@ -315,10 +362,28 @@ export function SalesPage() {
                       : sale.buyer_name ?? '-'}
                   </td>
                   <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-600">
-                    {formatDate(sale.sale_date)}
+                    {isEditing ? (
+                      <input
+                        type="date"
+                        value={editDate}
+                        onChange={(e) => setEditDate(e.target.value)}
+                        className="w-36 rounded border border-primary-300 px-2 py-1 text-sm"
+                      />
+                    ) : (
+                      formatDate(sale.sale_date)
+                    )}
                   </td>
                   <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right text-sm font-medium text-primary-900">
-                    {formatCurrency(sale.sale_price, sale.currency)}
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={editPrice}
+                        onChange={(e) => setEditPrice(e.target.value)}
+                        className="w-28 rounded border border-primary-300 px-2 py-1 text-sm text-right"
+                      />
+                    ) : (
+                      formatCurrency(sale.sale_price, sale.currency)
+                    )}
                   </td>
                   <td className="hidden sm:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right text-sm text-primary-600">
                     {sale.commission_percent != null
@@ -335,8 +400,75 @@ export function SalesPage() {
                       {PAYMENT_STATUSES.find((s) => s.value === sale.payment_status)?.label || sale.payment_status}
                     </Badge>
                   </td>
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      {isEditing ? (
+                        <>
+                          <button
+                            onClick={saveEdit}
+                            disabled={editSaving}
+                            className="rounded p-1 text-emerald-600 hover:bg-emerald-50"
+                            title="Save"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="rounded p-1 text-primary-400 hover:bg-primary-100"
+                            title="Cancel"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); startEdit(sale); }}
+                            className="rounded p-1 text-primary-400 hover:bg-primary-100 hover:text-primary-700"
+                            title="Edit date & price"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                            </svg>
+                          </button>
+                          {isConfirmingDelete ? (
+                            <>
+                              <button
+                                onClick={() => handleDelete(sale.id)}
+                                disabled={deletingId === sale.id}
+                                className="rounded px-2 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                              >
+                                {deletingId === sale.id ? '...' : 'Confirm'}
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="rounded px-2 py-1 text-xs font-medium text-primary-600 bg-primary-100 hover:bg-primary-200"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(sale.id); }}
+                              className="rounded p-1 text-primary-400 hover:bg-red-50 hover:text-red-600"
+                              title="Delete sale"
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                              </svg>
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
