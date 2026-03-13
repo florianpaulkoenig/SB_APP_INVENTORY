@@ -36,7 +36,8 @@ export interface YearPrognosis {
   daysElapsed: number;
   daysInYear: number;
   fractionElapsed: number;
-  projectedRevenue: number;       // linear extrapolation
+  projectedRevenueSalesOnly: number;  // linear extrapolation from sales pace alone
+  projectedRevenue: number;           // sales pace projection + pre-sold (best estimate)
   projectedSalesCount: number;
   priorYearRevenue: number | null;
   priorYearSamePeriodRevenue: number | null; // prior year revenue up to same day-of-year
@@ -236,8 +237,9 @@ export function useRevenueOverview() {
       const revenueToDate = currentYearSales.reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0);
       const salesCountToDate = currentYearSales.length;
 
-      const projectedRevenue = fractionElapsed > 0 ? revenueToDate / fractionElapsed : 0;
+      const projectedRevenueSalesOnly = fractionElapsed > 0 ? revenueToDate / fractionElapsed : 0;
       const projectedSalesCount = fractionElapsed > 0 ? Math.round(salesCountToDate / fractionElapsed) : 0;
+      // projectedRevenue will be set after pre-sold calculation (sales pace + pre-sold on top)
 
       // Prior year same-period comparison
       const priorYear = currentYear - 1;
@@ -315,6 +317,10 @@ export function useRevenueOverview() {
 
       const totalPipeline = potentialRevenue + confirmedOrdersRevenue;
 
+      // Best-estimate projection: sales pace extrapolation + pre-sold revenue on top
+      // Pre-sold is locked-in money, so it's additive to the pace-based projection
+      const projectedRevenue = projectedRevenueSalesOnly + preSoldRevenue;
+
       const prognosis: YearPrognosis = {
         currentYear,
         revenueToDate,
@@ -322,6 +328,7 @@ export function useRevenueOverview() {
         daysElapsed,
         daysInYear,
         fractionElapsed,
+        projectedRevenueSalesOnly,
         projectedRevenue,
         projectedSalesCount,
         priorYearRevenue,

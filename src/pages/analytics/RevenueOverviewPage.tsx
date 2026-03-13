@@ -219,20 +219,30 @@ export function RevenueOverviewPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 mb-6">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6 mb-6">
             <div className="text-center">
-              <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Revenue to Date</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Sales to Date</p>
               <p className="mt-1 text-xl font-bold text-primary-900">{formatCurrency(data.prognosis.revenueToDate, 'CHF')}</p>
               <p className="text-xs text-primary-400">{data.prognosis.salesCountToDate} sales</p>
             </div>
             <div className="text-center">
-              <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Projected Full Year</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-emerald-600">+ Pre-Sold</p>
+              <p className="mt-1 text-xl font-bold text-emerald-700">{formatCurrency(data.prognosis.preSoldRevenue, 'CHF')}</p>
+              <p className="text-xs text-emerald-500">{data.prognosis.preSoldCount} confirmed orders</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-accent">Projected Full Year</p>
               <p className="mt-1 text-xl font-bold text-accent">{formatCurrency(data.prognosis.projectedRevenue, 'CHF')}</p>
+              <p className="text-xs text-primary-400">sales pace + pre-sold</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">Sales Pace Only</p>
+              <p className="mt-1 text-lg font-semibold text-primary-500">{formatCurrency(data.prognosis.projectedRevenueSalesOnly, 'CHF')}</p>
               <p className="text-xs text-primary-400">~{data.prognosis.projectedSalesCount} sales</p>
             </div>
             <div className="text-center">
               <p className="text-xs font-medium uppercase tracking-wider text-primary-500">{data.prognosis.currentYear - 1} Same Period</p>
-              <p className="mt-1 text-xl font-bold text-primary-700">
+              <p className="mt-1 text-lg font-semibold text-primary-700">
                 {data.prognosis.priorYearSamePeriodRevenue != null
                   ? formatCurrency(data.prognosis.priorYearSamePeriodRevenue, 'CHF')
                   : '—'}
@@ -240,7 +250,7 @@ export function RevenueOverviewPage() {
             </div>
             <div className="text-center">
               <p className="text-xs font-medium uppercase tracking-wider text-primary-500">{data.prognosis.currentYear - 1} Full Year</p>
-              <p className="mt-1 text-xl font-bold text-primary-700">
+              <p className="mt-1 text-lg font-semibold text-primary-700">
                 {data.prognosis.priorYearRevenue != null
                   ? formatCurrency(data.prognosis.priorYearRevenue, 'CHF')
                   : '—'}
