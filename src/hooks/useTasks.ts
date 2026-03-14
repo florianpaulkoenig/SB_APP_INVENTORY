@@ -150,6 +150,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         if (insertError) throw insertError;
 
         toast({ title: 'Task created', description: `"${created.title}" has been added.`, variant: 'success' });
+        await fetchTasks();
 
         return created as TaskRow;
       } catch (err: unknown) {
@@ -159,7 +160,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         return null;
       }
     },
-    [toast],
+    [toast, fetchTasks],
   );
 
   // ---- Update task --------------------------------------------------------
@@ -177,6 +178,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         if (updateError) throw updateError;
 
         toast({ title: 'Task updated', description: `"${updated.title}" has been saved.`, variant: 'success' });
+        await fetchTasks();
 
         return updated as TaskRow;
       } catch (err: unknown) {
@@ -186,7 +188,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         return null;
       }
     },
-    [toast],
+    [toast, fetchTasks],
   );
 
   // ---- Delete task --------------------------------------------------------
@@ -202,6 +204,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         if (deleteError) throw deleteError;
 
         toast({ title: 'Task deleted', variant: 'success' });
+        await fetchTasks();
 
         return true;
       } catch (err: unknown) {
@@ -211,7 +214,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         return false;
       }
     },
-    [toast],
+    [toast, fetchTasks],
   );
 
   // ---- Toggle complete ----------------------------------------------------
@@ -233,6 +236,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
           description: `"${updated.title}" has been ${updated.completed ? 'completed' : 'reopened'}.`,
           variant: 'success',
         });
+        await fetchTasks();
 
         return updated as TaskRow;
       } catch (err: unknown) {
@@ -242,7 +246,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         return null;
       }
     },
-    [toast],
+    [toast, fetchTasks],
   );
 
   return {

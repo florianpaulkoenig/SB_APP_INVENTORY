@@ -120,6 +120,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
         if (insertError) throw insertError;
 
         toast({ title: 'Deal created', description: `Deal has been added.`, variant: 'success' });
+        await fetchDeals();
 
         return created as DealRow;
       } catch (err: unknown) {
@@ -129,7 +130,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
         return null;
       }
     },
-    [toast],
+    [toast, fetchDeals],
   );
 
   // ---- Update deal --------------------------------------------------------
@@ -147,6 +148,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
         if (updateError) throw updateError;
 
         toast({ title: 'Deal updated', description: `Deal has been saved.`, variant: 'success' });
+        await fetchDeals();
 
         return updated as DealRow;
       } catch (err: unknown) {
@@ -156,7 +158,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
         return null;
       }
     },
-    [toast],
+    [toast, fetchDeals],
   );
 
   // ---- Delete deal --------------------------------------------------------
@@ -172,6 +174,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
         if (deleteError) throw deleteError;
 
         toast({ title: 'Deal deleted', variant: 'success' });
+        await fetchDeals();
 
         return true;
       } catch (err: unknown) {
@@ -181,7 +184,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
         return false;
       }
     },
-    [toast],
+    [toast, fetchDeals],
   );
 
   return {
@@ -272,6 +275,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
         if (insertError) throw insertError;
 
         toast({ title: 'Deal created', description: `Deal has been added.`, variant: 'success' });
+        await fetchDeals();
 
         return created as DealRow;
       } catch (err: unknown) {
@@ -281,7 +285,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
         return null;
       }
     },
-    [toast],
+    [toast, fetchDeals],
   );
 
   // ---- Update deal --------------------------------------------------------
@@ -299,6 +303,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
         if (updateError) throw updateError;
 
         toast({ title: 'Deal updated', description: `Deal has been saved.`, variant: 'success' });
+        await fetchDeals();
 
         return updated as DealRow;
       } catch (err: unknown) {
@@ -308,7 +313,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
         return null;
       }
     },
-    [toast],
+    [toast, fetchDeals],
   );
 
   // ---- Delete deal --------------------------------------------------------
@@ -324,6 +329,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
         if (deleteError) throw deleteError;
 
         toast({ title: 'Deal deleted', variant: 'success' });
+        await fetchDeals();
 
         return true;
       } catch (err: unknown) {
@@ -333,7 +339,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
         return false;
       }
     },
-    [toast],
+    [toast, fetchDeals],
   );
 
   return {

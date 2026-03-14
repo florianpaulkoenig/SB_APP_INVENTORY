@@ -126,6 +126,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         if (insertError) throw insertError;
 
         toast({ title: 'Gallery created', description: `"${created.name}" has been added.`, variant: 'success' });
+        await fetchGalleries();
 
         return created as GalleryRow;
       } catch (err: unknown) {
@@ -136,7 +137,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         return null;
       }
     },
-    [toast],
+    [toast, fetchGalleries],
   );
 
   // ---- Update gallery -----------------------------------------------------
@@ -154,6 +155,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         if (updateError) throw updateError;
 
         toast({ title: 'Gallery updated', description: `"${updated.name}" has been saved.`, variant: 'success' });
+        await fetchGalleries();
 
         return updated as GalleryRow;
       } catch (err: unknown) {
@@ -164,7 +166,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         return null;
       }
     },
-    [toast],
+    [toast, fetchGalleries],
   );
 
   // ---- Delete gallery -----------------------------------------------------
@@ -180,6 +182,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         if (deleteError) throw deleteError;
 
         toast({ title: 'Gallery deleted', variant: 'success' });
+        await fetchGalleries();
 
         return true;
       } catch (err: unknown) {
@@ -190,7 +193,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         return false;
       }
     },
-    [toast],
+    [toast, fetchGalleries],
   );
 
   return {
