@@ -12,13 +12,37 @@ import { useToast } from '../components/ui/Toast';
 // ---------------------------------------------------------------------------
 
 export interface CatalogueConfig {
+  // Cover page
   title: string;
   subtitle: string;
-  catalogueType: 'exhibition' | 'collector' | 'gallery';
-  layout: 'grid-2' | 'grid-4' | 'full-page';
+  coverText: string;
+  showDate: boolean;
+  showContactDetails: boolean;
+  coverImageArtworkId: string | null; // artwork ID whose image is used as cover background
+
+  // Optional text page (after cover, before artworks)
+  textPageContent: string;
+
+  // Layout & language
+  layout: 'full-page' | 'list';
   language: 'en' | 'de' | 'fr';
-  showPrices: boolean;
+
+  // Section dividers
+  dividerMode: 'none' | 'series' | 'category';
+
+  // Field visibility toggles
+  showReferenceCode: boolean;
+  showMedium: boolean;
+  showYear: boolean;
+  showDimensions: boolean;
+  showEdition: boolean;
+  showPrice: boolean;
+
   artworkIds: string[];
+
+  // Legacy (backward compat — ignored in new code)
+  catalogueType?: string;
+  showPrices?: boolean;
 }
 
 export interface CatalogueRow {
