@@ -53,12 +53,14 @@ interface CatalogueSettings {
   language: Language;
   dividerMode: DividerMode;
   dimensionUnit: DimensionUnit;
+  weightUnit: 'kg' | 'lbs';
 
   // Field visibility
   showReferenceCode: boolean;
   showMedium: boolean;
   showYear: boolean;
   showDimensions: boolean;
+  showWeight: boolean;
   showEdition: boolean;
   showPrice: boolean;
 }
@@ -79,6 +81,7 @@ interface CatalogueArtwork {
   edition_type: string;
   edition_number: number | null;
   edition_total: number | null;
+  weight: number | null;
   category: string | null;
   series: string | null;
   imageUrl: string | null;
@@ -113,6 +116,11 @@ const DIVIDER_OPTIONS = [
 const DIMENSION_UNIT_OPTIONS = [
   { value: 'cm', label: 'Centimeters (cm)' },
   { value: 'inches', label: 'Inches (in)' },
+];
+
+const WEIGHT_UNIT_OPTIONS = [
+  { value: 'kg', label: 'Kilograms (kg)' },
+  { value: 'lbs', label: 'Pounds (lbs)' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -284,10 +292,12 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
     language: initialConfig?.language ?? 'en',
     dividerMode: initialConfig?.dividerMode ?? 'none',
     dimensionUnit: initialConfig?.dimensionUnit ?? 'cm',
+    weightUnit: initialConfig?.weightUnit ?? 'kg',
     showReferenceCode: initialConfig?.showReferenceCode ?? true,
     showMedium: initialConfig?.showMedium ?? true,
     showYear: initialConfig?.showYear ?? true,
     showDimensions: initialConfig?.showDimensions ?? true,
+    showWeight: initialConfig?.showWeight ?? false,
     showEdition: initialConfig?.showEdition ?? true,
     showPrice: initialConfig?.showPrice ?? false,
   });
@@ -323,7 +333,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
       const { data: artworksData, error: fetchError } = await supabase
         .from('artworks')
         .select(
-          'id, title, reference_code, medium, year, height, width, depth, dimension_unit, price, currency, edition_type, edition_number, edition_total, category, series',
+          'id, title, reference_code, medium, year, height, width, depth, dimension_unit, weight, price, currency, edition_type, edition_number, edition_total, category, series',
         )
         .in('id', selectedIds);
 
@@ -371,6 +381,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
         edition_type: a.edition_type ?? 'unique',
         edition_number: a.edition_number,
         edition_total: a.edition_total,
+        weight: a.weight ?? null,
         category: a.category,
         series: a.series ?? null,
         imageUrl: imageMap[a.id] ?? null,
@@ -394,6 +405,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
         showMedium: settings.showMedium,
         showYear: settings.showYear,
         showDimensions: settings.showDimensions,
+        showWeight: settings.showWeight,
         showEdition: settings.showEdition,
         showPrice: settings.showPrice,
       };
@@ -414,6 +426,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
           visibility={visibility}
           dividerMode={settings.dividerMode}
           dimensionUnit={settings.dimensionUnit}
+          weightUnit={settings.weightUnit}
         />,
       ).toBlob();
 
@@ -608,13 +621,21 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
                 onChange={(e) => updateSetting('dividerMode', e.target.value as DividerMode)}
               />
 
-              {/* Dimension unit */}
-              <Select
-                label="Dimensions Unit"
-                options={DIMENSION_UNIT_OPTIONS}
-                value={settings.dimensionUnit}
-                onChange={(e) => updateSetting('dimensionUnit', e.target.value as DimensionUnit)}
-              />
+              {/* Dimension & weight units */}
+              <div className="grid grid-cols-2 gap-3">
+                <Select
+                  label="Dimensions Unit"
+                  options={DIMENSION_UNIT_OPTIONS}
+                  value={settings.dimensionUnit}
+                  onChange={(e) => updateSetting('dimensionUnit', e.target.value as DimensionUnit)}
+                />
+                <Select
+                  label="Weight Unit"
+                  options={WEIGHT_UNIT_OPTIONS}
+                  value={settings.weightUnit}
+                  onChange={(e) => updateSetting('weightUnit', e.target.value as 'kg' | 'lbs')}
+                />
+              </div>
             </div>
           </section>
 
@@ -643,6 +664,11 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
                 label="Dimensions"
                 checked={settings.showDimensions}
                 onChange={(v) => updateSetting('showDimensions', v)}
+              />
+              <FieldCheckbox
+                label="Weight"
+                checked={settings.showWeight}
+                onChange={(v) => updateSetting('showWeight', v)}
               />
               <FieldCheckbox
                 label="Edition"
@@ -767,6 +793,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
                     settings.showMedium && 'Medium',
                     settings.showYear && 'Year',
                     settings.showDimensions && 'Dimensions',
+                    settings.showWeight && 'Weight',
                     settings.showEdition && 'Edition',
                     settings.showPrice && 'Price',
                   ].filter(Boolean).join(', ') || 'None'}

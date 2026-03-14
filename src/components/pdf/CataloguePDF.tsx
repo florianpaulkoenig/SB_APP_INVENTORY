@@ -19,6 +19,7 @@ interface CatalogueTranslations {
   medium: string;
   year: string;
   dimensions: string;
+  weight: string;
   edition: string;
   price: string;
   unique: string;
@@ -33,19 +34,20 @@ interface CatalogueTranslations {
 
 const TRANSLATIONS: Record<string, CatalogueTranslations> = {
   en: {
-    medium: 'Medium', year: 'Year', dimensions: 'Dimensions', edition: 'Edition',
-    price: 'Price', unique: 'Unique', artistProof: 'Artist Proof',
+    medium: 'Medium', year: 'Year', dimensions: 'Dimensions', weight: 'Weight',
+    edition: 'Edition', price: 'Price', unique: 'Unique', artistProof: 'Artist Proof',
     horsCommerce: 'Hors Commerce', epreuveArtiste: "Epreuve d'Artiste",
     of: 'of', referenceCode: 'Ref.', title: 'Title', no: '#',
   },
   de: {
-    medium: 'Technik', year: 'Jahr', dimensions: 'Ma\u00dfe', edition: 'Auflage',
+    medium: 'Technik', year: 'Jahr', dimensions: 'Ma\u00dfe', weight: 'Gewicht',
+    edition: 'Auflage',
     price: 'Preis', unique: 'Unikat', artistProof: 'K\u00fcnstlerexemplar',
     horsCommerce: 'Hors Commerce', epreuveArtiste: "Epreuve d'Artiste",
     of: 'von', referenceCode: 'Ref.', title: 'Titel', no: '#',
   },
   fr: {
-    medium: 'Technique', year: 'Ann\u00e9e', dimensions: 'Dimensions',
+    medium: 'Technique', year: 'Ann\u00e9e', dimensions: 'Dimensions', weight: 'Poids',
     edition: '\u00c9dition', price: 'Prix', unique: 'Unique',
     artistProof: "Epreuve d'Artiste", horsCommerce: 'Hors Commerce',
     epreuveArtiste: "Epreuve d'Artiste", of: 'de', referenceCode: 'R\u00e9f.',
@@ -79,6 +81,7 @@ export interface CatalogueArtwork {
   width: number | null;
   depth: number | null;
   dimension_unit: string;
+  weight: number | null;
   edition_type: string;
   edition_number: number | null;
   edition_total: number | null;
@@ -94,6 +97,7 @@ export interface FieldVisibility {
   showMedium: boolean;
   showYear: boolean;
   showDimensions: boolean;
+  showWeight: boolean;
   showEdition: boolean;
   showPrice: boolean;
 }
@@ -112,6 +116,7 @@ export interface CataloguePDFProps {
   visibility: FieldVisibility;
   dividerMode: 'none' | 'series' | 'category';
   dimensionUnit: 'cm' | 'inches';
+  weightUnit: 'kg' | 'lbs';
 }
 
 // ---------------------------------------------------------------------------
@@ -139,6 +144,16 @@ function formatDimensions(
   });
   const label = displayUnit === 'inches' ? 'in' : 'cm';
   return `${converted.join(' \u00d7 ')} ${label}`;
+}
+
+const KG_PER_LB = 0.45359237;
+
+function formatWeight(weight: number, displayUnit: string): string {
+  if (displayUnit === 'lbs') {
+    const lbs = weight / KG_PER_LB;
+    return `${lbs.toFixed(1)} lbs`;
+  }
+  return `${weight.toFixed(1)} kg`;
 }
 
 function formatEdition(et: string, en: number | null, total: number | null, t: CatalogueTranslations): string {
@@ -557,7 +572,8 @@ function PageFooter() {
 // Detail rows builder
 // ---------------------------------------------------------------------------
 function buildDetailRows(
-  aw: CatalogueArtwork, t: CatalogueTranslations, vis: FieldVisibility, displayUnit: string,
+  aw: CatalogueArtwork, t: CatalogueTranslations, vis: FieldVisibility,
+  displayUnit: string, weightUnit: string,
 ): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [];
   if (vis.showMedium && aw.medium) rows.push({ label: t.medium, value: aw.medium });
@@ -565,6 +581,9 @@ function buildDetailRows(
   if (vis.showDimensions) {
     const d = formatDimensions(aw.height, aw.width, aw.depth, aw.dimension_unit, displayUnit);
     if (d) rows.push({ label: t.dimensions, value: d });
+  }
+  if (vis.showWeight && aw.weight != null && aw.weight > 0) {
+    rows.push({ label: t.weight, value: formatWeight(aw.weight, weightUnit) });
   }
   if (vis.showEdition) {
     rows.push({ label: t.edition, value: formatEdition(aw.edition_type, aw.edition_number, aw.edition_total, t) });
@@ -589,6 +608,7 @@ function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
   if (vis.showMedium) cols.push({ key: 'medium', label: t.medium, width: 70 });
   if (vis.showYear) cols.push({ key: 'year', label: t.year, width: 35 });
   if (vis.showDimensions) cols.push({ key: 'dims', label: t.dimensions, width: 80 });
+  if (vis.showWeight) cols.push({ key: 'weight', label: t.weight, width: 45 });
   if (vis.showEdition) cols.push({ key: 'edition', label: t.edition, width: 55 });
   if (vis.showPrice) cols.push({ key: 'price', label: t.price, width: 60 });
 
@@ -600,12 +620,13 @@ function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
 }
 
 function ListRow({
-  artwork, index, cols, t, displayUnit,
+  artwork, index, cols, t, displayUnit, weightUnit,
 }: {
   artwork: CatalogueArtwork; index: number;
   cols: { key: string; label: string; width: number }[];
   t: CatalogueTranslations;
   displayUnit: string;
+  weightUnit: string;
 }) {
   const isAlt = index % 2 === 1;
   const dims = formatDimensions(artwork.height, artwork.width, artwork.depth, artwork.dimension_unit, displayUnit);
@@ -619,6 +640,7 @@ function ListRow({
       case 'medium': return artwork.medium ?? '';
       case 'year': return artwork.year != null ? String(artwork.year) : '';
       case 'dims': return dims ?? '';
+      case 'weight': return artwork.weight != null && artwork.weight > 0 ? formatWeight(artwork.weight, weightUnit) : '';
       case 'edition': return ed;
       case 'price': return artwork.price != null && artwork.price > 0 ? formatPrice(artwork.price, artwork.currency) : '';
       default: return '';
@@ -678,7 +700,7 @@ function groupArtworks(
 
 export function CataloguePDF({
   title, subtitle, coverText, showDate, showContactDetails,
-  coverImageUrl, textPageContent, layout, artworks, language, visibility, dividerMode, dimensionUnit,
+  coverImageUrl, textPageContent, layout, artworks, language, visibility, dividerMode, dimensionUnit, weightUnit,
 }: CataloguePDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
   const groups = groupArtworks(artworks, dividerMode);
@@ -758,7 +780,7 @@ export function CataloguePDF({
       }
 
       for (const aw of group.artworks) {
-        const rows = buildDetailRows(aw, t, visibility, dimensionUnit);
+        const rows = buildDetailRows(aw, t, visibility, dimensionUnit, weightUnit);
         const sectionLabel = dividerMode !== 'none' ? group.label : undefined;
 
         allPages.push(
@@ -822,7 +844,7 @@ export function CataloguePDF({
             ))}
           </View>
           {group.artworks.map((aw, i) => (
-            <ListRow key={aw.reference_code} artwork={aw} index={i} cols={cols} t={t} displayUnit={dimensionUnit} />
+            <ListRow key={aw.reference_code} artwork={aw} index={i} cols={cols} t={t} displayUnit={dimensionUnit} weightUnit={weightUnit} />
           ))}
           <PageFooter />
         </Page>

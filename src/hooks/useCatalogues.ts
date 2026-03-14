@@ -30,14 +30,16 @@ export interface CatalogueConfig {
   // Section dividers
   dividerMode: 'none' | 'series' | 'category';
 
-  // Dimension display unit
+  // Dimension & weight display units
   dimensionUnit: 'cm' | 'inches';
+  weightUnit: 'kg' | 'lbs';
 
   // Field visibility toggles
   showReferenceCode: boolean;
   showMedium: boolean;
   showYear: boolean;
   showDimensions: boolean;
+  showWeight: boolean;
   showEdition: boolean;
   showPrice: boolean;
 
