@@ -616,7 +616,7 @@ function buildDetailRows(
 
 function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
   const cols: { key: string; label: string; width: number }[] = [
-    { key: 'no', label: t.no, width: 20 },
+    { key: 'no', label: t.no, width: 15 },
     { key: 'image', label: '', width: 50 },
     { key: 'title', label: t.title, width: 0 },
   ];
@@ -626,7 +626,7 @@ function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
   if (vis.showDimensions) cols.push({ key: 'dims', label: t.dimensions, width: 72 });
   if (vis.showWeight) cols.push({ key: 'weight', label: t.weight, width: 40 });
   if (vis.showEdition) cols.push({ key: 'edition', label: t.edition, width: 45 });
-  if (vis.showPrice) cols.push({ key: 'price', label: t.price, width: 50 });
+  if (vis.showPrice) cols.push({ key: 'price', label: t.price, width: 45 });
 
   const usable = 515;
   const fixedTotal = cols.reduce((sum, c) => sum + (c.key !== 'title' ? c.width : 0), 0);
@@ -682,13 +682,15 @@ function ListRow({
         }
         if (col.key === 'price' && showSoldDot && artwork.status === 'sold') {
           return (
-            <View key={col.key} style={[{ width: col.width, flexDirection: 'row', alignItems: 'center' }]}>
+            <View key={col.key} style={[{ width: col.width, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }]}>
               <View style={[s.soldDot, { width: 6, height: 6, borderRadius: 3 }]} />
             </View>
           );
         }
+        const cellStyle = col.key === 'title' ? s.listCellBold : s.listCell;
+        const align = col.key === 'price' ? 'right' as const : undefined;
         return (
-          <Text key={col.key} style={[col.key === 'title' ? s.listCellBold : s.listCell, { width: col.width }]}>
+          <Text key={col.key} style={[cellStyle, { width: col.width, textAlign: align }]}>
             {val(col.key)}
           </Text>
         );
@@ -871,7 +873,7 @@ export function CataloguePDF({
         <Page key={`list-${group.label}`} size="A4" style={s.listPage} wrap>
           <View style={s.listHeaderRow} fixed>
             {cols.map((col) => (
-              <Text key={col.key} style={[s.listHeaderCell, { width: col.width }]}>{col.label}</Text>
+              <Text key={col.key} style={[s.listHeaderCell, { width: col.width, textAlign: col.key === 'price' ? 'right' : undefined }]}>{col.label}</Text>
             ))}
           </View>
           {group.artworks.map((aw, i) => (
