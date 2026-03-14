@@ -106,7 +106,7 @@ export function GalleriesPage() {
     if (activeOrderIds.length > 0) {
       const { data } = await supabase
         .from('production_order_items')
-        .select('*')
+        .select('production_order_id, quantity, price, currency')
         .in('production_order_id', activeOrderIds);
       orderItems = (data ?? []) as typeof orderItems;
     }

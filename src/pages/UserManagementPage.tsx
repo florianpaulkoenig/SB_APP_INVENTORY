@@ -65,7 +65,7 @@ export function UserManagementPage() {
   useEffect(() => {
     supabase
       .from('galleries')
-      .select('*')
+      .select('id, name')
       .order('name', { ascending: true })
       .then(({ data }) => {
         if (data) setGalleries(data as GalleryRow[]);
@@ -73,7 +73,7 @@ export function UserManagementPage() {
 
     supabase
       .from('contacts')
-      .select('*')
+      .select('id, first_name, last_name')
       .order('last_name', { ascending: true })
       .then(({ data }) => {
         if (data) setContacts(data as ContactRow[]);

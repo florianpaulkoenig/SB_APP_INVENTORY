@@ -131,7 +131,7 @@ export function ProductionOrderDetailPage() {
       await refetchItems();
       const { data: freshItems } = await supabase
         .from('production_order_items')
-        .select('*')
+        .select('id, production_order_id, price, currency, quantity, artwork_id')
         .eq('production_order_id', id!);
       if (freshItems) await syncOrderPrice(freshItems as ProductionOrderItemWithJoins[]);
       await refetchOrder();
@@ -146,7 +146,7 @@ export function ProductionOrderDetailPage() {
       await refetchItems();
       const { data: freshItems } = await supabase
         .from('production_order_items')
-        .select('*')
+        .select('id, production_order_id, price, currency, quantity, artwork_id')
         .eq('production_order_id', id!);
       if (freshItems) await syncOrderPrice(freshItems as ProductionOrderItemWithJoins[]);
       await refetchOrder();
@@ -187,7 +187,7 @@ export function ProductionOrderDetailPage() {
       await refetchItems();
       const { data: freshItems } = await supabase
         .from('production_order_items')
-        .select('*')
+        .select('id, production_order_id, price, currency, quantity, artwork_id')
         .eq('production_order_id', id!);
       if (freshItems) await syncOrderPrice(freshItems as ProductionOrderItemWithJoins[]);
       await refetchOrder();
@@ -200,7 +200,7 @@ export function ProductionOrderDetailPage() {
       await refetchItems();
       const { data: freshItems } = await supabase
         .from('production_order_items')
-        .select('*')
+        .select('id, production_order_id, price, currency, quantity, artwork_id')
         .eq('production_order_id', id!);
       if (freshItems) await syncOrderPrice(freshItems as ProductionOrderItemWithJoins[]);
       await refetchOrder();

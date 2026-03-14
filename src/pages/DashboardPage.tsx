@@ -241,7 +241,7 @@ export function DashboardPage() {
       activeOrderIds.length > 0
         ? supabase
             .from('production_order_items')
-            .select('*')
+            .select('production_order_id, artwork_id, price, currency, quantity')
             .in('production_order_id', activeOrderIds)
         : Promise.resolve({ data: null }),
       galleryIds.length > 0

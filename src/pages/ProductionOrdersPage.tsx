@@ -119,7 +119,7 @@ export function ProductionOrdersPage() {
     const orderIds = productionOrders.map((o) => o.id);
     const { data: allItems } = await supabase
       .from('production_order_items')
-      .select('*')
+      .select('production_order_id, artwork_id, price, currency, quantity')
       .in('production_order_id', orderIds);
 
     const valMap: Record<string, number> = {};
@@ -206,7 +206,7 @@ export function ProductionOrdersPage() {
       // Fetch items for this order
       const { data: items } = await supabase
         .from('production_order_items')
-        .select('*')
+        .select('description, medium, height, width, depth, dimension_unit, quantity, notes, sort_order')
         .eq('production_order_id', order.id)
         .order('sort_order', { ascending: true });
 
@@ -297,7 +297,7 @@ export function ProductionOrdersPage() {
       if (orderIds.length > 0) {
         const { data: allItems } = await supabase
           .from('production_order_items')
-          .select('*')
+          .select('id, production_order_id, description, medium, height, width, depth, dimension_unit, quantity, year, edition_type, edition_number, edition_total, price, currency, category, sort_order')
           .in('production_order_id', orderIds)
           .order('sort_order', { ascending: true });
 
@@ -489,7 +489,7 @@ export function ProductionOrdersPage() {
       if (orderIds.length > 0) {
         const { data: allItems } = await supabase
           .from('production_order_items')
-          .select('*')
+          .select('id, production_order_id, description, medium, height, width, depth, dimension_unit, quantity, year, edition_type, edition_number, edition_total, price, currency, category, sort_order')
           .in('production_order_id', orderIds)
           .order('sort_order', { ascending: true });
 
