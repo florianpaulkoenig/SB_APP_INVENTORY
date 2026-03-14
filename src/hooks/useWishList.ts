@@ -93,6 +93,7 @@ export function useWishList(contactId: string): UseWishListReturn {
 
         toast({ title: 'Added to wish list', description: 'Artwork has been added to the wish list.', variant: 'success' });
 
+        await fetchItems();
         return created as WishListItemRow;
       } catch (err: unknown) {
         const message =
@@ -101,7 +102,7 @@ export function useWishList(contactId: string): UseWishListReturn {
         return null;
       }
     },
-    [contactId, toast],
+    [contactId, toast, fetchItems],
   );
 
   // ---- Remove item --------------------------------------------------------
@@ -118,6 +119,7 @@ export function useWishList(contactId: string): UseWishListReturn {
 
         toast({ title: 'Removed from wish list', variant: 'success' });
 
+        await fetchItems();
         return true;
       } catch (err: unknown) {
         const message =
@@ -126,7 +128,7 @@ export function useWishList(contactId: string): UseWishListReturn {
         return false;
       }
     },
-    [toast],
+    [toast, fetchItems],
   );
 
   return {

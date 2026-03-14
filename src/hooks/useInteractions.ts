@@ -88,6 +88,7 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
 
         toast({ title: 'Interaction created', description: `${created.type} interaction has been added.`, variant: 'success' });
 
+        await fetchInteractions();
         return created as InteractionRow;
       } catch (err: unknown) {
         const message =
@@ -96,7 +97,7 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
         return null;
       }
     },
-    [toast],
+    [toast, fetchInteractions],
   );
 
   // ---- Delete interaction --------------------------------------------------
@@ -113,6 +114,7 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
 
         toast({ title: 'Interaction deleted', variant: 'success' });
 
+        await fetchInteractions();
         return true;
       } catch (err: unknown) {
         const message =
@@ -121,7 +123,7 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
         return false;
       }
     },
-    [toast],
+    [toast, fetchInteractions],
   );
 
   return {

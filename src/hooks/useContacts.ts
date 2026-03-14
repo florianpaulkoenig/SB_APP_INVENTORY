@@ -133,6 +133,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
 
         toast({ title: 'Contact created', description: `"${created.first_name} ${created.last_name}" has been added.`, variant: 'success' });
 
+        await fetchContacts();
         return created as ContactRow;
       } catch (err: unknown) {
         const message =
@@ -141,7 +142,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         return null;
       }
     },
-    [toast],
+    [toast, fetchContacts],
   );
 
   // ---- Update contact -----------------------------------------------------
@@ -160,6 +161,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
 
         toast({ title: 'Contact updated', description: `"${updated.first_name} ${updated.last_name}" has been saved.`, variant: 'success' });
 
+        await fetchContacts();
         return updated as ContactRow;
       } catch (err: unknown) {
         const message =
@@ -168,7 +170,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         return null;
       }
     },
-    [toast],
+    [toast, fetchContacts],
   );
 
   // ---- Delete contact -----------------------------------------------------
@@ -185,6 +187,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
 
         toast({ title: 'Contact deleted', variant: 'success' });
 
+        await fetchContacts();
         return true;
       } catch (err: unknown) {
         const message =
@@ -193,7 +196,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         return false;
       }
     },
-    [toast],
+    [toast, fetchContacts],
   );
 
   return {

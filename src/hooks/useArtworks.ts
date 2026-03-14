@@ -242,6 +242,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
 
         toast({ title: 'Artwork created', description: `"${created.title}" has been added with certificate.`, variant: 'success' });
 
+        await fetchArtworks();
         return created as ArtworkRow;
       } catch (err: unknown) {
         const message =
@@ -250,7 +251,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         return null;
       }
     },
-    [toast],
+    [toast, fetchArtworks],
   );
 
   // ---- Update artwork ------------------------------------------------------
@@ -269,6 +270,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
 
         toast({ title: 'Artwork updated', description: `"${updated.title}" has been saved.`, variant: 'success' });
 
+        await fetchArtworks();
         return updated as ArtworkRow;
       } catch (err: unknown) {
         const message =
@@ -277,7 +279,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         return null;
       }
     },
-    [toast],
+    [toast, fetchArtworks],
   );
 
   // ---- Delete artwork ------------------------------------------------------
@@ -294,6 +296,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
 
         toast({ title: 'Artwork deleted', variant: 'success' });
 
+        await fetchArtworks();
         return true;
       } catch (err: unknown) {
         const message =
@@ -302,7 +305,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         return false;
       }
     },
-    [toast],
+    [toast, fetchArtworks],
   );
 
   // ---- Bulk delete artworks --------------------------------------------------
@@ -324,13 +327,14 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
           variant: 'success',
         });
 
+        await fetchArtworks();
         return true;
       } catch (err: unknown) {
         toast({ title: 'Error', description: 'Failed to delete artworks. Please try again.', variant: 'error' });
         return false;
       }
     },
-    [toast],
+    [toast, fetchArtworks],
   );
 
   // ---- Bulk update artworks --------------------------------------------------
@@ -352,13 +356,14 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
           variant: 'success',
         });
 
+        await fetchArtworks();
         return true;
       } catch (err: unknown) {
         toast({ title: 'Error', description: 'Failed to update artworks. Please try again.', variant: 'error' });
         return false;
       }
     },
-    [toast],
+    [toast, fetchArtworks],
   );
 
   return {
