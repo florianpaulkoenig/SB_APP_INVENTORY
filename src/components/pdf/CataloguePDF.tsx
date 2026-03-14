@@ -496,7 +496,8 @@ const s = StyleSheet.create({
   },
   listHeaderRow: {
     flexDirection: 'row' as const,
-    backgroundColor: '#000000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#000000',
     paddingVertical: 6,
     paddingHorizontal: 8,
   },
@@ -504,7 +505,7 @@ const s = StyleSheet.create({
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
     fontSize: 6,
-    color: '#ffffff',
+    color: '#000000',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     paddingRight: 6,
