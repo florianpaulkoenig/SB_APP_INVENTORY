@@ -787,11 +787,9 @@ CREATE POLICY "Gallery sees own sales" ON sales FOR SELECT TO authenticated USIN
 -- Collector users can view their certificates
 CREATE POLICY "Collector sees own certificates" ON certificates FOR SELECT TO authenticated USING (get_user_role() = 'collector' AND artwork_id IN (SELECT artwork_id FROM sales WHERE contact_id = get_user_contact_id()));
 
--- Public access for share_links — restricted to unexpired links only (no enumeration)
--- NOTE: Actual token filtering is done client-side via .eq('token', ...).
--- This policy prevents listing ALL share links by requiring expiry check.
-CREATE POLICY "Public can view share links by token" ON share_links FOR SELECT TO anon
-  USING (expiry IS NULL OR expiry > NOW());
+-- Public access for share_links is handled ONLY via RPC functions
+-- (get_share_link_by_token, increment_share_link_download).
+-- No direct anon SELECT policy — prevents enumeration of all share links.
 
 -- Public access for viewing_rooms (by slug, check visibility)
 CREATE POLICY "Public can view published viewing rooms" ON viewing_rooms FOR SELECT TO anon USING (published = true AND visibility IN ('public', 'link_only'));
