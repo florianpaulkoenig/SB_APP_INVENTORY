@@ -680,11 +680,10 @@ function ListRow({
             </View>
           );
         }
-        if (col.key === 'title' && showSoldDot && artwork.status === 'sold') {
+        if (col.key === 'price' && showSoldDot && artwork.status === 'sold') {
           return (
             <View key={col.key} style={[{ width: col.width, flexDirection: 'row', alignItems: 'center' }]}>
-              <Text style={s.listCellBold}>{val(col.key)}</Text>
-              <View style={[s.soldDot, { width: 6, height: 6, borderRadius: 3, marginLeft: 4 }]} />
+              <View style={[s.soldDot, { width: 6, height: 6, borderRadius: 3 }]} />
             </View>
           );
         }
@@ -832,10 +831,7 @@ export function CataloguePDF({
               )}
             </View>
 
-            <View style={s.artworkTitleRow}>
-              <Text style={s.artworkTitle}>{aw.title}</Text>
-              {visibility.showSoldDot && aw.status === 'sold' && <View style={s.soldDot} />}
-            </View>
+            <Text style={s.artworkTitle}>{aw.title}</Text>
             {visibility.showReferenceCode && (
               <Text style={s.artworkRefCode}>{aw.reference_code}</Text>
             )}
@@ -846,6 +842,11 @@ export function CataloguePDF({
                 <Text style={s.artworkDetailValue}>{row.value}</Text>
               </View>
             ))}
+            {visibility.showSoldDot && aw.status === 'sold' && (
+              <View style={s.artworkDetailRow}>
+                <View style={s.soldDot} />
+              </View>
+            )}
             <PageFooter />
           </Page>
         );
