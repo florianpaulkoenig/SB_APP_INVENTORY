@@ -34,6 +34,7 @@ export interface CatalogueBuilderProps {
 type LayoutType = 'full-page' | 'list';
 type Language = 'en' | 'de' | 'fr';
 type DividerMode = 'none' | 'series' | 'category';
+type DimensionUnit = 'cm' | 'inches';
 
 interface CatalogueSettings {
   // Cover
@@ -51,6 +52,7 @@ interface CatalogueSettings {
   layout: LayoutType;
   language: Language;
   dividerMode: DividerMode;
+  dimensionUnit: DimensionUnit;
 
   // Field visibility
   showReferenceCode: boolean;
@@ -106,6 +108,11 @@ const DIVIDER_OPTIONS = [
   { value: 'none', label: 'No Dividers' },
   { value: 'series', label: 'Group by Series' },
   { value: 'category', label: 'Group by Category' },
+];
+
+const DIMENSION_UNIT_OPTIONS = [
+  { value: 'cm', label: 'Centimeters (cm)' },
+  { value: 'inches', label: 'Inches (in)' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -276,6 +283,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
     layout: initialConfig?.layout ?? 'full-page',
     language: initialConfig?.language ?? 'en',
     dividerMode: initialConfig?.dividerMode ?? 'none',
+    dimensionUnit: initialConfig?.dimensionUnit ?? 'cm',
     showReferenceCode: initialConfig?.showReferenceCode ?? true,
     showMedium: initialConfig?.showMedium ?? true,
     showYear: initialConfig?.showYear ?? true,
@@ -405,6 +413,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
           artworks={catalogueArtworks}
           visibility={visibility}
           dividerMode={settings.dividerMode}
+          dimensionUnit={settings.dimensionUnit}
         />,
       ).toBlob();
 
@@ -598,6 +607,14 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
                 value={settings.dividerMode}
                 onChange={(e) => updateSetting('dividerMode', e.target.value as DividerMode)}
               />
+
+              {/* Dimension unit */}
+              <Select
+                label="Dimensions Unit"
+                options={DIMENSION_UNIT_OPTIONS}
+                value={settings.dimensionUnit}
+                onChange={(e) => updateSetting('dimensionUnit', e.target.value as DimensionUnit)}
+              />
             </div>
           </section>
 
@@ -732,6 +749,13 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
                 <dt className="text-sm text-primary-500">Section Dividers</dt>
                 <dd className="text-sm font-medium text-primary-900">
                   {DIVIDER_OPTIONS.find((o) => o.value === settings.dividerMode)?.label ?? 'None'}
+                </dd>
+              </div>
+
+              <div className="flex justify-between py-2">
+                <dt className="text-sm text-primary-500">Dimensions</dt>
+                <dd className="text-sm font-medium text-primary-900">
+                  {settings.dimensionUnit === 'inches' ? 'Inches' : 'Centimeters'}
                 </dd>
               </div>
 

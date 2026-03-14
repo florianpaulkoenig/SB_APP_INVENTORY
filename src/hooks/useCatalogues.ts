@@ -30,6 +30,9 @@ export interface CatalogueConfig {
   // Section dividers
   dividerMode: 'none' | 'series' | 'category';
 
+  // Dimension display unit
+  dimensionUnit: 'cm' | 'inches';
+
   // Field visibility toggles
   showReferenceCode: boolean;
   showMedium: boolean;

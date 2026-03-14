@@ -111,15 +111,34 @@ export interface CataloguePDFProps {
   language: 'en' | 'de' | 'fr';
   visibility: FieldVisibility;
   dividerMode: 'none' | 'series' | 'category';
+  dimensionUnit: 'cm' | 'inches';
 }
 
 // ---------------------------------------------------------------------------
 // Format helpers
 // ---------------------------------------------------------------------------
-function formatDimensions(h: number | null, w: number | null, d: number | null, unit: string): string | null {
+const CM_PER_INCH = 2.54;
+
+function convertDim(value: number, fromUnit: string, toUnit: string): number {
+  if (fromUnit === toUnit) return value;
+  if (fromUnit === 'cm' && toUnit === 'inches') return value / CM_PER_INCH;
+  if (fromUnit === 'inches' && toUnit === 'cm') return value * CM_PER_INCH;
+  return value;
+}
+
+function formatDimensions(
+  h: number | null, w: number | null, d: number | null,
+  sourceUnit: string, displayUnit: string,
+): string | null {
   const parts = [h, w, d].filter((v): v is number => v != null);
   if (parts.length === 0) return null;
-  return `${parts.join(' \u00d7 ')} ${unit}`;
+  const converted = parts.map((v) => {
+    const val = convertDim(v, sourceUnit, displayUnit);
+    // Show 1 decimal for inches, 0 for cm
+    return displayUnit === 'inches' ? val.toFixed(1) : Math.round(val).toString();
+  });
+  const label = displayUnit === 'inches' ? 'in' : 'cm';
+  return `${converted.join(' \u00d7 ')} ${label}`;
 }
 
 function formatEdition(et: string, en: number | null, total: number | null, t: CatalogueTranslations): string {
@@ -538,13 +557,13 @@ function PageFooter() {
 // Detail rows builder
 // ---------------------------------------------------------------------------
 function buildDetailRows(
-  aw: CatalogueArtwork, t: CatalogueTranslations, vis: FieldVisibility,
+  aw: CatalogueArtwork, t: CatalogueTranslations, vis: FieldVisibility, displayUnit: string,
 ): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [];
   if (vis.showMedium && aw.medium) rows.push({ label: t.medium, value: aw.medium });
   if (vis.showYear && aw.year != null) rows.push({ label: t.year, value: String(aw.year) });
   if (vis.showDimensions) {
-    const d = formatDimensions(aw.height, aw.width, aw.depth, aw.dimension_unit);
+    const d = formatDimensions(aw.height, aw.width, aw.depth, aw.dimension_unit, displayUnit);
     if (d) rows.push({ label: t.dimensions, value: d });
   }
   if (vis.showEdition) {
@@ -581,14 +600,15 @@ function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
 }
 
 function ListRow({
-  artwork, index, cols, t,
+  artwork, index, cols, t, displayUnit,
 }: {
   artwork: CatalogueArtwork; index: number;
   cols: { key: string; label: string; width: number }[];
   t: CatalogueTranslations;
+  displayUnit: string;
 }) {
   const isAlt = index % 2 === 1;
-  const dims = formatDimensions(artwork.height, artwork.width, artwork.depth, artwork.dimension_unit);
+  const dims = formatDimensions(artwork.height, artwork.width, artwork.depth, artwork.dimension_unit, displayUnit);
   const ed = formatEdition(artwork.edition_type, artwork.edition_number, artwork.edition_total, t);
 
   const val = (key: string): string => {
@@ -658,7 +678,7 @@ function groupArtworks(
 
 export function CataloguePDF({
   title, subtitle, coverText, showDate, showContactDetails,
-  coverImageUrl, textPageContent, layout, artworks, language, visibility, dividerMode,
+  coverImageUrl, textPageContent, layout, artworks, language, visibility, dividerMode, dimensionUnit,
 }: CataloguePDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
   const groups = groupArtworks(artworks, dividerMode);
@@ -683,7 +703,7 @@ export function CataloguePDF({
 
       // Each artwork: image + details on SAME page
       for (const aw of group.artworks) {
-        const rows = buildDetailRows(aw, t, visibility);
+        const rows = buildDetailRows(aw, t, visibility, dimensionUnit);
         const sectionLabel = dividerMode !== 'none' ? group.label : undefined;
 
         artworkPages.push(
@@ -752,7 +772,7 @@ export function CataloguePDF({
             ))}
           </View>
           {group.artworks.map((aw, i) => (
-            <ListRow key={aw.reference_code} artwork={aw} index={i} cols={cols} t={t} />
+            <ListRow key={aw.reference_code} artwork={aw} index={i} cols={cols} t={t} displayUnit={dimensionUnit} />
           ))}
           <PageFooter />
         </Page>
