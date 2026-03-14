@@ -490,9 +490,9 @@ const s = StyleSheet.create({
   listPage: {
     fontFamily: 'AnzianoPro',
     backgroundColor: '#ffffff',
-    paddingTop: 40,
-    paddingBottom: 60,
-    paddingHorizontal: 40,
+    paddingTop: 36,
+    paddingBottom: 50,
+    paddingHorizontal: 30,
   },
   listHeaderRow: {
     flexDirection: 'row' as const,
@@ -619,22 +619,34 @@ function buildDetailRows(
 // ============================================================================
 
 function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
-  const usable = 515;
+  const usable = 535;
   const fixedNo = 18;
   const fixedImage = 50;
   const flexSpace = usable - fixedNo - fixedImage;
 
-  // Proportional weights — all columns roughly equal, title just slightly wider
+  // Count how many data columns are visible to adjust title weight
+  let dataCols = 0;
+  if (vis.showReferenceCode) dataCols++;
+  if (vis.showMedium) dataCols++;
+  if (vis.showYear) dataCols++;
+  if (vis.showDimensions) dataCols++;
+  if (vis.showWeight) dataCols++;
+  if (vis.showEdition) dataCols++;
+  if (vis.showPrice) dataCols++;
+
+  // With many columns, keep title compact; with few, give it more room
+  const titleWeight = dataCols <= 3 ? 1.5 : 1;
+
   const flexCols: { key: string; label: string; weight: number }[] = [
-    { key: 'title', label: t.title, weight: 1.3 },
+    { key: 'title', label: t.title, weight: titleWeight },
   ];
-  if (vis.showReferenceCode) flexCols.push({ key: 'ref', label: t.referenceCode, weight: 1 });
+  if (vis.showReferenceCode) flexCols.push({ key: 'ref', label: t.referenceCode, weight: 1.3 });
   if (vis.showMedium) flexCols.push({ key: 'medium', label: t.medium, weight: 1 });
-  if (vis.showYear) flexCols.push({ key: 'year', label: t.year, weight: 0.6 });
-  if (vis.showDimensions) flexCols.push({ key: 'dims', label: t.dimensions, weight: 1 });
-  if (vis.showWeight) flexCols.push({ key: 'weight', label: t.weight, weight: 0.7 });
-  if (vis.showEdition) flexCols.push({ key: 'edition', label: t.edition, weight: 0.7 });
-  if (vis.showPrice) flexCols.push({ key: 'price', label: t.price, weight: 0.7 });
+  if (vis.showYear) flexCols.push({ key: 'year', label: t.year, weight: 0.5 });
+  if (vis.showDimensions) flexCols.push({ key: 'dims', label: t.dimensions, weight: 1.2 });
+  if (vis.showWeight) flexCols.push({ key: 'weight', label: t.weight, weight: 0.6 });
+  if (vis.showEdition) flexCols.push({ key: 'edition', label: t.edition, weight: 0.6 });
+  if (vis.showPrice) flexCols.push({ key: 'price', label: t.price, weight: 0.6 });
 
   const totalWeight = flexCols.reduce((s, c) => s + c.weight, 0);
 
