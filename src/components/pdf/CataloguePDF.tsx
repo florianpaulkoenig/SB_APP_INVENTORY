@@ -185,7 +185,7 @@ const s = StyleSheet.create({
   coverDarkOverlay: {
     position: 'absolute',
     top: 0, left: 0, width: '100%', height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.50)',
   },
   coverContent: {
     position: 'relative',
@@ -683,14 +683,70 @@ export function CataloguePDF({
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
   const groups = groupArtworks(artworks, dividerMode);
 
-  // Build all artwork pages as a flat array to avoid fragment/nesting issues
-  const artworkPages: React.ReactElement[] = [];
+  // Build ALL pages as a single flat array to guarantee ordering
+  const allPages: React.ReactElement[] = [];
 
+  // ---- COVER PAGE ----
+  if (coverImageUrl) {
+    allPages.push(
+      <Page key="cover" size="A4" style={s.coverPage}>
+        <Image src={coverImageUrl} style={s.coverBgImage} />
+        <View style={s.coverDarkOverlay} />
+        <View style={s.coverContent}>
+          <Text style={s.coverTitle}>{title}</Text>
+          {subtitle ? <Text style={s.coverSubtitle}>{subtitle}</Text> : null}
+          {coverText ? <Text style={s.coverBodyText}>{coverText}</Text> : null}
+          {showDate && (
+            <Text style={s.coverMetaText}>{formatLocalizedDate(language)}</Text>
+          )}
+          {showContactDetails && (
+            <Text style={s.coverMetaText}>
+              Florian Paul Koenig  |  florian.koenig@noacontemporary.com
+            </Text>
+          )}
+          <Text style={s.coverCompanySmall}>{COMPANY_NAME}</Text>
+        </View>
+      </Page>
+    );
+  } else {
+    allPages.push(
+      <Page key="cover" size="A4" style={s.coverClean}>
+        <Text style={s.coverCleanTitle}>{title}</Text>
+        {subtitle ? <Text style={s.coverCleanSubtitle}>{subtitle}</Text> : null}
+        <View style={s.coverCleanLine} />
+        {coverText ? <Text style={s.coverCleanBody}>{coverText}</Text> : null}
+        {showDate && <Text style={s.coverCleanDate}>{formatLocalizedDate(language)}</Text>}
+        {showContactDetails && (
+          <View style={{ alignItems: 'center' }}>
+            <Text style={s.coverCleanContactName}>Florian Paul Koenig</Text>
+            <Text style={s.coverCleanContactEmail}>florian.koenig@noacontemporary.com</Text>
+          </View>
+        )}
+        <Text style={s.coverCleanCompany}>{COMPANY_NAME}</Text>
+      </Page>
+    );
+  }
+
+  // ---- TEXT PAGE ----
+  if (textPageContent && textPageContent.trim()) {
+    allPages.push(
+      <Page key="text" size="A4" style={s.textPage}>
+        <Text style={s.textPageTitle}>{title}</Text>
+        {subtitle ? <Text style={s.textPageSubtitle}>{subtitle}</Text> : null}
+        <View style={s.textPageLine} />
+        {textPageContent.split(/\n\n+/).filter((p) => p.trim()).map((p, i) => (
+          <Text key={i} style={s.textPageParagraph}>{p.trim()}</Text>
+        ))}
+        <PageFooter />
+      </Page>
+    );
+  }
+
+  // ---- ARTWORK PAGES ----
   if (layout === 'full-page') {
     for (const group of groups) {
-      // Section divider
       if (dividerMode !== 'none' && group.label) {
-        artworkPages.push(
+        allPages.push(
           <Page key={`div-${group.label}`} size="A4" style={s.dividerPage}>
             <View style={s.dividerLine} />
             <Text style={s.dividerTitle}>{group.label}</Text>
@@ -701,14 +757,12 @@ export function CataloguePDF({
         );
       }
 
-      // Each artwork: image + details on SAME page
       for (const aw of group.artworks) {
         const rows = buildDetailRows(aw, t, visibility, dimensionUnit);
         const sectionLabel = dividerMode !== 'none' ? group.label : undefined;
 
-        artworkPages.push(
+        allPages.push(
           <Page key={`aw-${aw.reference_code}`} size="A4" style={s.artworkPage}>
-            {/* Header */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }} fixed>
               <Text style={s.artworkHeaderLabel}>
                 {sectionLabel || COMPANY_NAME}
@@ -719,7 +773,6 @@ export function CataloguePDF({
               />
             </View>
 
-            {/* Artwork image */}
             <View style={s.artworkImageContainer}>
               {aw.imageUrl ? (
                 <Image src={aw.imageUrl} style={s.artworkImage} />
@@ -730,7 +783,6 @@ export function CataloguePDF({
               )}
             </View>
 
-            {/* Title + details */}
             <Text style={s.artworkTitle}>{aw.title}</Text>
             {visibility.showReferenceCode && (
               <Text style={s.artworkRefCode}>{aw.reference_code}</Text>
@@ -742,17 +794,15 @@ export function CataloguePDF({
                 <Text style={s.artworkDetailValue}>{row.value}</Text>
               </View>
             ))}
-
             <PageFooter />
           </Page>
         );
       }
     }
   } else {
-    // List layout
     for (const group of groups) {
       if (dividerMode !== 'none' && group.label) {
-        artworkPages.push(
+        allPages.push(
           <Page key={`div-${group.label}`} size="A4" style={s.dividerPage}>
             <View style={s.dividerLine} />
             <Text style={s.dividerTitle}>{group.label}</Text>
@@ -764,7 +814,7 @@ export function CataloguePDF({
       }
 
       const cols = getListColumns(t, visibility);
-      artworkPages.push(
+      allPages.push(
         <Page key={`list-${group.label}`} size="A4" style={s.listPage} wrap>
           <View style={s.listHeaderRow} fixed>
             {cols.map((col) => (
@@ -782,58 +832,7 @@ export function CataloguePDF({
 
   return (
     <Document>
-      {/* ---- COVER PAGE ---- */}
-      {coverImageUrl ? (
-        <Page size="A4" style={s.coverPage}>
-          <Image src={coverImageUrl} style={s.coverBgImage} />
-          <View style={s.coverDarkOverlay} />
-          <View style={s.coverContent}>
-            <Text style={s.coverTitle}>{title}</Text>
-            {subtitle ? <Text style={s.coverSubtitle}>{subtitle}</Text> : null}
-            {coverText ? <Text style={s.coverBodyText}>{coverText}</Text> : null}
-            {showDate && (
-              <Text style={s.coverMetaText}>{formatLocalizedDate(language)}</Text>
-            )}
-            {showContactDetails && (
-              <Text style={s.coverMetaText}>
-                Florian Paul Koenig  |  florian.koenig@noacontemporary.com
-              </Text>
-            )}
-            <Text style={s.coverCompanySmall}>{COMPANY_NAME}</Text>
-          </View>
-        </Page>
-      ) : (
-        <Page size="A4" style={s.coverClean}>
-          <Text style={s.coverCleanTitle}>{title}</Text>
-          {subtitle ? <Text style={s.coverCleanSubtitle}>{subtitle}</Text> : null}
-          <View style={s.coverCleanLine} />
-          {coverText ? <Text style={s.coverCleanBody}>{coverText}</Text> : null}
-          {showDate && <Text style={s.coverCleanDate}>{formatLocalizedDate(language)}</Text>}
-          {showContactDetails && (
-            <View style={{ alignItems: 'center' }}>
-              <Text style={s.coverCleanContactName}>Florian Paul Koenig</Text>
-              <Text style={s.coverCleanContactEmail}>florian.koenig@noacontemporary.com</Text>
-            </View>
-          )}
-          <Text style={s.coverCleanCompany}>{COMPANY_NAME}</Text>
-        </Page>
-      )}
-
-      {/* ---- TEXT PAGE ---- */}
-      {textPageContent && textPageContent.trim() ? (
-        <Page size="A4" style={s.textPage}>
-          <Text style={s.textPageTitle}>{title}</Text>
-          {subtitle ? <Text style={s.textPageSubtitle}>{subtitle}</Text> : null}
-          <View style={s.textPageLine} />
-          {textPageContent.split(/\n\n+/).filter((p) => p.trim()).map((p, i) => (
-            <Text key={i} style={s.textPageParagraph}>{p.trim()}</Text>
-          ))}
-          <PageFooter />
-        </Page>
-      ) : null}
-
-      {/* ---- ARTWORK PAGES ---- */}
-      {artworkPages}
+      {allPages}
     </Document>
   );
 }
