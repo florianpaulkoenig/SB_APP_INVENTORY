@@ -42,7 +42,6 @@ interface PickerArtwork {
   status: string;
   category: string | null;
   series: string | null;
-  artist_name: string | null;
   imageUrl: string | null;
 }
 
@@ -95,14 +94,14 @@ export function CatalogueArtworkPicker({
     let query = supabase
       .from('artworks')
       .select(
-        'id, title, reference_code, medium, year, price, currency, status, category, series, artist_name',
+        'id, title, reference_code, medium, year, price, currency, status, category, series',
       )
       .order('title', { ascending: true })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
     if (search) {
       const term = `%${sanitizeFilterTerm(search)}%`;
-      const filter = `title.ilike.${term},reference_code.ilike.${term},artist_name.ilike.${term}`;
+      const filter = `title.ilike.${term},reference_code.ilike.${term}`;
       query = query.or(filter);
       countQuery = countQuery.or(filter);
     }
@@ -186,7 +185,6 @@ export function CatalogueArtworkPicker({
       status: a.status,
       category: a.category,
       series: a.series ?? null,
-      artist_name: a.artist_name ?? null,
       imageUrl: imageMap[a.id] ?? null,
     }));
 
@@ -298,7 +296,7 @@ export function CatalogueArtworkPicker({
       <SearchInput
         value={search}
         onChange={setSearch}
-        placeholder="Search by title, reference code, or artist..."
+        placeholder="Search by title or reference code..."
       />
 
       {/* Filters row */}
@@ -448,7 +446,6 @@ export function CatalogueArtworkPicker({
                   </p>
                   <p className="truncate text-xs text-primary-500">
                     {artwork.reference_code}
-                    {artwork.artist_name && ` \u00b7 ${artwork.artist_name}`}
                   </p>
                   {artwork.year && (
                     <p className="text-xs text-primary-400">{artwork.year}</p>
