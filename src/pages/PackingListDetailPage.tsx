@@ -7,7 +7,7 @@ import { DeliveryItemPicker } from '../components/deliveries/DeliveryItemPicker'
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Modal } from '../components/ui/Modal';
-import type { PackingListUpdate, PackingListItemInsert } from '../types/database';
+import type { PackingListUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Page
@@ -29,13 +29,6 @@ export function PackingListDetailPage() {
 
   // ---- Handlers -----------------------------------------------------------
 
-  async function handleAddItem(data: PackingListItemInsert) {
-    const created = await addItem(data);
-    if (created) {
-      setShowAddItem(false);
-      await refetchPackingList();
-    }
-  }
 
   async function handleRemoveItem(itemId: string) {
     const success = await removeItem(itemId);
@@ -146,19 +139,25 @@ export function PackingListDetailPage() {
         isOpen={showAddItem}
         onClose={() => setShowAddItem(false)}
         title="Add Artwork to Packing List"
-        size="lg"
+        size="4xl"
       >
         <DeliveryItemPicker
           deliveryId={id!}
           existingItemIds={items.map((item) => item.artwork_id)}
-          onSubmit={(data) =>
-            handleAddItem({
-              packing_list_id: id!,
-              artwork_id: data.artwork_id,
-              sort_order: data.sort_order,
-              notes: data.notes,
-            })
-          }
+          onSubmit={async (artworkIds) => {
+            let anyCreated = false;
+            for (const artworkId of artworkIds) {
+              const created = await addItem({
+                packing_list_id: id!,
+                artwork_id: artworkId,
+              } as never);
+              if (created) anyCreated = true;
+            }
+            if (anyCreated) {
+              setShowAddItem(false);
+              await refetchPackingList();
+            }
+          }}
           onCancel={() => setShowAddItem(false)}
         />
       </Modal>

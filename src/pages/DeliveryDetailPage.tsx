@@ -184,7 +184,7 @@ export function DeliveryDetailPage() {
         isOpen={showAddItem}
         onClose={() => setShowAddItem(false)}
         title="Add Artwork to Delivery"
-        size="lg"
+        size="4xl"
       >
         <DeliveryItemPicker
           deliveryId={id!}

@@ -250,7 +250,7 @@ export function GalleryForwardingDetailPage() {
         isOpen={showAddItem}
         onClose={() => setShowAddItem(false)}
         title="Add Artwork to Forwarding Order"
-        size="lg"
+        size="4xl"
       >
         <GalleryForwardingItemPicker
           existingArtworkIds={items.map((item) => item.artwork_id)}

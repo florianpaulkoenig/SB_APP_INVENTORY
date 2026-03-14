@@ -1,20 +1,25 @@
 // ---------------------------------------------------------------------------
-// NOA Inventory -- Delivery Item Picker (Multi-Select, Catalogue-style)
-// Allows selecting multiple artworks to add to a delivery.
+// NOA Inventory -- Delivery Item Picker (Grid-based, Catalogue-style)
+// Multi-select artwork picker with thumbnails, search, filters, shift-click
+// bulk selection, and pagination. Filters out already-added items.
 // ---------------------------------------------------------------------------
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { SearchInput } from '../ui/SearchInput';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { GallerySelect } from '../galleries/GallerySelect';
-import { ARTWORK_CATEGORIES, ARTWORK_STATUSES } from '../../lib/constants';
+import {
+  ARTWORK_CATEGORIES,
+  ARTWORK_STATUSES,
+  ARTWORK_SERIES,
+} from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
-import { formatCurrency, sanitizeFilterTerm } from '../../lib/utils';
+import { sanitizeFilterTerm } from '../../lib/utils';
 
 // ---------------------------------------------------------------------------
-// Lightweight artwork record for the picker
+// Lightweight artwork record for the picker grid
 // ---------------------------------------------------------------------------
 
 interface PickerArtwork {
@@ -27,6 +32,7 @@ interface PickerArtwork {
   currency: string;
   status: string;
   category: string | null;
+  series: string | null;
   imageUrl: string | null;
 }
 
@@ -42,6 +48,12 @@ export interface DeliveryItemPickerProps {
 }
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const PAGE_SIZE = 24;
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -55,68 +67,77 @@ export function DeliveryItemPicker({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Filters
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [seriesFilter, setSeriesFilter] = useState('');
   const [galleryFilter, setGalleryFilter] = useState<string | null>(null);
+
+  // Pagination
+  const [page, setPage] = useState(0);
+
+  // Shift-click tracking
+  const lastClickedRef = useRef<string | null>(null);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [search, categoryFilter, statusFilter, seriesFilter, galleryFilter]);
 
   // ---- Fetch artworks with filters ------------------------------------------
 
   const fetchArtworks = useCallback(async () => {
     setLoading(true);
 
-    let query = supabase
-      .from('artworks')
-      .select(
-        'id, title, reference_code, medium, year, price, currency, status, category',
-      )
-      .order('title', { ascending: true });
+    // Build base filters (shared between count and data queries)
+    const applyFilters = (q: ReturnType<typeof supabase.from>) => {
+      let query = q;
 
-    if (search) {
-      const term = `%${sanitizeFilterTerm(search)}%`;
-      query = query.or(
-        `title.ilike.${term},reference_code.ilike.${term}`,
-      );
-    }
+      if (search) {
+        const term = `%${sanitizeFilterTerm(search)}%`;
+        query = query.or(`title.ilike.${term},reference_code.ilike.${term}`) as typeof query;
+      }
+      if (categoryFilter) query = query.eq('category', categoryFilter) as typeof query;
+      if (statusFilter) query = query.eq('status', statusFilter) as typeof query;
+      if (seriesFilter) query = query.eq('series', seriesFilter) as typeof query;
+      if (galleryFilter) query = query.eq('gallery_id', galleryFilter) as typeof query;
 
-    if (categoryFilter) {
-      query = query.eq('category', categoryFilter);
-    }
+      // Exclude already-added items
+      if (existingItemIds.length > 0) {
+        query = query.not('id', 'in', `(${existingItemIds.join(',')})`) as typeof query;
+      }
 
-    if (statusFilter) {
-      query = query.eq('status', statusFilter);
-    }
+      return query;
+    };
 
-    if (galleryFilter) {
-      query = query.eq('gallery_id', galleryFilter);
-    }
+    const countQuery = applyFilters(
+      supabase.from('artworks').select('id', { count: 'exact', head: true }),
+    );
 
-    const { data, error } = await query;
+    let dataQuery = applyFilters(
+      supabase
+        .from('artworks')
+        .select('id, title, reference_code, medium, year, price, currency, status, category, series')
+        .order('title', { ascending: true }),
+    );
+    dataQuery = dataQuery.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+    const [{ data, error }, { count }] = await Promise.all([dataQuery, countQuery]);
 
     if (error) {
       setArtworks([]);
+      setTotalCount(0);
       setLoading(false);
       return;
     }
 
-    // Filter out already-added artworks
-    const existingSet = new Set(existingItemIds);
-    const filtered = ((data ?? []) as Array<{
-      id: string;
-      title: string;
-      reference_code: string;
-      medium: string | null;
-      year: number | null;
-      price: number | null;
-      currency: string;
-      status: string;
-      category: string | null;
-    }>).filter((a) => !existingSet.has(a.id));
+    setTotalCount(count ?? 0);
 
-    // Fetch primary image URLs for all fetched artworks
-    const artworkIds = filtered.map((a) => a.id);
+    // Fetch primary image URLs
+    const artworkIds = (data ?? []).map((a: { id: string }) => a.id);
     let imageMap: Record<string, string> = {};
 
     if (artworkIds.length > 0) {
@@ -127,19 +148,14 @@ export function DeliveryItemPicker({
         .eq('is_primary', true);
 
       if (images && images.length > 0) {
-        const urlPromises = images.map(async (img) => {
-          const { data: urlData } = await supabase.storage
-            .from('artwork-images')
-            .createSignedUrl(img.storage_path, 600, {
-              transform: { width: 200, height: 200, resize: 'cover' },
-            });
-          return {
-            artworkId: img.artwork_id,
-            url: urlData?.signedUrl ?? null,
-          };
-        });
-
-        const urls = await Promise.all(urlPromises);
+        const urls = await Promise.all(
+          images.map(async (img) => {
+            const { data: urlData } = await supabase.storage
+              .from('artwork-images')
+              .createSignedUrl(img.storage_path, 600);
+            return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
+          }),
+        );
         imageMap = urls.reduce(
           (acc, { artworkId, url }) => {
             if (url) acc[artworkId] = url;
@@ -150,22 +166,23 @@ export function DeliveryItemPicker({
       }
     }
 
-    const mapped: PickerArtwork[] = filtered.map((a) => ({
-      id: a.id,
-      title: a.title,
-      reference_code: a.reference_code,
-      medium: a.medium,
-      year: a.year,
-      price: a.price,
-      currency: a.currency ?? 'EUR',
-      status: a.status,
-      category: a.category,
-      imageUrl: imageMap[a.id] ?? null,
+    const mapped: PickerArtwork[] = (data ?? []).map((a: Record<string, unknown>) => ({
+      id: a.id as string,
+      title: a.title as string,
+      reference_code: a.reference_code as string,
+      medium: (a.medium as string | null) ?? null,
+      year: (a.year as number | null) ?? null,
+      price: (a.price as number | null) ?? null,
+      currency: (a.currency as string) ?? 'EUR',
+      status: a.status as string,
+      category: (a.category as string | null) ?? null,
+      series: (a.series as string | null) ?? null,
+      imageUrl: imageMap[a.id as string] ?? null,
     }));
 
     setArtworks(mapped);
     setLoading(false);
-  }, [search, categoryFilter, statusFilter, galleryFilter, existingItemIds]);
+  }, [search, categoryFilter, statusFilter, seriesFilter, galleryFilter, page, existingItemIds]);
 
   useEffect(() => {
     fetchArtworks();
@@ -173,11 +190,11 @@ export function DeliveryItemPicker({
 
   // ---- Selection handlers ---------------------------------------------------
 
-  const allSelected =
+  const allVisibleSelected =
     artworks.length > 0 && artworks.every((a) => selectedIds.includes(a.id));
 
   function handleToggleAll() {
-    if (allSelected) {
+    if (allVisibleSelected) {
       const visibleIds = new Set(artworks.map((a) => a.id));
       setSelectedIds(selectedIds.filter((id) => !visibleIds.has(id)));
     } else {
@@ -186,7 +203,23 @@ export function DeliveryItemPicker({
     }
   }
 
-  function handleToggle(id: string) {
+  function handleToggle(id: string, event?: React.MouseEvent) {
+    if (event?.shiftKey && lastClickedRef.current) {
+      const lastIdx = artworks.findIndex((a) => a.id === lastClickedRef.current);
+      const currentIdx = artworks.findIndex((a) => a.id === id);
+      if (lastIdx !== -1 && currentIdx !== -1) {
+        const start = Math.min(lastIdx, currentIdx);
+        const end = Math.max(lastIdx, currentIdx);
+        const rangeIds = artworks.slice(start, end + 1).map((a) => a.id);
+        const merged = new Set([...selectedIds, ...rangeIds]);
+        setSelectedIds(Array.from(merged));
+        lastClickedRef.current = id;
+        return;
+      }
+    }
+
+    lastClickedRef.current = id;
+
     if (selectedIds.includes(id)) {
       setSelectedIds(selectedIds.filter((sid) => sid !== id));
     } else {
@@ -206,6 +239,33 @@ export function DeliveryItemPicker({
     }
   }
 
+  // ---- Clear filters --------------------------------------------------------
+
+  function handleClearFilters() {
+    setSearch('');
+    setCategoryFilter('');
+    setStatusFilter('');
+    setSeriesFilter('');
+    setGalleryFilter(null);
+  }
+
+  const hasActiveFilters =
+    search || categoryFilter || statusFilter || seriesFilter || galleryFilter;
+
+  // ---- Pagination -----------------------------------------------------------
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // ---- Status badge helper --------------------------------------------------
+
+  function getStatusLabel(status: string) {
+    return ARTWORK_STATUSES.find((s) => s.value === status)?.label ?? status.replace(/_/g, ' ');
+  }
+
+  function getStatusColor(status: string) {
+    return ARTWORK_STATUSES.find((s) => s.value === status)?.color ?? 'bg-gray-100 text-gray-600';
+  }
+
   // ---- Filter options -------------------------------------------------------
 
   const categoryOptions = [
@@ -216,6 +276,11 @@ export function DeliveryItemPicker({
   const statusOptions = [
     { value: '', label: 'All Statuses' },
     ...ARTWORK_STATUSES.map((s) => ({ value: s.value, label: s.label })),
+  ];
+
+  const seriesOptions = [
+    { value: '', label: 'All Series' },
+    ...ARTWORK_SERIES.map((s) => ({ value: s.value, label: s.label })),
   ];
 
   // ---- Render ---------------------------------------------------------------
@@ -229,8 +294,8 @@ export function DeliveryItemPicker({
         placeholder="Search by title or reference code..."
       />
 
-      {/* Filters */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* Filters row */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Select
           options={categoryOptions}
           value={categoryFilter}
@@ -241,6 +306,11 @@ export function DeliveryItemPicker({
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         />
+        <Select
+          options={seriesOptions}
+          value={seriesFilter}
+          onChange={(e) => setSeriesFilter(e.target.value)}
+        />
         <GallerySelect
           value={galleryFilter}
           onChange={setGalleryFilter}
@@ -248,16 +318,36 @@ export function DeliveryItemPicker({
         />
       </div>
 
-      {/* Select All / Deselect All + Count */}
+      {/* Toolbar: Select All / Clear Filters / Count */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={handleToggleAll}>
-          {allSelected ? 'Deselect All' : 'Select All'}
-        </Button>
-        <span className="text-sm font-medium text-primary-700">
-          {selectedIds.length} artwork{selectedIds.length !== 1 ? 's' : ''}{' '}
-          selected
-        </span>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleToggleAll}>
+            {allVisibleSelected ? 'Deselect All' : 'Select All'}
+          </Button>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+              Clear Filters
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {selectedIds.length > 0 && (
+            <span className="inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-sm font-semibold text-accent">
+              {selectedIds.length} selected
+            </span>
+          )}
+          <span className="text-xs text-primary-400">
+            {totalCount} artwork{totalCount !== 1 ? 's' : ''} total
+          </span>
+        </div>
       </div>
+
+      {/* Shift-click hint */}
+      {artworks.length > 0 && (
+        <p className="text-xs text-primary-400">
+          Tip: Hold Shift and click to select a range of artworks.
+        </p>
+      )}
 
       {/* Loading */}
       {loading && (
@@ -273,39 +363,62 @@ export function DeliveryItemPicker({
         </div>
       )}
 
-      {/* Artwork list */}
+      {/* Artwork grid */}
       {!loading && artworks.length > 0 && (
-        <div className="max-h-[480px] divide-y divide-primary-100 overflow-y-auto rounded-lg border border-primary-200">
+        <div className="grid max-h-[520px] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
           {artworks.map((artwork) => {
             const isSelected = selectedIds.includes(artwork.id);
 
             return (
-              <label
+              <div
                 key={artwork.id}
-                className={`flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-primary-50 ${
-                  isSelected ? 'bg-accent/5' : ''
+                role="button"
+                tabIndex={0}
+                onClick={(e) => handleToggle(artwork.id, e)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleToggle(artwork.id);
+                  }
+                }}
+                className={`group relative cursor-pointer rounded-lg border-2 p-2 transition-all hover:shadow-md ${
+                  isSelected
+                    ? 'border-accent bg-accent/5 shadow-sm'
+                    : 'border-primary-200 bg-white hover:border-primary-300'
                 }`}
               >
-                {/* Checkbox */}
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => handleToggle(artwork.id)}
-                  className="h-4 w-4 rounded border-primary-300 text-accent focus:ring-accent"
-                />
+                {/* Checkmark overlay */}
+                {isSelected && (
+                  <div className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white shadow-sm">
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2.5"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
+                    </svg>
+                  </div>
+                )}
 
                 {/* Thumbnail */}
-                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded bg-primary-100">
+                <div className="aspect-square w-full overflow-hidden rounded bg-primary-100">
                   {artwork.imageUrl ? (
                     <img
                       src={artwork.imageUrl}
                       alt={artwork.title}
                       className="h-full w-full object-cover"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
                       <svg
-                        className="h-5 w-5 text-primary-300"
+                        className="h-8 w-8 text-primary-300"
                         fill="none"
                         viewBox="0 0 24 24"
                         strokeWidth="1"
@@ -322,37 +435,51 @@ export function DeliveryItemPicker({
                 </div>
 
                 {/* Info */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="truncate text-sm font-medium text-primary-900">
-                      {artwork.title}
-                    </span>
-                    <span className="flex-shrink-0 text-xs text-primary-400">
-                      {artwork.reference_code}
-                    </span>
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-2 text-xs text-primary-500">
-                    {artwork.medium && <span>{artwork.medium}</span>}
-                    {artwork.medium && artwork.year && (
-                      <span className="text-primary-300">&middot;</span>
-                    )}
-                    {artwork.year && <span>{artwork.year}</span>}
-                  </div>
-                </div>
-
-                {/* Price */}
-                <div className="flex-shrink-0 text-right">
-                  {artwork.price != null ? (
-                    <span className="text-sm font-medium text-primary-700">
-                      {formatCurrency(artwork.price, artwork.currency)}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-primary-300">No price</span>
+                <div className="mt-2 space-y-1">
+                  <p className="truncate text-sm font-medium text-primary-900">
+                    {artwork.title}
+                  </p>
+                  <p className="truncate text-xs text-primary-500">
+                    {artwork.reference_code}
+                  </p>
+                  {artwork.year && (
+                    <p className="text-xs text-primary-400">{artwork.year}</p>
                   )}
+                  {/* Status badge */}
+                  <span
+                    className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${getStatusColor(artwork.status)}`}
+                  >
+                    {getStatusLabel(artwork.status)}
+                  </span>
                 </div>
-              </label>
+              </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-primary-100 pt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page === 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-primary-600">
+            Page {page + 1} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages - 1}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
         </div>
       )}
 
