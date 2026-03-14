@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { getSignedUrls } from '../../lib/signedUrlCache';
 import { Button } from '../ui/Button';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Modal } from '../ui/Modal';
@@ -73,14 +74,13 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
         .eq('is_primary', true);
 
       if (imgData && imgData.length > 0) {
-        const signedResults = await Promise.all(
-          imgData.map((img) =>
-            supabase.storage.from('artwork-images').createSignedUrl(img.storage_path, 600),
-          ),
+        const signedMap = await getSignedUrls(
+          'artwork-images',
+          imgData.map((img) => img.storage_path),
         );
         const urlMap: Record<string, string> = {};
-        imgData.forEach((img, i) => {
-          const url = signedResults[i]?.data?.signedUrl;
+        imgData.forEach((img) => {
+          const url = signedMap.get(img.storage_path);
           if (url) urlMap[img.artwork_id] = url;
         });
         setImageUrls(urlMap);

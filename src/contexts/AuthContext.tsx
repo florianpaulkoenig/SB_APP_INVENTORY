@@ -6,6 +6,7 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { clearSignedUrlCache } from '../lib/signedUrlCache';
 import type { UserRole, UserProfileRow } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -196,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async (): Promise<void> => {
+    clearSignedUrlCache();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }, []);

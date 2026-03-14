@@ -8,6 +8,7 @@ import { DeliveryReceiptPDF } from '../pdf/DeliveryReceiptPDF';
 import { formatDate, formatDimensions, downloadBlob } from '../../lib/utils';
 import { DELIVERY_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
+import { getSignedUrls } from '../../lib/signedUrlCache';
 import type { DeliveryRow, DeliveryItemRow, DeliveryStatus } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -171,13 +172,12 @@ export function DeliveryDetail({
           .eq('is_primary', true);
 
         if (primaryImages && primaryImages.length > 0) {
-          const signedResults = await Promise.all(
-            primaryImages.map((img) =>
-              supabase.storage.from('artwork-images').createSignedUrl(img.storage_path, 600),
-            ),
+          const signedMap = await getSignedUrls(
+            'artwork-images',
+            primaryImages.map((img) => img.storage_path),
           );
-          primaryImages.forEach((img, i) => {
-            const url = signedResults[i]?.data?.signedUrl;
+          primaryImages.forEach((img) => {
+            const url = signedMap.get(img.storage_path);
             if (url) imageMap[img.artwork_id] = url;
           });
         }

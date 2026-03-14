@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { getSignedUrls } from '../lib/signedUrlCache';
 import { verifyPassword } from '../lib/crypto';
 import { useToast } from '../components/ui/Toast';
 import type { ViewingRoomRow, ViewingRoomInsert, ViewingRoomUpdate } from '../types/database';
@@ -305,18 +306,17 @@ export function usePublicViewingRoom(slug: string) {
 
         if (imageError) throw imageError;
 
-        // Generate signed URLs for images in parallel
+        // Generate signed URLs for images (cached)
         const imageMap = new Map<string, string>();
         const imgList = imageData ?? [];
 
         if (imgList.length > 0) {
-          const signedResults = await Promise.all(
-            imgList.map((img) =>
-              supabase.storage.from('artwork-images').createSignedUrl(img.storage_path, 600),
-            ),
+          const signedMap = await getSignedUrls(
+            'artwork-images',
+            imgList.map((img) => img.storage_path),
           );
-          imgList.forEach((img, i) => {
-            const url = signedResults[i]?.data?.signedUrl;
+          imgList.forEach((img) => {
+            const url = signedMap.get(img.storage_path);
             if (url) imageMap.set(img.artwork_id, url);
           });
         }

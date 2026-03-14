@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { getSignedUrls } from '../lib/signedUrlCache';
 import { useToast } from '../components/ui/Toast';
 import type { ShareLinkRow, ShareLinkInsert } from '../types/database';
 
@@ -220,16 +221,15 @@ export function useShareLink(token: string) {
         titleMap.set(artwork.id, artwork.title);
       }
 
-      // Generate signed URLs for each image in parallel
-      const signedResults = await Promise.all(
-        images.map((img) =>
-          supabase.storage.from('artwork-images').createSignedUrl(img.storage_path, 600),
-        ),
+      // Generate signed URLs for each image (cached)
+      const signedMap = await getSignedUrls(
+        'artwork-images',
+        images.map((img) => img.storage_path),
       );
 
       const results = images
-        .map((img, i) => {
-          const url = signedResults[i]?.data?.signedUrl;
+        .map((img) => {
+          const url = signedMap.get(img.storage_path);
           if (!url) return null;
           return {
             artworkId: img.artwork_id,

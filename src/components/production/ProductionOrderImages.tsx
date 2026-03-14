@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { sanitizeStoragePath } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
+import { getSignedUrls } from '../../lib/signedUrlCache';
 import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useToast } from '../ui/Toast';
@@ -60,12 +61,10 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
 
     if (data && data.length > 0) {
       const paths = data.map((file) => `${prefix}${file.name}`);
-      const signedResults = await Promise.all(
-        paths.map((p) => supabase.storage.from(BUCKET).createSignedUrl(p, 600)),
-      );
+      const signedMap = await getSignedUrls(BUCKET, paths);
       const urls = paths
-        .map((path, i) => {
-          const url = signedResults[i]?.data?.signedUrl;
+        .map((path) => {
+          const url = signedMap.get(path);
           return url ? { path, url } : null;
         })
         .filter((item): item is { path: string; url: string } => item !== null);

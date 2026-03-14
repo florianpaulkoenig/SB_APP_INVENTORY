@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pdf } from '@react-pdf/renderer';
 import { supabase } from '../lib/supabase';
+import { getSignedUrl } from '../lib/signedUrlCache';
 import { useArtwork, useArtworks } from '../hooks/useArtworks';
 import { useArtworkImages } from '../hooks/useArtworkImages';
 import { useToast } from '../components/ui/Toast';
@@ -132,10 +133,8 @@ export function ArtworkDetailPage() {
       ).data;
 
       if (primaryImage?.storage_path) {
-        const { data: urlData } = await supabase.storage
-          .from('artwork-images')
-          .createSignedUrl(primaryImage.storage_path, 600);
-        if (urlData) artworkImageUrl = urlData.signedUrl;
+        const url = await getSignedUrl('artwork-images', primaryImage.storage_path);
+        if (url) artworkImageUrl = url;
       }
 
       // Download signature as blob and convert to data URL (keeps bucket private)

@@ -9,6 +9,7 @@ import { ProductionOrderPDF } from '../pdf/ProductionOrderPDF';
 import { formatDate, formatDimensions, formatCurrency, downloadBlob } from '../../lib/utils';
 import { PRODUCTION_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
+import { getSignedUrls } from '../../lib/signedUrlCache';
 import type {
   ProductionOrderRow,
   ProductionOrderItemRow,
@@ -182,16 +183,15 @@ export function ProductionOrderDetail({
       }
     }
 
-    // Sign all URLs in parallel
+    // Sign all URLs (cached)
     const urls: Record<string, string[]> = {};
     if (signRequests.length > 0) {
-      const signedResults = await Promise.all(
-        signRequests.map((r) =>
-          supabase.storage.from('artwork-images').createSignedUrl(r.path, 600),
-        ),
+      const signedMap = await getSignedUrls(
+        'artwork-images',
+        signRequests.map((r) => r.path),
       );
-      signRequests.forEach((req, i) => {
-        const url = signedResults[i]?.data?.signedUrl;
+      signRequests.forEach((req) => {
+        const url = signedMap.get(req.path);
         if (url) {
           if (!urls[req.itemId]) urls[req.itemId] = [];
           urls[req.itemId].push(url);

@@ -6,6 +6,7 @@ import { Textarea } from '../ui/Textarea';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { useToast } from '../ui/Toast';
 import { supabase } from '../../lib/supabase';
+import { getSignedUrls } from '../../lib/signedUrlCache';
 import { sanitizeStoragePath } from '../../lib/utils';
 import {
   DIMENSION_UNITS,
@@ -143,12 +144,10 @@ export function ProductionItemEditor({
     if (files && files.length > 0) {
       const validFiles = files.filter((f) => f.id); // skip subfolders
       const paths = validFiles.map((f) => `${prefix}/${f.name}`);
-      const signedResults = await Promise.all(
-        paths.map((p) => supabase.storage.from(BUCKET).createSignedUrl(p, 600)),
-      );
+      const signedMap = await getSignedUrls(BUCKET, paths);
       const imgs = paths
-        .map((path, i) => {
-          const url = signedResults[i]?.data?.signedUrl;
+        .map((path) => {
+          const url = signedMap.get(path);
           return url ? { path, url } : null;
         })
         .filter((item): item is { path: string; url: string } => item !== null);

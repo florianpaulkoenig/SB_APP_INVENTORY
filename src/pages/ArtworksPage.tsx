@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, createElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getSignedUrl } from '../lib/signedUrlCache';
 import { downloadBlob, buildCertificateFilename } from '../lib/utils';
 import { useArtworks } from '../hooks/useArtworks';
 import type { ArtworkFilters as ArtworkFiltersType } from '../hooks/useArtworks';
@@ -261,10 +262,8 @@ export function ArtworksPage() {
         .maybeSingle();
 
       if (primaryImage?.storage_path) {
-        const { data: urlData } = await supabase.storage
-          .from('artwork-images')
-          .createSignedUrl(primaryImage.storage_path, 600);
-        if (urlData) artworkImageUrl = urlData.signedUrl;
+        const url = await getSignedUrl('artwork-images', primaryImage.storage_path);
+        if (url) artworkImageUrl = url;
       }
 
       // Download signature as blob and convert to data URL (keeps bucket private)

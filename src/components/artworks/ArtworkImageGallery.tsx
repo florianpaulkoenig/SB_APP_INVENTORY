@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { getSignedUrls } from '../../lib/signedUrlCache';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Tabs } from '../ui/Tabs';
 import { IMAGE_TYPES } from '../../lib/constants';
@@ -93,16 +94,15 @@ export function ArtworkImageGallery({
       return;
     }
 
-    // Generate signed URLs for all images in parallel
-    const urlResults = await Promise.all(
-      rows.map((row) =>
-        supabase.storage.from('artwork-images').createSignedUrl(row.storage_path, 600),
-      ),
+    // Generate signed URLs for all images (cached)
+    const urlMap = await getSignedUrls(
+      'artwork-images',
+      rows.map((r) => r.storage_path),
     );
 
     const imagesWithUrls: ImageWithUrl[] = rows
-      .map((row, i) => {
-        const url = urlResults[i]?.data?.signedUrl;
+      .map((row) => {
+        const url = urlMap.get(row.storage_path);
         return url ? { ...row, signedUrl: url } : null;
       })
       .filter((img): img is ImageWithUrl => img !== null);
