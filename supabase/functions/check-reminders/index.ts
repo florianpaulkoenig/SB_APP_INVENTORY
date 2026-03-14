@@ -292,8 +292,9 @@ Deno.serve(async (req: Request) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!supabaseUrl || !serviceRoleKey) {
+      console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
       return new Response(
-        JSON.stringify({ error: 'Server misconfiguration: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' }),
+        JSON.stringify({ error: 'Server configuration error' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
@@ -367,7 +368,7 @@ Deno.serve(async (req: Request) => {
 
         if (updateError) {
           console.error(`Reminder ${reminder.id}: email sent but failed to mark as sent: ${updateError.message}`);
-          results.push({ reminderId: reminder.id, success: false, error: `Sent but failed to update: ${updateError.message}` });
+          results.push({ reminderId: reminder.id, success: false, error: 'Sent but failed to update status' });
           continue;
         }
 
@@ -375,7 +376,7 @@ Deno.serve(async (req: Request) => {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         console.error(`Reminder ${reminder.id}: ${errorMessage}`);
-        results.push({ reminderId: reminder.id, success: false, error: errorMessage });
+        results.push({ reminderId: reminder.id, success: false, error: 'Processing failed' });
       }
     }
 
