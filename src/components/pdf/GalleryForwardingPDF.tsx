@@ -3,7 +3,7 @@
 // Redesigned to match the CataloguePDF list layout aesthetic.
 // ---------------------------------------------------------------------------
 
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import { PDF_COLORS } from './PDFStyles';
 
 // Ensure AnzianoPro font is registered (side-effect import)
@@ -25,9 +25,10 @@ interface TranslationStrings {
   shippingMethod: string;
   insuranceValue: string;
   no: string;
+  image: string;
   reference: string;
   title: string;
-  medium: string;
+  category: string;
   dimensions: string;
   notes: string;
   shippedBy: string;
@@ -49,9 +50,10 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     shippingMethod: 'Shipping Method',
     insuranceValue: 'Insurance Value',
     no: '#',
+    image: '',
     reference: 'Reference',
     title: 'Title',
-    medium: 'Medium',
+    category: 'Category',
     dimensions: 'Dimensions',
     notes: 'Notes',
     shippedBy: 'Shipped by',
@@ -71,9 +73,10 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     shippingMethod: 'Versandart',
     insuranceValue: 'Versicherungswert',
     no: '#',
+    image: '',
     reference: 'Referenz',
     title: 'Titel',
-    medium: 'Technik',
+    category: 'Kategorie',
     dimensions: 'Ma\u00dfe',
     notes: 'Anmerkungen',
     shippedBy: 'Versendet von',
@@ -93,9 +96,10 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     shippingMethod: "Mode d'exp\u00e9dition",
     insuranceValue: "Valeur d'assurance",
     no: '#',
+    image: '',
     reference: 'R\u00e9f\u00e9rence',
     title: 'Titre',
-    medium: 'Technique',
+    category: 'Cat\u00e9gorie',
     dimensions: 'Dimensions',
     notes: 'Notes',
     shippedBy: 'Exp\u00e9di\u00e9 par',
@@ -122,8 +126,9 @@ export interface GalleryForwardingPDFProps {
   items: Array<{
     reference_code: string;
     title: string;
-    medium: string | null;
+    category: string | null;
     dimensions: string;
+    image_url: string | null;
   }>;
   fromGalleryName?: string | null;
   toGalleryName?: string | null;
@@ -132,19 +137,20 @@ export interface GalleryForwardingPDFProps {
 }
 
 // ---------------------------------------------------------------------------
-// Proportional column widths (matching CataloguePDF list approach)
+// Proportional column widths (matching DeliveryReceiptPDF / CataloguePDF)
 // ---------------------------------------------------------------------------
 const USABLE = 535;
 const COL_NO = 18;
-const FLEX_SPACE = USABLE - COL_NO;
+const COL_IMG = 50;
+const FLEX_SPACE = USABLE - COL_NO - COL_IMG;
 
-// Column weights for: ref, title, medium, dimensions
-const WEIGHTS = { ref: 1.3, title: 1.5, medium: 1, dims: 1.2 };
-const TOTAL_WEIGHT = WEIGHTS.ref + WEIGHTS.title + WEIGHTS.medium + WEIGHTS.dims;
+// Column weights for: ref, title, category, dimensions
+const WEIGHTS = { ref: 1.3, title: 1.5, category: 1, dims: 1.2 };
+const TOTAL_WEIGHT = WEIGHTS.ref + WEIGHTS.title + WEIGHTS.category + WEIGHTS.dims;
 
 const COL_REF = Math.round((WEIGHTS.ref / TOTAL_WEIGHT) * FLEX_SPACE);
 const COL_TITLE = Math.round((WEIGHTS.title / TOTAL_WEIGHT) * FLEX_SPACE);
-const COL_MEDIUM = Math.round((WEIGHTS.medium / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_CAT = Math.round((WEIGHTS.category / TOTAL_WEIGHT) * FLEX_SPACE);
 const COL_DIM = Math.round((WEIGHTS.dims / TOTAL_WEIGHT) * FLEX_SPACE);
 
 // ---------------------------------------------------------------------------
@@ -268,7 +274,7 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 8,
     alignItems: 'center' as const,
-    minHeight: 36,
+    minHeight: 60,
   },
   listBodyRowAlt: {
     flexDirection: 'row' as const,
@@ -277,7 +283,7 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 8,
     alignItems: 'center' as const,
-    minHeight: 36,
+    minHeight: 60,
     backgroundColor: '#fafafa',
   },
   listCell: {
@@ -292,6 +298,21 @@ const s = StyleSheet.create({
     fontSize: 10,
     color: PDF_COLORS.primary900,
     paddingRight: 6,
+  },
+  listThumbnail: {
+    width: 44, height: 44,
+    objectFit: 'contain' as const,
+  },
+  listThumbPlaceholder: {
+    width: 44, height: 44,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listThumbText: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 10,
+    color: PDF_COLORS.primary400,
   },
   // Signature
   signatureLine: {
@@ -368,9 +389,10 @@ export function GalleryForwardingPDF({
   // Table columns
   const cols = [
     { key: 'no', label: t.no, width: COL_NO },
+    { key: 'image', label: t.image, width: COL_IMG },
     { key: 'ref', label: t.reference, width: COL_REF },
     { key: 'title', label: t.title, width: COL_TITLE },
-    { key: 'medium', label: t.medium, width: COL_MEDIUM },
+    { key: 'category', label: t.category, width: COL_CAT },
     { key: 'dims', label: t.dimensions, width: COL_DIM },
   ];
 
@@ -416,14 +438,23 @@ export function GalleryForwardingPDF({
             wrap={false}
           >
             <Text style={[s.listCell, { width: COL_NO }]}>{index + 1}</Text>
+            <View style={{ width: COL_IMG }}>
+              {item.image_url ? (
+                <Image src={item.image_url} style={s.listThumbnail} />
+              ) : (
+                <View style={s.listThumbPlaceholder}>
+                  <Text style={s.listThumbText}>{'\u2014'}</Text>
+                </View>
+              )}
+            </View>
             <Text style={[s.listCell, { width: COL_REF }]}>
               {item.reference_code}
             </Text>
             <Text style={[s.listCellBold, { width: COL_TITLE }]}>
               {item.title}
             </Text>
-            <Text style={[s.listCell, { width: COL_MEDIUM }]}>
-              {item.medium ?? '\u2014'}
+            <Text style={[s.listCell, { width: COL_CAT }]}>
+              {item.category ?? '\u2014'}
             </Text>
             <Text style={[s.listCell, { width: COL_DIM }]}>
               {item.dimensions || '\u2014'}

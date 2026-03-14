@@ -27,6 +27,7 @@ export interface GalleryForwardingItemWithJoins extends GalleryForwardingItemRow
     depth: number | null;
     dimension_unit: string | null;
     status: string | null;
+    category: string | null;
   } | null;
 }
 
@@ -60,7 +61,7 @@ export interface UseGalleryForwardingsReturn {
 // Joined select strings
 // ---------------------------------------------------------------------------
 
-const FORWARDING_ITEM_SELECT = `*, artworks(title, reference_code, medium, year, height, width, depth, dimension_unit, status)`;
+const FORWARDING_ITEM_SELECT = `*, artworks(title, reference_code, medium, year, height, width, depth, dimension_unit, status, category)`;
 
 // ---------------------------------------------------------------------------
 // Hook -- list all forwarding orders with optional filters

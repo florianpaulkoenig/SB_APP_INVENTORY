@@ -6,7 +6,8 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { GalleryForwardingPDF } from '../pdf/GalleryForwardingPDF';
 import { formatDate, formatDimensions, formatCurrency, downloadBlob } from '../../lib/utils';
-import { FORWARDING_STATUSES } from '../../lib/constants';
+import { FORWARDING_STATUSES, ARTWORK_CATEGORIES } from '../../lib/constants';
+import { supabase } from '../../lib/supabase';
 import type {
   GalleryForwardingOrderRow,
   ForwardingStatus,
@@ -151,16 +152,52 @@ export function GalleryForwardingDetail({
     setDownloading(true);
 
     try {
+      // Fetch primary image URLs for all artworks
+      const artworkIds = items
+        .map((item) => item.artwork_id)
+        .filter(Boolean);
+
+      const imageMap: Record<string, string> = {};
+
+      if (artworkIds.length > 0) {
+        const { data: images } = await supabase
+          .from('artwork_images')
+          .select('artwork_id, storage_path')
+          .in('artwork_id', artworkIds)
+          .eq('is_primary', true);
+
+        if (images && images.length > 0) {
+          const urls = await Promise.all(
+            images.map(async (img) => {
+              const { data: urlData } = await supabase.storage
+                .from('artwork-images')
+                .createSignedUrl(img.storage_path, 600);
+              return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
+            }),
+          );
+          for (const { artworkId, url } of urls) {
+            if (url) imageMap[artworkId] = url;
+          }
+        }
+      }
+
+      // Category label helper
+      const categoryLabel = (val: string | null) => {
+        if (!val) return null;
+        return ARTWORK_CATEGORIES.find((c) => c.value === val)?.label ?? val;
+      };
+
       const pdfItems = items.map((item) => ({
         reference_code: item.artworks?.reference_code ?? '',
         title: item.artworks?.title ?? '',
-        medium: item.artworks?.medium ?? null,
+        category: categoryLabel(item.artworks?.category ?? null),
         dimensions: formatDimensions(
           item.artworks?.height ?? null,
           item.artworks?.width ?? null,
           item.artworks?.depth ?? null,
           item.artworks?.dimension_unit ?? 'cm',
         ),
+        image_url: imageMap[item.artwork_id] ?? null,
       }));
 
       const blob = await pdf(
