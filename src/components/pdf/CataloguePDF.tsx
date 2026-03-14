@@ -190,20 +190,22 @@ const s = StyleSheet.create({
   coverPage: {
     fontFamily: 'AnzianoPro',
     backgroundColor: '#111111',
-    position: 'relative',
+  },
+  coverBgLayer: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
   },
   coverBgImage: {
-    position: 'absolute',
-    top: 0, left: 0, width: '100%', height: '100%',
+    width: '100%',
+    height: '100%',
     objectFit: 'cover',
   },
   coverDarkOverlay: {
     position: 'absolute',
-    top: 0, left: 0, width: '100%', height: '100%',
+    top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.50)',
   },
   coverContent: {
-    position: 'relative',
     flex: 1,
     justifyContent: 'flex-end',
     padding: 48,
@@ -712,8 +714,10 @@ export function CataloguePDF({
   if (coverImageUrl) {
     allPages.push(
       <Page key="cover" size="A4" style={s.coverPage}>
-        <Image src={coverImageUrl} style={s.coverBgImage} />
-        <View style={s.coverDarkOverlay} />
+        <View style={s.coverBgLayer}>
+          <Image src={coverImageUrl} style={s.coverBgImage} />
+          <View style={s.coverDarkOverlay} />
+        </View>
         <View style={s.coverContent}>
           <Text style={s.coverTitle}>{title}</Text>
           {subtitle ? <Text style={s.coverSubtitle}>{subtitle}</Text> : null}
