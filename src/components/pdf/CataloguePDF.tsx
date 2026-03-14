@@ -367,19 +367,15 @@ const s = StyleSheet.create({
   },
   artworkImageContainer: {
     width: '100%',
-    height: 420,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: 24,
   },
   artworkImage: {
-    maxWidth: '100%',
-    maxHeight: 420,
+    width: '100%',
     objectFit: 'contain',
   },
   artworkPlaceholder: {
     width: '100%',
-    height: 420,
+    height: 300,
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
