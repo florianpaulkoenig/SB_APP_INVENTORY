@@ -306,12 +306,12 @@ export function DeliveryReceiptPDF({
     infoRows.push({ label: t.gallery, value: galleryName });
   }
 
-  // Table columns
+  // Table columns (matching catalogue order: #, image, title, ref, ...)
   const cols = [
     { key: 'no', label: t.no, width: COL_NO },
     { key: 'image', label: t.image, width: COL_IMG },
-    { key: 'ref', label: t.reference, width: COL_REF },
     { key: 'title', label: t.title, width: COL_TITLE },
+    { key: 'ref', label: t.reference, width: COL_REF },
     { key: 'category', label: t.category, width: COL_CAT },
     { key: 'dims', label: t.dimensions, width: COL_DIM },
   ];
@@ -367,11 +367,11 @@ export function DeliveryReceiptPDF({
                 </View>
               )}
             </View>
-            <Text style={[s.listCell, { width: COL_REF }]}>
-              {item.artwork_reference_code}
-            </Text>
             <Text style={[s.listCellBold, { width: COL_TITLE }]}>
               {item.artwork_title}
+            </Text>
+            <Text style={[s.listCell, { width: COL_REF }]}>
+              {item.artwork_reference_code}
             </Text>
             <Text style={[s.listCell, { width: COL_CAT }]}>
               {item.artwork_category ?? '\u2014'}

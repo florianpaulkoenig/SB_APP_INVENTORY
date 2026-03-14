@@ -386,12 +386,12 @@ export function GalleryForwardingPDF({
     });
   }
 
-  // Table columns
+  // Table columns (matching catalogue order: #, image, title, ref, ...)
   const cols = [
     { key: 'no', label: t.no, width: COL_NO },
     { key: 'image', label: t.image, width: COL_IMG },
-    { key: 'ref', label: t.reference, width: COL_REF },
     { key: 'title', label: t.title, width: COL_TITLE },
+    { key: 'ref', label: t.reference, width: COL_REF },
     { key: 'category', label: t.category, width: COL_CAT },
     { key: 'dims', label: t.dimensions, width: COL_DIM },
   ];
@@ -447,11 +447,11 @@ export function GalleryForwardingPDF({
                 </View>
               )}
             </View>
-            <Text style={[s.listCell, { width: COL_REF }]}>
-              {item.reference_code}
-            </Text>
             <Text style={[s.listCellBold, { width: COL_TITLE }]}>
               {item.title}
+            </Text>
+            <Text style={[s.listCell, { width: COL_REF }]}>
+              {item.reference_code}
             </Text>
             <Text style={[s.listCell, { width: COL_CAT }]}>
               {item.category ?? '\u2014'}
