@@ -496,14 +496,14 @@ const s = StyleSheet.create({
   },
   listHeaderRow: {
     flexDirection: 'row' as const,
-    backgroundColor: PDF_COLORS.primary900,
+    backgroundColor: '#000000',
     paddingVertical: 6,
     paddingHorizontal: 8,
   },
   listHeaderCell: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 7,
+    fontSize: 6,
     color: '#ffffff',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -529,13 +529,13 @@ const s = StyleSheet.create({
   },
   listCell: {
     fontFamily: 'AnzianoPro',
-    fontSize: 8,
+    fontSize: 7,
     color: PDF_COLORS.primary700,
   },
   listCellBold: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 8,
+    fontSize: 7,
     color: PDF_COLORS.primary900,
   },
   listThumbnail: {
@@ -620,15 +620,15 @@ function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
     { key: 'image', label: '', width: 50 },
     { key: 'title', label: t.title, width: 0 },
   ];
-  if (vis.showReferenceCode) cols.push({ key: 'ref', label: t.referenceCode, width: 65 });
-  if (vis.showMedium) cols.push({ key: 'medium', label: t.medium, width: 70 });
-  if (vis.showYear) cols.push({ key: 'year', label: t.year, width: 35 });
-  if (vis.showDimensions) cols.push({ key: 'dims', label: t.dimensions, width: 80 });
-  if (vis.showWeight) cols.push({ key: 'weight', label: t.weight, width: 45 });
-  if (vis.showEdition) cols.push({ key: 'edition', label: t.edition, width: 55 });
-  if (vis.showPrice) cols.push({ key: 'price', label: t.price, width: 60 });
+  if (vis.showReferenceCode) cols.push({ key: 'ref', label: t.referenceCode, width: 62 });
+  if (vis.showMedium) cols.push({ key: 'medium', label: t.medium, width: 65 });
+  if (vis.showYear) cols.push({ key: 'year', label: t.year, width: 30 });
+  if (vis.showDimensions) cols.push({ key: 'dims', label: t.dimensions, width: 72 });
+  if (vis.showWeight) cols.push({ key: 'weight', label: t.weight, width: 40 });
+  if (vis.showEdition) cols.push({ key: 'edition', label: t.edition, width: 45 });
+  if (vis.showPrice) cols.push({ key: 'price', label: t.price, width: 50 });
 
-  const usable = 495;
+  const usable = 515;
   const fixedTotal = cols.reduce((sum, c) => sum + (c.key !== 'title' ? c.width : 0), 0);
   const titleCol = cols.find((c) => c.key === 'title');
   if (titleCol) titleCol.width = Math.max(80, usable - fixedTotal);
