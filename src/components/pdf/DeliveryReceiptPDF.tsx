@@ -1,11 +1,13 @@
 // ---------------------------------------------------------------------------
 // NOA Inventory -- Delivery Receipt PDF
+// Redesigned to match the CataloguePDF list layout aesthetic.
 // ---------------------------------------------------------------------------
 
-import { Document, Page, View, Text, Image } from '@react-pdf/renderer';
-import styles, { PDF_COLORS } from './PDFStyles';
-import { PDFHeader } from './PDFHeader';
-import { COMPANY_NAME } from '../../lib/constants';
+import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
+import { PDF_COLORS } from './PDFStyles';
+
+// Ensure AnzianoPro font is registered (side-effect import)
+import './PDFStyles';
 
 // ---------------------------------------------------------------------------
 // Multi-language translations
@@ -17,7 +19,7 @@ interface TranslationStrings {
   recipient: string;
   address: string;
   gallery: string;
-  item: string;
+  no: string;
   image: string;
   reference: string;
   title: string;
@@ -25,7 +27,6 @@ interface TranslationStrings {
   dimensions: string;
   deliveredBy: string;
   receivedBy: string;
-  signature: string;
   signatureDate: string;
 }
 
@@ -37,15 +38,14 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     recipient: 'Recipient',
     address: 'Address',
     gallery: 'Gallery',
-    item: '#',
-    image: 'Image',
+    no: '#',
+    image: '',
     reference: 'Reference',
     title: 'Title',
     category: 'Category',
     dimensions: 'Dimensions',
     deliveredBy: 'Delivered by',
     receivedBy: 'Received by',
-    signature: 'Signature',
     signatureDate: 'Date',
   },
   de: {
@@ -55,15 +55,14 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     recipient: 'Empf\u00e4nger',
     address: 'Adresse',
     gallery: 'Galerie',
-    item: '#',
-    image: 'Bild',
+    no: '#',
+    image: '',
     reference: 'Referenz',
     title: 'Titel',
     category: 'Kategorie',
     dimensions: 'Ma\u00dfe',
     deliveredBy: '\u00dcbergeben von',
     receivedBy: 'Empfangen von',
-    signature: 'Unterschrift',
     signatureDate: 'Datum',
   },
   fr: {
@@ -73,15 +72,14 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     recipient: 'Destinataire',
     address: 'Adresse',
     gallery: 'Galerie',
-    item: '#',
-    image: 'Image',
+    no: '#',
+    image: '',
     reference: 'R\u00e9f\u00e9rence',
     title: 'Titre',
     category: 'Cat\u00e9gorie',
     dimensions: 'Dimensions',
     deliveredBy: 'Livr\u00e9 par',
     receivedBy: 'Re\u00e7u par',
-    signature: 'Signature',
     signatureDate: 'Date',
   },
 };
@@ -110,14 +108,177 @@ export interface DeliveryReceiptPDFProps {
 }
 
 // ---------------------------------------------------------------------------
-// Table column widths (percentages)
+// Proportional column widths (matching CataloguePDF list approach)
 // ---------------------------------------------------------------------------
-const COL_NUM = '5%';
-const COL_IMG = '12%';
-const COL_REF = '16%';
-const COL_TITLE = '30%';
-const COL_CAT = '17%';
-const COL_DIM = '20%';
+const USABLE = 535; // A4 width minus 30pt margins each side
+const COL_NO = 18;
+const COL_IMG = 50;
+const FLEX_SPACE = USABLE - COL_NO - COL_IMG;
+
+// Column weights for: ref, title, category, dimensions
+const WEIGHTS = { ref: 1.3, title: 1.5, category: 1, dims: 1.2 };
+const TOTAL_WEIGHT = WEIGHTS.ref + WEIGHTS.title + WEIGHTS.category + WEIGHTS.dims;
+
+const COL_REF = Math.round((WEIGHTS.ref / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_TITLE = Math.round((WEIGHTS.title / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_CAT = Math.round((WEIGHTS.category / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_DIM = Math.round((WEIGHTS.dims / TOTAL_WEIGHT) * FLEX_SPACE);
+
+// ---------------------------------------------------------------------------
+// Styles (matching CataloguePDF list layout)
+// ---------------------------------------------------------------------------
+const s = StyleSheet.create({
+  page: {
+    fontFamily: 'AnzianoPro',
+    backgroundColor: '#ffffff',
+    paddingTop: 36,
+    paddingBottom: 50,
+    paddingHorizontal: 30,
+  },
+  // Header
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 20,
+  },
+  headerTitle: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 22,
+    color: PDF_COLORS.primary900,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  headerSubtitle: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 11,
+    color: PDF_COLORS.primary400,
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+  headerRight: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 10,
+    color: PDF_COLORS.primary400,
+    textAlign: 'right' as const,
+    letterSpacing: 0.5,
+  },
+  // Info grid
+  infoGrid: {
+    marginBottom: 20,
+  },
+  infoRow: {
+    flexDirection: 'row' as const,
+    borderBottomWidth: 0.5,
+    borderBottomColor: PDF_COLORS.border,
+    paddingVertical: 5,
+  },
+  infoLabel: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 10,
+    color: PDF_COLORS.primary400,
+    width: 120,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  infoValue: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 10,
+    color: PDF_COLORS.primary900,
+    flex: 1,
+  },
+  // Table
+  listHeaderRow: {
+    flexDirection: 'row' as const,
+    borderBottomWidth: 1,
+    borderBottomColor: '#000000',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  listHeaderCell: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 10,
+    color: '#000000',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingRight: 6,
+  },
+  listBodyRow: {
+    flexDirection: 'row' as const,
+    borderBottomWidth: 0.5,
+    borderBottomColor: PDF_COLORS.border,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    alignItems: 'center' as const,
+    minHeight: 60,
+  },
+  listBodyRowAlt: {
+    flexDirection: 'row' as const,
+    borderBottomWidth: 0.5,
+    borderBottomColor: PDF_COLORS.border,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    alignItems: 'center' as const,
+    minHeight: 60,
+    backgroundColor: '#fafafa',
+  },
+  listCell: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 10,
+    color: PDF_COLORS.primary700,
+    paddingRight: 6,
+  },
+  listCellBold: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 10,
+    color: PDF_COLORS.primary900,
+    paddingRight: 6,
+  },
+  listThumbnail: {
+    width: 44, height: 44,
+    objectFit: 'contain' as const,
+  },
+  listThumbPlaceholder: {
+    width: 44, height: 44,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listThumbText: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 10,
+    color: PDF_COLORS.primary400,
+  },
+  // Signature
+  signatureLine: {
+    width: 200,
+    borderBottomWidth: 1,
+    borderBottomColor: PDF_COLORS.primary900,
+    marginBottom: 4,
+  },
+  signatureLabel: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 10,
+    color: PDF_COLORS.primary400,
+  },
+  // Footer
+  footer: {
+    position: 'absolute' as const,
+    bottom: 24, left: 30, right: 30,
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+  },
+  footerText: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 10,
+    color: PDF_COLORS.primary400,
+    letterSpacing: 0.5,
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Component
@@ -130,132 +291,96 @@ export function DeliveryReceiptPDF({
 }: DeliveryReceiptPDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
 
-  // Build info rows -- only include rows that have a value
+  // Build info rows
   const infoRows: { label: string; value: string }[] = [
     { label: t.deliveryNo, value: delivery.delivery_number },
   ];
-
   if (delivery.delivery_date) {
     infoRows.push({ label: t.date, value: delivery.delivery_date });
   }
-
   infoRows.push({ label: t.recipient, value: delivery.recipient_name });
-
   if (delivery.recipient_address) {
     infoRows.push({ label: t.address, value: delivery.recipient_address });
   }
-
   if (galleryName) {
     infoRows.push({ label: t.gallery, value: galleryName });
   }
 
+  // Table columns
+  const cols = [
+    { key: 'no', label: t.no, width: COL_NO },
+    { key: 'image', label: t.image, width: COL_IMG },
+    { key: 'ref', label: t.reference, width: COL_REF },
+    { key: 'title', label: t.title, width: COL_TITLE },
+    { key: 'category', label: t.category, width: COL_CAT },
+    { key: 'dims', label: t.dimensions, width: COL_DIM },
+  ];
+
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" style={s.page} wrap>
         {/* ----- Header -------------------------------------------------- */}
-        <PDFHeader
-          title={t.deliveryReceipt}
-          subtitle={delivery.delivery_number}
-          language={language}
-        />
+        <View style={s.headerRow} fixed>
+          <View>
+            <Text style={s.headerTitle}>Simon Berger</Text>
+            <Text style={s.headerSubtitle}>{t.deliveryReceipt}</Text>
+          </View>
+          <Text style={s.headerRight}>{delivery.delivery_number}</Text>
+        </View>
 
         {/* ----- Delivery Info ------------------------------------------- */}
-        <View style={styles.infoGrid}>
+        <View style={s.infoGrid}>
           {infoRows.map((row) => (
-            <View style={styles.infoRow} key={row.label}>
-              <Text style={styles.infoLabel}>{row.label}</Text>
-              <Text style={styles.infoValue}>{row.value}</Text>
+            <View style={s.infoRow} key={row.label}>
+              <Text style={s.infoLabel}>{row.label}</Text>
+              <Text style={s.infoValue}>{row.value}</Text>
             </View>
           ))}
         </View>
 
-        {/* ----- Items Table --------------------------------------------- */}
-        <View style={styles.table}>
-          {/* Table header */}
-          <View style={styles.tableHeaderRow}>
-            <Text style={[styles.tableHeaderCell, { width: COL_NUM }]}>
-              {t.item}
+        {/* ----- Table Header -------------------------------------------- */}
+        <View style={s.listHeaderRow} fixed>
+          {cols.map((col) => (
+            <Text
+              key={col.key}
+              style={[s.listHeaderCell, { width: col.width }]}
+            >
+              {col.label}
             </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_IMG }]}>
-              {t.image}
+          ))}
+        </View>
+
+        {/* ----- Table Body ---------------------------------------------- */}
+        {items.map((item, index) => (
+          <View
+            key={`${item.artwork_reference_code}-${index}`}
+            style={index % 2 === 1 ? s.listBodyRowAlt : s.listBodyRow}
+            wrap={false}
+          >
+            <Text style={[s.listCell, { width: COL_NO }]}>{index + 1}</Text>
+            <View style={{ width: COL_IMG }}>
+              {item.artwork_image_url ? (
+                <Image src={item.artwork_image_url} style={s.listThumbnail} />
+              ) : (
+                <View style={s.listThumbPlaceholder}>
+                  <Text style={s.listThumbText}>{'\u2014'}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[s.listCell, { width: COL_REF }]}>
+              {item.artwork_reference_code}
             </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_REF }]}>
-              {t.reference}
+            <Text style={[s.listCellBold, { width: COL_TITLE }]}>
+              {item.artwork_title}
             </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_TITLE }]}>
-              {t.title}
+            <Text style={[s.listCell, { width: COL_CAT }]}>
+              {item.artwork_category ?? '\u2014'}
             </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_CAT }]}>
-              {t.category}
-            </Text>
-            <Text style={[styles.tableHeaderCell, { width: COL_DIM }]}>
-              {t.dimensions}
+            <Text style={[s.listCell, { width: COL_DIM }]}>
+              {item.artwork_dimensions || '\u2014'}
             </Text>
           </View>
-
-          {/* Table body */}
-          {items.map((item, index) => (
-            <View
-              style={[
-                index % 2 === 1 ? styles.tableBodyRowAlt : styles.tableBodyRow,
-                { minHeight: 50, alignItems: 'center' },
-              ]}
-              key={`${item.artwork_reference_code}-${index}`}
-            >
-              <Text style={[styles.tableCell, { width: COL_NUM }]}>
-                {index + 1}
-              </Text>
-              <View
-                style={{
-                  width: COL_IMG,
-                  paddingHorizontal: 4,
-                  paddingVertical: 3,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                {item.artwork_image_url ? (
-                  <Image
-                    src={item.artwork_image_url}
-                    style={{
-                      width: 42,
-                      height: 42,
-                      objectFit: 'cover',
-                      borderRadius: 2,
-                    }}
-                  />
-                ) : (
-                  <View
-                    style={{
-                      width: 42,
-                      height: 42,
-                      backgroundColor: '#f3f4f6',
-                      borderRadius: 2,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text style={{ fontSize: 6, color: '#9ca3af' }}>
-                      No image
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text style={[styles.tableCell, { width: COL_REF }]}>
-                {item.artwork_reference_code}
-              </Text>
-              <Text style={[styles.tableCell, { width: COL_TITLE }]}>
-                {item.artwork_title}
-              </Text>
-              <Text style={[styles.tableCell, { width: COL_CAT }]}>
-                {item.artwork_category ?? '\u2014'}
-              </Text>
-              <Text style={[styles.tableCell, { width: COL_DIM }]}>
-                {item.artwork_dimensions}
-              </Text>
-            </View>
-          ))}
-        </View>
+        ))}
 
         {/* ----- Signature Area ------------------------------------------ */}
         <View
@@ -265,10 +390,9 @@ export function DeliveryReceiptPDF({
             marginTop: 40,
           }}
         >
-          {/* Delivered by */}
           <View style={{ width: '45%' }}>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureLabel}>{t.deliveredBy}</Text>
+            <View style={s.signatureLine} />
+            <Text style={s.signatureLabel}>{t.deliveredBy}</Text>
             <View
               style={{
                 width: 200,
@@ -278,13 +402,11 @@ export function DeliveryReceiptPDF({
                 marginBottom: 4,
               }}
             />
-            <Text style={styles.signatureLabel}>{t.signatureDate}</Text>
+            <Text style={s.signatureLabel}>{t.signatureDate}</Text>
           </View>
-
-          {/* Received by */}
           <View style={{ width: '45%' }}>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureLabel}>{t.receivedBy}</Text>
+            <View style={s.signatureLine} />
+            <Text style={s.signatureLabel}>{t.receivedBy}</Text>
             <View
               style={{
                 width: 200,
@@ -294,18 +416,18 @@ export function DeliveryReceiptPDF({
                 marginBottom: 4,
               }}
             />
-            <Text style={styles.signatureLabel}>{t.signatureDate}</Text>
+            <Text style={s.signatureLabel}>{t.signatureDate}</Text>
           </View>
         </View>
 
         {/* ----- Footer -------------------------------------------------- */}
-        <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>
-            {`\u00a9 ${COMPANY_NAME}`}
-          </Text>
+        <View style={s.footer} fixed>
+          <Text style={s.footerText}>{'\u00a9 Simon Berger'}</Text>
           <Text
-            style={styles.pageNumber}
-            render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+            style={s.footerText}
+            render={({ pageNumber, totalPages }) =>
+              `${pageNumber} / ${totalPages}`
+            }
           />
         </View>
       </Page>
