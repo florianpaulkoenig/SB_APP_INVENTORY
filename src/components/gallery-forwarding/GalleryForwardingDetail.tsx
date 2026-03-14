@@ -6,7 +6,7 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { GalleryForwardingPDF } from '../pdf/GalleryForwardingPDF';
 import { formatDate, formatDimensions, formatCurrency, downloadBlob } from '../../lib/utils';
-import { FORWARDING_STATUSES, ARTWORK_CATEGORIES } from '../../lib/constants';
+import { FORWARDING_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
 import type {
   GalleryForwardingOrderRow,
@@ -181,22 +181,24 @@ export function GalleryForwardingDetail({
         }
       }
 
-      // Category label helper
-      const categoryLabel = (val: string | null) => {
-        if (!val) return null;
-        return ARTWORK_CATEGORIES.find((c) => c.value === val)?.label ?? val;
+      // Weight formatter
+      const fmtWeight = (w: number | null) => {
+        if (w == null || w <= 0) return null;
+        return `${w.toFixed(1)} kg`;
       };
 
       const pdfItems = items.map((item) => ({
         reference_code: item.artworks?.reference_code ?? '',
         title: item.artworks?.title ?? '',
-        category: categoryLabel(item.artworks?.category ?? null),
+        medium: item.artworks?.medium ?? null,
         dimensions: formatDimensions(
           item.artworks?.height ?? null,
           item.artworks?.width ?? null,
           item.artworks?.depth ?? null,
           item.artworks?.dimension_unit ?? 'cm',
         ),
+        weight: fmtWeight(item.artworks?.weight ?? null),
+        year: item.artworks?.year ?? null,
         image_url: imageMap[item.artwork_id] ?? null,
       }));
 

@@ -21,10 +21,12 @@ interface TranslationStrings {
   gallery: string;
   no: string;
   image: string;
-  reference: string;
   title: string;
-  category: string;
+  reference: string;
+  medium: string;
   dimensions: string;
+  weight: string;
+  year: string;
   deliveredBy: string;
   receivedBy: string;
   signatureDate: string;
@@ -40,10 +42,12 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     gallery: 'Gallery',
     no: '#',
     image: '',
-    reference: 'Reference',
     title: 'Title',
-    category: 'Category',
+    reference: 'Ref.',
+    medium: 'Medium',
     dimensions: 'Dimensions',
+    weight: 'Weight',
+    year: 'Year',
     deliveredBy: 'Delivered by',
     receivedBy: 'Received by',
     signatureDate: 'Date',
@@ -57,10 +61,12 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     gallery: 'Galerie',
     no: '#',
     image: '',
-    reference: 'Referenz',
     title: 'Titel',
-    category: 'Kategorie',
+    reference: 'Ref.',
+    medium: 'Technik',
     dimensions: 'Ma\u00dfe',
+    weight: 'Gewicht',
+    year: 'Jahr',
     deliveredBy: '\u00dcbergeben von',
     receivedBy: 'Empfangen von',
     signatureDate: 'Datum',
@@ -74,10 +80,12 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     gallery: 'Galerie',
     no: '#',
     image: '',
-    reference: 'R\u00e9f\u00e9rence',
     title: 'Titre',
-    category: 'Cat\u00e9gorie',
+    reference: 'R\u00e9f.',
+    medium: 'Technique',
     dimensions: 'Dimensions',
+    weight: 'Poids',
+    year: 'Ann\u00e9e',
     deliveredBy: 'Livr\u00e9 par',
     receivedBy: 'Re\u00e7u par',
     signatureDate: 'Date',
@@ -100,8 +108,10 @@ export interface DeliveryReceiptPDFProps {
   items: Array<{
     artwork_title: string;
     artwork_reference_code: string;
-    artwork_category: string | null;
+    artwork_medium: string | null;
     artwork_dimensions: string;
+    artwork_weight: string | null;
+    artwork_year: number | null;
     artwork_image_url: string | null;
   }>;
   language: 'en' | 'de' | 'fr';
@@ -109,20 +119,22 @@ export interface DeliveryReceiptPDFProps {
 
 // ---------------------------------------------------------------------------
 // Proportional column widths (matching CataloguePDF list approach)
+// Nr., Picture, Title, Ref, Medium, Dimension, Weight, Year
 // ---------------------------------------------------------------------------
-const USABLE = 535; // A4 width minus 30pt margins each side
+const USABLE = 535;
 const COL_NO = 18;
 const COL_IMG = 50;
 const FLEX_SPACE = USABLE - COL_NO - COL_IMG;
 
-// Column weights for: ref, title, category, dimensions
-const WEIGHTS = { ref: 1.3, title: 1.5, category: 1, dims: 1.2 };
-const TOTAL_WEIGHT = WEIGHTS.ref + WEIGHTS.title + WEIGHTS.category + WEIGHTS.dims;
+const WEIGHTS = { title: 1.5, ref: 1, medium: 1, dims: 1.2, weight: 0.6, year: 0.5 };
+const TOTAL_WEIGHT = WEIGHTS.title + WEIGHTS.ref + WEIGHTS.medium + WEIGHTS.dims + WEIGHTS.weight + WEIGHTS.year;
 
-const COL_REF = Math.round((WEIGHTS.ref / TOTAL_WEIGHT) * FLEX_SPACE);
 const COL_TITLE = Math.round((WEIGHTS.title / TOTAL_WEIGHT) * FLEX_SPACE);
-const COL_CAT = Math.round((WEIGHTS.category / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_REF = Math.round((WEIGHTS.ref / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_MEDIUM = Math.round((WEIGHTS.medium / TOTAL_WEIGHT) * FLEX_SPACE);
 const COL_DIM = Math.round((WEIGHTS.dims / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_WEIGHT = Math.round((WEIGHTS.weight / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_YEAR = Math.round((WEIGHTS.year / TOTAL_WEIGHT) * FLEX_SPACE);
 
 // ---------------------------------------------------------------------------
 // Styles (matching CataloguePDF list layout)
@@ -306,14 +318,16 @@ export function DeliveryReceiptPDF({
     infoRows.push({ label: t.gallery, value: galleryName });
   }
 
-  // Table columns (matching catalogue order: #, image, title, ref, ...)
+  // Table columns: Nr., Picture, Title, Ref, Medium, Dimension, Weight, Year
   const cols = [
     { key: 'no', label: t.no, width: COL_NO },
     { key: 'image', label: t.image, width: COL_IMG },
     { key: 'title', label: t.title, width: COL_TITLE },
     { key: 'ref', label: t.reference, width: COL_REF },
-    { key: 'category', label: t.category, width: COL_CAT },
+    { key: 'medium', label: t.medium, width: COL_MEDIUM },
     { key: 'dims', label: t.dimensions, width: COL_DIM },
+    { key: 'weight', label: t.weight, width: COL_WEIGHT },
+    { key: 'year', label: t.year, width: COL_YEAR },
   ];
 
   return (
@@ -373,11 +387,17 @@ export function DeliveryReceiptPDF({
             <Text style={[s.listCell, { width: COL_REF }]}>
               {item.artwork_reference_code}
             </Text>
-            <Text style={[s.listCell, { width: COL_CAT }]}>
-              {item.artwork_category ?? '\u2014'}
+            <Text style={[s.listCell, { width: COL_MEDIUM }]}>
+              {item.artwork_medium ?? '\u2014'}
             </Text>
             <Text style={[s.listCell, { width: COL_DIM }]}>
               {item.artwork_dimensions || '\u2014'}
+            </Text>
+            <Text style={[s.listCell, { width: COL_WEIGHT }]}>
+              {item.artwork_weight ?? '\u2014'}
+            </Text>
+            <Text style={[s.listCell, { width: COL_YEAR }]}>
+              {item.artwork_year != null ? String(item.artwork_year) : '\u2014'}
             </Text>
           </View>
         ))}

@@ -31,6 +31,7 @@ export interface DeliveryItemWithJoins extends DeliveryItemRow {
     width: number | null;
     depth: number | null;
     dimension_unit: string | null;
+    weight: number | null;
     status: string | null;
   } | null;
 }
@@ -70,7 +71,7 @@ export interface UseDeliveriesReturn {
 
 const DELIVERY_SELECT = `*, galleries(name)`;
 
-const DELIVERY_ITEM_SELECT = `*, artworks(title, reference_code, medium, category, year, height, width, depth, dimension_unit, status)`;
+const DELIVERY_ITEM_SELECT = `*, artworks(title, reference_code, medium, category, year, height, width, depth, dimension_unit, weight, status)`;
 
 // ---------------------------------------------------------------------------
 // Hook -- list all deliveries with optional filters

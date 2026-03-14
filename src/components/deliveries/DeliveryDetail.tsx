@@ -6,7 +6,7 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { DeliveryReceiptPDF } from '../pdf/DeliveryReceiptPDF';
 import { formatDate, formatDimensions, downloadBlob } from '../../lib/utils';
-import { DELIVERY_STATUSES, ARTWORK_CATEGORIES } from '../../lib/constants';
+import { DELIVERY_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
 import type { DeliveryRow, DeliveryItemRow, DeliveryStatus } from '../../types/database';
 
@@ -182,16 +182,16 @@ export function DeliveryDetail({
         }
       }
 
-      // Category label helper
-      const categoryLabel = (val: string | null) => {
-        if (!val) return null;
-        return ARTWORK_CATEGORIES.find((c) => c.value === val)?.label ?? val;
+      // Weight formatter
+      const fmtWeight = (w: number | null) => {
+        if (w == null || w <= 0) return null;
+        return `${w.toFixed(1)} kg`;
       };
 
       const pdfItems = items.map((item) => ({
         artwork_title: item.artworks?.title ?? 'Untitled',
         artwork_reference_code: item.artworks?.reference_code ?? '',
-        artwork_category: categoryLabel(item.artworks?.category ?? null),
+        artwork_medium: item.artworks?.medium ?? null,
         artwork_dimensions: item.artworks
           ? formatDimensions(
               item.artworks.height ?? null,
@@ -200,6 +200,8 @@ export function DeliveryDetail({
               item.artworks.dimension_unit ?? 'cm',
             )
           : '',
+        artwork_weight: fmtWeight(item.artworks?.weight ?? null),
+        artwork_year: item.artworks?.year ?? null,
         artwork_image_url: imageMap[item.artwork_id] ?? null,
       }));
 

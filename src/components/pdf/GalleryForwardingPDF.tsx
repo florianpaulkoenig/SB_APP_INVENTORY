@@ -26,10 +26,12 @@ interface TranslationStrings {
   insuranceValue: string;
   no: string;
   image: string;
-  reference: string;
   title: string;
-  category: string;
+  reference: string;
+  medium: string;
   dimensions: string;
+  weight: string;
+  year: string;
   notes: string;
   shippedBy: string;
   receivedBy: string;
@@ -51,10 +53,12 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     insuranceValue: 'Insurance Value',
     no: '#',
     image: '',
-    reference: 'Reference',
     title: 'Title',
-    category: 'Category',
+    reference: 'Ref.',
+    medium: 'Medium',
     dimensions: 'Dimensions',
+    weight: 'Weight',
+    year: 'Year',
     notes: 'Notes',
     shippedBy: 'Shipped by',
     receivedBy: 'Received by',
@@ -74,10 +78,12 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     insuranceValue: 'Versicherungswert',
     no: '#',
     image: '',
-    reference: 'Referenz',
     title: 'Titel',
-    category: 'Kategorie',
+    reference: 'Ref.',
+    medium: 'Technik',
     dimensions: 'Ma\u00dfe',
+    weight: 'Gewicht',
+    year: 'Jahr',
     notes: 'Anmerkungen',
     shippedBy: 'Versendet von',
     receivedBy: 'Empfangen von',
@@ -97,10 +103,12 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     insuranceValue: "Valeur d'assurance",
     no: '#',
     image: '',
-    reference: 'R\u00e9f\u00e9rence',
     title: 'Titre',
-    category: 'Cat\u00e9gorie',
+    reference: 'R\u00e9f.',
+    medium: 'Technique',
     dimensions: 'Dimensions',
+    weight: 'Poids',
+    year: 'Ann\u00e9e',
     notes: 'Notes',
     shippedBy: 'Exp\u00e9di\u00e9 par',
     receivedBy: 'Re\u00e7u par',
@@ -126,8 +134,10 @@ export interface GalleryForwardingPDFProps {
   items: Array<{
     reference_code: string;
     title: string;
-    category: string | null;
+    medium: string | null;
     dimensions: string;
+    weight: string | null;
+    year: number | null;
     image_url: string | null;
   }>;
   fromGalleryName?: string | null;
@@ -144,14 +154,16 @@ const COL_NO = 18;
 const COL_IMG = 50;
 const FLEX_SPACE = USABLE - COL_NO - COL_IMG;
 
-// Column weights for: ref, title, category, dimensions
-const WEIGHTS = { ref: 1.3, title: 1.5, category: 1, dims: 1.2 };
-const TOTAL_WEIGHT = WEIGHTS.ref + WEIGHTS.title + WEIGHTS.category + WEIGHTS.dims;
+// Column weights: title, ref, medium, dims, weight, year
+const WEIGHTS = { title: 1.5, ref: 1, medium: 1, dims: 1.2, weight: 0.6, year: 0.5 };
+const TOTAL_WEIGHT = WEIGHTS.title + WEIGHTS.ref + WEIGHTS.medium + WEIGHTS.dims + WEIGHTS.weight + WEIGHTS.year;
 
-const COL_REF = Math.round((WEIGHTS.ref / TOTAL_WEIGHT) * FLEX_SPACE);
 const COL_TITLE = Math.round((WEIGHTS.title / TOTAL_WEIGHT) * FLEX_SPACE);
-const COL_CAT = Math.round((WEIGHTS.category / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_REF = Math.round((WEIGHTS.ref / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_MEDIUM = Math.round((WEIGHTS.medium / TOTAL_WEIGHT) * FLEX_SPACE);
 const COL_DIM = Math.round((WEIGHTS.dims / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_WEIGHT = Math.round((WEIGHTS.weight / TOTAL_WEIGHT) * FLEX_SPACE);
+const COL_YEAR = Math.round((WEIGHTS.year / TOTAL_WEIGHT) * FLEX_SPACE);
 
 // ---------------------------------------------------------------------------
 // Helper: format currency
@@ -386,14 +398,16 @@ export function GalleryForwardingPDF({
     });
   }
 
-  // Table columns (matching catalogue order: #, image, title, ref, ...)
+  // Table columns: Nr., Picture, Title, Ref, Medium, Dimension, Weight, Year
   const cols = [
     { key: 'no', label: t.no, width: COL_NO },
     { key: 'image', label: t.image, width: COL_IMG },
     { key: 'title', label: t.title, width: COL_TITLE },
     { key: 'ref', label: t.reference, width: COL_REF },
-    { key: 'category', label: t.category, width: COL_CAT },
+    { key: 'medium', label: t.medium, width: COL_MEDIUM },
     { key: 'dims', label: t.dimensions, width: COL_DIM },
+    { key: 'weight', label: t.weight, width: COL_WEIGHT },
+    { key: 'year', label: t.year, width: COL_YEAR },
   ];
 
   return (
@@ -453,11 +467,17 @@ export function GalleryForwardingPDF({
             <Text style={[s.listCell, { width: COL_REF }]}>
               {item.reference_code}
             </Text>
-            <Text style={[s.listCell, { width: COL_CAT }]}>
-              {item.category ?? '\u2014'}
+            <Text style={[s.listCell, { width: COL_MEDIUM }]}>
+              {item.medium ?? '\u2014'}
             </Text>
             <Text style={[s.listCell, { width: COL_DIM }]}>
               {item.dimensions || '\u2014'}
+            </Text>
+            <Text style={[s.listCell, { width: COL_WEIGHT }]}>
+              {item.weight ?? '\u2014'}
+            </Text>
+            <Text style={[s.listCell, { width: COL_YEAR }]}>
+              {item.year != null ? String(item.year) : '\u2014'}
             </Text>
           </View>
         ))}
