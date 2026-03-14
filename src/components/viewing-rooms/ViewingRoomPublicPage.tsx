@@ -532,10 +532,13 @@ export function ViewingRoomPublicPage({ slug }: ViewingRoomPublicPageProps) {
     usePublicViewingRoom(slug);
   const [unlocked, setUnlocked] = useState(false);
 
-  // Log a view (fire-and-forget, anon insert allowed by RLS)
+  // Log a view via rate-limited RPC (fire-and-forget)
   useEffect(() => {
     if (room?.id) {
-      supabase.from('viewing_room_views').insert({ viewing_room_id: room.id } as never);
+      supabase.rpc('record_viewing_room_view', {
+        p_viewing_room_id: room.id,
+        p_viewer_ip: null,
+      });
     }
   }, [room?.id]);
 

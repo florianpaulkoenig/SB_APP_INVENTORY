@@ -101,7 +101,6 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
   const createDeal = useCallback(
     async (data: DealInsert): Promise<DealRow | null> => {
       try {
-        // Auto-set user_id from current session
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -119,24 +118,28 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
 
         if (insertError) throw insertError;
 
+        // Optimistic: prepend to list and bump count
+        setDeals((prev) => [created as DealRow, ...prev]);
+        setTotalCount((prev) => prev + 1);
         toast({ title: 'Deal created', description: `Deal has been added.`, variant: 'success' });
-        await fetchDeals();
 
         return created as DealRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create deal';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
-    [toast, fetchDeals],
+    [toast],
   );
 
   // ---- Update deal --------------------------------------------------------
 
   const updateDeal = useCallback(
     async (id: string, data: DealUpdate): Promise<DealRow | null> => {
+      // Optimistic: apply update immediately
+      const previous = deals;
+      setDeals((prev) => prev.map((d) => (d.id === id ? { ...d, ...data } as DealRow : d)));
+
       try {
         const { data: updated, error: updateError } = await supabase
           .from('deals')
@@ -147,24 +150,30 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
 
         if (updateError) throw updateError;
 
+        // Replace with server-confirmed data
+        setDeals((prev) => prev.map((d) => (d.id === id ? (updated as DealRow) : d)));
         toast({ title: 'Deal updated', description: `Deal has been saved.`, variant: 'success' });
-        await fetchDeals();
 
         return updated as DealRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update deal';
+        // Rollback on error
+        setDeals(previous);
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
-    [toast, fetchDeals],
+    [deals, toast],
   );
 
   // ---- Delete deal --------------------------------------------------------
 
   const deleteDeal = useCallback(
     async (id: string): Promise<boolean> => {
+      // Optimistic: remove from list immediately
+      const previous = deals;
+      setDeals((prev) => prev.filter((d) => d.id !== id));
+      setTotalCount((prev) => prev - 1);
+
       try {
         const { error: deleteError } = await supabase
           .from('deals')
@@ -174,17 +183,16 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
         if (deleteError) throw deleteError;
 
         toast({ title: 'Deal deleted', variant: 'success' });
-        await fetchDeals();
-
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete deal';
+        // Rollback on error
+        setDeals(previous);
+        setTotalCount((prev) => prev + 1);
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
-    [toast, fetchDeals],
+    [deals, toast],
   );
 
   return {
@@ -240,8 +248,6 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
 
       setDeals((data as DealRow[]) ?? []);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to fetch deals';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
@@ -274,24 +280,27 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
 
         if (insertError) throw insertError;
 
+        // Optimistic: prepend to list
+        setDeals((prev) => [created as DealRow, ...prev]);
         toast({ title: 'Deal created', description: `Deal has been added.`, variant: 'success' });
-        await fetchDeals();
 
         return created as DealRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create deal';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
-    [toast, fetchDeals],
+    [toast],
   );
 
   // ---- Update deal --------------------------------------------------------
 
   const updateDeal = useCallback(
     async (id: string, data: DealUpdate): Promise<DealRow | null> => {
+      // Optimistic: apply update immediately
+      const previous = deals;
+      setDeals((prev) => prev.map((d) => (d.id === id ? { ...d, ...data } as DealRow : d)));
+
       try {
         const { data: updated, error: updateError } = await supabase
           .from('deals')
@@ -302,24 +311,27 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
 
         if (updateError) throw updateError;
 
+        setDeals((prev) => prev.map((d) => (d.id === id ? (updated as DealRow) : d)));
         toast({ title: 'Deal updated', description: `Deal has been saved.`, variant: 'success' });
-        await fetchDeals();
 
         return updated as DealRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update deal';
+        setDeals(previous);
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
-    [toast, fetchDeals],
+    [deals, toast],
   );
 
   // ---- Delete deal --------------------------------------------------------
 
   const deleteDeal = useCallback(
     async (id: string): Promise<boolean> => {
+      // Optimistic: remove from list immediately
+      const previous = deals;
+      setDeals((prev) => prev.filter((d) => d.id !== id));
+
       try {
         const { error: deleteError } = await supabase
           .from('deals')
@@ -329,17 +341,14 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
         if (deleteError) throw deleteError;
 
         toast({ title: 'Deal deleted', variant: 'success' });
-        await fetchDeals();
-
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete deal';
+        setDeals(previous);
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
-    [toast, fetchDeals],
+    [deals, toast],
   );
 
   return {

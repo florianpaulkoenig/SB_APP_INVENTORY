@@ -149,8 +149,9 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
 
         if (insertError) throw insertError;
 
+        // Optimistic: append to list immediately
+        setTasks((prev) => [...prev, created as TaskRow]);
         toast({ title: 'Task created', description: `"${created.title}" has been added.`, variant: 'success' });
-        await fetchTasks();
 
         return created as TaskRow;
       } catch (err: unknown) {
@@ -160,13 +161,17 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         return null;
       }
     },
-    [toast, fetchTasks],
+    [toast],
   );
 
   // ---- Update task --------------------------------------------------------
 
   const updateTask = useCallback(
     async (id: string, data: TaskUpdate): Promise<TaskRow | null> => {
+      // Optimistic: apply update immediately
+      const previous = tasks;
+      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } as TaskRow : t)));
+
       try {
         const { data: updated, error: updateError } = await supabase
           .from('tasks')
@@ -177,24 +182,29 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
 
         if (updateError) throw updateError;
 
+        // Replace with server-confirmed data
+        setTasks((prev) => prev.map((t) => (t.id === id ? (updated as TaskRow) : t)));
         toast({ title: 'Task updated', description: `"${updated.title}" has been saved.`, variant: 'success' });
-        await fetchTasks();
 
         return updated as TaskRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update task';
+        // Rollback on error
+        setTasks(previous);
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
-    [toast, fetchTasks],
+    [tasks, toast],
   );
 
   // ---- Delete task --------------------------------------------------------
 
   const deleteTask = useCallback(
     async (id: string): Promise<boolean> => {
+      // Optimistic: remove from list immediately
+      const previous = tasks;
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+
       try {
         const { error: deleteError } = await supabase
           .from('tasks')
@@ -204,23 +214,25 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         if (deleteError) throw deleteError;
 
         toast({ title: 'Task deleted', variant: 'success' });
-        await fetchTasks();
-
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete task';
+        // Rollback on error
+        setTasks(previous);
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
     },
-    [toast, fetchTasks],
+    [tasks, toast],
   );
 
   // ---- Toggle complete ----------------------------------------------------
 
   const toggleComplete = useCallback(
     async (id: string, currentState: boolean): Promise<TaskRow | null> => {
+      // Optimistic: toggle immediately
+      const previous = tasks;
+      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !currentState } as TaskRow : t)));
+
       try {
         const { data: updated, error: updateError } = await supabase
           .from('tasks')
@@ -231,22 +243,22 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
 
         if (updateError) throw updateError;
 
+        setTasks((prev) => prev.map((t) => (t.id === id ? (updated as TaskRow) : t)));
         toast({
           title: updated.completed ? 'Task completed' : 'Task reopened',
           description: `"${updated.title}" has been ${updated.completed ? 'completed' : 'reopened'}.`,
           variant: 'success',
         });
-        await fetchTasks();
 
         return updated as TaskRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to toggle task';
+        // Rollback on error
+        setTasks(previous);
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
     },
-    [toast, fetchTasks],
+    [tasks, toast],
   );
 
   return {

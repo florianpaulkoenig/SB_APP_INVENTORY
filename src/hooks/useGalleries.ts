@@ -125,8 +125,10 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
 
         if (insertError) throw insertError;
 
+        // Optimistic: append to list and bump count
+        setGalleries((prev) => [...prev, created as GalleryRow]);
+        setTotalCount((prev) => prev + 1);
         toast({ title: 'Gallery created', description: `"${created.name}" has been added.`, variant: 'success' });
-        await fetchGalleries();
 
         return created as GalleryRow;
       } catch (err: unknown) {
@@ -137,13 +139,17 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         return null;
       }
     },
-    [toast, fetchGalleries],
+    [toast],
   );
 
   // ---- Update gallery -----------------------------------------------------
 
   const updateGallery = useCallback(
     async (id: string, data: GalleryUpdate): Promise<GalleryRow | null> => {
+      // Optimistic: apply update immediately
+      const previous = galleries;
+      setGalleries((prev) => prev.map((g) => (g.id === id ? { ...g, ...data } as GalleryRow : g)));
+
       try {
         const { data: updated, error: updateError } = await supabase
           .from('galleries')
@@ -154,11 +160,14 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
 
         if (updateError) throw updateError;
 
+        // Replace with server-confirmed data
+        setGalleries((prev) => prev.map((g) => (g.id === id ? (updated as GalleryRow) : g)));
         toast({ title: 'Gallery updated', description: `"${updated.name}" has been saved.`, variant: 'success' });
-        await fetchGalleries();
 
         return updated as GalleryRow;
       } catch (err: unknown) {
+        // Rollback on error
+        setGalleries(previous);
         const message =
           err instanceof Error ? err.message : 'Failed to update gallery';
         console.error('updateGallery error:', err);
@@ -166,13 +175,18 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         return null;
       }
     },
-    [toast, fetchGalleries],
+    [galleries, toast],
   );
 
   // ---- Delete gallery -----------------------------------------------------
 
   const deleteGallery = useCallback(
     async (id: string): Promise<boolean> => {
+      // Optimistic: remove from list immediately
+      const previous = galleries;
+      setGalleries((prev) => prev.filter((g) => g.id !== id));
+      setTotalCount((prev) => prev - 1);
+
       try {
         const { error: deleteError } = await supabase
           .from('galleries')
@@ -182,10 +196,11 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         if (deleteError) throw deleteError;
 
         toast({ title: 'Gallery deleted', variant: 'success' });
-        await fetchGalleries();
-
         return true;
       } catch (err: unknown) {
+        // Rollback on error
+        setGalleries(previous);
+        setTotalCount((prev) => prev + 1);
         const message =
           err instanceof Error ? err.message : 'Failed to delete gallery';
         console.error('deleteGallery error:', err);
@@ -193,7 +208,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         return false;
       }
     },
-    [toast, fetchGalleries],
+    [galleries, toast],
   );
 
   return {

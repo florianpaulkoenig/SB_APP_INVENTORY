@@ -1176,10 +1176,8 @@ CREATE POLICY "Admin can view viewing_room_views" ON viewing_room_views
   FOR SELECT TO authenticated USING (
     viewing_room_id IN (SELECT id FROM viewing_rooms WHERE user_id = auth.uid())
   );
-CREATE POLICY "Anyone can insert viewing_room_views" ON viewing_room_views
-  FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "Auth users can insert viewing_room_views" ON viewing_room_views
-  FOR INSERT TO authenticated WITH CHECK (true);
+-- INSERT is handled via rate-limited RPC: record_viewing_room_view()
+-- No direct INSERT policies — prevents anonymous flood attacks.
 
 -- Reload schema cache
 NOTIFY pgrst, 'reload schema';
