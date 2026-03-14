@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // NOA Inventory -- Catalogue PDF
-// Magazine-style catalogue with full-bleed images, 2-page artwork spreads,
+// Clean catalogue with artwork image + details on same page,
 // section dividers, and a compact list layout.
 // Uses @react-pdf/renderer.
 // ---------------------------------------------------------------------------
@@ -175,15 +175,6 @@ const s = StyleSheet.create({
     padding: 48,
     paddingBottom: 56,
   },
-  coverCompany: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 9,
-    color: '#ffffff',
-    textTransform: 'uppercase',
-    letterSpacing: 4,
-    marginBottom: 24,
-    opacity: 0.7,
-  },
   coverTitle: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
@@ -211,16 +202,22 @@ const s = StyleSheet.create({
     marginBottom: 24,
     opacity: 0.75,
   },
-  coverMetaRow: {
-    flexDirection: 'row' as const,
-    marginTop: 8,
-  },
   coverMetaText: {
     fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: '#ffffff',
     letterSpacing: 0.5,
     opacity: 0.6,
+    marginBottom: 3,
+  },
+  coverCompanySmall: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 7,
+    color: '#ffffff',
+    textTransform: 'uppercase',
+    letterSpacing: 3,
+    opacity: 0.5,
+    marginTop: 16,
   },
 
   // ---- Cover: clean white (no image) ---------------------------------------
@@ -230,21 +227,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 60,
-  },
-  coverCleanCompany: {
-    fontFamily: 'AnzianoPro',
-    fontWeight: 'bold' as const,
-    fontSize: 16,
-    color: PDF_COLORS.primary900,
-    textTransform: 'uppercase',
-    letterSpacing: 4,
-    marginBottom: 20,
-  },
-  coverCleanLine: {
-    width: 60,
-    height: 1.5,
-    backgroundColor: PDF_COLORS.primary900,
-    marginBottom: 32,
   },
   coverCleanTitle: {
     fontFamily: 'AnzianoPro',
@@ -263,6 +245,12 @@ const s = StyleSheet.create({
     color: PDF_COLORS.primary400,
     textAlign: 'center',
     letterSpacing: 1,
+    marginBottom: 16,
+  },
+  coverCleanLine: {
+    width: 60,
+    height: 1.5,
+    backgroundColor: PDF_COLORS.primary900,
     marginBottom: 24,
   },
   coverCleanBody: {
@@ -279,7 +267,7 @@ const s = StyleSheet.create({
     fontSize: 9,
     color: PDF_COLORS.primary400,
     letterSpacing: 1.5,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   coverCleanContactName: {
     fontFamily: 'AnzianoPro',
@@ -291,6 +279,14 @@ const s = StyleSheet.create({
     fontFamily: 'AnzianoPro',
     fontSize: 8,
     color: PDF_COLORS.primary400,
+    marginBottom: 16,
+  },
+  coverCleanCompany: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 7,
+    color: PDF_COLORS.primary400,
+    textTransform: 'uppercase',
+    letterSpacing: 3,
   },
 
   // ---- Text page -----------------------------------------------------------
@@ -301,19 +297,27 @@ const s = StyleSheet.create({
     paddingBottom: 60,
     paddingHorizontal: 60,
   },
-  textPageCompany: {
+  textPageTitle: {
     fontFamily: 'AnzianoPro',
-    fontSize: 9,
-    color: PDF_COLORS.primary400,
+    fontWeight: 'bold' as const,
+    fontSize: 22,
+    color: PDF_COLORS.primary900,
     textTransform: 'uppercase',
-    letterSpacing: 3,
-    marginBottom: 8,
+    letterSpacing: 1.5,
+    marginBottom: 6,
+  },
+  textPageSubtitle: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 11,
+    color: PDF_COLORS.primary400,
+    letterSpacing: 0.5,
+    marginBottom: 20,
   },
   textPageLine: {
     width: 40,
     height: 1,
     backgroundColor: PDF_COLORS.primary900,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   textPageParagraph: {
     fontFamily: 'AnzianoPro',
@@ -353,90 +357,82 @@ const s = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // ---- Full-page image page ------------------------------------------------
-  imgPage: {
+  // ---- Full-page layout: image + details on same page ----------------------
+  artworkPage: {
     fontFamily: 'AnzianoPro',
     backgroundColor: '#ffffff',
-    position: 'relative',
-    padding: 0,
+    paddingTop: 40,
+    paddingBottom: 60,
+    paddingHorizontal: 50,
   },
-  imgWrapper: {
+  artworkImageContainer: {
     width: '100%',
-    height: '100%',
+    height: 420,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 24,
   },
-  imgFull: {
-    width: '100%',
-    height: '100%',
+  artworkImage: {
+    maxWidth: '100%',
+    maxHeight: 420,
     objectFit: 'contain',
   },
-  imgPlaceholder: {
+  artworkPlaceholder: {
     width: '100%',
-    height: '100%',
-    backgroundColor: '#f0f0f0',
+    height: 420,
+    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  imgPlaceholderText: {
+  artworkPlaceholderText: {
     fontFamily: 'AnzianoPro',
-    fontSize: 14,
+    fontSize: 12,
     color: PDF_COLORS.primary400,
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
-
-  // ---- Detail page (Page 2 of spread) --------------------------------------
-  detailPage: {
-    fontFamily: 'AnzianoPro',
-    backgroundColor: '#ffffff',
-    paddingTop: 80,
-    paddingBottom: 60,
-    paddingHorizontal: 60,
-    justifyContent: 'center',
-  },
-  detailTitle: {
+  artworkTitle: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 28,
+    fontSize: 18,
     color: PDF_COLORS.primary900,
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    lineHeight: 1.1,
-    marginBottom: 6,
+    letterSpacing: 1,
+    lineHeight: 1.15,
+    marginBottom: 4,
   },
-  detailRefCode: {
+  artworkRefCode: {
     fontFamily: 'AnzianoPro',
     fontSize: 8,
     color: PDF_COLORS.primary400,
     letterSpacing: 1,
-    marginBottom: 28,
+    marginBottom: 16,
   },
-  detailLine: {
-    width: 40,
+  artworkLine: {
+    width: 30,
     height: 1,
     backgroundColor: PDF_COLORS.primary900,
-    marginBottom: 24,
+    marginBottom: 14,
   },
-  detailRow: {
+  artworkDetailRow: {
     flexDirection: 'row' as const,
-    marginBottom: 10,
+    marginBottom: 6,
   },
-  detailLabel: {
+  artworkDetailLabel: {
     fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary400,
-    width: 90,
+    width: 80,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
-  detailValue: {
+  artworkDetailValue: {
     fontFamily: 'AnzianoPro',
-    fontSize: 10,
+    fontSize: 9,
     color: PDF_COLORS.primary900,
     flex: 1,
   },
-  detailHeaderLabel: {
+  artworkHeaderLabel: {
     fontFamily: 'AnzianoPro',
     fontSize: 6,
     color: PDF_COLORS.primary400,
@@ -672,7 +668,6 @@ export function CataloguePDF({
   const groups = groupArtworks(artworks, dividerMode);
 
   // Build all artwork pages as a flat array to avoid fragment/nesting issues
-  // with @react-pdf/renderer
   const artworkPages: React.ReactElement[] = [];
 
   if (layout === 'full-page') {
@@ -690,50 +685,48 @@ export function CataloguePDF({
         );
       }
 
-      // Each artwork: image page + detail page
+      // Each artwork: image + details on SAME page
       for (const aw of group.artworks) {
         const rows = buildDetailRows(aw, t, visibility);
         const sectionLabel = dividerMode !== 'none' ? group.label : undefined;
 
-        // PAGE 1: Image page
         artworkPages.push(
-          <Page key={`img-${aw.reference_code}`} size="A4" style={s.imgPage}>
-            <View style={s.imgWrapper}>
-              {aw.imageUrl ? (
-                <Image src={aw.imageUrl} style={s.imgFull} />
-              ) : (
-                <View style={s.imgPlaceholder}>
-                  <Text style={s.imgPlaceholderText}>{aw.title}</Text>
-                </View>
-              )}
-            </View>
-          </Page>
-        );
-
-        // PAGE 2: Detail page
-        artworkPages.push(
-          <Page key={`det-${aw.reference_code}`} size="A4" style={s.detailPage}>
-            <View style={{ position: 'absolute', top: 24, left: 60, right: 60, flexDirection: 'row', justifyContent: 'space-between' }} fixed>
-              <Text style={s.detailHeaderLabel}>
+          <Page key={`aw-${aw.reference_code}`} size="A4" style={s.artworkPage}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }} fixed>
+              <Text style={s.artworkHeaderLabel}>
                 {sectionLabel || COMPANY_NAME}
               </Text>
               <Text
-                style={s.detailHeaderLabel}
+                style={s.artworkHeaderLabel}
                 render={({ pageNumber }) => (pageNumber > 1 ? String(pageNumber - 1) : '')}
               />
             </View>
 
-            <Text style={s.detailTitle}>{aw.title}</Text>
+            {/* Artwork image */}
+            <View style={s.artworkImageContainer}>
+              {aw.imageUrl ? (
+                <Image src={aw.imageUrl} style={s.artworkImage} />
+              ) : (
+                <View style={s.artworkPlaceholder}>
+                  <Text style={s.artworkPlaceholderText}>{aw.title}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Title + details */}
+            <Text style={s.artworkTitle}>{aw.title}</Text>
             {visibility.showReferenceCode && (
-              <Text style={s.detailRefCode}>{aw.reference_code}</Text>
+              <Text style={s.artworkRefCode}>{aw.reference_code}</Text>
             )}
-            <View style={s.detailLine} />
+            <View style={s.artworkLine} />
             {rows.map((row) => (
-              <View style={s.detailRow} key={row.label}>
-                <Text style={s.detailLabel}>{row.label}</Text>
-                <Text style={s.detailValue}>{row.value}</Text>
+              <View style={s.artworkDetailRow} key={row.label}>
+                <Text style={s.artworkDetailLabel}>{row.label}</Text>
+                <Text style={s.artworkDetailValue}>{row.value}</Text>
               </View>
             ))}
+
             <PageFooter />
           </Page>
         );
@@ -742,7 +735,6 @@ export function CataloguePDF({
   } else {
     // List layout
     for (const group of groups) {
-      // Section divider
       if (dividerMode !== 'none' && group.label) {
         artworkPages.push(
           <Page key={`div-${group.label}`} size="A4" style={s.dividerPage}>
@@ -755,7 +747,6 @@ export function CataloguePDF({
         );
       }
 
-      // List table
       const cols = getListColumns(t, visibility);
       artworkPages.push(
         <Page key={`list-${group.label}`} size="A4" style={s.listPage} wrap>
@@ -775,49 +766,48 @@ export function CataloguePDF({
 
   return (
     <Document>
-      {/* Cover */}
+      {/* ---- COVER PAGE ---- */}
       {coverImageUrl ? (
         <Page size="A4" style={s.coverPage}>
           <Image src={coverImageUrl} style={s.coverBgImage} />
           <View style={s.coverDarkOverlay} />
           <View style={s.coverContent}>
-            <Text style={s.coverCompany}>{COMPANY_NAME}</Text>
             <Text style={s.coverTitle}>{title}</Text>
             {subtitle ? <Text style={s.coverSubtitle}>{subtitle}</Text> : null}
             {coverText ? <Text style={s.coverBodyText}>{coverText}</Text> : null}
-            <View style={s.coverMetaRow}>
-              {showDate && (
-                <Text style={s.coverMetaText}>{formatLocalizedDate(language)}    </Text>
-              )}
-              {showContactDetails && (
-                <Text style={s.coverMetaText}>
-                  Florian Paul Koenig  |  florian.koenig@noacontemporary.com
-                </Text>
-              )}
-            </View>
+            {showDate && (
+              <Text style={s.coverMetaText}>{formatLocalizedDate(language)}</Text>
+            )}
+            {showContactDetails && (
+              <Text style={s.coverMetaText}>
+                Florian Paul Koenig  |  florian.koenig@noacontemporary.com
+              </Text>
+            )}
+            <Text style={s.coverCompanySmall}>{COMPANY_NAME}</Text>
           </View>
         </Page>
       ) : (
         <Page size="A4" style={s.coverClean}>
-          <Text style={s.coverCleanCompany}>{COMPANY_NAME}</Text>
-          <View style={s.coverCleanLine} />
           <Text style={s.coverCleanTitle}>{title}</Text>
           {subtitle ? <Text style={s.coverCleanSubtitle}>{subtitle}</Text> : null}
+          <View style={s.coverCleanLine} />
           {coverText ? <Text style={s.coverCleanBody}>{coverText}</Text> : null}
           {showDate && <Text style={s.coverCleanDate}>{formatLocalizedDate(language)}</Text>}
           {showContactDetails && (
-            <View style={{ alignItems: 'center', marginTop: 8 }}>
+            <View style={{ alignItems: 'center' }}>
               <Text style={s.coverCleanContactName}>Florian Paul Koenig</Text>
               <Text style={s.coverCleanContactEmail}>florian.koenig@noacontemporary.com</Text>
             </View>
           )}
+          <Text style={s.coverCleanCompany}>{COMPANY_NAME}</Text>
         </Page>
       )}
 
-      {/* Text page */}
+      {/* ---- TEXT PAGE ---- */}
       {textPageContent && textPageContent.trim() ? (
         <Page size="A4" style={s.textPage}>
-          <Text style={s.textPageCompany}>{COMPANY_NAME}</Text>
+          <Text style={s.textPageTitle}>{title}</Text>
+          {subtitle ? <Text style={s.textPageSubtitle}>{subtitle}</Text> : null}
           <View style={s.textPageLine} />
           {textPageContent.split(/\n\n+/).filter((p) => p.trim()).map((p, i) => (
             <Text key={i} style={s.textPageParagraph}>{p.trim()}</Text>
@@ -826,7 +816,7 @@ export function CataloguePDF({
         </Page>
       ) : null}
 
-      {/* Artwork pages (already flat array of <Page> elements) */}
+      {/* ---- ARTWORK PAGES ---- */}
       {artworkPages}
     </Document>
   );
