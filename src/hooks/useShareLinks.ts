@@ -220,24 +220,26 @@ export function useShareLink(token: string) {
         titleMap.set(artwork.id, artwork.title);
       }
 
-      // Generate signed URLs for each image
-      const results: { artworkId: string; artworkTitle: string; imageType: string; fileName: string; url: string }[] = [];
+      // Generate signed URLs for each image in parallel
+      const signedResults = await Promise.all(
+        images.map((img) =>
+          supabase.storage.from('artwork-images').createSignedUrl(img.storage_path, 600),
+        ),
+      );
 
-      for (const img of images) {
-        const { data: signedData, error: urlError } = await supabase.storage
-          .from('artwork-images')
-          .createSignedUrl(img.storage_path, 600); // 10 minutes
-
-        if (urlError) throw urlError;
-
-        results.push({
-          artworkId: img.artwork_id,
-          artworkTitle: titleMap.get(img.artwork_id) ?? 'Untitled',
-          imageType: img.image_type,
-          fileName: img.file_name,
-          url: signedData.signedUrl,
-        });
-      }
+      const results = images
+        .map((img, i) => {
+          const url = signedResults[i]?.data?.signedUrl;
+          if (!url) return null;
+          return {
+            artworkId: img.artwork_id,
+            artworkTitle: titleMap.get(img.artwork_id) ?? 'Untitled',
+            imageType: img.image_type,
+            fileName: img.file_name,
+            url,
+          };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null);
 
       return results;
     } catch (err: unknown) {

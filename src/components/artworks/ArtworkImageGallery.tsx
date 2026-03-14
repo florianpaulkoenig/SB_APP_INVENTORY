@@ -93,18 +93,19 @@ export function ArtworkImageGallery({
       return;
     }
 
-    // Generate signed URLs for all images
-    const imagesWithUrls: ImageWithUrl[] = [];
+    // Generate signed URLs for all images in parallel
+    const urlResults = await Promise.all(
+      rows.map((row) =>
+        supabase.storage.from('artwork-images').createSignedUrl(row.storage_path, 600),
+      ),
+    );
 
-    for (const row of rows) {
-      const { data } = await supabase.storage
-        .from('artwork-images')
-        .createSignedUrl(row.storage_path, 600);
-
-      if (data?.signedUrl) {
-        imagesWithUrls.push({ ...row, signedUrl: data.signedUrl });
-      }
-    }
+    const imagesWithUrls: ImageWithUrl[] = rows
+      .map((row, i) => {
+        const url = urlResults[i]?.data?.signedUrl;
+        return url ? { ...row, signedUrl: url } : null;
+      })
+      .filter((img): img is ImageWithUrl => img !== null);
 
     setImages(imagesWithUrls);
 

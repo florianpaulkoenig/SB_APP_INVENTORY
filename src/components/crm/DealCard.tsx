@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Select } from '../ui/Select';
@@ -21,7 +22,7 @@ export interface DealCardProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function DealCard({
+export const DealCard = memo(function DealCard({
   deal,
   contactName,
   onEdit,
@@ -81,4 +82,4 @@ export function DealCard({
       </div>
     </div>
   );
-}
+});

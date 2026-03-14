@@ -162,21 +162,41 @@ export function ProductionOrderDetail({
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
-    const urls: Record<string, string[]> = {};
-    for (const item of items) {
-      const prefix = `${session.user.id}/production-orders/${order.id}/items/${item.id}`;
-      const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
-      if (files && files.length > 0) {
-        const itemUrls: string[] = [];
-        for (const file of files) {
-          if (!file.id) continue;
-          const { data: signed } = await supabase.storage
-            .from('artwork-images')
-            .createSignedUrl(`${prefix}/${file.name}`, 600);
-          if (signed?.signedUrl) itemUrls.push(signed.signedUrl);
-        }
-        if (itemUrls.length > 0) urls[item.id] = itemUrls;
+    // List all item folders in parallel
+    const listResults = await Promise.all(
+      items.map((item) => {
+        const prefix = `${session.user.id}/production-orders/${order.id}/items/${item.id}`;
+        return supabase.storage.from('artwork-images').list(prefix).then((r) => ({
+          itemId: item.id,
+          prefix,
+          files: (r.data ?? []).filter((f) => f.id),
+        }));
+      }),
+    );
+
+    // Collect all sign requests
+    const signRequests: Array<{ itemId: string; path: string }> = [];
+    for (const { itemId, prefix, files } of listResults) {
+      for (const file of files) {
+        signRequests.push({ itemId, path: `${prefix}/${file.name}` });
       }
+    }
+
+    // Sign all URLs in parallel
+    const urls: Record<string, string[]> = {};
+    if (signRequests.length > 0) {
+      const signedResults = await Promise.all(
+        signRequests.map((r) =>
+          supabase.storage.from('artwork-images').createSignedUrl(r.path, 600),
+        ),
+      );
+      signRequests.forEach((req, i) => {
+        const url = signedResults[i]?.data?.signedUrl;
+        if (url) {
+          if (!urls[req.itemId]) urls[req.itemId] = [];
+          urls[req.itemId].push(url);
+        }
+      });
     }
     setRefImageUrls(urls);
   }, [items, order.id]);

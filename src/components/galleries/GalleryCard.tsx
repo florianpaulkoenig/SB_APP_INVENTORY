@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Card } from '../ui/Card';
 import { formatCurrency } from '../../lib/utils';
 import type { GalleryRow } from '../../types/database';
@@ -32,7 +33,7 @@ export interface GalleryCardProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function GalleryCard({ gallery, stats, artworkCount, onClick }: GalleryCardProps) {
+export const GalleryCard = memo(function GalleryCard({ gallery, stats, artworkCount, onClick }: GalleryCardProps) {
   const location = [gallery.city, gallery.country].filter(Boolean).join(', ');
   const total = stats?.total ?? artworkCount ?? 0;
 
@@ -158,4 +159,4 @@ export function GalleryCard({ gallery, stats, artworkCount, onClick }: GalleryCa
       </div>
     </Card>
   );
-}
+});

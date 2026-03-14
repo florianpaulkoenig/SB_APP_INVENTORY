@@ -59,16 +59,16 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
     const { data } = await supabase.storage.from(BUCKET).list(prefix);
 
     if (data && data.length > 0) {
-      const urls: Array<{ path: string; url: string }> = [];
-      for (const file of data) {
-        const fullPath = `${prefix}${file.name}`;
-        const { data: signed } = await supabase.storage
-          .from(BUCKET)
-          .createSignedUrl(fullPath, 600);
-        if (signed?.signedUrl) {
-          urls.push({ path: fullPath, url: signed.signedUrl });
-        }
-      }
+      const paths = data.map((file) => `${prefix}${file.name}`);
+      const signedResults = await Promise.all(
+        paths.map((p) => supabase.storage.from(BUCKET).createSignedUrl(p, 600)),
+      );
+      const urls = paths
+        .map((path, i) => {
+          const url = signedResults[i]?.data?.signedUrl;
+          return url ? { path, url } : null;
+        })
+        .filter((item): item is { path: string; url: string } => item !== null);
       setImages(urls);
     } else {
       setImages([]);

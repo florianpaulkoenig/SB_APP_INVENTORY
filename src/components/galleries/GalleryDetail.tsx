@@ -73,15 +73,16 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
         .eq('is_primary', true);
 
       if (imgData && imgData.length > 0) {
+        const signedResults = await Promise.all(
+          imgData.map((img) =>
+            supabase.storage.from('artwork-images').createSignedUrl(img.storage_path, 600),
+          ),
+        );
         const urlMap: Record<string, string> = {};
-        for (const img of imgData) {
-          const { data: signed } = await supabase.storage
-            .from('artwork-images')
-            .createSignedUrl(img.storage_path, 600);
-          if (signed?.signedUrl) {
-            urlMap[img.artwork_id] = signed.signedUrl;
-          }
-        }
+        imgData.forEach((img, i) => {
+          const url = signedResults[i]?.data?.signedUrl;
+          if (url) urlMap[img.artwork_id] = url;
+        });
         setImageUrls(urlMap);
       }
     }

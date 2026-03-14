@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import type { ContactRow } from '../../types/database';
@@ -31,7 +32,7 @@ const typeLabel: Record<ContactRow['type'], string> = {
 // Component
 // ---------------------------------------------------------------------------
 
-export function ContactCard({ contact, onClick }: ContactCardProps) {
+export const ContactCard = memo(function ContactCard({ contact, onClick }: ContactCardProps) {
   const fullName = `${contact.first_name} ${contact.last_name}`;
   const location = [contact.city, contact.country].filter(Boolean).join(', ');
 
@@ -132,4 +133,4 @@ export function ContactCard({ contact, onClick }: ContactCardProps) {
       )}
     </Card>
   );
-}
+});

@@ -170,15 +170,16 @@ export function DeliveryDetail({
           .in('artwork_id', artworkIds)
           .eq('is_primary', true);
 
-        if (primaryImages) {
-          for (const img of primaryImages) {
-            const { data: urlData } = await supabase.storage
-              .from('artwork-images')
-              .createSignedUrl(img.storage_path, 600);
-            if (urlData) {
-              imageMap[img.artwork_id] = urlData.signedUrl;
-            }
-          }
+        if (primaryImages && primaryImages.length > 0) {
+          const signedResults = await Promise.all(
+            primaryImages.map((img) =>
+              supabase.storage.from('artwork-images').createSignedUrl(img.storage_path, 600),
+            ),
+          );
+          primaryImages.forEach((img, i) => {
+            const url = signedResults[i]?.data?.signedUrl;
+            if (url) imageMap[img.artwork_id] = url;
+          });
         }
       }
 

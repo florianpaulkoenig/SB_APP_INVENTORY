@@ -305,17 +305,20 @@ export function usePublicViewingRoom(slug: string) {
 
         if (imageError) throw imageError;
 
-        // Generate signed URLs for images
+        // Generate signed URLs for images in parallel
         const imageMap = new Map<string, string>();
+        const imgList = imageData ?? [];
 
-        for (const img of imageData ?? []) {
-          const { data: signedData, error: urlError } = await supabase.storage
-            .from('artwork-images')
-            .createSignedUrl(img.storage_path, 600); // 10 minutes
-
-          if (!urlError && signedData) {
-            imageMap.set(img.artwork_id, signedData.signedUrl);
-          }
+        if (imgList.length > 0) {
+          const signedResults = await Promise.all(
+            imgList.map((img) =>
+              supabase.storage.from('artwork-images').createSignedUrl(img.storage_path, 600),
+            ),
+          );
+          imgList.forEach((img, i) => {
+            const url = signedResults[i]?.data?.signedUrl;
+            if (url) imageMap.set(img.artwork_id, url);
+          });
         }
 
         // Build PublicArtwork list preserving artwork_ids order

@@ -141,13 +141,17 @@ export function ProductionItemEditor({
     const { data: files } = await supabase.storage.from(BUCKET).list(prefix);
 
     if (files && files.length > 0) {
-      const imgs: Array<{ path: string; url: string }> = [];
-      for (const file of files) {
-        if (!file.id) continue; // skip subfolders
-        const fullPath = `${prefix}/${file.name}`;
-        const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(fullPath, 600);
-        if (signed?.signedUrl) imgs.push({ path: fullPath, url: signed.signedUrl });
-      }
+      const validFiles = files.filter((f) => f.id); // skip subfolders
+      const paths = validFiles.map((f) => `${prefix}/${f.name}`);
+      const signedResults = await Promise.all(
+        paths.map((p) => supabase.storage.from(BUCKET).createSignedUrl(p, 600)),
+      );
+      const imgs = paths
+        .map((path, i) => {
+          const url = signedResults[i]?.data?.signedUrl;
+          return url ? { path, url } : null;
+        })
+        .filter((item): item is { path: string; url: string } => item !== null);
       setRefImages(imgs);
     } else {
       setRefImages([]);
