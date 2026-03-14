@@ -7,7 +7,7 @@ import {
   addDays,
   format,
 } from 'date-fns';
-import * as XLSX from 'xlsx';
+// xlsx loaded dynamically in exportExcel() to keep bundle light
 import { pdf } from '@react-pdf/renderer';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -127,7 +127,7 @@ const TYPE_LABELS: Record<ScheduleEventType, string> = {
   project: 'Project',
 };
 
-function exportExcel(events: ScheduleEvent[], weekGroups: WeekGroup[], year: number) {
+async function exportExcel(events: ScheduleEvent[], weekGroups: WeekGroup[], year: number) {
   const rows = weekGroups.flatMap((group) => {
     if (group.events.length === 0) {
       return [{ KW: group.weekNumber, Monday: fmtDate(group.monday), Dates: '', Type: '', Partner: '', Venue: '', Title: '', City: '', Country: '', Notes: '' }];
@@ -146,6 +146,7 @@ function exportExcel(events: ScheduleEvent[], weekGroups: WeekGroup[], year: num
     }));
   });
 
+  const XLSX = await import('xlsx');
   const ws = XLSX.utils.json_to_sheet(rows);
 
   // Auto-width columns

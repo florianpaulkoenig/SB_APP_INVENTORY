@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
@@ -11,7 +11,11 @@ import { formatCurrency, formatDate } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
 import { useExhibitionGalleries } from '../hooks/useExhibitionGalleries';
 import { EXHIBITION_TYPES } from '../lib/constants';
-import { MapView } from '../components/maps/MapView';
+
+// Lazy-load MapView to avoid pulling 1.7MB mapbox-gl into this chunk
+const MapView = React.lazy(() =>
+  import('../components/maps/MapView').then((m) => ({ default: m.MapView })),
+);
 import { getCoordinates } from '../lib/geocoding';
 import { CatalogueArtworkPicker } from '../components/catalogues/CatalogueArtworkPicker';
 import { TaskList } from '../components/crm/TaskList';
@@ -555,10 +559,12 @@ export function ExhibitionDetailPage() {
       {coordinates && (exhibition.city || exhibition.country) && (
         <Card>
           <h2 className="text-lg font-semibold mb-3">Location</h2>
-          <MapView
-            markers={[{ lat: coordinates.lat, lng: coordinates.lng, label: exhibition.venue || location }]}
-            height="200px"
-          />
+          <Suspense fallback={<div className="flex items-center justify-center h-[200px]"><LoadingSpinner size="sm" /></div>}>
+            <MapView
+              markers={[{ lat: coordinates.lat, lng: coordinates.lng, label: exhibition.venue || location }]}
+              height="200px"
+            />
+          </Suspense>
         </Card>
       )}
 

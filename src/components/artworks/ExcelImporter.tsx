@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useCallback, useRef, useMemo } from 'react';
-import * as XLSX from 'xlsx';
+// xlsx loaded dynamically in downloadTemplate() to keep bundle light
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
@@ -267,7 +267,7 @@ export function ExcelImporter({
 
   // ---- Download template ----------------------------------------------------
 
-  const handleDownloadTemplate = useCallback(() => {
+  const handleDownloadTemplate = useCallback(async () => {
     const exampleRows = [
       {
         Title: 'Shattered Portrait #1',
@@ -346,6 +346,7 @@ export function ExcelImporter({
       },
     ];
 
+    const XLSX = await import('xlsx');
     const ws = XLSX.utils.json_to_sheet(exampleRows);
 
     // Set column widths for readability

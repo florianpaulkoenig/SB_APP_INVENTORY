@@ -5,6 +5,7 @@ import { ToastProvider } from './components/ui/Toast';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { RoleGuard } from './components/auth/RoleGuard';
+import { RouteErrorBoundary } from './components/ui/RouteErrorBoundary';
 import { AppLayout } from './components/layout/AppLayout';
 
 // ---------------------------------------------------------------------------
@@ -314,11 +315,13 @@ function SuspenseFallback() {
   );
 }
 
-/** Wraps lazy-loaded pages with both error boundary and suspense */
+/** Wraps lazy-loaded pages with chunk error boundary, route error boundary, and suspense */
 function LazyPage({ children }: { children: ReactNode }) {
   return (
     <ChunkErrorBoundary>
-      <Suspense fallback={<SuspenseFallback />}>{children}</Suspense>
+      <Suspense fallback={<SuspenseFallback />}>
+        <RouteErrorBoundary>{children}</RouteErrorBoundary>
+      </Suspense>
     </ChunkErrorBoundary>
   );
 }
@@ -352,8 +355,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <DashboardPage />
-              </Suspense>
+                <RouteErrorBoundary><DashboardPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -432,8 +435,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <PublicCollectionsPage />
-              </Suspense>
+                <RouteErrorBoundary><PublicCollectionsPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -684,8 +687,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <AnalyticsPage />
-              </Suspense>
+                <RouteErrorBoundary><AnalyticsPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -694,8 +697,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <InventoryHealthPage />
-              </Suspense>
+                <RouteErrorBoundary><InventoryHealthPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -704,8 +707,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <RevenueOverviewPage />
-              </Suspense>
+                <RouteErrorBoundary><RevenueOverviewPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -714,8 +717,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <GalleryPerformancePage />
-              </Suspense>
+                <RouteErrorBoundary><GalleryPerformancePage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -724,8 +727,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <DemandVelocityPage />
-              </Suspense>
+                <RouteErrorBoundary><DemandVelocityPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -734,8 +737,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <PriceLadderPage />
-              </Suspense>
+                <RouteErrorBoundary><PriceLadderPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -744,8 +747,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <CollectorIntelligencePage />
-              </Suspense>
+                <RouteErrorBoundary><CollectorIntelligencePage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -754,8 +757,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <SeriesPerformancePage />
-              </Suspense>
+                <RouteErrorBoundary><SeriesPerformancePage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -764,8 +767,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <ExhibitionImpactPage />
-              </Suspense>
+                <RouteErrorBoundary><ExhibitionImpactPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -774,8 +777,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <SupplyPlanningPage />
-              </Suspense>
+                <RouteErrorBoundary><SupplyPlanningPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -784,8 +787,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <CareerTrajectoryPage />
-              </Suspense>
+                <RouteErrorBoundary><CareerTrajectoryPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -794,8 +797,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <StrategicIntelligencePage />
-              </Suspense>
+                <RouteErrorBoundary><StrategicIntelligencePage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -804,8 +807,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <IntelligenceChatPage />
-              </Suspense>
+                <RouteErrorBoundary><IntelligenceChatPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -816,8 +819,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <LiquidityPlanningPage />
-              </Suspense>
+                <RouteErrorBoundary><LiquidityPlanningPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -828,8 +831,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <EmailLogPage />
-              </Suspense>
+                <RouteErrorBoundary><EmailLogPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -840,8 +843,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <ActivityLogPage />
-              </Suspense>
+                <RouteErrorBoundary><ActivityLogPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -852,8 +855,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <SettingsPage />
-              </Suspense>
+                <RouteErrorBoundary><SettingsPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -864,8 +867,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <UserManagementPage />
-              </Suspense>
+                <RouteErrorBoundary><UserManagementPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -876,8 +879,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <EnquiriesPage />
-              </Suspense>
+                <RouteErrorBoundary><EnquiriesPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -886,8 +889,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <EnquiryDetailPage />
-              </Suspense>
+                <RouteErrorBoundary><EnquiryDetailPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -898,8 +901,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <DemandHeatMapPage />
-              </Suspense>
+                <RouteErrorBoundary><DemandHeatMapPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -908,8 +911,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <AnnualSchedulePage />
-              </Suspense>
+                <RouteErrorBoundary><AnnualSchedulePage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -918,8 +921,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <ProjectsPage />
-              </Suspense>
+                <RouteErrorBoundary><ProjectsPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -928,8 +931,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <ProjectDetailPage />
-              </Suspense>
+                <RouteErrorBoundary><ProjectDetailPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -938,8 +941,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <ExhibitionsPage />
-              </Suspense>
+                <RouteErrorBoundary><ExhibitionsPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -948,8 +951,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <ExhibitionDetailPage />
-              </Suspense>
+                <RouteErrorBoundary><ExhibitionDetailPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -958,8 +961,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <ArtFairHeatMapPage />
-              </Suspense>
+                <RouteErrorBoundary><ArtFairHeatMapPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -968,8 +971,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <PriceManagementPage />
-              </Suspense>
+                <RouteErrorBoundary><PriceManagementPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -978,8 +981,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <AuctionTrackingPage />
-              </Suspense>
+                <RouteErrorBoundary><AuctionTrackingPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -990,8 +993,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin', 'gallery']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <GalleryAvailableWorksPage />
-              </Suspense>
+                <RouteErrorBoundary><GalleryAvailableWorksPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1000,8 +1003,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin', 'gallery']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <GalleryDashboardPage />
-              </Suspense>
+                <RouteErrorBoundary><GalleryDashboardPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1010,8 +1013,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin', 'gallery']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <GalleryArtworksPage />
-              </Suspense>
+                <RouteErrorBoundary><GalleryArtworksPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1020,8 +1023,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin', 'gallery']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <GalleryDeliveriesPage />
-              </Suspense>
+                <RouteErrorBoundary><GalleryDeliveriesPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1030,8 +1033,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin', 'gallery']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <GalleryDeliveryDetailPage />
-              </Suspense>
+                <RouteErrorBoundary><GalleryDeliveryDetailPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1040,8 +1043,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin', 'gallery']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <GalleryCertificatesPage />
-              </Suspense>
+                <RouteErrorBoundary><GalleryCertificatesPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1050,8 +1053,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin', 'gallery']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <GalleryMediaPage />
-              </Suspense>
+                <RouteErrorBoundary><GalleryMediaPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1060,8 +1063,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin', 'gallery']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <GalleryNewsPage />
-              </Suspense>
+                <RouteErrorBoundary><GalleryNewsPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1072,8 +1075,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <SaleRequestsPage />
-              </Suspense>
+                <RouteErrorBoundary><SaleRequestsPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1082,8 +1085,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <MediaLibraryPage />
-              </Suspense>
+                <RouteErrorBoundary><MediaLibraryPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1092,8 +1095,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <CVEditorPage />
-              </Suspense>
+                <RouteErrorBoundary><CVEditorPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1102,8 +1105,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <NewsPage />
-              </Suspense>
+                <RouteErrorBoundary><NewsPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1114,8 +1117,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin', 'collector']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <CollectorDashboardPage />
-              </Suspense>
+                <RouteErrorBoundary><CollectorDashboardPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },
@@ -1124,8 +1127,8 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin', 'collector']}>
               <Suspense fallback={<SuspenseFallback />}>
-                <CollectorCertificatesPage />
-              </Suspense>
+                <RouteErrorBoundary><CollectorCertificatesPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },

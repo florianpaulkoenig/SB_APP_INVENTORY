@@ -2,7 +2,8 @@
 // NOA Inventory -- Excel Import Utilities
 // ---------------------------------------------------------------------------
 
-import * as XLSX from 'xlsx';
+// xlsx is loaded dynamically to avoid pulling 429KB into the main bundle
+type XLSXModule = typeof import('xlsx');
 import type {
   ArtworkInsert,
   ArtworkStatus,
@@ -170,6 +171,8 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
   if (file.size > MAX_FILE_SIZE) {
     throw new Error(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed is 10 MB.`);
   }
+
+  const XLSX: XLSXModule = await import('xlsx');
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
