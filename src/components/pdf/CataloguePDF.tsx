@@ -507,6 +507,7 @@ const s = StyleSheet.create({
     color: '#ffffff',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    paddingRight: 6,
   },
   listBodyRow: {
     flexDirection: 'row' as const,
@@ -531,12 +532,14 @@ const s = StyleSheet.create({
     fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary700,
+    paddingRight: 6,
   },
   listCellBold: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
     fontSize: 7,
     color: PDF_COLORS.primary900,
+    paddingRight: 6,
   },
   listThumbnail: {
     width: 44, height: 44,
