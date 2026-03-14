@@ -739,12 +739,20 @@ export function useRevenueOverview() {
         consignmentSplit = addSplits(consignmentSplit, splitByCommission(detail.weightedValue, detail.galleryId));
       }
 
-      // Projected full year split: extrapolate revenueToDateSplit by pace, then add consignment
-      const paceMultiplier = fractionElapsed > 0 ? 1 / fractionElapsed : 1;
+      // Projected full year split: apply to-date split ratios to the pace-extrapolated
+      // revenue, then add consignment split on top.
+      // This ensures the projected split reflects actual commission ratios from sales
+      // to date (where NOA typically has a larger share than a simple linear scale would show).
+      const projectedFromPaceTotal = projectedFromPace; // pace-extrapolated total (excl. consignment)
+      const toDateTotal = revenueToDateSplit.total;
+      const toDateGalleryPct = toDateTotal > 0 ? revenueToDateSplit.gallery / toDateTotal : 0.5;
+      const toDateNoaPct = toDateTotal > 0 ? revenueToDateSplit.noa / toDateTotal : 0.25;
+      const toDateArtistPct = toDateTotal > 0 ? revenueToDateSplit.artist / toDateTotal : 0.25;
+
       const projectedSplit: CommissionSplit = {
-        gallery: revenueToDateSplit.gallery * paceMultiplier + consignmentSplit.gallery,
-        noa: revenueToDateSplit.noa * paceMultiplier + consignmentSplit.noa,
-        artist: revenueToDateSplit.artist * paceMultiplier + consignmentSplit.artist,
+        gallery: projectedFromPaceTotal * toDateGalleryPct + consignmentSplit.gallery,
+        noa: projectedFromPaceTotal * toDateNoaPct + consignmentSplit.noa,
+        artist: projectedFromPaceTotal * toDateArtistPct + consignmentSplit.artist,
         total: projectedRevenue,
       };
 
