@@ -63,6 +63,7 @@ interface CatalogueSettings {
   showWeight: boolean;
   showEdition: boolean;
   showPrice: boolean;
+  showSoldDot: boolean;
 }
 
 // Full artwork data fetched for PDF generation
@@ -82,6 +83,7 @@ interface CatalogueArtwork {
   edition_number: number | null;
   edition_total: number | null;
   weight: number | null;
+  status: string | null;
   category: string | null;
   series: string | null;
   imageUrl: string | null;
@@ -300,6 +302,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
     showWeight: initialConfig?.showWeight ?? false,
     showEdition: initialConfig?.showEdition ?? true,
     showPrice: initialConfig?.showPrice ?? false,
+    showSoldDot: initialConfig?.showSoldDot ?? false,
   });
 
   const [selectedIds, setSelectedIds] = useState<string[]>(
@@ -333,7 +336,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
       const { data: artworksData, error: fetchError } = await supabase
         .from('artworks')
         .select(
-          'id, title, reference_code, medium, year, height, width, depth, dimension_unit, weight, price, currency, edition_type, edition_number, edition_total, category, series',
+          'id, title, reference_code, medium, year, height, width, depth, dimension_unit, weight, price, currency, edition_type, edition_number, edition_total, status, category, series',
         )
         .in('id', selectedIds);
 
@@ -382,6 +385,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
         edition_number: a.edition_number,
         edition_total: a.edition_total,
         weight: a.weight ?? null,
+        status: a.status ?? null,
         category: a.category,
         series: a.series ?? null,
         imageUrl: imageMap[a.id] ?? null,
@@ -408,6 +412,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
         showWeight: settings.showWeight,
         showEdition: settings.showEdition,
         showPrice: settings.showPrice,
+        showSoldDot: settings.showSoldDot,
       };
 
       // 7. Generate PDF blob
@@ -680,6 +685,11 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
                 checked={settings.showPrice}
                 onChange={(v) => updateSetting('showPrice', v)}
               />
+              <FieldCheckbox
+                label="Sold Dot"
+                checked={settings.showSoldDot}
+                onChange={(v) => updateSetting('showSoldDot', v)}
+              />
             </div>
           </section>
 
@@ -796,6 +806,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
                     settings.showWeight && 'Weight',
                     settings.showEdition && 'Edition',
                     settings.showPrice && 'Price',
+                    settings.showSoldDot && 'Sold Dot',
                   ].filter(Boolean).join(', ') || 'None'}
                 </dd>
               </div>

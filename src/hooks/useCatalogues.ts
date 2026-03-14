@@ -42,6 +42,7 @@ export interface CatalogueConfig {
   showWeight: boolean;
   showEdition: boolean;
   showPrice: boolean;
+  showSoldDot: boolean;
 
   artworkIds: string[];
 

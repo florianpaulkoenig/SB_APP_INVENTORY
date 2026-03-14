@@ -87,6 +87,7 @@ export interface CatalogueArtwork {
   edition_total: number | null;
   price: number | null;
   currency: string;
+  status: string | null;
   category: string | null;
   series: string | null;
   imageUrl?: string | null;
@@ -100,6 +101,7 @@ export interface FieldVisibility {
   showWeight: boolean;
   showEdition: boolean;
   showPrice: boolean;
+  showSoldDot: boolean;
 }
 
 export interface CataloguePDFProps {
@@ -423,6 +425,11 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
+  artworkTitleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: 4,
+  },
   artworkTitle: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
@@ -431,7 +438,14 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
     lineHeight: 1.15,
-    marginBottom: 4,
+  },
+  soldDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E53E3E',
+    marginLeft: 8,
+    marginTop: 2,
   },
   artworkRefCode: {
     fontFamily: 'AnzianoPro',
@@ -622,13 +636,14 @@ function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
 }
 
 function ListRow({
-  artwork, index, cols, t, displayUnit, weightUnit,
+  artwork, index, cols, t, displayUnit, weightUnit, showSoldDot,
 }: {
   artwork: CatalogueArtwork; index: number;
   cols: { key: string; label: string; width: number }[];
   t: CatalogueTranslations;
   displayUnit: string;
   weightUnit: string;
+  showSoldDot: boolean;
 }) {
   const isAlt = index % 2 === 1;
   const dims = formatDimensions(artwork.height, artwork.width, artwork.depth, artwork.dimension_unit, displayUnit);
@@ -662,6 +677,14 @@ function ListRow({
                   <Text style={s.listThumbText}>{'\u2014'}</Text>
                 </View>
               )}
+            </View>
+          );
+        }
+        if (col.key === 'title' && showSoldDot && artwork.status === 'sold') {
+          return (
+            <View key={col.key} style={[{ width: col.width, flexDirection: 'row', alignItems: 'center' }]}>
+              <Text style={s.listCellBold}>{val(col.key)}</Text>
+              <View style={[s.soldDot, { width: 6, height: 6, borderRadius: 3, marginLeft: 4 }]} />
             </View>
           );
         }
@@ -809,7 +832,10 @@ export function CataloguePDF({
               )}
             </View>
 
-            <Text style={s.artworkTitle}>{aw.title}</Text>
+            <View style={s.artworkTitleRow}>
+              <Text style={s.artworkTitle}>{aw.title}</Text>
+              {visibility.showSoldDot && aw.status === 'sold' && <View style={s.soldDot} />}
+            </View>
             {visibility.showReferenceCode && (
               <Text style={s.artworkRefCode}>{aw.reference_code}</Text>
             )}
@@ -848,7 +874,7 @@ export function CataloguePDF({
             ))}
           </View>
           {group.artworks.map((aw, i) => (
-            <ListRow key={aw.reference_code} artwork={aw} index={i} cols={cols} t={t} displayUnit={dimensionUnit} weightUnit={weightUnit} />
+            <ListRow key={aw.reference_code} artwork={aw} index={i} cols={cols} t={t} displayUnit={dimensionUnit} weightUnit={weightUnit} showSoldDot={visibility.showSoldDot} />
           ))}
           <PageFooter />
         </Page>
