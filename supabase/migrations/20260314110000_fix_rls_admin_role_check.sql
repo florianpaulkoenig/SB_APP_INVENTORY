@@ -38,13 +38,15 @@ END $$;
 -- ============================================================================
 
 DROP POLICY IF EXISTS "Guest can view artwork images" ON artwork_images;
+DROP POLICY IF EXISTS "Gallery can view artwork images" ON artwork_images;
+DROP POLICY IF EXISTS "Collector can view own artwork images" ON artwork_images;
 
 CREATE POLICY "Gallery can view artwork images" ON artwork_images
   FOR SELECT TO authenticated
   USING (
     get_user_role() = 'gallery'
     AND artwork_id IN (
-      SELECT id FROM artworks WHERE current_gallery_id = get_user_gallery_id()
+      SELECT id FROM artworks WHERE gallery_id = get_user_gallery_id()
     )
   );
 
