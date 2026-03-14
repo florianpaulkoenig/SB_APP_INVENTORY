@@ -126,7 +126,7 @@ const COL_NO = 18;
 const COL_IMG = 50;
 const FLEX_SPACE = USABLE - COL_NO - COL_IMG;
 
-const WEIGHTS = { title: 1.5, ref: 1, medium: 1, dims: 1.2, weight: 0.6, year: 0.5 };
+const WEIGHTS = { title: 1, ref: 1.5, medium: 1.3, dims: 1.2, weight: 0.5, year: 0.4 };
 const TOTAL_WEIGHT = WEIGHTS.title + WEIGHTS.ref + WEIGHTS.medium + WEIGHTS.dims + WEIGHTS.weight + WEIGHTS.year;
 
 const COL_TITLE = Math.round((WEIGHTS.title / TOTAL_WEIGHT) * FLEX_SPACE);
@@ -239,14 +239,14 @@ const s = StyleSheet.create({
   },
   listCell: {
     fontFamily: 'AnzianoPro',
-    fontSize: 10,
+    fontSize: 9,
     color: PDF_COLORS.primary700,
     paddingRight: 6,
   },
   listCellBold: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 10,
+    fontSize: 9,
     color: PDF_COLORS.primary900,
     paddingRight: 6,
   },
@@ -355,12 +355,9 @@ export function DeliveryReceiptPDF({
         {/* ----- Table Header -------------------------------------------- */}
         <View style={s.listHeaderRow} fixed>
           {cols.map((col) => (
-            <Text
-              key={col.key}
-              style={[s.listHeaderCell, { width: col.width }]}
-            >
-              {col.label}
-            </Text>
+            <View key={col.key} style={{ width: col.width, overflow: 'hidden' }}>
+              <Text style={s.listHeaderCell}>{col.label}</Text>
+            </View>
           ))}
         </View>
 
@@ -371,7 +368,9 @@ export function DeliveryReceiptPDF({
             style={index % 2 === 1 ? s.listBodyRowAlt : s.listBodyRow}
             wrap={false}
           >
-            <Text style={[s.listCell, { width: COL_NO }]}>{index + 1}</Text>
+            <View style={{ width: COL_NO, overflow: 'hidden' }}>
+              <Text style={s.listCell}>{index + 1}</Text>
+            </View>
             <View style={{ width: COL_IMG }}>
               {item.artwork_image_url ? (
                 <Image src={item.artwork_image_url} style={s.listThumbnail} />
@@ -381,24 +380,26 @@ export function DeliveryReceiptPDF({
                 </View>
               )}
             </View>
-            <Text style={[s.listCellBold, { width: COL_TITLE }]}>
-              {item.artwork_title}
-            </Text>
-            <Text style={[s.listCell, { width: COL_REF }]}>
-              {item.artwork_reference_code}
-            </Text>
-            <Text style={[s.listCell, { width: COL_MEDIUM }]}>
-              {item.artwork_medium ?? '\u2014'}
-            </Text>
-            <Text style={[s.listCell, { width: COL_DIM }]}>
-              {item.artwork_dimensions || '\u2014'}
-            </Text>
-            <Text style={[s.listCell, { width: COL_WEIGHT }]}>
-              {item.artwork_weight ?? '\u2014'}
-            </Text>
-            <Text style={[s.listCell, { width: COL_YEAR }]}>
-              {item.artwork_year != null ? String(item.artwork_year) : '\u2014'}
-            </Text>
+            <View style={{ width: COL_TITLE, overflow: 'hidden' }}>
+              <Text style={s.listCellBold}>{item.artwork_title}</Text>
+            </View>
+            <View style={{ width: COL_REF, overflow: 'hidden' }}>
+              <Text style={s.listCell}>{item.artwork_reference_code}</Text>
+            </View>
+            <View style={{ width: COL_MEDIUM, overflow: 'hidden' }}>
+              <Text style={s.listCell}>{item.artwork_medium ?? '\u2014'}</Text>
+            </View>
+            <View style={{ width: COL_DIM, overflow: 'hidden' }}>
+              <Text style={s.listCell}>{item.artwork_dimensions || '\u2014'}</Text>
+            </View>
+            <View style={{ width: COL_WEIGHT, overflow: 'hidden' }}>
+              <Text style={s.listCell}>{item.artwork_weight ?? '\u2014'}</Text>
+            </View>
+            <View style={{ width: COL_YEAR, overflow: 'hidden' }}>
+              <Text style={s.listCell}>
+                {item.artwork_year != null ? String(item.artwork_year) : '\u2014'}
+              </Text>
+            </View>
           </View>
         ))}
 
