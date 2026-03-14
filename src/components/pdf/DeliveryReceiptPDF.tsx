@@ -422,7 +422,9 @@ export function DeliveryReceiptPDF({
 
         {/* ----- Footer -------------------------------------------------- */}
         <View style={s.footer} fixed>
-          <Text style={s.footerText}>{'\u00a9 Simon Berger'}</Text>
+          <Text style={s.footerText}>
+            {'NOA Contemporary  \u2022  Florian Paul Koenig  \u2022  florian.koenig@noacontemporary.com  \u2022  +41 76 511 92 94'}
+          </Text>
           <Text
             style={s.footerText}
             render={({ pageNumber, totalPages }) =>
