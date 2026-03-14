@@ -187,11 +187,11 @@ const s = StyleSheet.create({
   coverTitle: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 40,
+    fontSize: 36,
     color: '#ffffff',
     textTransform: 'uppercase',
     letterSpacing: 2,
-    lineHeight: 1.05,
+    lineHeight: 1.1,
     marginBottom: 6,
   },
   coverSubtitle: {
@@ -339,11 +339,11 @@ const s = StyleSheet.create({
   dividerTitle: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 48,
+    fontSize: 36,
     color: PDF_COLORS.primary900,
     textTransform: 'uppercase',
     letterSpacing: 2,
-    lineHeight: 1.05,
+    lineHeight: 1.1,
     marginBottom: 14,
   },
   dividerCount: {
@@ -353,19 +353,20 @@ const s = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // ---- Full-bleed image page (Page 1 of spread) ----------------------------
+  // ---- Full-page image page ------------------------------------------------
   imgPage: {
     fontFamily: 'AnzianoPro',
     backgroundColor: '#ffffff',
-    padding: 0,
     position: 'relative',
+    padding: 0,
+  },
+  imgWrapper: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imgFull: {
-    position: 'absolute',
-    top: 0, left: 0, width: '100%', height: '100%',
-    objectFit: 'cover',
-  },
-  imgContain: {
     width: '100%',
     height: '100%',
     objectFit: 'contain',
@@ -383,27 +384,6 @@ const s = StyleSheet.create({
     color: PDF_COLORS.primary400,
     textTransform: 'uppercase',
     letterSpacing: 2,
-  },
-  // Minimal header overlay on image page
-  imgHeader: {
-    position: 'absolute',
-    top: 20, left: 24, right: 24,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  imgHeaderLabel: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 6,
-    color: '#ffffff',
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    opacity: 0.6,
-  },
-  imgHeaderPage: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 6,
-    color: '#ffffff',
-    opacity: 0.6,
   },
 
   // ---- Detail page (Page 2 of spread) --------------------------------------
@@ -456,24 +436,12 @@ const s = StyleSheet.create({
     color: PDF_COLORS.primary900,
     flex: 1,
   },
-  // Header bar on detail page
-  detailHeader: {
-    position: 'absolute',
-    top: 24, left: 60, right: 60,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
   detailHeaderLabel: {
     fontFamily: 'AnzianoPro',
     fontSize: 6,
     color: PDF_COLORS.primary400,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-  },
-  detailHeaderPage: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 6,
-    color: PDF_COLORS.primary400,
   },
 
   // ---- List layout ---------------------------------------------------------
@@ -574,103 +542,9 @@ function PageFooter() {
   );
 }
 
-// ============================================================================
-// COVER PAGES
-// ============================================================================
-
-function CoverWithImage({
-  title, subtitle, coverText, showDate, showContactDetails, coverImageUrl, language,
-}: {
-  title: string; subtitle?: string; coverText?: string;
-  showDate?: boolean; showContactDetails?: boolean;
-  coverImageUrl: string; language: string;
-}) {
-  return (
-    <Page size="A4" style={s.coverPage}>
-      <Image src={coverImageUrl} style={s.coverBgImage} />
-      <View style={s.coverDarkOverlay} />
-      <View style={s.coverContent}>
-        <Text style={s.coverCompany}>{COMPANY_NAME}</Text>
-        <Text style={s.coverTitle}>{title}</Text>
-        {subtitle ? <Text style={s.coverSubtitle}>{subtitle}</Text> : null}
-        {coverText ? <Text style={s.coverBodyText}>{coverText}</Text> : null}
-        <View style={s.coverMetaRow}>
-          {showDate && (
-            <Text style={s.coverMetaText}>{formatLocalizedDate(language)}    </Text>
-          )}
-          {showContactDetails && (
-            <Text style={s.coverMetaText}>
-              Florian Paul Koenig  |  florian.koenig@noacontemporary.com
-            </Text>
-          )}
-        </View>
-      </View>
-    </Page>
-  );
-}
-
-function CoverClean({
-  title, subtitle, coverText, showDate, showContactDetails, language,
-}: {
-  title: string; subtitle?: string; coverText?: string;
-  showDate?: boolean; showContactDetails?: boolean; language: string;
-}) {
-  return (
-    <Page size="A4" style={s.coverClean}>
-      <Text style={s.coverCleanCompany}>{COMPANY_NAME}</Text>
-      <View style={s.coverCleanLine} />
-      <Text style={s.coverCleanTitle}>{title}</Text>
-      {subtitle ? <Text style={s.coverCleanSubtitle}>{subtitle}</Text> : null}
-      {coverText ? <Text style={s.coverCleanBody}>{coverText}</Text> : null}
-      {showDate && <Text style={s.coverCleanDate}>{formatLocalizedDate(language)}</Text>}
-      {showContactDetails && (
-        <View style={{ alignItems: 'center', marginTop: 8 }}>
-          <Text style={s.coverCleanContactName}>Florian Paul Koenig</Text>
-          <Text style={s.coverCleanContactEmail}>florian.koenig@noacontemporary.com</Text>
-        </View>
-      )}
-    </Page>
-  );
-}
-
-// ============================================================================
-// TEXT PAGE
-// ============================================================================
-
-function TextPageComponent({ content }: { content: string }) {
-  const paras = content.split(/\n\n+/).filter((p) => p.trim());
-  return (
-    <Page size="A4" style={s.textPage}>
-      <Text style={s.textPageCompany}>{COMPANY_NAME}</Text>
-      <View style={s.textPageLine} />
-      {paras.map((p, i) => (
-        <Text key={i} style={s.textPageParagraph}>{p.trim()}</Text>
-      ))}
-      <PageFooter />
-    </Page>
-  );
-}
-
-// ============================================================================
-// SECTION DIVIDER
-// ============================================================================
-
-function DividerPage({ title, count }: { title: string; count: number }) {
-  return (
-    <Page size="A4" style={s.dividerPage}>
-      <View style={s.dividerLine} />
-      <Text style={s.dividerTitle}>{title}</Text>
-      <Text style={s.dividerCount}>
-        {count} artwork{count !== 1 ? 's' : ''}
-      </Text>
-    </Page>
-  );
-}
-
-// ============================================================================
-// FULL-PAGE LAYOUT — 2-PAGE SPREAD PER ARTWORK
-// ============================================================================
-
+// ---------------------------------------------------------------------------
+// Detail rows builder
+// ---------------------------------------------------------------------------
 function buildDetailRows(
   aw: CatalogueArtwork, t: CatalogueTranslations, vis: FieldVisibility,
 ): { label: string; value: string }[] {
@@ -690,76 +564,8 @@ function buildDetailRows(
   return rows;
 }
 
-/**
- * 2-page spread:
- * Page 1 — Full-bleed artwork image (edge to edge, no padding)
- * Page 2 — Clean details page with large title + metadata
- */
-function ArtworkSpread({
-  artwork, t, vis, sectionLabel,
-}: {
-  artwork: CatalogueArtwork;
-  t: CatalogueTranslations;
-  vis: FieldVisibility;
-  sectionLabel?: string;
-}) {
-  const rows = buildDetailRows(artwork, t, vis);
-
-  return (
-    <>
-      {/* PAGE 1: Full-bleed image */}
-      <Page size="A4" style={s.imgPage}>
-        {artwork.imageUrl ? (
-          <Image src={artwork.imageUrl} style={s.imgContain} />
-        ) : (
-          <View style={s.imgPlaceholder}>
-            <Text style={s.imgPlaceholderText}>{artwork.title}</Text>
-          </View>
-        )}
-        {/* Subtle header overlay */}
-        {artwork.imageUrl && (
-          <View style={s.imgHeader}>
-            <Text style={s.imgHeaderLabel}>
-              {sectionLabel || COMPANY_NAME}
-            </Text>
-            <Text
-              style={s.imgHeaderPage}
-              render={({ pageNumber }) => (pageNumber > 1 ? String(pageNumber - 1) : '')}
-            />
-          </View>
-        )}
-      </Page>
-
-      {/* PAGE 2: Details */}
-      <Page size="A4" style={s.detailPage}>
-        <View style={s.detailHeader} fixed>
-          <Text style={s.detailHeaderLabel}>
-            {sectionLabel || COMPANY_NAME}
-          </Text>
-          <Text
-            style={s.detailHeaderPage}
-            render={({ pageNumber }) => (pageNumber > 1 ? String(pageNumber - 1) : '')}
-          />
-        </View>
-
-        <Text style={s.detailTitle}>{artwork.title}</Text>
-        {vis.showReferenceCode && (
-          <Text style={s.detailRefCode}>{artwork.reference_code}</Text>
-        )}
-        <View style={s.detailLine} />
-        {rows.map((row) => (
-          <View style={s.detailRow} key={row.label}>
-            <Text style={s.detailLabel}>{row.label}</Text>
-            <Text style={s.detailValue}>{row.value}</Text>
-          </View>
-        ))}
-      </Page>
-    </>
-  );
-}
-
 // ============================================================================
-// LIST LAYOUT
+// LIST LAYOUT HELPERS
 // ============================================================================
 
 function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
@@ -833,25 +639,6 @@ function ListRow({
   );
 }
 
-function ListLayout({ artworks, t, vis }: {
-  artworks: CatalogueArtwork[]; t: CatalogueTranslations; vis: FieldVisibility;
-}) {
-  const cols = getListColumns(t, vis);
-  return (
-    <Page size="A4" style={s.listPage} wrap>
-      <View style={s.listHeaderRow} fixed>
-        {cols.map((col) => (
-          <Text key={col.key} style={[s.listHeaderCell, { width: col.width }]}>{col.label}</Text>
-        ))}
-      </View>
-      {artworks.map((aw, i) => (
-        <ListRow key={aw.reference_code} artwork={aw} index={i} cols={cols} t={t} />
-      ))}
-      <PageFooter />
-    </Page>
-  );
-}
-
 // ============================================================================
 // GROUP ARTWORKS
 // ============================================================================
@@ -884,53 +671,163 @@ export function CataloguePDF({
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
   const groups = groupArtworks(artworks, dividerMode);
 
+  // Build all artwork pages as a flat array to avoid fragment/nesting issues
+  // with @react-pdf/renderer
+  const artworkPages: React.ReactElement[] = [];
+
+  if (layout === 'full-page') {
+    for (const group of groups) {
+      // Section divider
+      if (dividerMode !== 'none' && group.label) {
+        artworkPages.push(
+          <Page key={`div-${group.label}`} size="A4" style={s.dividerPage}>
+            <View style={s.dividerLine} />
+            <Text style={s.dividerTitle}>{group.label}</Text>
+            <Text style={s.dividerCount}>
+              {group.artworks.length} artwork{group.artworks.length !== 1 ? 's' : ''}
+            </Text>
+          </Page>
+        );
+      }
+
+      // Each artwork: image page + detail page
+      for (const aw of group.artworks) {
+        const rows = buildDetailRows(aw, t, visibility);
+        const sectionLabel = dividerMode !== 'none' ? group.label : undefined;
+
+        // PAGE 1: Image page
+        artworkPages.push(
+          <Page key={`img-${aw.reference_code}`} size="A4" style={s.imgPage}>
+            <View style={s.imgWrapper}>
+              {aw.imageUrl ? (
+                <Image src={aw.imageUrl} style={s.imgFull} />
+              ) : (
+                <View style={s.imgPlaceholder}>
+                  <Text style={s.imgPlaceholderText}>{aw.title}</Text>
+                </View>
+              )}
+            </View>
+          </Page>
+        );
+
+        // PAGE 2: Detail page
+        artworkPages.push(
+          <Page key={`det-${aw.reference_code}`} size="A4" style={s.detailPage}>
+            <View style={{ position: 'absolute', top: 24, left: 60, right: 60, flexDirection: 'row', justifyContent: 'space-between' }} fixed>
+              <Text style={s.detailHeaderLabel}>
+                {sectionLabel || COMPANY_NAME}
+              </Text>
+              <Text
+                style={s.detailHeaderLabel}
+                render={({ pageNumber }) => (pageNumber > 1 ? String(pageNumber - 1) : '')}
+              />
+            </View>
+
+            <Text style={s.detailTitle}>{aw.title}</Text>
+            {visibility.showReferenceCode && (
+              <Text style={s.detailRefCode}>{aw.reference_code}</Text>
+            )}
+            <View style={s.detailLine} />
+            {rows.map((row) => (
+              <View style={s.detailRow} key={row.label}>
+                <Text style={s.detailLabel}>{row.label}</Text>
+                <Text style={s.detailValue}>{row.value}</Text>
+              </View>
+            ))}
+            <PageFooter />
+          </Page>
+        );
+      }
+    }
+  } else {
+    // List layout
+    for (const group of groups) {
+      // Section divider
+      if (dividerMode !== 'none' && group.label) {
+        artworkPages.push(
+          <Page key={`div-${group.label}`} size="A4" style={s.dividerPage}>
+            <View style={s.dividerLine} />
+            <Text style={s.dividerTitle}>{group.label}</Text>
+            <Text style={s.dividerCount}>
+              {group.artworks.length} artwork{group.artworks.length !== 1 ? 's' : ''}
+            </Text>
+          </Page>
+        );
+      }
+
+      // List table
+      const cols = getListColumns(t, visibility);
+      artworkPages.push(
+        <Page key={`list-${group.label}`} size="A4" style={s.listPage} wrap>
+          <View style={s.listHeaderRow} fixed>
+            {cols.map((col) => (
+              <Text key={col.key} style={[s.listHeaderCell, { width: col.width }]}>{col.label}</Text>
+            ))}
+          </View>
+          {group.artworks.map((aw, i) => (
+            <ListRow key={aw.reference_code} artwork={aw} index={i} cols={cols} t={t} />
+          ))}
+          <PageFooter />
+        </Page>
+      );
+    }
+  }
+
   return (
     <Document>
       {/* Cover */}
       {coverImageUrl ? (
-        <CoverWithImage
-          title={title} subtitle={subtitle} coverText={coverText}
-          showDate={showDate} showContactDetails={showContactDetails}
-          coverImageUrl={coverImageUrl} language={language}
-        />
+        <Page size="A4" style={s.coverPage}>
+          <Image src={coverImageUrl} style={s.coverBgImage} />
+          <View style={s.coverDarkOverlay} />
+          <View style={s.coverContent}>
+            <Text style={s.coverCompany}>{COMPANY_NAME}</Text>
+            <Text style={s.coverTitle}>{title}</Text>
+            {subtitle ? <Text style={s.coverSubtitle}>{subtitle}</Text> : null}
+            {coverText ? <Text style={s.coverBodyText}>{coverText}</Text> : null}
+            <View style={s.coverMetaRow}>
+              {showDate && (
+                <Text style={s.coverMetaText}>{formatLocalizedDate(language)}    </Text>
+              )}
+              {showContactDetails && (
+                <Text style={s.coverMetaText}>
+                  Florian Paul Koenig  |  florian.koenig@noacontemporary.com
+                </Text>
+              )}
+            </View>
+          </View>
+        </Page>
       ) : (
-        <CoverClean
-          title={title} subtitle={subtitle} coverText={coverText}
-          showDate={showDate} showContactDetails={showContactDetails}
-          language={language}
-        />
+        <Page size="A4" style={s.coverClean}>
+          <Text style={s.coverCleanCompany}>{COMPANY_NAME}</Text>
+          <View style={s.coverCleanLine} />
+          <Text style={s.coverCleanTitle}>{title}</Text>
+          {subtitle ? <Text style={s.coverCleanSubtitle}>{subtitle}</Text> : null}
+          {coverText ? <Text style={s.coverCleanBody}>{coverText}</Text> : null}
+          {showDate && <Text style={s.coverCleanDate}>{formatLocalizedDate(language)}</Text>}
+          {showContactDetails && (
+            <View style={{ alignItems: 'center', marginTop: 8 }}>
+              <Text style={s.coverCleanContactName}>Florian Paul Koenig</Text>
+              <Text style={s.coverCleanContactEmail}>florian.koenig@noacontemporary.com</Text>
+            </View>
+          )}
+        </Page>
       )}
 
       {/* Text page */}
-      {textPageContent && textPageContent.trim() && (
-        <TextPageComponent content={textPageContent} />
-      )}
+      {textPageContent && textPageContent.trim() ? (
+        <Page size="A4" style={s.textPage}>
+          <Text style={s.textPageCompany}>{COMPANY_NAME}</Text>
+          <View style={s.textPageLine} />
+          {textPageContent.split(/\n\n+/).filter((p) => p.trim()).map((p, i) => (
+            <Text key={i} style={s.textPageParagraph}>{p.trim()}</Text>
+          ))}
+          <PageFooter />
+        </Page>
+      ) : null}
 
-      {/* Full-page: 2-page spreads per artwork */}
-      {layout === 'full-page' &&
-        groups.map((group, gi) => [
-          dividerMode !== 'none' && group.label ? (
-            <DividerPage key={`div-${gi}`} title={group.label} count={group.artworks.length} />
-          ) : null,
-          ...group.artworks.map((aw) => (
-            <ArtworkSpread
-              key={aw.reference_code}
-              artwork={aw}
-              t={t}
-              vis={visibility}
-              sectionLabel={dividerMode !== 'none' ? group.label : undefined}
-            />
-          )),
-        ])}
-
-      {/* List layout */}
-      {layout === 'list' &&
-        groups.map((group, gi) => [
-          dividerMode !== 'none' && group.label ? (
-            <DividerPage key={`div-${gi}`} title={group.label} count={group.artworks.length} />
-          ) : null,
-          <ListLayout key={`list-${gi}`} artworks={group.artworks} t={t} vis={visibility} />,
-        ])}
+      {/* Artwork pages (already flat array of <Page> elements) */}
+      {artworkPages}
     </Document>
   );
 }
