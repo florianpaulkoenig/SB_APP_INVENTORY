@@ -6,6 +6,9 @@
 -- that validates the viewing_room_id exists and limits inserts per IP.
 -- ---------------------------------------------------------------------------
 
+-- Ensure viewer_ip column exists (may be missing from initial table creation)
+ALTER TABLE viewing_room_views ADD COLUMN IF NOT EXISTS viewer_ip TEXT;
+
 -- Drop the permissive INSERT policies
 DROP POLICY IF EXISTS "Anyone can insert viewing_room_views" ON viewing_room_views;
 DROP POLICY IF EXISTS "Auth users can insert viewing_room_views" ON viewing_room_views;
