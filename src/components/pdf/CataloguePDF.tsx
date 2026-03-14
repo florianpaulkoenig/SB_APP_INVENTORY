@@ -620,18 +620,17 @@ function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
   const fixedImage = 50;
   const flexSpace = usable - fixedNo - fixedImage;
 
-  // Proportional weights for each flexible column
-  // Title gets ~2x weight, other text columns ~1x, short columns ~0.6x
+  // Proportional weights — all columns roughly equal, title just slightly wider
   const flexCols: { key: string; label: string; weight: number }[] = [
-    { key: 'title', label: t.title, weight: 2 },
+    { key: 'title', label: t.title, weight: 1.3 },
   ];
-  if (vis.showReferenceCode) flexCols.push({ key: 'ref', label: t.referenceCode, weight: 1.2 });
-  if (vis.showMedium) flexCols.push({ key: 'medium', label: t.medium, weight: 1.2 });
+  if (vis.showReferenceCode) flexCols.push({ key: 'ref', label: t.referenceCode, weight: 1 });
+  if (vis.showMedium) flexCols.push({ key: 'medium', label: t.medium, weight: 1 });
   if (vis.showYear) flexCols.push({ key: 'year', label: t.year, weight: 0.6 });
-  if (vis.showDimensions) flexCols.push({ key: 'dims', label: t.dimensions, weight: 1.2 });
+  if (vis.showDimensions) flexCols.push({ key: 'dims', label: t.dimensions, weight: 1 });
   if (vis.showWeight) flexCols.push({ key: 'weight', label: t.weight, weight: 0.7 });
-  if (vis.showEdition) flexCols.push({ key: 'edition', label: t.edition, weight: 0.8 });
-  if (vis.showPrice) flexCols.push({ key: 'price', label: t.price, weight: 0.8 });
+  if (vis.showEdition) flexCols.push({ key: 'edition', label: t.edition, weight: 0.7 });
+  if (vis.showPrice) flexCols.push({ key: 'price', label: t.price, weight: 0.7 });
 
   const totalWeight = flexCols.reduce((s, c) => s + c.weight, 0);
 
