@@ -62,6 +62,13 @@ export interface ConsignmentGalleryDetail {
 // Conservative estimate of -0.7 (10% price increase → 7% volume decrease)
 const ART_PRICE_ELASTICITY = -0.7;
 
+export interface CommissionSplit {
+  gallery: number;   // CHF amount going to gallery
+  noa: number;       // CHF amount going to NOA Contemporary
+  artist: number;    // CHF amount going to Simon Berger (artist)
+  total: number;     // gross total (gallery + noa + artist)
+}
+
 export interface PriceScenario {
   priceIncreasePct: number;        // e.g. 15 (%)
   elasticity: number;              // e.g. -0.7
@@ -102,6 +109,10 @@ export interface YearPrognosis {
   artworksAtGalleriesCount: number;   // number of unsold artworks at galleries
   totalPipeline: number;          // potentialRevenue + confirmedOrdersRevenue
   priceScenario: PriceScenario;   // +15% price increase scenario
+  // Commission splits: projected revenue broken down by recipient
+  projectedSplit: CommissionSplit;           // split of projectedRevenue
+  revenueToDateSplit: CommissionSplit;       // split of revenueToDateIncPreSold
+  consignmentSplit: CommissionSplit;         // split of weightedConsignmentRevenue
 }
 
 export interface RevenueOverviewData {
@@ -149,8 +160,7 @@ export function useRevenueOverview() {
           .not('status', 'in', '("draft","completed")'),
         supabase
           .from('galleries')
-          .select('id, sell_through_override')
-          .not('sell_through_override', 'is', null),
+          .select('id, sell_through_override, commission_gallery, commission_noa, commission_artist, commission_rate'),
       ]);
 
       if (salesResult.error) throw salesResult.error;
@@ -158,13 +168,54 @@ export function useRevenueOverview() {
       const unsoldArtworks = artworksResult.data ?? [];
       const activeProdOrders = prodOrdersResult.data ?? [];
 
-      // Build sell-through override map
+      // Build sell-through override map + commission split map
       const sellThroughOverrides = new Map<string, number>();
+      // Commission percentages per gallery: { gallery%, noa%, artist% }
+      // Default: 50% gallery / 25% NOA / 25% artist (if no commission fields set)
+      const galleryCommissions = new Map<string, { gallery: number; noa: number; artist: number }>();
       for (const g of galleryOverridesResult.data ?? []) {
         if (g.sell_through_override != null) {
           sellThroughOverrides.set(g.id, Number(g.sell_through_override));
         }
+        // Determine commission split for this gallery
+        const cg = g.commission_gallery as number | null;
+        const cn = g.commission_noa as number | null;
+        const ca = g.commission_artist as number | null;
+        const cr = g.commission_rate as number | null;
+        if (cg != null && cn != null && ca != null) {
+          // Explicit 3-way split defined
+          galleryCommissions.set(g.id, { gallery: cg, noa: cn, artist: ca });
+        } else if (cr != null) {
+          // Legacy commission_rate: gallery gets cr%, rest split 50/50 between NOA and artist
+          galleryCommissions.set(g.id, { gallery: cr, noa: (100 - cr) / 2, artist: (100 - cr) / 2 });
+        }
+        // else: no commission data → will use default 50/25/25
       }
+
+      // Helper: split a CHF amount by gallery commission rates
+      function splitByCommission(amountCHF: number, galleryId: string | null): CommissionSplit {
+        const rates = galleryId ? galleryCommissions.get(galleryId) : undefined;
+        const g = rates?.gallery ?? 50;
+        const n = rates?.noa ?? 25;
+        const a = rates?.artist ?? 25;
+        const total = g + n + a;
+        return {
+          gallery: amountCHF * (g / total),
+          noa: amountCHF * (n / total),
+          artist: amountCHF * (a / total),
+          total: amountCHF,
+        };
+      }
+
+      function addSplits(a: CommissionSplit, b: CommissionSplit): CommissionSplit {
+        return {
+          gallery: a.gallery + b.gallery,
+          noa: a.noa + b.noa,
+          artist: a.artist + b.artist,
+          total: a.total + b.total,
+        };
+      }
+      const emptySplit: CommissionSplit = { gallery: 0, noa: 0, artist: 0, total: 0 };
 
       // Fetch production order items for active orders (to get accurate per-item values)
       const activeOrderIds = activeProdOrders.map((o) => o.id);
@@ -667,6 +718,36 @@ export function useRevenueOverview() {
       // Add weighted consignment on top (probability-adjusted upside)
       const projectedRevenue = projectedFromPace + weightedConsignmentRevenue;
 
+      // ---- Commission splits for prognosis ------------------------------------------
+      // Split revenue to date (sales + pre-sold) by gallery commission rates
+      let revenueToDateSplit = { ...emptySplit };
+      for (const s of currentYearSales) {
+        const amt = toCHF(Number(s.sale_price) || 0, s.currency ?? 'CHF');
+        revenueToDateSplit = addSplits(revenueToDateSplit, splitByCommission(amt, s.gallery_id));
+      }
+      // Add pre-sold orders to revenueToDateSplit
+      for (const order of activeProdOrders) {
+        if (order.status === 'pre_sold') {
+          const val = itemValMap[order.id] ?? 0;
+          revenueToDateSplit = addSplits(revenueToDateSplit, splitByCommission(val, order.gallery_id));
+        }
+      }
+
+      // Split weighted consignment revenue by gallery commission rates
+      let consignmentSplit = { ...emptySplit };
+      for (const detail of consignmentGalleryDetails) {
+        consignmentSplit = addSplits(consignmentSplit, splitByCommission(detail.weightedValue, detail.galleryId));
+      }
+
+      // Projected full year split: extrapolate revenueToDateSplit by pace, then add consignment
+      const paceMultiplier = fractionElapsed > 0 ? 1 / fractionElapsed : 1;
+      const projectedSplit: CommissionSplit = {
+        gallery: revenueToDateSplit.gallery * paceMultiplier + consignmentSplit.gallery,
+        noa: revenueToDateSplit.noa * paceMultiplier + consignmentSplit.noa,
+        artist: revenueToDateSplit.artist * paceMultiplier + consignmentSplit.artist,
+        total: projectedRevenue,
+      };
+
       // ---- Price increase scenario (+15%) -----------------------------------------
       const priceIncreasePct = 15;
       const volumeChangePct = priceIncreasePct * ART_PRICE_ELASTICITY; // e.g. -10.5%
@@ -710,6 +791,9 @@ export function useRevenueOverview() {
         artworksAtGalleriesCount,
         totalPipeline,
         priceScenario,
+        projectedSplit,
+        revenueToDateSplit,
+        consignmentSplit,
       };
 
       setData({

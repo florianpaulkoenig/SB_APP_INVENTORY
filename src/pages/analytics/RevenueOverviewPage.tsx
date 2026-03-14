@@ -290,6 +290,106 @@ export function RevenueOverviewPage() {
             </div>
           </div>
 
+          {/* Commission Split: Gallery / NOA / Simon Berger */}
+          {data.prognosis.projectedSplit.total > 0 && (
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-primary-700 mb-3">
+                Projected Revenue Split
+                <span className="ml-2 text-xs font-normal text-primary-400">
+                  based on gallery commission profiles
+                </span>
+              </h4>
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <div className="rounded-lg border border-primary-200 bg-primary-50 p-3 text-center">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-primary-500">Gallery</p>
+                  <p className="mt-1 text-lg font-bold text-primary-800">{formatCurrency(data.prognosis.projectedSplit.gallery, 'CHF')}</p>
+                  <p className="text-[10px] text-primary-400">
+                    {data.prognosis.projectedSplit.total > 0
+                      ? `${((data.prognosis.projectedSplit.gallery / data.prognosis.projectedSplit.total) * 100).toFixed(0)}%`
+                      : '—'}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 text-center">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-accent">NOA Contemporary</p>
+                  <p className="mt-1 text-lg font-bold text-accent">{formatCurrency(data.prognosis.projectedSplit.noa, 'CHF')}</p>
+                  <p className="text-[10px] text-primary-400">
+                    {data.prognosis.projectedSplit.total > 0
+                      ? `${((data.prognosis.projectedSplit.noa / data.prognosis.projectedSplit.total) * 100).toFixed(0)}%`
+                      : '—'}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-center">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-indigo-700">Simon Berger</p>
+                  <p className="mt-1 text-lg font-bold text-indigo-800">{formatCurrency(data.prognosis.projectedSplit.artist, 'CHF')}</p>
+                  <p className="text-[10px] text-primary-400">
+                    {data.prognosis.projectedSplit.total > 0
+                      ? `${((data.prognosis.projectedSplit.artist / data.prognosis.projectedSplit.total) * 100).toFixed(0)}%`
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+              {/* Stacked progress bar */}
+              {(() => {
+                const s = data.prognosis.projectedSplit;
+                const galleryPct = s.total > 0 ? (s.gallery / s.total) * 100 : 0;
+                const noaPct = s.total > 0 ? (s.noa / s.total) * 100 : 0;
+                const artistPct = s.total > 0 ? (s.artist / s.total) * 100 : 0;
+                return (
+                  <div className="flex h-3 w-full overflow-hidden rounded-full">
+                    <div className="bg-primary-400" style={{ width: `${galleryPct}%` }} title={`Gallery: ${galleryPct.toFixed(0)}%`} />
+                    <div className="bg-accent" style={{ width: `${noaPct}%` }} title={`NOA: ${noaPct.toFixed(0)}%`} />
+                    <div className="bg-indigo-500" style={{ width: `${artistPct}%` }} title={`Simon Berger: ${artistPct.toFixed(0)}%`} />
+                  </div>
+                );
+              })()}
+              {/* Legend */}
+              <div className="mt-2 flex items-center gap-4 text-[10px] text-primary-500">
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-primary-400" />Gallery</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-accent" />NOA</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-indigo-500" />Simon Berger</span>
+              </div>
+              {/* Breakdown table: to-date vs consignment */}
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-primary-200 text-left font-medium uppercase tracking-wider text-primary-500">
+                      <th className="pb-1.5 pr-4">Source</th>
+                      <th className="pb-1.5 pr-4 text-right">Gallery</th>
+                      <th className="pb-1.5 pr-4 text-right">NOA</th>
+                      <th className="pb-1.5 pr-4 text-right">Simon Berger</th>
+                      <th className="pb-1.5 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-primary-100">
+                      <td className="py-1.5 pr-4 text-primary-600">Revenue to Date (incl. pre-sold)</td>
+                      <td className="py-1.5 pr-4 text-right text-primary-700">{formatCurrency(data.prognosis.revenueToDateSplit.gallery, 'CHF')}</td>
+                      <td className="py-1.5 pr-4 text-right text-primary-700">{formatCurrency(data.prognosis.revenueToDateSplit.noa, 'CHF')}</td>
+                      <td className="py-1.5 pr-4 text-right text-primary-700">{formatCurrency(data.prognosis.revenueToDateSplit.artist, 'CHF')}</td>
+                      <td className="py-1.5 text-right font-medium text-primary-900">{formatCurrency(data.prognosis.revenueToDateSplit.total, 'CHF')}</td>
+                    </tr>
+                    <tr className="border-b border-primary-100">
+                      <td className="py-1.5 pr-4 text-cyan-600">Consignment (weighted)</td>
+                      <td className="py-1.5 pr-4 text-right text-primary-700">{formatCurrency(data.prognosis.consignmentSplit.gallery, 'CHF')}</td>
+                      <td className="py-1.5 pr-4 text-right text-primary-700">{formatCurrency(data.prognosis.consignmentSplit.noa, 'CHF')}</td>
+                      <td className="py-1.5 pr-4 text-right text-primary-700">{formatCurrency(data.prognosis.consignmentSplit.artist, 'CHF')}</td>
+                      <td className="py-1.5 text-right font-medium text-cyan-700">{formatCurrency(data.prognosis.consignmentSplit.total, 'CHF')}</td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-primary-300 font-semibold">
+                      <td className="pt-2 pr-4 text-primary-700">Projected Full Year</td>
+                      <td className="pt-2 pr-4 text-right text-primary-800">{formatCurrency(data.prognosis.projectedSplit.gallery, 'CHF')}</td>
+                      <td className="pt-2 pr-4 text-right text-accent">{formatCurrency(data.prognosis.projectedSplit.noa, 'CHF')}</td>
+                      <td className="pt-2 pr-4 text-right text-indigo-700">{formatCurrency(data.prognosis.projectedSplit.artist, 'CHF')}</td>
+                      <td className="pt-2 text-right text-primary-900">{formatCurrency(data.prognosis.projectedSplit.total, 'CHF')}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* Pipeline: Potential + Orders breakdown */}
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-primary-700 mb-3">Revenue Pipeline</h4>
