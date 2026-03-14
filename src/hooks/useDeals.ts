@@ -54,7 +54,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
     try {
       let query = supabase
         .from('deals')
-        .select('*', { count: 'exact' });
+        .select('id, stage, value, currency, notes, contact_id, artwork_id, created_at', { count: 'exact' });
 
       // Stage filter
       if (filters.stage) {

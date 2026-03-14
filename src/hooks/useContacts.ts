@@ -56,7 +56,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
     try {
       let query = supabase
         .from('contacts')
-        .select('*', { count: 'exact' });
+        .select('id, first_name, last_name, type, company, email, phone, city, country, tags, role, created_at', { count: 'exact' });
 
       // Search filter: match first_name, last_name, company, or email
       if (filters.search) {

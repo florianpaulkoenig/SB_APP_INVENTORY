@@ -85,7 +85,7 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
     try {
       let query = supabase
         .from('gallery_forwarding_orders')
-        .select('*', { count: 'exact' });
+        .select('id, forwarding_number, title, status, shipping_date, created_at', { count: 'exact' });
 
       if (filters.status) {
         query = query.eq('status', filters.status);
