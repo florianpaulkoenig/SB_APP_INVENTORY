@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // NOA Inventory -- Catalogue PDF
-// Magazine-style catalogue with cover image, text page, section dividers,
-// and two layout options (full-page spreads or compact list).
+// Magazine-style catalogue with full-bleed images, 2-page artwork spreads,
+// section dividers, and a compact list layout.
 // Uses @react-pdf/renderer.
 // ---------------------------------------------------------------------------
 
@@ -27,64 +27,34 @@ interface CatalogueTranslations {
   epreuveArtiste: string;
   of: string;
   referenceCode: string;
-  page: string;
   title: string;
   no: string;
 }
 
 const TRANSLATIONS: Record<string, CatalogueTranslations> = {
   en: {
-    medium: 'Medium',
-    year: 'Year',
-    dimensions: 'Dimensions',
-    edition: 'Edition',
-    price: 'Price',
-    unique: 'Unique',
-    artistProof: 'Artist Proof',
-    horsCommerce: 'Hors Commerce',
-    epreuveArtiste: "Epreuve d'Artiste",
-    of: 'of',
-    referenceCode: 'Ref.',
-    page: 'Page',
-    title: 'Title',
-    no: '#',
+    medium: 'Medium', year: 'Year', dimensions: 'Dimensions', edition: 'Edition',
+    price: 'Price', unique: 'Unique', artistProof: 'Artist Proof',
+    horsCommerce: 'Hors Commerce', epreuveArtiste: "Epreuve d'Artiste",
+    of: 'of', referenceCode: 'Ref.', title: 'Title', no: '#',
   },
   de: {
-    medium: 'Technik',
-    year: 'Jahr',
-    dimensions: 'Ma\u00dfe',
-    edition: 'Auflage',
-    price: 'Preis',
-    unique: 'Unikat',
-    artistProof: 'K\u00fcnstlerexemplar',
-    horsCommerce: 'Hors Commerce',
-    epreuveArtiste: "Epreuve d'Artiste",
-    of: 'von',
-    referenceCode: 'Ref.',
-    page: 'Seite',
-    title: 'Titel',
-    no: '#',
+    medium: 'Technik', year: 'Jahr', dimensions: 'Ma\u00dfe', edition: 'Auflage',
+    price: 'Preis', unique: 'Unikat', artistProof: 'K\u00fcnstlerexemplar',
+    horsCommerce: 'Hors Commerce', epreuveArtiste: "Epreuve d'Artiste",
+    of: 'von', referenceCode: 'Ref.', title: 'Titel', no: '#',
   },
   fr: {
-    medium: 'Technique',
-    year: 'Ann\u00e9e',
-    dimensions: 'Dimensions',
-    edition: '\u00c9dition',
-    price: 'Prix',
-    unique: 'Unique',
-    artistProof: "Epreuve d'Artiste",
-    horsCommerce: 'Hors Commerce',
-    epreuveArtiste: "Epreuve d'Artiste",
-    of: 'de',
-    referenceCode: 'R\u00e9f.',
-    page: 'Page',
-    title: 'Titre',
-    no: '#',
+    medium: 'Technique', year: 'Ann\u00e9e', dimensions: 'Dimensions',
+    edition: '\u00c9dition', price: 'Prix', unique: 'Unique',
+    artistProof: "Epreuve d'Artiste", horsCommerce: 'Hors Commerce',
+    epreuveArtiste: "Epreuve d'Artiste", of: 'de', referenceCode: 'R\u00e9f.',
+    title: 'Titre', no: '#',
   },
 };
 
 // ---------------------------------------------------------------------------
-// Date formatting per language
+// Date / Currency helpers
 // ---------------------------------------------------------------------------
 const DATE_LOCALES: Record<string, string> = { en: 'en-US', de: 'de-DE', fr: 'fr-FR' };
 
@@ -93,9 +63,6 @@ function formatLocalizedDate(language: string): string {
   return new Date().toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 }
 
-// ---------------------------------------------------------------------------
-// Currency symbol lookup
-// ---------------------------------------------------------------------------
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '\u20AC', USD: '$', CHF: 'CHF', GBP: '\u00A3',
 };
@@ -147,40 +114,34 @@ export interface CataloguePDFProps {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Format helpers
 // ---------------------------------------------------------------------------
-
-function formatDimensions(
-  h: number | null, w: number | null, d: number | null, unit: string,
-): string | null {
+function formatDimensions(h: number | null, w: number | null, d: number | null, unit: string): string | null {
   const parts = [h, w, d].filter((v): v is number => v != null);
   if (parts.length === 0) return null;
   return `${parts.join(' \u00d7 ')} ${unit}`;
 }
 
-function formatEdition(
-  editionType: string, editionNumber: number | null, editionTotal: number | null,
-  t: CatalogueTranslations,
-): string {
-  switch (editionType) {
+function formatEdition(et: string, en: number | null, total: number | null, t: CatalogueTranslations): string {
+  switch (et) {
     case 'unique': return t.unique;
     case 'numbered':
-      if (editionNumber != null && editionTotal != null) return `${editionNumber} ${t.of} ${editionTotal}`;
-      if (editionNumber != null) return `#${editionNumber}`;
+      if (en != null && total != null) return `${en} ${t.of} ${total}`;
+      if (en != null) return `#${en}`;
       return t.edition;
     case 'AP': return t.artistProof;
     case 'HC': return t.horsCommerce;
     case 'EA': return t.epreuveArtiste;
-    default: return editionType;
+    default: return et;
   }
 }
 
 function formatPrice(price: number, currency: string): string {
-  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
-  const formatted = price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  if (currency === 'EUR') return `${formatted} ${symbol}`;
-  if (currency === 'CHF') return `${symbol} ${formatted}`;
-  return `${symbol}${formatted}`;
+  const sym = CURRENCY_SYMBOLS[currency] ?? currency;
+  const f = price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  if (currency === 'EUR') return `${f} ${sym}`;
+  if (currency === 'CHF') return `${sym} ${f}`;
+  return `${sym}${f}`;
 }
 
 function formatSeriesLabel(value: string): string {
@@ -191,91 +152,81 @@ function formatSeriesLabel(value: string): string {
 // Styles
 // ---------------------------------------------------------------------------
 const s = StyleSheet.create({
-  // ---- Cover page (with background image) ----------------------------------
+  // ---- Cover: full-bleed image background ----------------------------------
   coverPage: {
     fontFamily: 'AnzianoPro',
-    backgroundColor: PDF_COLORS.primary900,
+    backgroundColor: '#111111',
     position: 'relative',
-    width: '100%',
-    height: '100%',
   },
   coverBgImage: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
+    top: 0, left: 0, width: '100%', height: '100%',
     objectFit: 'cover',
-    opacity: 0.6,
   },
-  coverOverlay: {
+  coverDarkOverlay: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    top: 0, left: 0, width: '100%', height: '100%',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   coverContent: {
     position: 'relative',
     flex: 1,
     justifyContent: 'flex-end',
-    padding: 50,
-    paddingBottom: 60,
+    padding: 48,
+    paddingBottom: 56,
   },
-  coverCompanyName: {
+  coverCompany: {
     fontFamily: 'AnzianoPro',
-    fontSize: 10,
-    color: PDF_COLORS.white,
+    fontSize: 9,
+    color: '#ffffff',
     textTransform: 'uppercase',
-    letterSpacing: 3,
-    marginBottom: 20,
-    opacity: 0.8,
+    letterSpacing: 4,
+    marginBottom: 24,
+    opacity: 0.7,
   },
   coverTitle: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 36,
-    color: PDF_COLORS.white,
+    fontSize: 40,
+    color: '#ffffff',
     textTransform: 'uppercase',
-    letterSpacing: 3,
-    lineHeight: 1.1,
-    marginBottom: 8,
+    letterSpacing: 2,
+    lineHeight: 1.05,
+    marginBottom: 6,
   },
   coverSubtitle: {
     fontFamily: 'AnzianoPro',
-    fontSize: 13,
-    color: PDF_COLORS.white,
+    fontSize: 14,
+    color: '#ffffff',
     letterSpacing: 1,
     marginBottom: 16,
-    opacity: 0.9,
-  },
-  coverText: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 9,
-    color: PDF_COLORS.white,
-    lineHeight: 1.6,
-    maxWidth: 320,
-    marginBottom: 20,
     opacity: 0.85,
   },
-  coverMeta: {
+  coverBodyText: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 9,
+    color: '#ffffff',
+    lineHeight: 1.7,
+    maxWidth: 300,
+    marginBottom: 24,
+    opacity: 0.75,
+  },
+  coverMetaRow: {
     flexDirection: 'row' as const,
-    gap: 20,
-    marginTop: 12,
+    marginTop: 8,
   },
   coverMetaText: {
     fontFamily: 'AnzianoPro',
-    fontSize: 8,
-    color: PDF_COLORS.white,
+    fontSize: 7,
+    color: '#ffffff',
     letterSpacing: 0.5,
-    opacity: 0.7,
+    opacity: 0.6,
   },
 
-  // ---- Cover page (no image — clean white) ---------------------------------
-  coverPageClean: {
+  // ---- Cover: clean white (no image) ---------------------------------------
+  coverClean: {
     fontFamily: 'AnzianoPro',
-    backgroundColor: PDF_COLORS.white,
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 60,
@@ -283,126 +234,117 @@ const s = StyleSheet.create({
   coverCleanCompany: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 18,
+    fontSize: 16,
     color: PDF_COLORS.primary900,
     textTransform: 'uppercase',
-    letterSpacing: 3,
-    marginBottom: 16,
+    letterSpacing: 4,
+    marginBottom: 20,
   },
-  coverAccentLine: {
-    width: 80,
-    height: 2,
-    backgroundColor: PDF_COLORS.accent,
-    marginBottom: 28,
+  coverCleanLine: {
+    width: 60,
+    height: 1.5,
+    backgroundColor: PDF_COLORS.primary900,
+    marginBottom: 32,
   },
   coverCleanTitle: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 28,
+    fontSize: 32,
     color: PDF_COLORS.primary900,
     textTransform: 'uppercase',
-    letterSpacing: 4,
+    letterSpacing: 3,
     textAlign: 'center',
+    lineHeight: 1.1,
     marginBottom: 10,
   },
   coverCleanSubtitle: {
     fontFamily: 'AnzianoPro',
-    fontSize: 13,
-    color: PDF_COLORS.primary700,
+    fontSize: 12,
+    color: PDF_COLORS.primary400,
     textAlign: 'center',
     letterSpacing: 1,
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  coverCleanText: {
+  coverCleanBody: {
     fontFamily: 'AnzianoPro',
-    fontSize: 10,
+    fontSize: 9,
     color: PDF_COLORS.primary700,
     textAlign: 'center',
-    lineHeight: 1.6,
-    maxWidth: 400,
-    marginBottom: 24,
+    lineHeight: 1.7,
+    maxWidth: 380,
+    marginBottom: 28,
   },
   coverCleanDate: {
     fontFamily: 'AnzianoPro',
-    fontSize: 10,
+    fontSize: 9,
     color: PDF_COLORS.primary400,
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     marginBottom: 20,
-  },
-  coverCleanContactBlock: {
-    alignItems: 'center',
-    marginTop: 8,
   },
   coverCleanContactName: {
     fontFamily: 'AnzianoPro',
-    fontSize: 10,
+    fontSize: 9,
     color: PDF_COLORS.primary700,
-    letterSpacing: 0.5,
     marginBottom: 3,
   },
   coverCleanContactEmail: {
     fontFamily: 'AnzianoPro',
-    fontSize: 9,
+    fontSize: 8,
     color: PDF_COLORS.primary400,
-    letterSpacing: 0.3,
   },
 
   // ---- Text page -----------------------------------------------------------
   textPage: {
     fontFamily: 'AnzianoPro',
-    fontSize: 10,
-    color: PDF_COLORS.primary900,
-    backgroundColor: PDF_COLORS.white,
-    paddingTop: 50,
+    backgroundColor: '#ffffff',
+    paddingTop: 60,
     paddingBottom: 60,
     paddingHorizontal: 60,
   },
-  textPageHeader: {
+  textPageCompany: {
     fontFamily: 'AnzianoPro',
-    fontWeight: 'bold' as const,
-    fontSize: 12,
-    color: PDF_COLORS.primary900,
+    fontSize: 9,
+    color: PDF_COLORS.primary400,
     textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: 3,
     marginBottom: 8,
   },
-  textPageAccentLine: {
-    width: 60,
+  textPageLine: {
+    width: 40,
     height: 1,
-    backgroundColor: PDF_COLORS.border,
-    marginBottom: 28,
+    backgroundColor: PDF_COLORS.primary900,
+    marginBottom: 32,
   },
-  textPageBody: {
+  textPageParagraph: {
     fontFamily: 'AnzianoPro',
     fontSize: 10,
     color: PDF_COLORS.primary700,
-    lineHeight: 1.7,
-    marginBottom: 12,
+    lineHeight: 1.8,
+    marginBottom: 14,
   },
 
   // ---- Section divider page ------------------------------------------------
   dividerPage: {
     fontFamily: 'AnzianoPro',
-    backgroundColor: PDF_COLORS.white,
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     paddingHorizontal: 60,
-    paddingVertical: 60,
+  },
+  dividerLine: {
+    width: 50,
+    height: 2,
+    backgroundColor: PDF_COLORS.primary900,
+    marginBottom: 20,
   },
   dividerTitle: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 42,
+    fontSize: 48,
     color: PDF_COLORS.primary900,
     textTransform: 'uppercase',
-    letterSpacing: 3,
-    lineHeight: 1.1,
-    marginBottom: 16,
-  },
-  dividerAccentLine: {
-    width: 60,
-    height: 2,
-    backgroundColor: PDF_COLORS.primary900,
-    marginBottom: 12,
+    letterSpacing: 2,
+    lineHeight: 1.05,
+    marginBottom: 14,
   },
   dividerCount: {
     fontFamily: 'AnzianoPro',
@@ -411,90 +353,102 @@ const s = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // ---- Full-page layout: image page (full bleed) ---------------------------
-  imagePage: {
+  // ---- Full-bleed image page (Page 1 of spread) ----------------------------
+  imgPage: {
     fontFamily: 'AnzianoPro',
-    backgroundColor: PDF_COLORS.white,
+    backgroundColor: '#ffffff',
     padding: 0,
+    position: 'relative',
   },
-  imagePageFull: {
+  imgFull: {
+    position: 'absolute',
+    top: 0, left: 0, width: '100%', height: '100%',
+    objectFit: 'cover',
+  },
+  imgContain: {
     width: '100%',
     height: '100%',
     objectFit: 'contain',
   },
-  imagePageHeader: {
-    position: 'absolute' as const,
-    top: 24,
-    left: 30,
-    right: 30,
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
+  imgPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  imagePageHeaderText: {
+  imgPlaceholderText: {
     fontFamily: 'AnzianoPro',
-    fontSize: 7,
+    fontSize: 14,
     color: PDF_COLORS.primary400,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
-  imagePageHeaderPage: {
+  // Minimal header overlay on image page
+  imgHeader: {
+    position: 'absolute',
+    top: 20, left: 24, right: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  imgHeaderLabel: {
     fontFamily: 'AnzianoPro',
-    fontSize: 7,
-    color: PDF_COLORS.primary400,
+    fontSize: 6,
+    color: '#ffffff',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    opacity: 0.6,
+  },
+  imgHeaderPage: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 6,
+    color: '#ffffff',
+    opacity: 0.6,
   },
 
-  // ---- Full-page layout: detail page ---------------------------------------
+  // ---- Detail page (Page 2 of spread) --------------------------------------
   detailPage: {
     fontFamily: 'AnzianoPro',
-    fontSize: 10,
-    color: PDF_COLORS.primary900,
-    backgroundColor: PDF_COLORS.white,
-    paddingTop: 50,
+    backgroundColor: '#ffffff',
+    paddingTop: 80,
     paddingBottom: 60,
-    paddingHorizontal: 50,
-  },
-  detailImageWrap: {
-    alignItems: 'center',
+    paddingHorizontal: 60,
     justifyContent: 'center',
-    marginBottom: 28,
-  },
-  detailImage: {
-    maxHeight: 380,
-    maxWidth: '100%',
-    objectFit: 'contain',
-  },
-  detailDivider: {
-    borderTopWidth: 0.5,
-    borderTopColor: PDF_COLORS.border,
-    paddingTop: 16,
   },
   detailTitle: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 20,
+    fontSize: 28,
     color: PDF_COLORS.primary900,
-    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    lineHeight: 1.1,
+    marginBottom: 6,
   },
   detailRefCode: {
     fontFamily: 'AnzianoPro',
     fontSize: 8,
     color: PDF_COLORS.primary400,
-    marginBottom: 14,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    marginBottom: 28,
   },
-  detailInfoRow: {
+  detailLine: {
+    width: 40,
+    height: 1,
+    backgroundColor: PDF_COLORS.primary900,
+    marginBottom: 24,
+  },
+  detailRow: {
     flexDirection: 'row' as const,
-    paddingVertical: 4,
-    borderBottomWidth: 0.5,
-    borderBottomColor: PDF_COLORS.backgroundLight,
+    marginBottom: 10,
   },
   detailLabel: {
     fontFamily: 'AnzianoPro',
-    fontSize: 8,
+    fontSize: 7,
     color: PDF_COLORS.primary400,
-    width: 100,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
+    width: 90,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   detailValue: {
     fontFamily: 'AnzianoPro',
@@ -502,33 +456,30 @@ const s = StyleSheet.create({
     color: PDF_COLORS.primary900,
     flex: 1,
   },
+  // Header bar on detail page
   detailHeader: {
-    position: 'absolute' as const,
-    top: 24,
-    left: 50,
-    right: 50,
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
+    position: 'absolute',
+    top: 24, left: 60, right: 60,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  detailHeaderText: {
+  detailHeaderLabel: {
     fontFamily: 'AnzianoPro',
-    fontSize: 7,
+    fontSize: 6,
     color: PDF_COLORS.primary400,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   detailHeaderPage: {
     fontFamily: 'AnzianoPro',
-    fontSize: 7,
+    fontSize: 6,
     color: PDF_COLORS.primary400,
   },
 
   // ---- List layout ---------------------------------------------------------
   listPage: {
     fontFamily: 'AnzianoPro',
-    fontSize: 10,
-    color: PDF_COLORS.primary900,
-    backgroundColor: PDF_COLORS.white,
+    backgroundColor: '#ffffff',
     paddingTop: 40,
     paddingBottom: 60,
     paddingHorizontal: 40,
@@ -543,8 +494,8 @@ const s = StyleSheet.create({
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
     fontSize: 7,
-    color: PDF_COLORS.white,
-    textTransform: 'uppercase' as const,
+    color: '#ffffff',
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   listBodyRow: {
@@ -564,7 +515,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 8,
     alignItems: 'center' as const,
     minHeight: 54,
-    backgroundColor: PDF_COLORS.backgroundLight,
+    backgroundColor: '#fafafa',
   },
   listCell: {
     fontFamily: 'AnzianoPro',
@@ -578,115 +529,74 @@ const s = StyleSheet.create({
     color: PDF_COLORS.primary900,
   },
   listThumbnail: {
-    width: 44,
-    height: 44,
+    width: 44, height: 44,
     objectFit: 'contain' as const,
   },
-  listThumbnailPlaceholder: {
-    width: 44,
-    height: 44,
-    backgroundColor: PDF_COLORS.backgroundLight,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+  listThumbPlaceholder: {
+    width: 44, height: 44,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  listPlaceholderText: {
+  listThumbText: {
     fontFamily: 'AnzianoPro',
     fontSize: 5,
     color: PDF_COLORS.primary400,
   },
 
-  // ---- Placeholder when no image -------------------------------------------
-  placeholder: {
-    backgroundColor: PDF_COLORS.backgroundLight,
-    paddingVertical: 60,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    width: '100%',
-    height: '100%',
-  },
-  placeholderText: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 12,
-    color: PDF_COLORS.primary400,
-  },
-
-  // ---- Footer --------------------------------------------------------------
+  // ---- Shared footer -------------------------------------------------------
   footer: {
     position: 'absolute' as const,
-    bottom: 30,
-    left: 50,
-    right: 50,
+    bottom: 24, left: 48, right: 48,
     flexDirection: 'row' as const,
     justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
-    borderTopWidth: 0.5,
-    borderTopColor: PDF_COLORS.border,
-    paddingTop: 8,
   },
   footerText: {
     fontFamily: 'AnzianoPro',
-    fontSize: 7,
+    fontSize: 6,
     color: PDF_COLORS.primary400,
-  },
-  pageNumber: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 7,
-    color: PDF_COLORS.primary400,
+    letterSpacing: 0.5,
   },
 });
 
 // ---------------------------------------------------------------------------
-// Sub-components
+// Footer
 // ---------------------------------------------------------------------------
-
-function CatalogueFooter() {
+function PageFooter() {
   return (
     <View style={s.footer} fixed>
       <Text style={s.footerText}>{`\u00a9 ${COMPANY_NAME}`}</Text>
       <Text
-        style={s.pageNumber}
-        render={({ pageNumber }) => (pageNumber > 1 ? `${pageNumber - 1}` : '')}
+        style={s.footerText}
+        render={({ pageNumber }) => (pageNumber > 1 ? String(pageNumber - 1) : '')}
       />
     </View>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Cover Page — image background variant
-// ---------------------------------------------------------------------------
-function CoverPageWithImage({
-  title,
-  subtitle,
-  coverText,
-  showDate,
-  showContactDetails,
-  coverImageUrl,
-  language,
+// ============================================================================
+// COVER PAGES
+// ============================================================================
+
+function CoverWithImage({
+  title, subtitle, coverText, showDate, showContactDetails, coverImageUrl, language,
 }: {
-  title: string;
-  subtitle?: string;
-  coverText?: string;
-  showDate?: boolean;
-  showContactDetails?: boolean;
-  coverImageUrl: string;
-  language: string;
+  title: string; subtitle?: string; coverText?: string;
+  showDate?: boolean; showContactDetails?: boolean;
+  coverImageUrl: string; language: string;
 }) {
   return (
     <Page size="A4" style={s.coverPage}>
-      {/* Background image */}
       <Image src={coverImageUrl} style={s.coverBgImage} />
-      <View style={s.coverOverlay} />
-
-      {/* Content overlay — bottom-aligned like the reference */}
+      <View style={s.coverDarkOverlay} />
       <View style={s.coverContent}>
-        <Text style={s.coverCompanyName}>{COMPANY_NAME}</Text>
+        <Text style={s.coverCompany}>{COMPANY_NAME}</Text>
         <Text style={s.coverTitle}>{title}</Text>
         {subtitle ? <Text style={s.coverSubtitle}>{subtitle}</Text> : null}
-        {coverText ? <Text style={s.coverText}>{coverText}</Text> : null}
-
-        <View style={s.coverMeta}>
+        {coverText ? <Text style={s.coverBodyText}>{coverText}</Text> : null}
+        <View style={s.coverMetaRow}>
           {showDate && (
-            <Text style={s.coverMetaText}>{formatLocalizedDate(language)}</Text>
+            <Text style={s.coverMetaText}>{formatLocalizedDate(language)}    </Text>
           )}
           {showContactDetails && (
             <Text style={s.coverMetaText}>
@@ -699,121 +609,94 @@ function CoverPageWithImage({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Cover Page — clean white variant (no image)
-// ---------------------------------------------------------------------------
-function CoverPageClean({
-  title,
-  subtitle,
-  coverText,
-  showDate,
-  showContactDetails,
-  language,
+function CoverClean({
+  title, subtitle, coverText, showDate, showContactDetails, language,
 }: {
-  title: string;
-  subtitle?: string;
-  coverText?: string;
-  showDate?: boolean;
-  showContactDetails?: boolean;
-  language: string;
+  title: string; subtitle?: string; coverText?: string;
+  showDate?: boolean; showContactDetails?: boolean; language: string;
 }) {
   return (
-    <Page size="A4" style={s.coverPageClean}>
+    <Page size="A4" style={s.coverClean}>
       <Text style={s.coverCleanCompany}>{COMPANY_NAME}</Text>
-      <View style={s.coverAccentLine} />
+      <View style={s.coverCleanLine} />
       <Text style={s.coverCleanTitle}>{title}</Text>
       {subtitle ? <Text style={s.coverCleanSubtitle}>{subtitle}</Text> : null}
-      {coverText ? <Text style={s.coverCleanText}>{coverText}</Text> : null}
+      {coverText ? <Text style={s.coverCleanBody}>{coverText}</Text> : null}
       {showDate && <Text style={s.coverCleanDate}>{formatLocalizedDate(language)}</Text>}
       {showContactDetails && (
-        <View style={s.coverCleanContactBlock}>
+        <View style={{ alignItems: 'center', marginTop: 8 }}>
           <Text style={s.coverCleanContactName}>Florian Paul Koenig</Text>
           <Text style={s.coverCleanContactEmail}>florian.koenig@noacontemporary.com</Text>
         </View>
       )}
-      <View style={s.footer}>
-        <Text style={s.footerText}>{`\u00a9 ${COMPANY_NAME}`}</Text>
-        <Text style={s.pageNumber} />
-      </View>
     </Page>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Text Page (optional)
-// ---------------------------------------------------------------------------
-function TextPage({ content }: { content: string }) {
-  const paragraphs = content.split(/\n\n+/).filter((p) => p.trim().length > 0);
+// ============================================================================
+// TEXT PAGE
+// ============================================================================
 
+function TextPageComponent({ content }: { content: string }) {
+  const paras = content.split(/\n\n+/).filter((p) => p.trim());
   return (
     <Page size="A4" style={s.textPage}>
-      <Text style={s.textPageHeader}>{COMPANY_NAME}</Text>
-      <View style={s.textPageAccentLine} />
-      {paragraphs.map((para, i) => (
-        <Text key={i} style={s.textPageBody}>{para.trim()}</Text>
+      <Text style={s.textPageCompany}>{COMPANY_NAME}</Text>
+      <View style={s.textPageLine} />
+      {paras.map((p, i) => (
+        <Text key={i} style={s.textPageParagraph}>{p.trim()}</Text>
       ))}
-      <CatalogueFooter />
+      <PageFooter />
     </Page>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Section Divider Page
-// ---------------------------------------------------------------------------
+// ============================================================================
+// SECTION DIVIDER
+// ============================================================================
+
 function DividerPage({ title, count }: { title: string; count: number }) {
   return (
     <Page size="A4" style={s.dividerPage}>
-      <View style={s.dividerAccentLine} />
+      <View style={s.dividerLine} />
       <Text style={s.dividerTitle}>{title}</Text>
       <Text style={s.dividerCount}>
         {count} artwork{count !== 1 ? 's' : ''}
       </Text>
-      <CatalogueFooter />
     </Page>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Detail rows builder
-// ---------------------------------------------------------------------------
+// ============================================================================
+// FULL-PAGE LAYOUT — 2-PAGE SPREAD PER ARTWORK
+// ============================================================================
+
 function buildDetailRows(
-  artwork: CatalogueArtwork,
-  t: CatalogueTranslations,
-  vis: FieldVisibility,
+  aw: CatalogueArtwork, t: CatalogueTranslations, vis: FieldVisibility,
 ): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [];
-
-  if (vis.showMedium && artwork.medium) {
-    rows.push({ label: t.medium, value: artwork.medium });
-  }
-  if (vis.showYear && artwork.year != null) {
-    rows.push({ label: t.year, value: String(artwork.year) });
-  }
+  if (vis.showMedium && aw.medium) rows.push({ label: t.medium, value: aw.medium });
+  if (vis.showYear && aw.year != null) rows.push({ label: t.year, value: String(aw.year) });
   if (vis.showDimensions) {
-    const dims = formatDimensions(artwork.height, artwork.width, artwork.depth, artwork.dimension_unit);
-    if (dims) rows.push({ label: t.dimensions, value: dims });
+    const d = formatDimensions(aw.height, aw.width, aw.depth, aw.dimension_unit);
+    if (d) rows.push({ label: t.dimensions, value: d });
   }
   if (vis.showEdition) {
-    rows.push({
-      label: t.edition,
-      value: formatEdition(artwork.edition_type, artwork.edition_number, artwork.edition_total, t),
-    });
+    rows.push({ label: t.edition, value: formatEdition(aw.edition_type, aw.edition_number, aw.edition_total, t) });
   }
-  if (vis.showPrice && artwork.price != null && artwork.price > 0) {
-    rows.push({ label: t.price, value: formatPrice(artwork.price, artwork.currency) });
+  if (vis.showPrice && aw.price != null && aw.price > 0) {
+    rows.push({ label: t.price, value: formatPrice(aw.price, aw.currency) });
   }
-
   return rows;
 }
 
-// ---------------------------------------------------------------------------
-// Full-page layout: artwork detail page with image + info
-// ---------------------------------------------------------------------------
-function ArtworkDetailPage({
-  artwork,
-  t,
-  vis,
-  sectionLabel,
+/**
+ * 2-page spread:
+ * Page 1 — Full-bleed artwork image (edge to edge, no padding)
+ * Page 2 — Clean details page with large title + metadata
+ */
+function ArtworkSpread({
+  artwork, t, vis, sectionLabel,
 }: {
   artwork: CatalogueArtwork;
   t: CatalogueTranslations;
@@ -823,51 +706,61 @@ function ArtworkDetailPage({
   const rows = buildDetailRows(artwork, t, vis);
 
   return (
-    <Page size="A4" style={s.detailPage}>
-      {/* Top header bar with section + page number */}
-      <View style={s.detailHeader} fixed>
-        <Text style={s.detailHeaderText}>
-          {sectionLabel ? `${sectionLabel}` : COMPANY_NAME}
-        </Text>
-        <Text
-          style={s.detailHeaderPage}
-          render={({ pageNumber }) => (pageNumber > 1 ? `${pageNumber - 1}` : '')}
-        />
-      </View>
-
-      {/* Artwork image */}
-      <View style={s.detailImageWrap}>
+    <>
+      {/* PAGE 1: Full-bleed image */}
+      <Page size="A4" style={s.imgPage}>
         {artwork.imageUrl ? (
-          <Image src={artwork.imageUrl} style={s.detailImage} />
+          <Image src={artwork.imageUrl} style={s.imgContain} />
         ) : (
-          <View style={[s.placeholder, { height: 300 }]}>
-            <Text style={s.placeholderText}>{artwork.title}</Text>
+          <View style={s.imgPlaceholder}>
+            <Text style={s.imgPlaceholderText}>{artwork.title}</Text>
           </View>
         )}
-      </View>
+        {/* Subtle header overlay */}
+        {artwork.imageUrl && (
+          <View style={s.imgHeader}>
+            <Text style={s.imgHeaderLabel}>
+              {sectionLabel || COMPANY_NAME}
+            </Text>
+            <Text
+              style={s.imgHeaderPage}
+              render={({ pageNumber }) => (pageNumber > 1 ? String(pageNumber - 1) : '')}
+            />
+          </View>
+        )}
+      </Page>
 
-      {/* Details */}
-      <View style={s.detailDivider}>
+      {/* PAGE 2: Details */}
+      <Page size="A4" style={s.detailPage}>
+        <View style={s.detailHeader} fixed>
+          <Text style={s.detailHeaderLabel}>
+            {sectionLabel || COMPANY_NAME}
+          </Text>
+          <Text
+            style={s.detailHeaderPage}
+            render={({ pageNumber }) => (pageNumber > 1 ? String(pageNumber - 1) : '')}
+          />
+        </View>
+
         <Text style={s.detailTitle}>{artwork.title}</Text>
         {vis.showReferenceCode && (
           <Text style={s.detailRefCode}>{artwork.reference_code}</Text>
         )}
+        <View style={s.detailLine} />
         {rows.map((row) => (
-          <View style={s.detailInfoRow} key={row.label}>
+          <View style={s.detailRow} key={row.label}>
             <Text style={s.detailLabel}>{row.label}</Text>
             <Text style={s.detailValue}>{row.value}</Text>
           </View>
         ))}
-      </View>
-
-      <CatalogueFooter />
-    </Page>
+      </Page>
+    </>
   );
 }
 
-// ---------------------------------------------------------------------------
-// List layout: compact table with thumbnails
-// ---------------------------------------------------------------------------
+// ============================================================================
+// LIST LAYOUT
+// ============================================================================
 
 function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
   const cols: { key: string; label: string; width: number }[] = [
@@ -875,7 +768,6 @@ function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
     { key: 'image', label: '', width: 50 },
     { key: 'title', label: t.title, width: 0 },
   ];
-
   if (vis.showReferenceCode) cols.push({ key: 'ref', label: t.referenceCode, width: 65 });
   if (vis.showMedium) cols.push({ key: 'medium', label: t.medium, width: 70 });
   if (vis.showYear) cols.push({ key: 'year', label: t.year, width: 35 });
@@ -887,33 +779,21 @@ function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
   const fixedTotal = cols.reduce((sum, c) => sum + (c.key !== 'title' ? c.width : 0), 0);
   const titleCol = cols.find((c) => c.key === 'title');
   if (titleCol) titleCol.width = Math.max(80, usable - fixedTotal);
-
   return cols;
-}
-
-function ListHeader({ cols }: { cols: { key: string; label: string; width: number }[] }) {
-  return (
-    <View style={s.listHeaderRow} fixed>
-      {cols.map((col) => (
-        <Text key={col.key} style={[s.listHeaderCell, { width: col.width }]}>{col.label}</Text>
-      ))}
-    </View>
-  );
 }
 
 function ListRow({
   artwork, index, cols, t,
 }: {
-  artwork: CatalogueArtwork;
-  index: number;
+  artwork: CatalogueArtwork; index: number;
   cols: { key: string; label: string; width: number }[];
   t: CatalogueTranslations;
 }) {
   const isAlt = index % 2 === 1;
   const dims = formatDimensions(artwork.height, artwork.width, artwork.depth, artwork.dimension_unit);
-  const editionText = formatEdition(artwork.edition_type, artwork.edition_number, artwork.edition_total, t);
+  const ed = formatEdition(artwork.edition_type, artwork.edition_number, artwork.edition_total, t);
 
-  const cellValue = (key: string): string => {
+  const val = (key: string): string => {
     switch (key) {
       case 'no': return String(index + 1);
       case 'title': return artwork.title;
@@ -921,9 +801,8 @@ function ListRow({
       case 'medium': return artwork.medium ?? '';
       case 'year': return artwork.year != null ? String(artwork.year) : '';
       case 'dims': return dims ?? '';
-      case 'edition': return editionText;
-      case 'price': return artwork.price != null && artwork.price > 0
-        ? formatPrice(artwork.price, artwork.currency) : '';
+      case 'edition': return ed;
+      case 'price': return artwork.price != null && artwork.price > 0 ? formatPrice(artwork.price, artwork.currency) : '';
       default: return '';
     }
   };
@@ -937,19 +816,16 @@ function ListRow({
               {artwork.imageUrl ? (
                 <Image src={artwork.imageUrl} style={s.listThumbnail} />
               ) : (
-                <View style={s.listThumbnailPlaceholder}>
-                  <Text style={s.listPlaceholderText}>{'\u2014'}</Text>
+                <View style={s.listThumbPlaceholder}>
+                  <Text style={s.listThumbText}>{'\u2014'}</Text>
                 </View>
               )}
             </View>
           );
         }
         return (
-          <Text
-            key={col.key}
-            style={[col.key === 'title' ? s.listCellBold : s.listCell, { width: col.width }]}
-          >
-            {cellValue(col.key)}
+          <Text key={col.key} style={[col.key === 'title' ? s.listCellBold : s.listCell, { width: col.width }]}>
+            {val(col.key)}
           </Text>
         );
       })}
@@ -957,135 +833,104 @@ function ListRow({
   );
 }
 
-function ListLayout({
-  artworks, t, vis,
-}: {
-  artworks: CatalogueArtwork[];
-  t: CatalogueTranslations;
-  vis: FieldVisibility;
+function ListLayout({ artworks, t, vis }: {
+  artworks: CatalogueArtwork[]; t: CatalogueTranslations; vis: FieldVisibility;
 }) {
   const cols = getListColumns(t, vis);
-
   return (
     <Page size="A4" style={s.listPage} wrap>
-      <ListHeader cols={cols} />
-      {artworks.map((artwork, i) => (
-        <ListRow key={artwork.reference_code} artwork={artwork} index={i} cols={cols} t={t} />
+      <View style={s.listHeaderRow} fixed>
+        {cols.map((col) => (
+          <Text key={col.key} style={[s.listHeaderCell, { width: col.width }]}>{col.label}</Text>
+        ))}
+      </View>
+      {artworks.map((aw, i) => (
+        <ListRow key={aw.reference_code} artwork={aw} index={i} cols={cols} t={t} />
       ))}
-      <CatalogueFooter />
+      <PageFooter />
     </Page>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Group artworks by divider mode
-// ---------------------------------------------------------------------------
+// ============================================================================
+// GROUP ARTWORKS
+// ============================================================================
+
 function groupArtworks(
-  artworks: CatalogueArtwork[],
-  dividerMode: 'none' | 'series' | 'category',
+  artworks: CatalogueArtwork[], mode: 'none' | 'series' | 'category',
 ): { label: string; artworks: CatalogueArtwork[] }[] {
-  if (dividerMode === 'none') {
-    return [{ label: '', artworks }];
-  }
+  if (mode === 'none') return [{ label: '', artworks }];
 
   const groups = new Map<string, CatalogueArtwork[]>();
   for (const aw of artworks) {
-    const key = dividerMode === 'series'
-      ? (aw.series ?? 'other')
-      : (aw.category ?? 'other');
+    const key = mode === 'series' ? (aw.series ?? 'other') : (aw.category ?? 'other');
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(aw);
   }
-
   return Array.from(groups.entries()).map(([key, items]) => ({
     label: formatSeriesLabel(key),
     artworks: items,
   }));
 }
 
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 export function CataloguePDF({
-  title,
-  subtitle,
-  coverText,
-  showDate,
-  showContactDetails,
-  coverImageUrl,
-  textPageContent,
-  layout,
-  artworks,
-  language,
-  visibility,
-  dividerMode,
+  title, subtitle, coverText, showDate, showContactDetails,
+  coverImageUrl, textPageContent, layout, artworks, language, visibility, dividerMode,
 }: CataloguePDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
   const groups = groupArtworks(artworks, dividerMode);
 
   return (
     <Document>
-      {/* Cover page */}
+      {/* Cover */}
       {coverImageUrl ? (
-        <CoverPageWithImage
-          title={title}
-          subtitle={subtitle}
-          coverText={coverText}
-          showDate={showDate}
-          showContactDetails={showContactDetails}
-          coverImageUrl={coverImageUrl}
-          language={language}
+        <CoverWithImage
+          title={title} subtitle={subtitle} coverText={coverText}
+          showDate={showDate} showContactDetails={showContactDetails}
+          coverImageUrl={coverImageUrl} language={language}
         />
       ) : (
-        <CoverPageClean
-          title={title}
-          subtitle={subtitle}
-          coverText={coverText}
-          showDate={showDate}
-          showContactDetails={showContactDetails}
+        <CoverClean
+          title={title} subtitle={subtitle} coverText={coverText}
+          showDate={showDate} showContactDetails={showContactDetails}
           language={language}
         />
       )}
 
-      {/* Optional text page */}
-      {textPageContent && textPageContent.trim().length > 0 && (
-        <TextPage content={textPageContent} />
+      {/* Text page */}
+      {textPageContent && textPageContent.trim() && (
+        <TextPageComponent content={textPageContent} />
       )}
 
-      {/* Artwork pages */}
+      {/* Full-page: 2-page spreads per artwork */}
       {layout === 'full-page' &&
-        groups.map((group, gi) => (
-          <View key={`group-${gi}`}>
-            {/* Section divider */}
-            {dividerMode !== 'none' && group.label && (
-              <DividerPage title={group.label} count={group.artworks.length} />
-            )}
+        groups.map((group, gi) => [
+          dividerMode !== 'none' && group.label ? (
+            <DividerPage key={`div-${gi}`} title={group.label} count={group.artworks.length} />
+          ) : null,
+          ...group.artworks.map((aw) => (
+            <ArtworkSpread
+              key={aw.reference_code}
+              artwork={aw}
+              t={t}
+              vis={visibility}
+              sectionLabel={dividerMode !== 'none' ? group.label : undefined}
+            />
+          )),
+        ])}
 
-            {/* Artwork detail pages */}
-            {group.artworks.map((artwork) => (
-              <ArtworkDetailPage
-                key={artwork.reference_code}
-                artwork={artwork}
-                t={t}
-                vis={visibility}
-                sectionLabel={dividerMode !== 'none' ? group.label : undefined}
-              />
-            ))}
-          </View>
-        ))}
-
-      {layout === 'list' && (
-        <>
-          {groups.map((group, gi) => (
-            <View key={`group-${gi}`}>
-              {dividerMode !== 'none' && group.label && (
-                <DividerPage title={group.label} count={group.artworks.length} />
-              )}
-              <ListLayout artworks={group.artworks} t={t} vis={visibility} />
-            </View>
-          ))}
-        </>
-      )}
+      {/* List layout */}
+      {layout === 'list' &&
+        groups.map((group, gi) => [
+          dividerMode !== 'none' && group.label ? (
+            <DividerPage key={`div-${gi}`} title={group.label} count={group.artworks.length} />
+          ) : null,
+          <ListLayout key={`list-${gi}`} artworks={group.artworks} t={t} vis={visibility} />,
+        ])}
     </Document>
   );
 }
