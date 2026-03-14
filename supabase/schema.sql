@@ -755,7 +755,8 @@ CREATE POLICY "Collector sees purchased artworks" ON artworks FOR SELECT TO auth
 
 -- artwork_images: follows artwork access
 CREATE POLICY "Admin full access artwork_images" ON artwork_images FOR ALL TO authenticated USING (get_user_role() = 'admin' AND user_id = (select auth.uid()));
-CREATE POLICY "Guest can view artwork images" ON artwork_images FOR SELECT TO authenticated USING (get_user_role() IN ('gallery', 'collector') AND artwork_id IN (SELECT id FROM artworks));
+CREATE POLICY "Gallery can view artwork images" ON artwork_images FOR SELECT TO authenticated USING (get_user_role() = 'gallery' AND artwork_id IN (SELECT id FROM artworks WHERE current_gallery_id = get_user_gallery_id()));
+CREATE POLICY "Collector can view own artwork images" ON artwork_images FOR SELECT TO authenticated USING (get_user_role() = 'collector' AND artwork_id IN (SELECT artwork_id FROM sales WHERE contact_id = get_user_contact_id()));
 
 -- For remaining admin-only tables, use a simple pattern:
 -- Admin can do everything on their own rows
@@ -774,7 +775,7 @@ BEGIN
     ('activity_log'), ('reminders')
   LOOP
     EXECUTE format(
-      'CREATE POLICY "Admin full access %1$s" ON %1$s FOR ALL TO authenticated USING (user_id = (select auth.uid()))',
+      'CREATE POLICY "Admin full access %1$s" ON %1$s FOR ALL TO authenticated USING (get_user_role() = ''admin'' AND user_id = (select auth.uid()))',
       tbl
     );
   END LOOP;

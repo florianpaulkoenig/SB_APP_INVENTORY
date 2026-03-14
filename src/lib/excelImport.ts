@@ -163,7 +163,14 @@ const NUMERIC_FIELDS = new Set([
 // parseExcelFile -- Read an .xlsx / .csv file and return headers + rows
 // ---------------------------------------------------------------------------
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB limit to mitigate DoS via large files
+const MAX_ROWS = 5000; // Prevent excessive memory usage
+
 export async function parseExcelFile(file: File): Promise<ParseResult> {
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed is 10 MB.`);
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -192,6 +199,11 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
 
         if (jsonData.length === 0) {
           reject(new Error('The spreadsheet is empty'));
+          return;
+        }
+
+        if (jsonData.length > MAX_ROWS) {
+          reject(new Error(`Too many rows (${jsonData.length}). Maximum allowed is ${MAX_ROWS}.`));
           return;
         }
 
