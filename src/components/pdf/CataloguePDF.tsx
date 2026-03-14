@@ -615,23 +615,33 @@ function buildDetailRows(
 // ============================================================================
 
 function getListColumns(t: CatalogueTranslations, vis: FieldVisibility) {
-  const cols: { key: string; label: string; width: number }[] = [
-    { key: 'no', label: t.no, width: 15 },
-    { key: 'image', label: '', width: 50 },
-    { key: 'title', label: t.title, width: 0 },
-  ];
-  if (vis.showReferenceCode) cols.push({ key: 'ref', label: t.referenceCode, width: 62 });
-  if (vis.showMedium) cols.push({ key: 'medium', label: t.medium, width: 65 });
-  if (vis.showYear) cols.push({ key: 'year', label: t.year, width: 30 });
-  if (vis.showDimensions) cols.push({ key: 'dims', label: t.dimensions, width: 72 });
-  if (vis.showWeight) cols.push({ key: 'weight', label: t.weight, width: 40 });
-  if (vis.showEdition) cols.push({ key: 'edition', label: t.edition, width: 45 });
-  if (vis.showPrice) cols.push({ key: 'price', label: t.price, width: 45 });
-
   const usable = 515;
-  const fixedTotal = cols.reduce((sum, c) => sum + (c.key !== 'title' ? c.width : 0), 0);
-  const titleCol = cols.find((c) => c.key === 'title');
-  if (titleCol) titleCol.width = Math.max(80, usable - fixedTotal);
+  const fixedNo = 18;
+  const fixedImage = 50;
+  const flexSpace = usable - fixedNo - fixedImage;
+
+  // Proportional weights for each flexible column
+  // Title gets ~2x weight, other text columns ~1x, short columns ~0.6x
+  const flexCols: { key: string; label: string; weight: number }[] = [
+    { key: 'title', label: t.title, weight: 2 },
+  ];
+  if (vis.showReferenceCode) flexCols.push({ key: 'ref', label: t.referenceCode, weight: 1.2 });
+  if (vis.showMedium) flexCols.push({ key: 'medium', label: t.medium, weight: 1.2 });
+  if (vis.showYear) flexCols.push({ key: 'year', label: t.year, weight: 0.6 });
+  if (vis.showDimensions) flexCols.push({ key: 'dims', label: t.dimensions, weight: 1.2 });
+  if (vis.showWeight) flexCols.push({ key: 'weight', label: t.weight, weight: 0.7 });
+  if (vis.showEdition) flexCols.push({ key: 'edition', label: t.edition, weight: 0.8 });
+  if (vis.showPrice) flexCols.push({ key: 'price', label: t.price, weight: 0.8 });
+
+  const totalWeight = flexCols.reduce((s, c) => s + c.weight, 0);
+
+  const cols: { key: string; label: string; width: number }[] = [
+    { key: 'no', label: t.no, width: fixedNo },
+    { key: 'image', label: '', width: fixedImage },
+  ];
+  for (const fc of flexCols) {
+    cols.push({ key: fc.key, label: fc.label, width: Math.round((fc.weight / totalWeight) * flexSpace) });
+  }
   return cols;
 }
 
