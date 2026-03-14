@@ -775,11 +775,18 @@ export function CataloguePDF({
             <Text style={s.coverMetaText}>{formatLocalizedDate(language)}</Text>
           )}
           {showContactDetails && (
-            <Text style={s.coverMetaText}>
-              Florian Paul Koenig  |  florian.koenig@noacontemporary.com
-            </Text>
+            <View>
+              <Text style={s.coverMetaText}>
+                Florian Paul Koenig
+              </Text>
+              <Text style={s.coverMetaText}>
+                florian.koenig@noacontemporary.com
+              </Text>
+              <Text style={s.coverMetaText}>
+                {COMPANY_NAME}
+              </Text>
+            </View>
           )}
-          <Text style={s.coverCompanySmall}>{COMPANY_NAME}</Text>
         </View>
       </Page>
     );
@@ -795,9 +802,9 @@ export function CataloguePDF({
           <View style={{ alignItems: 'center' }}>
             <Text style={s.coverCleanContactName}>Florian Paul Koenig</Text>
             <Text style={s.coverCleanContactEmail}>florian.koenig@noacontemporary.com</Text>
+            <Text style={s.coverCleanCompany}>{COMPANY_NAME}</Text>
           </View>
         )}
-        <Text style={s.coverCleanCompany}>{COMPANY_NAME}</Text>
       </Page>
     );
   }
