@@ -838,10 +838,11 @@ export function CataloguePDF({
 
         allPages.push(
           <Page key={`aw-${aw.reference_code}`} size="A4" style={s.artworkPage}>
-            <View style={{ marginBottom: 20 }} fixed>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }} fixed>
               <Text style={s.artworkHeaderLabel}>
                 {title}{subtitle ? `  —  ${subtitle}` : ''}
               </Text>
+              {coverText ? <Text style={[s.artworkHeaderLabel, { textAlign: 'right' }]}>{coverText}</Text> : null}
             </View>
 
             <View style={s.artworkImageContainer}>
