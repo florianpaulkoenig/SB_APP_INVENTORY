@@ -29,9 +29,8 @@ DO $$
 DECLARE
   tbl TEXT;
 BEGIN
-  FOR tbl IN VALUES ('projects'), ('project_tasks'), ('project_milestones'),
-    ('auction_alerts'), ('enquiries'), ('gallery_forwarding_orders'),
-    ('gallery_forwarding_items'), ('cv_entries')
+  FOR tbl IN VALUES ('projects'), ('auction_alerts'), ('enquiries'),
+    ('gallery_forwarding_orders'), ('gallery_forwarding_items'), ('cv_entries')
   LOOP
     -- Add admin full access (these tables were created after the initial admin policy loop)
     EXECUTE format(
