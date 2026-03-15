@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useCallback, useRef, useMemo } from 'react';
-// xlsx loaded dynamically in downloadTemplate() to keep bundle light
+// exceljs loaded dynamically in downloadTemplate() to keep bundle light
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
@@ -346,39 +346,48 @@ export function ExcelImporter({
       },
     ];
 
-    const XLSX = await import('xlsx');
-    const ws = XLSX.utils.json_to_sheet(exampleRows);
+    const ExcelJS = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Artworks');
 
-    // Set column widths for readability
-    ws['!cols'] = [
-      { wch: 28 }, // Title
-      { wch: 26 }, // Medium
-      { wch: 6 },  // Year
-      { wch: 8 },  // Height
-      { wch: 8 },  // Width
-      { wch: 8 },  // Depth
-      { wch: 16 }, // Dimension Unit
-      { wch: 14 }, // Framed Height
-      { wch: 14 }, // Framed Width
-      { wch: 14 }, // Framed Depth
-      { wch: 8 },  // Weight
-      { wch: 14 }, // Edition Type
-      { wch: 16 }, // Edition Number
-      { wch: 14 }, // Edition Total
-      { wch: 10 }, // Price
-      { wch: 10 }, // Currency
-      { wch: 16 }, // Status
-      { wch: 22 }, // Current Location
-      { wch: 14 }, // Category
-      { wch: 12 }, // Motif
-      { wch: 18 }, // Series
-      { wch: 12 }, // Color
-      { wch: 30 }, // Notes
+    const columns = [
+      { header: 'Title', key: 'Title', width: 28 },
+      { header: 'Medium', key: 'Medium', width: 26 },
+      { header: 'Year', key: 'Year', width: 6 },
+      { header: 'Height', key: 'Height', width: 8 },
+      { header: 'Width', key: 'Width', width: 8 },
+      { header: 'Depth', key: 'Depth', width: 8 },
+      { header: 'Dimension Unit', key: 'Dimension Unit', width: 16 },
+      { header: 'Framed Height', key: 'Framed Height', width: 14 },
+      { header: 'Framed Width', key: 'Framed Width', width: 14 },
+      { header: 'Framed Depth', key: 'Framed Depth', width: 14 },
+      { header: 'Weight', key: 'Weight', width: 8 },
+      { header: 'Edition Type', key: 'Edition Type', width: 14 },
+      { header: 'Edition Number', key: 'Edition Number', width: 16 },
+      { header: 'Edition Total', key: 'Edition Total', width: 14 },
+      { header: 'Price', key: 'Price', width: 10 },
+      { header: 'Currency', key: 'Currency', width: 10 },
+      { header: 'Status', key: 'Status', width: 16 },
+      { header: 'Current Location', key: 'Current Location', width: 22 },
+      { header: 'Category', key: 'Category', width: 14 },
+      { header: 'Motif', key: 'Motif', width: 12 },
+      { header: 'Series', key: 'Series', width: 18 },
+      { header: 'Color', key: 'Color', width: 12 },
+      { header: 'Notes', key: 'Notes', width: 30 },
     ];
+    ws.columns = columns;
+    for (const row of exampleRows) {
+      ws.addRow(row);
+    }
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Artworks');
-    XLSX.writeFile(wb, 'NOA_Artwork_Import_Template.xlsx');
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'NOA_Artwork_Import_Template.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
   }, []);
 
   // ---- Step titles ---------------------------------------------------------

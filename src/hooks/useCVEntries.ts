@@ -308,30 +308,31 @@ export function useCVEntries() {
         variant: 'success',
       });
 
-      const XLSX = await import('xlsx');
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('CV');
 
-      const worksheetData = entries.map((entry) => ({
-        Year: entry.year ?? '',
-        Category: getCategoryLabel(entry.category),
-        Title: entry.title,
-        Location: entry.location ?? '',
-        Description: entry.description ?? '',
-      }));
-
-      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'CV');
-
-      // Set column widths
-      worksheet['!cols'] = [
-        { wch: 8 },
-        { wch: 20 },
-        { wch: 40 },
-        { wch: 25 },
-        { wch: 40 },
+      worksheet.columns = [
+        { header: 'Year', key: 'Year', width: 8 },
+        { header: 'Category', key: 'Category', width: 20 },
+        { header: 'Title', key: 'Title', width: 40 },
+        { header: 'Location', key: 'Location', width: 25 },
+        { header: 'Description', key: 'Description', width: 40 },
       ];
 
-      XLSX.writeFile(workbook, `${ARTIST_NAME.replace(/\s+/g, '_')}_CV.xlsx`);
+      for (const entry of entries) {
+        worksheet.addRow({
+          Year: entry.year ?? '',
+          Category: getCategoryLabel(entry.category),
+          Title: entry.title,
+          Location: entry.location ?? '',
+          Description: entry.description ?? '',
+        });
+      }
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      downloadBlob(blob, `${ARTIST_NAME.replace(/\s+/g, '_')}_CV.xlsx`);
 
       toast({
         title: 'XLS Exported',

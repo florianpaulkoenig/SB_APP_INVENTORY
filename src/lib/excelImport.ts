@@ -2,8 +2,7 @@
 // NOA Inventory -- Excel Import Utilities
 // ---------------------------------------------------------------------------
 
-// xlsx is loaded dynamically to avoid pulling 429KB into the main bundle
-type XLSXModule = typeof import('xlsx');
+// exceljs is loaded dynamically to keep the main bundle light
 import type {
   ArtworkInsert,
   ArtworkStatus,
@@ -172,59 +171,65 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
     throw new Error(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed is 10 MB.`);
   }
 
-  const XLSX: XLSXModule = await import('xlsx');
+  const ExcelJS = await import('exceljs');
+  const workbook = new ExcelJS.Workbook();
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+  const buffer = await file.arrayBuffer();
+  const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
 
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        if (!data) {
-          reject(new Error('Failed to read file'));
-          return;
-        }
+  if (ext === '.csv') {
+    await workbook.csv.load(buffer);
+  } else {
+    await workbook.xlsx.load(buffer);
+  }
 
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet || worksheet.rowCount === 0) {
+    throw new Error('No sheets found in the file');
+  }
 
-        if (!firstSheetName) {
-          reject(new Error('No sheets found in the file'));
-          return;
-        }
-
-        const worksheet = workbook.Sheets[firstSheetName];
-
-        // Get headers from first row
-        const jsonData = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, {
-          defval: null,
-        });
-
-        if (jsonData.length === 0) {
-          reject(new Error('The spreadsheet is empty'));
-          return;
-        }
-
-        if (jsonData.length > MAX_ROWS) {
-          reject(new Error(`Too many rows (${jsonData.length}). Maximum allowed is ${MAX_ROWS}.`));
-          return;
-        }
-
-        const headers = Object.keys(jsonData[0]);
-        resolve({ headers, rows: jsonData });
-      } catch (err) {
-        reject(
-          err instanceof Error ? err : new Error('Failed to parse file'),
-        );
-      }
-    };
-
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'));
-    };
-
-    reader.readAsArrayBuffer(file);
+  // First row = headers
+  const headerRow = worksheet.getRow(1);
+  const headers: string[] = [];
+  headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+    headers[colNumber - 1] = String(cell.value ?? '').trim();
   });
+
+  if (headers.length === 0) {
+    throw new Error('The spreadsheet is empty');
+  }
+
+  const dataRowCount = worksheet.rowCount - 1;
+  if (dataRowCount > MAX_ROWS) {
+    throw new Error(`Too many rows (${dataRowCount}). Maximum allowed is ${MAX_ROWS}.`);
+  }
+
+  const rows: ExcelRow[] = [];
+  worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    if (rowNumber === 1) return; // skip header row
+    const rowData: ExcelRow = {};
+    headers.forEach((header, idx) => {
+      const cell = row.getCell(idx + 1);
+      const val = cell.value;
+      if (val === null || val === undefined) {
+        rowData[header] = null;
+      } else if (typeof val === 'object' && 'result' in (val as Record<string, unknown>)) {
+        // Formula cell — use the computed result
+        rowData[header] = (val as { result: string | number }).result;
+      } else if (val instanceof Date) {
+        rowData[header] = val.toISOString().split('T')[0];
+      } else {
+        rowData[header] = typeof val === 'number' ? val : String(val);
+      }
+    });
+    rows.push(rowData);
+  });
+
+  if (rows.length === 0) {
+    throw new Error('The spreadsheet is empty');
+  }
+
+  return { headers, rows };
 }
 
 // ---------------------------------------------------------------------------

@@ -7,7 +7,7 @@ import {
   addDays,
   format,
 } from 'date-fns';
-// xlsx loaded dynamically in exportExcel() to keep bundle light
+// exceljs loaded dynamically in exportExcel() to keep bundle light
 import { pdf } from '@react-pdf/renderer';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -146,22 +146,30 @@ async function exportExcel(events: ScheduleEvent[], weekGroups: WeekGroup[], yea
     }));
   });
 
-  const XLSX = await import('xlsx');
-  const ws = XLSX.utils.json_to_sheet(rows);
+  const ExcelJS = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(`Schedule ${year}`);
 
-  // Auto-width columns
   const colKeys = ['KW', 'Monday', 'Dates', 'Type', 'Partner', 'Venue', 'Title', 'City', 'Country', 'Notes'];
-  ws['!cols'] = colKeys.map((key) => {
+  ws.columns = colKeys.map((key) => {
     const maxLen = Math.max(
       key.length,
       ...rows.map((r) => String((r as Record<string, unknown>)[key] ?? '').length),
     );
-    return { wch: Math.min(maxLen + 2, 40) };
+    return { header: key, key, width: Math.min(maxLen + 2, 40) };
   });
+  for (const row of rows) {
+    ws.addRow(row);
+  }
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, `Schedule ${year}`);
-  XLSX.writeFile(wb, `NOA_Schedule_${year}.xlsx`);
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `NOA_Schedule_${year}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 async function exportPDF(events: ScheduleEvent[], weekGroups: WeekGroup[], year: number) {
