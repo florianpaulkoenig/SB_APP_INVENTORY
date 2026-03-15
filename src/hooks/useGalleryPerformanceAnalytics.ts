@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { useExchangeRates } from './useExchangeRates';
 import {
   computePartnerScore,
   gallerySellThrough,
@@ -48,8 +49,10 @@ export function useGalleryPerformanceAnalytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { toCHF, ready: ratesReady } = useExchangeRates();
 
   const fetch = useCallback(async () => {
+    if (!ratesReady) return;
     setLoading(true);
     setError(null);
 
@@ -100,8 +103,11 @@ export function useGalleryPerformanceAnalytics() {
         const soldCount = gSales.length;
         const sellThru = gallerySellThrough(soldCount, totalAllocated);
 
-        // Revenue (raw sum, no currency conversion for simplicity)
-        const totalRevenue = gSales.reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0);
+        // Revenue (converted to CHF)
+        const totalRevenue = gSales.reduce(
+          (sum, s) => sum + toCHF(Number(s.sale_price) || 0, (s.currency as string) ?? 'CHF'),
+          0,
+        );
 
         // Avg days to sale
         let totalDays = 0;
@@ -172,7 +178,7 @@ export function useGalleryPerformanceAnalytics() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, toCHF, ratesReady]);
 
   useEffect(() => { fetch(); }, [fetch]);
 

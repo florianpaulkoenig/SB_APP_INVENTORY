@@ -140,10 +140,13 @@ export function ProductionOrdersPage() {
       const itemTotal = valMap[order.id] ?? 0;
       const dbPrice = order.price ?? 0;
       if (Math.abs(itemTotal - dbPrice) > 0.001 && itemTotal > 0) {
-        await supabase
+        const { error: backfillErr } = await supabase
           .from('production_orders')
           .update({ price: itemTotal, currency: currMap[order.id] ?? order.currency ?? 'EUR' } as never)
           .eq('id', order.id);
+        if (backfillErr) {
+          console.warn(`Failed to backfill production order ${order.id}:`, backfillErr.message);
+        }
       }
     }
   }, [productionOrders]);

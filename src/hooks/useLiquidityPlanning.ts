@@ -46,7 +46,11 @@ const MONTH_NAMES = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-const DEFAULT_COMMISSION_PERCENT = 50; // NOA gets 50% by default
+// Default 3-way split: 50% gallery / 25% NOA / 25% artist (SB)
+// Matches useRevenueOverview defaults
+const DEFAULT_GALLERY_PCT = 50;
+const DEFAULT_NOA_PCT = 25;
+const DEFAULT_ARTIST_PCT = 25;
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -140,7 +144,8 @@ export function useLiquidityPlanning(year: number): UseLiquidityPlanningReturn {
         }
       }
 
-      // Helper: get NOA share and SB share for a sale amount (CHF)
+      // Helper: get NOA share and SB (artist) share for a sale amount (CHF)
+      // Uses the same 50/25/25 default split as useRevenueOverview
       function getEntityShares(chfAmount: number, sale: { commission_percent: number | null; gallery_id: string | null }) {
         // If gallery has a 3-way split defined, use it
         if (sale.gallery_id && gallerySplits[sale.gallery_id]) {
@@ -151,15 +156,23 @@ export function useLiquidityPlanning(year: number): UseLiquidityPlanningReturn {
           };
         }
 
-        // Use sale-level commission_percent if available
-        const commPct = sale.commission_percent
+        // Use sale-level or gallery-level commission_rate for legacy 2-way split
+        const legacyRate = sale.commission_percent
           ?? (sale.gallery_id && galleryCommission[sale.gallery_id] != null
             ? galleryCommission[sale.gallery_id]
-            : DEFAULT_COMMISSION_PERCENT);
+            : null);
 
-        const noaShare = chfAmount * (commPct / 100);
-        const sbShare = chfAmount - noaShare;
-        return { noa: noaShare, sb: sbShare };
+        if (legacyRate != null) {
+          // Legacy: gallery gets legacyRate%, remainder split 50/50 between NOA and artist
+          const remainder = chfAmount * ((100 - legacyRate) / 100);
+          return { noa: remainder / 2, sb: remainder / 2 };
+        }
+
+        // Default: 50% gallery / 25% NOA / 25% artist
+        return {
+          noa: chfAmount * (DEFAULT_NOA_PCT / 100),
+          sb: chfAmount * (DEFAULT_ARTIST_PCT / 100),
+        };
       }
 
       // Initialize monthly buckets

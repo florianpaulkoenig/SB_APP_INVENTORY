@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
 import { useAuctionAlerts } from '../hooks/useAuctionAlerts';
+import { useExchangeRates } from '../hooks/useExchangeRates';
 import { AUCTION_RESULTS, AUCTION_HOUSES, CURRENCIES } from '../lib/constants';
 
 interface AlertForm {
@@ -56,6 +57,7 @@ export function AuctionTrackingPage() {
   const showSuccess = (msg: string) => toast({ title: msg, variant: 'success' });
   const showError = (msg: string) => toast({ title: msg, variant: 'error' });
   const { alerts, loading, createAlert, updateAlert, deleteAlert, matchToDatabase } = useAuctionAlerts();
+  const { toCHF } = useExchangeRates();
 
   const [filterHouse, setFilterHouse] = useState('');
   const [filterResult, setFilterResult] = useState('');
@@ -90,8 +92,8 @@ export function AuctionTrackingPage() {
   );
 
   const totalHammerValue = useMemo(
-    () => alerts.reduce((sum, a) => sum + (a.hammer_price || 0), 0),
-    [alerts]
+    () => alerts.reduce((sum, a) => sum + toCHF(a.hammer_price || 0, (a.currency as string) ?? 'CHF'), 0),
+    [alerts, toCHF]
   );
 
   const avgEstimateAccuracy = useMemo(() => {
@@ -231,7 +233,7 @@ export function AuctionTrackingPage() {
         </Card>
         <Card>
           <p className="text-xs text-gray-500 uppercase">Total Hammer Value</p>
-          <p className="text-2xl font-bold">{formatCurrency(totalHammerValue, 'USD')}</p>
+          <p className="text-2xl font-bold">{formatCurrency(totalHammerValue, 'CHF')}</p>
         </Card>
         <Card>
           <p className="text-xs text-gray-500 uppercase">Avg Estimate Accuracy</p>

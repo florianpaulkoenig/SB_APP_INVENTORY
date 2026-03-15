@@ -72,6 +72,7 @@ export function Modal({
             <button
               type="button"
               onClick={onClose}
+              aria-label="Close"
               className="rounded-md p-1 text-primary-400 hover:bg-primary-100 hover:text-primary-600 transition-colors"
             >
               <svg
@@ -96,6 +97,7 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close"
             className="absolute right-3 top-3 rounded-md p-1 text-primary-400 hover:bg-primary-100 hover:text-primary-600 transition-colors"
           >
             <svg

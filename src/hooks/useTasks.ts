@@ -93,7 +93,8 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       }
 
       // Sorting – default: due_date asc (nulls last), then created_at desc
-      if (filters.sortBy) {
+      const ALLOWED_SORT_COLUMNS = ['due_date', 'created_at', 'priority', 'title', 'completed'];
+      if (filters.sortBy && ALLOWED_SORT_COLUMNS.includes(filters.sortBy)) {
         const sortOrder = filters.sortOrder || 'asc';
         query = query.order(filters.sortBy, { ascending: sortOrder === 'asc' });
       } else {

@@ -66,8 +66,11 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
         query = query.eq('contact_id', filters.contact_id);
       }
 
-      // Sorting
-      const sortBy = filters.sortBy || 'created_at';
+      // Sorting (whitelist to prevent injection)
+      const ALLOWED_SORT_COLUMNS = ['created_at', 'updated_at', 'stage', 'value', 'title', 'expected_close_date'];
+      const sortBy = filters.sortBy && ALLOWED_SORT_COLUMNS.includes(filters.sortBy)
+        ? filters.sortBy
+        : 'created_at';
       const sortOrder = filters.sortOrder || 'desc';
       query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 

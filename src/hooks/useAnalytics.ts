@@ -161,7 +161,7 @@ export function useAnalytics(): UseAnalyticsReturn {
       // 4. Expenses: amount, expense_date
       let expensesQuery = supabase
         .from('expenses')
-        .select('id, amount, expense_date');
+        .select('id, amount, currency, expense_date');
 
       // Apply date range filter to expenses
       if (dateFrom) {
@@ -196,12 +196,15 @@ export function useAnalytics(): UseAnalyticsReturn {
       const totalArtworks = artworks.length;
       const totalSold = artworks.filter((a) => a.status === 'sold').length;
       const totalRevenue = sales.reduce((sum, s) => sum + toCHF(Number(s.sale_price) || 0, s.currency ?? 'CHF'), 0);
-      const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      const totalExpenses = expenses.reduce(
+        (sum, e) => sum + toCHF(Number(e.amount) || 0, (e.currency as string) ?? 'CHF'),
+        0,
+      );
 
       // Open invoices KPIs
       const openInvoicesCount = invoices.length;
       const openInvoicesTotal = invoices.reduce(
-        (sum, inv) => sum + (Number(inv.total) || 0),
+        (sum, inv) => sum + toCHF(Number(inv.total) || 0, (inv.currency as string) ?? 'CHF'),
         0,
       );
 
