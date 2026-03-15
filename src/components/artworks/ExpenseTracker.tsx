@@ -119,7 +119,7 @@ export function ExpenseTracker({ artworkId }: ExpenseTrackerProps) {
             <p className="mt-0.5 text-xs text-primary-500">
               Total:{' '}
               <span className="font-semibold text-primary-700">
-                {formatCurrency(totalAmount, 'EUR')}
+                {formatCurrency(totalAmount, 'CHF')}
               </span>
             </p>
           )}
@@ -214,7 +214,7 @@ export function ExpenseTracker({ artworkId }: ExpenseTrackerProps) {
                     Total
                   </td>
                   <td className="pt-3 pr-4 text-right font-semibold text-primary-900">
-                    {formatCurrency(totalAmount, 'EUR')}
+                    {formatCurrency(totalAmount, 'CHF')}
                   </td>
                   <td colSpan={2} />
                 </tr>

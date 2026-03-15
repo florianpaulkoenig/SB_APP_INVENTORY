@@ -166,7 +166,7 @@ export function InvoiceItemForm({
       <div>
         <p className="mb-1 text-sm font-medium text-primary-700">Line Total</p>
         <p className="text-lg font-semibold text-accent">
-          {formatCurrency(lineTotal, 'EUR')}
+          {formatCurrency(lineTotal, 'CHF')}
         </p>
       </div>
 

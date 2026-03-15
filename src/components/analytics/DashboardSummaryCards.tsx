@@ -146,7 +146,7 @@ function StatCard({ icon, label, value, subtitle }: StatCardProps) {
           <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
             {label}
           </p>
-          <p className="mt-1 font-display text-2xl font-bold text-primary-900 leading-tight">
+          <p className="mt-1 font-display text-2xl font-bold text-primary-900 leading-tight truncate">
             {value}
           </p>
           {subtitle && (
@@ -189,19 +189,19 @@ export function DashboardSummaryCards({
       <StatCard
         icon={<RevenueIcon />}
         label="Total Revenue"
-        value={formatCurrency(totalRevenue, 'EUR')}
+        value={formatCurrency(totalRevenue, 'CHF')}
       />
       <StatCard
         icon={<ProfitIcon />}
         label="Net Profit"
-        value={formatCurrency(netProfit, 'EUR')}
-        subtitle={`Expenses: ${formatCurrency(totalExpenses, 'EUR')}`}
+        value={formatCurrency(netProfit, 'CHF')}
+        subtitle={`Expenses: ${formatCurrency(totalExpenses, 'CHF')}`}
       />
       <StatCard
         icon={<InvoiceIcon />}
         label="Open Invoices"
         value={openInvoicesCount.toLocaleString()}
-        subtitle={`Total: ${formatCurrency(openInvoicesTotal, 'EUR')}`}
+        subtitle={`Total: ${formatCurrency(openInvoicesTotal, 'CHF')}`}
       />
       <StatCard
         icon={<ClockIcon />}

@@ -264,7 +264,7 @@ export function GalleryAvailableWorksPage() {
                 )}
                 {artwork.price != null && (
                   <p className="mt-1 text-sm font-medium text-primary-800">
-                    {formatCurrency(artwork.price, artwork.currency || 'EUR')}
+                    {formatCurrency(artwork.price, artwork.currency || 'CHF')}
                   </p>
                 )}
                 <div className="mt-2">

@@ -242,7 +242,7 @@ export function ArtFairHeatMapPage() {
           <div className="p-4 text-center">
             <p className="text-sm text-gray-500">Total Revenue</p>
             <p className="mt-1 text-2xl font-semibold text-gray-900">
-              {formatCurrency(stats.totalRevenue, 'EUR')}
+              {formatCurrency(stats.totalRevenue, 'CHF')}
             </p>
           </div>
         </Card>
@@ -281,10 +281,10 @@ export function ArtFairHeatMapPage() {
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(v: number) => formatCurrency(v, 'EUR')} />
+                  <XAxis type="number" tickFormatter={(v: number) => formatCurrency(v, 'CHF')} />
                   <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 12 }} />
                   <Tooltip
-                    formatter={(value: number) => [formatCurrency(value, 'EUR'), 'Revenue']}
+                    formatter={(value: number) => [formatCurrency(value, 'CHF'), 'Revenue']}
                   />
                   <Bar dataKey="revenue" fill="#c9a96e" radius={[0, 4, 4, 0]} />
                 </BarChart>
