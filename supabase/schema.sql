@@ -802,8 +802,11 @@ CREATE POLICY "Public can view published viewing rooms" ON viewing_rooms FOR SEL
 -- 1. artwork-images (private)
 -- 2. assets (private)
 
--- Storage RLS for artwork-images
--- Files stored as: {user_id}/{artwork_id}/{filename}
+-- Storage RLS for artwork-images & media-files
+-- See migration: 20260315100000_storage_bucket_policies.sql
+-- artwork-images: admin upload only, file type restricted to jpg/jpeg/png/webp
+-- media-files: admin + gallery upload, admin delete
+-- Both: authenticated read access; artwork-images also allows anon read (share links)
 
 -- ============================================================================
 -- SALE REQUESTS (gallery marks artwork as sold, admin approves)
