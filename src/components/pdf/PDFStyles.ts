@@ -25,7 +25,7 @@ Font.register({
 // ---------------------------------------------------------------------------
 Font.register({
   family: 'NotoSansSC',
-  src: 'https://fonts.gstatic.com/s/notosanssc/v37/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_EnYxNbPCJo4.ttf',
+  src: 'https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYw.ttf',
 });
 
 // Disable hyphenation for CJK text (CJK doesn't use hyphenation)
