@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { Document, Page, View, Text } from '@react-pdf/renderer';
-import styles, { PDF_COLORS } from './PDFStyles';
+import styles, { PDF_COLORS, pdfFont } from './PDFStyles';
 import { PDFHeader } from './PDFHeader';
 import { COMPANY_NAME } from '../../lib/constants';
 
@@ -229,7 +229,7 @@ export function PackingListPDF({
               <Text style={[styles.tableCell, { width: COL_REF }]}>
                 {item.artwork_reference_code}
               </Text>
-              <Text style={[styles.tableCell, { width: COL_TITLE }]}>
+              <Text style={[styles.tableCell, { width: COL_TITLE, fontFamily: pdfFont(item.artwork_title) }]}>
                 {item.artwork_title}
               </Text>
               <Text style={[styles.tableCell, { width: COL_DIM }]}>

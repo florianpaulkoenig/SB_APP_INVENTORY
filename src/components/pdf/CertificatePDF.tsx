@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import styles, { PDF_COLORS } from './PDFStyles';
+import styles, { PDF_COLORS, pdfFont } from './PDFStyles';
 import { PDFHeader, getCertificateTitle } from './PDFHeader';
 import { ARTIST_NAME } from '../../lib/constants';
 
@@ -304,7 +304,7 @@ export function CertificatePDF({
           {detailRows.map((row) => (
             <View style={styles.infoRow} key={row.label}>
               <Text style={styles.infoLabel}>{row.label}</Text>
-              <Text style={styles.infoValue}>{row.value}</Text>
+              <Text style={[styles.infoValue, { fontFamily: pdfFont(row.value) }]}>{row.value}</Text>
             </View>
           ))}
 

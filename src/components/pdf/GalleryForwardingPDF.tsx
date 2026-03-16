@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import { PDF_COLORS } from './PDFStyles';
+import { PDF_COLORS, pdfFont } from './PDFStyles';
 
 // Ensure AnzianoPro font is registered (side-effect import)
 import './PDFStyles';
@@ -461,13 +461,13 @@ export function GalleryForwardingPDF({
               )}
             </View>
             <View style={{ width: COL_TITLE, overflow: 'hidden' }}>
-              <Text style={s.listCellBold}>{item.title}</Text>
+              <Text style={[s.listCellBold, { fontFamily: pdfFont(item.title) }]}>{item.title}</Text>
             </View>
             <View style={{ width: COL_REF, overflow: 'hidden' }}>
               <Text style={s.listCell}>{item.reference_code}</Text>
             </View>
             <View style={{ width: COL_MEDIUM, overflow: 'hidden' }}>
-              <Text style={s.listCell}>{item.medium ?? '\u2014'}</Text>
+              <Text style={[s.listCell, { fontFamily: pdfFont(item.medium) }]}>{item.medium ?? '\u2014'}</Text>
             </View>
             <View style={{ width: COL_DIM, overflow: 'hidden' }}>
               <Text style={s.listCell}>{item.dimensions || '\u2014'}</Text>

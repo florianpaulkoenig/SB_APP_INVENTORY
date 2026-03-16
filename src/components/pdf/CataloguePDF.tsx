@@ -6,10 +6,10 @@
 // ---------------------------------------------------------------------------
 
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import { PDF_COLORS } from './PDFStyles';
+import { PDF_COLORS, pdfFont } from './PDFStyles';
 import { COMPANY_NAME } from '../../lib/constants';
 
-// Ensure AnzianoPro font is registered (side-effect import)
+// Ensure fonts are registered (side-effect import)
 import './PDFStyles';
 
 // ---------------------------------------------------------------------------
@@ -714,9 +714,10 @@ function ListRow({
         }
         const cellStyle = col.key === 'title' ? s.listCellBold : s.listCell;
         const align = col.key === 'price' ? 'right' as const : undefined;
+        const cellVal = val(col.key);
         return (
-          <Text key={col.key} style={[cellStyle, { width: col.width, textAlign: align }]}>
-            {val(col.key)}
+          <Text key={col.key} style={[cellStyle, { width: col.width, textAlign: align, fontFamily: pdfFont(cellVal) }]}>
+            {cellVal}
           </Text>
         );
       })}
@@ -768,9 +769,9 @@ export function CataloguePDF({
           <View style={s.coverDarkOverlay} />
         </View>
         <View style={s.coverContent}>
-          <Text style={s.coverTitle}>{title}</Text>
-          {subtitle ? <Text style={s.coverSubtitle}>{subtitle}</Text> : null}
-          {coverText ? <Text style={s.coverBodyText}>{coverText}</Text> : null}
+          <Text style={[s.coverTitle, { fontFamily: pdfFont(title) }]}>{title}</Text>
+          {subtitle ? <Text style={[s.coverSubtitle, { fontFamily: pdfFont(subtitle) }]}>{subtitle}</Text> : null}
+          {coverText ? <Text style={[s.coverBodyText, { fontFamily: pdfFont(coverText) }]}>{coverText}</Text> : null}
           {showDate && (
             <Text style={s.coverMetaText}>{formatLocalizedDate(language)}</Text>
           )}
@@ -793,10 +794,10 @@ export function CataloguePDF({
   } else {
     allPages.push(
       <Page key="cover" size="A4" style={s.coverClean}>
-        <Text style={s.coverCleanTitle}>{title}</Text>
-        {subtitle ? <Text style={s.coverCleanSubtitle}>{subtitle}</Text> : null}
+        <Text style={[s.coverCleanTitle, { fontFamily: pdfFont(title) }]}>{title}</Text>
+        {subtitle ? <Text style={[s.coverCleanSubtitle, { fontFamily: pdfFont(subtitle) }]}>{subtitle}</Text> : null}
         <View style={s.coverCleanLine} />
-        {coverText ? <Text style={s.coverCleanBody}>{coverText}</Text> : null}
+        {coverText ? <Text style={[s.coverCleanBody, { fontFamily: pdfFont(coverText) }]}>{coverText}</Text> : null}
         {showDate && <Text style={s.coverCleanDate}>{formatLocalizedDate(language)}</Text>}
         {showContactDetails && (
           <View style={{ alignItems: 'center' }}>
@@ -813,11 +814,11 @@ export function CataloguePDF({
   if (textPageContent && textPageContent.trim()) {
     allPages.push(
       <Page key="text" size="A4" style={s.textPage}>
-        <Text style={s.textPageTitle}>{title}</Text>
-        {subtitle ? <Text style={s.textPageSubtitle}>{subtitle}</Text> : null}
+        <Text style={[s.textPageTitle, { fontFamily: pdfFont(title) }]}>{title}</Text>
+        {subtitle ? <Text style={[s.textPageSubtitle, { fontFamily: pdfFont(subtitle) }]}>{subtitle}</Text> : null}
         <View style={s.textPageLine} />
         {textPageContent.split(/\n\n+/).filter((p) => p.trim()).map((p, i) => (
-          <Text key={i} style={s.textPageParagraph}>{p.trim()}</Text>
+          <Text key={i} style={[s.textPageParagraph, { fontFamily: pdfFont(p) }]}>{p.trim()}</Text>
         ))}
         <PageFooter />
       </Page>
@@ -831,7 +832,7 @@ export function CataloguePDF({
         allPages.push(
           <Page key={`div-${group.label}`} size="A4" style={s.dividerPage}>
             <View style={s.dividerLine} />
-            <Text style={s.dividerTitle}>{group.label}</Text>
+            <Text style={[s.dividerTitle, { fontFamily: pdfFont(group.label) }]}>{group.label}</Text>
             <Text style={s.dividerCount}>
               {group.artworks.length} artwork{group.artworks.length !== 1 ? 's' : ''}
             </Text>
@@ -857,12 +858,12 @@ export function CataloguePDF({
                 <Image src={aw.imageUrl} style={s.artworkImage} />
               ) : (
                 <View style={s.artworkPlaceholder}>
-                  <Text style={s.artworkPlaceholderText}>{aw.title}</Text>
+                  <Text style={[s.artworkPlaceholderText, { fontFamily: pdfFont(aw.title) }]}>{aw.title}</Text>
                 </View>
               )}
             </View>
 
-            <Text style={s.artworkTitle}>{aw.title}</Text>
+            <Text style={[s.artworkTitle, { fontFamily: pdfFont(aw.title) }]}>{aw.title}</Text>
             {visibility.showReferenceCode && (
               <Text style={s.artworkRefCode}>{aw.reference_code}</Text>
             )}
@@ -870,7 +871,7 @@ export function CataloguePDF({
             {rows.map((row) => (
               <View style={s.artworkDetailRow} key={row.label}>
                 <Text style={s.artworkDetailLabel}>{row.label}</Text>
-                <Text style={s.artworkDetailValue}>{row.value}</Text>
+                <Text style={[s.artworkDetailValue, { fontFamily: pdfFont(row.value) }]}>{row.value}</Text>
               </View>
             ))}
             {visibility.showSoldDot && aw.status === 'sold' && (
@@ -889,7 +890,7 @@ export function CataloguePDF({
         allPages.push(
           <Page key={`div-${group.label}`} size="A4" style={s.dividerPage}>
             <View style={s.dividerLine} />
-            <Text style={s.dividerTitle}>{group.label}</Text>
+            <Text style={[s.dividerTitle, { fontFamily: pdfFont(group.label) }]}>{group.label}</Text>
             <Text style={s.dividerCount}>
               {group.artworks.length} artwork{group.artworks.length !== 1 ? 's' : ''}
             </Text>

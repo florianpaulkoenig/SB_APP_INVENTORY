@@ -20,6 +20,40 @@ Font.register({
 });
 
 // ---------------------------------------------------------------------------
+// Register Noto Sans SC for CJK (Chinese/Japanese/Korean) character support
+// Loaded from Google Fonts CDN — no local file needed
+// ---------------------------------------------------------------------------
+Font.register({
+  family: 'NotoSansSC',
+  src: 'https://fonts.gstatic.com/s/notosanssc/v37/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_EnYxNbPCJo4.ttf',
+});
+
+// Disable hyphenation for CJK text (CJK doesn't use hyphenation)
+Font.registerHyphenationCallback((word) => {
+  // If the word contains CJK characters, don't hyphenate — break per character
+  if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(word)) {
+    return word.split('');
+  }
+  // Default: treat as single word (let @react-pdf handle Latin hyphenation)
+  return [word];
+});
+
+// ---------------------------------------------------------------------------
+// CJK detection helpers — pick font based on text content
+// ---------------------------------------------------------------------------
+const CJK_REGEX = /[\u4e00-\u9fff\u3400-\u4dbf\u3000-\u303f\uff00-\uffef\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/;
+
+/** Returns true if text contains CJK characters */
+export function hasCJK(text: string): boolean {
+  return CJK_REGEX.test(text);
+}
+
+/** Pick the right font family for the given text */
+export function pdfFont(text?: string | null): string {
+  return text && hasCJK(text) ? 'NotoSansSC' : 'AnzianoPro';
+}
+
+// ---------------------------------------------------------------------------
 // Color palette -- Black & white gallery aesthetic with grey lines
 // ---------------------------------------------------------------------------
 export const PDF_COLORS = {
