@@ -309,6 +309,28 @@ const IntelligenceChatPage = React.lazy(() =>
 const LiquidityPlanningPage = React.lazy(() =>
   import('./pages/LiquidityPlanningPage').then((m) => ({ default: m.LiquidityPlanningPage })),
 );
+// Consolidated dashboards
+const PortfolioOverviewPage = React.lazy(() =>
+  import('./pages/analytics/PortfolioOverviewPage').then((m) => ({ default: m.PortfolioOverviewPage })),
+);
+const RevenuePricingPage = React.lazy(() =>
+  import('./pages/analytics/RevenuePricingPage').then((m) => ({ default: m.RevenuePricingPage })),
+);
+const GalleryIntelligencePage = React.lazy(() =>
+  import('./pages/analytics/GalleryIntelligencePage').then((m) => ({ default: m.GalleryIntelligencePage })),
+);
+const CollectorSalesPage = React.lazy(() =>
+  import('./pages/analytics/CollectorSalesPage').then((m) => ({ default: m.CollectorSalesPage })),
+);
+const MarketAuctionPage = React.lazy(() =>
+  import('./pages/analytics/MarketAuctionPage').then((m) => ({ default: m.MarketAuctionPage })),
+);
+const ExhibitionCareerPage = React.lazy(() =>
+  import('./pages/analytics/ExhibitionCareerPage').then((m) => ({ default: m.ExhibitionCareerPage })),
+);
+const SeriesArtworkPage = React.lazy(() =>
+  import('./pages/analytics/SeriesArtworkPage').then((m) => ({ default: m.SeriesArtworkPage })),
+);
 
 // ---------------------------------------------------------------------------
 // Suspense fallback with error boundary
@@ -819,6 +841,82 @@ const router = createBrowserRouter(
           ),
         },
 
+        // Bulk Operations (admin only)
+        {
+          path: 'bulk-operations',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><BulkOperationsPage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+
+        // ---- Consolidated Analytics Dashboards ----
+        {
+          path: 'analytics/portfolio',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><PortfolioOverviewPage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/revenue',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><RevenuePricingPage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/galleries',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><GalleryIntelligencePage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/collectors',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><CollectorSalesPage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/market',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><MarketAuctionPage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/exhibitions',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ExhibitionCareerPage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/series',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><SeriesArtworkPage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/strategic',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><StrategicIntelligencePage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+
         // Liquidity Planning (admin only)
         {
           path: 'liquidity',
@@ -993,17 +1091,6 @@ const router = createBrowserRouter(
           ),
         },
 
-        {
-          path: 'bulk-operations',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><BulkOperationsPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-
         // Gallery portal routes (admin + gallery)
         {
           path: 'gallery/available-works',
@@ -1081,17 +1168,6 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin', 'gallery']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <RouteErrorBoundary><GalleryNewsPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-
-        {
-          path: 'gallery/marketing-portal',
-          element: (
-            <RoleGuard allowed={['admin', 'gallery']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><GalleryMarketingPortalPage />
               </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
