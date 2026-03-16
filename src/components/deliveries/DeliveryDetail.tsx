@@ -8,7 +8,6 @@ import { DeliveryReceiptPDF } from '../pdf/DeliveryReceiptPDF';
 import { formatDate, formatDimensions, downloadBlob } from '../../lib/utils';
 import { DELIVERY_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
-import { getSignedUrls } from '../../lib/signedUrlCache';
 import type { DeliveryRow, DeliveryItemRow, DeliveryStatus } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -172,14 +171,20 @@ export function DeliveryDetail({
           .eq('is_primary', true);
 
         if (primaryImages && primaryImages.length > 0) {
-          const signedMap = await getSignedUrls(
-            'artwork-images',
-            primaryImages.map((img) => img.storage_path),
+          // Use small thumbnails for PDF (44×44 pt display) to keep PDF < 1 MB
+          const urls = await Promise.all(
+            primaryImages.map(async (img) => {
+              const { data: urlData } = await supabase.storage
+                .from('artwork-images')
+                .createSignedUrl(img.storage_path, 600, {
+                  transform: { width: 150, height: 150, quality: 50, resize: 'contain' as const },
+                });
+              return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
+            }),
           );
-          primaryImages.forEach((img) => {
-            const url = signedMap.get(img.storage_path);
-            if (url) imageMap[img.artwork_id] = url;
-          });
+          for (const { artworkId, url } of urls) {
+            if (url) imageMap[artworkId] = url;
+          }
         }
       }
 

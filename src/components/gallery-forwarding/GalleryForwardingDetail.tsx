@@ -167,11 +167,14 @@ export function GalleryForwardingDetail({
           .eq('is_primary', true);
 
         if (images && images.length > 0) {
+          // Use small thumbnails for PDF (44×44 pt display) to keep PDF < 1 MB
           const urls = await Promise.all(
             images.map(async (img) => {
               const { data: urlData } = await supabase.storage
                 .from('artwork-images')
-                .createSignedUrl(img.storage_path, 600);
+                .createSignedUrl(img.storage_path, 600, {
+                  transform: { width: 150, height: 150, quality: 50, resize: 'contain' as const },
+                });
               return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
             }),
           );
