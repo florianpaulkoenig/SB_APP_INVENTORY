@@ -56,7 +56,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
     try {
       let query = supabase
         .from('contacts')
-        .select('id, first_name, last_name, type, company, email, phone, city, country, tags, role, created_at', { count: 'exact' });
+        .select('id, first_name, last_name, type, company, email, phone, city, country, tags, created_at', { count: 'exact' });
 
       // Search filter: match first_name, last_name, company, or email
       if (filters.search) {
@@ -77,7 +77,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
       }
 
       // Sorting (whitelist to prevent SQL injection via arbitrary column names)
-      const VALID_SORT_COLUMNS: readonly string[] = ['created_at', 'first_name', 'last_name', 'email', 'company', 'role', 'city', 'country'];
+      const VALID_SORT_COLUMNS: readonly string[] = ['created_at', 'first_name', 'last_name', 'email', 'company', 'type', 'city', 'country'];
       const rawSortBy = filters.sortBy || 'last_name';
       const safeSortBy = VALID_SORT_COLUMNS.includes(rawSortBy) ? rawSortBy : 'last_name';
       const sortOrder = filters.sortOrder || 'asc';
