@@ -266,6 +266,7 @@ const navSections: NavSection[] = [
       { label: 'Art Fair Map', to: '/art-fair-map', icon: icons.map, roles: ['admin'] },
       { label: 'Price Management', to: '/price-management', icon: icons.priceTag, roles: ['admin'] },
       { label: 'Auction Tracking', to: '/auction-tracking', icon: icons.auction, roles: ['admin'] },
+      { label: 'Bulk Operations', to: '/bulk-operations', icon: icons.artworks, roles: ['admin'] },
     ],
   },
   {
@@ -278,6 +279,7 @@ const navSections: NavSection[] = [
       { label: 'Certificates', to: '/gallery/certificates', icon: icons.certificate, roles: ['gallery'] },
       { label: 'Media Library', to: '/gallery/media', icon: icons.imageSharing, roles: ['gallery'] },
       { label: 'News', to: '/gallery/news', icon: icons.emailLog, roles: ['gallery'] },
+      { label: 'Marketing Portal', to: '/gallery/marketing-portal', icon: icons.imageSharing, roles: ['gallery'] },
     ],
   },
   {

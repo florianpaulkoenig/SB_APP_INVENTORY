@@ -7,6 +7,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { useBulkPriceUpdate } from '../hooks/useBulkPriceUpdate';
+import { usePricingStrategy } from '../hooks/usePricingStrategy';
+import { usePriceTrajectory } from '../hooks/usePriceTrajectory';
 import { Card } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Button } from '../components/ui/Button';
@@ -14,6 +16,18 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { ARTWORK_CATEGORIES, ARTWORK_SERIES, CURRENCIES } from '../lib/constants';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  Legend,
+} from 'recharts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,6 +62,52 @@ interface PriceReport {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function elasticityLabel(e: number): { text: string; color: string } {
+  if (e > -0.5) return { text: 'Inelastic', color: 'text-emerald-600' };
+  if (e > -1.0) return { text: 'Moderate', color: 'text-amber-600' };
+  return { text: 'Elastic', color: 'text-red-600' };
+}
+
+function pricingPowerBadge(premium: number): { text: string; bg: string } {
+  if (premium > 10) return { text: 'Strong', bg: 'bg-emerald-100 text-emerald-800' };
+  if (premium > -5) return { text: 'Average', bg: 'bg-primary-100 text-primary-800' };
+  return { text: 'Weak', bg: 'bg-red-100 text-red-800' };
+}
+
+function directionIcon(current: number, recommended: number): { label: string; color: string } {
+  if (recommended > current * 1.01) return { label: 'Increase', color: 'text-emerald-600' };
+  if (recommended < current * 0.99) return { label: 'Decrease', color: 'text-red-600' };
+  return { label: 'Hold', color: 'text-primary-500' };
+}
+
+const SCENARIO_COLORS: Record<string, string> = {
+  conservative: '#6b7280',
+  moderate: '#2563eb',
+  aggressive: '#16a34a',
+};
+
+// ---------------------------------------------------------------------------
+// Chevron component
+// ---------------------------------------------------------------------------
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`w-5 h-5 text-primary-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -79,6 +139,14 @@ export function PriceManagementPage() {
   const [reportsLoading, setReportsLoading] = useState(true);
   const [analysisRunning, setAnalysisRunning] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+  // ---- Section 4 & 5: Collapsible sections --------------------------------
+
+  const [showPricingIntel, setShowPricingIntel] = useState(false);
+  const [showTrajectory, setShowTrajectory] = useState(false);
+
+  const { data: pricingData, loading: pricingLoading } = usePricingStrategy();
+  const { data: trajectoryData, loading: trajectoryLoading } = usePriceTrajectory();
 
   // ---- Fetch price history and reports on mount ---------------------------
 
@@ -417,7 +485,7 @@ export function PriceManagementPage() {
       {/* ================================================================== */}
       {/* Section 3: AI Price Research                                        */}
       {/* ================================================================== */}
-      <Card className="p-6">
+      <Card className="mb-8 p-6">
         <h2 className="font-display text-lg font-semibold text-primary-900 mb-2">
           AI Price Research
         </h2>
@@ -491,6 +559,411 @@ export function PriceManagementPage() {
             </div>
           )}
         </div>
+      </Card>
+
+      {/* ================================================================== */}
+      {/* Section 4: Pricing Intelligence (collapsible)                      */}
+      {/* ================================================================== */}
+      <Card className="mb-8">
+        <button
+          type="button"
+          className="w-full flex items-center justify-between p-6 text-left"
+          onClick={() => setShowPricingIntel((v) => !v)}
+        >
+          <div>
+            <h2 className="font-display text-lg font-semibold text-primary-900">
+              Pricing Intelligence
+            </h2>
+            <p className="mt-0.5 text-sm text-primary-500">
+              Series elasticity, gallery pricing power, size premiums &amp; seasonal patterns
+            </p>
+          </div>
+          <ChevronIcon open={showPricingIntel} />
+        </button>
+
+        {showPricingIntel && (
+          <div className="px-6 pb-6">
+            {pricingLoading ? (
+              <div className="flex justify-center py-8">
+                <LoadingSpinner />
+              </div>
+            ) : !pricingData ? (
+              <p className="text-sm text-primary-500">No pricing intelligence data available.</p>
+            ) : (
+              <div className="space-y-8">
+                {/* 4a. Series Price Elasticity */}
+                {pricingData.seriesElasticity.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-primary-800 mb-3">
+                      Series Price Elasticity
+                    </h3>
+                    <div className="overflow-x-auto rounded-lg border border-primary-100">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-primary-50 text-left">
+                            <th className="px-3 py-2 font-medium text-primary-600">Series</th>
+                            <th className="px-3 py-2 font-medium text-primary-600 text-right">Optimal Low</th>
+                            <th className="px-3 py-2 font-medium text-primary-600 text-right">Optimal High</th>
+                            <th className="px-3 py-2 font-medium text-primary-600">Elasticity</th>
+                            <th className="px-3 py-2 font-medium text-primary-600">Recommendation</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pricingData.seriesElasticity.map((se) => {
+                            const label = elasticityLabel(se.elasticity);
+                            return (
+                              <tr key={se.series} className="border-t border-primary-50">
+                                <td className="px-3 py-2 text-primary-900 font-medium">{se.series}</td>
+                                <td className="px-3 py-2 text-right text-primary-700">
+                                  {formatCurrency(se.optimalPriceRange.min, 'CHF')}
+                                </td>
+                                <td className="px-3 py-2 text-right text-primary-700">
+                                  {formatCurrency(se.optimalPriceRange.max, 'CHF')}
+                                </td>
+                                <td className="px-3 py-2">
+                                  <span className={`font-medium ${label.color}`}>
+                                    {label.text}
+                                  </span>
+                                  <span className="text-primary-400 ml-1 text-xs">({se.elasticity})</span>
+                                </td>
+                                <td className="px-3 py-2 text-primary-600 text-xs max-w-xs">
+                                  Target {formatCurrency(se.revenueMaximizingPrice, 'CHF')} for max revenue ({se.salesCount} sales)
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4b. Gallery Pricing Power */}
+                {pricingData.galleryPricing.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-primary-800 mb-3">
+                      Gallery Pricing Power
+                    </h3>
+                    <div className="overflow-x-auto rounded-lg border border-primary-100">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-primary-50 text-left">
+                            <th className="px-3 py-2 font-medium text-primary-600">Gallery</th>
+                            <th className="px-3 py-2 font-medium text-primary-600 text-right">Avg Discount %</th>
+                            <th className="px-3 py-2 font-medium text-primary-600 text-right">At List Price %</th>
+                            <th className="px-3 py-2 font-medium text-primary-600 text-right">Price Premium %</th>
+                            <th className="px-3 py-2 font-medium text-primary-600">Power</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pricingData.galleryPricing.map((gp) => {
+                            const badge = pricingPowerBadge(gp.pricePremium);
+                            return (
+                              <tr key={gp.galleryId} className="border-t border-primary-50">
+                                <td className="px-3 py-2 text-primary-900 font-medium">{gp.galleryName}</td>
+                                <td className="px-3 py-2 text-right text-primary-700">{gp.avgDiscountPercent}%</td>
+                                <td className="px-3 py-2 text-right text-primary-700">{gp.atListPriceRate}%</td>
+                                <td className="px-3 py-2 text-right text-primary-700">
+                                  {gp.pricePremium > 0 ? '+' : ''}{gp.pricePremium}%
+                                </td>
+                                <td className="px-3 py-2">
+                                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badge.bg}`}>
+                                    {badge.text}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4c. Size Premiums */}
+                {pricingData.sizePremiums.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-primary-800 mb-3">
+                      Size Premiums
+                    </h3>
+                    <div className="overflow-x-auto rounded-lg border border-primary-100">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-primary-50 text-left">
+                            <th className="px-3 py-2 font-medium text-primary-600">Size Category</th>
+                            <th className="px-3 py-2 font-medium text-primary-600 text-right">Avg Price (CHF)</th>
+                            <th className="px-3 py-2 font-medium text-primary-600 text-right">Premium vs Smallest</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pricingData.sizePremiums.map((sp) => (
+                            <tr key={sp.sizeCategory} className="border-t border-primary-50">
+                              <td className="px-3 py-2 text-primary-900 font-medium capitalize">{sp.sizeCategory}</td>
+                              <td className="px-3 py-2 text-right text-primary-700">
+                                {formatCurrency(sp.avgPriceCHF, 'CHF')}
+                              </td>
+                              <td className="px-3 py-2 text-right text-primary-700">
+                                {sp.premiumVsSmallest > 0 ? '+' : ''}{sp.premiumVsSmallest}%
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4d. Seasonal Patterns */}
+                {pricingData.seasonalPatterns.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-primary-800 mb-3">
+                      Seasonal Patterns
+                    </h3>
+
+                    {/* Bar chart */}
+                    <div className="h-56 mb-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={pricingData.seasonalPatterns}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="monthName" tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} />
+                          <Tooltip
+                            formatter={(value: number) => formatCurrency(value, 'CHF')}
+                          />
+                          <Bar dataKey="avgPriceCHF" name="Avg Revenue (CHF)" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-lg border border-primary-100">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-primary-50 text-left">
+                            <th className="px-3 py-2 font-medium text-primary-600">Month</th>
+                            <th className="px-3 py-2 font-medium text-primary-600 text-right">Sales</th>
+                            <th className="px-3 py-2 font-medium text-primary-600 text-right">Revenue (CHF)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pricingData.seasonalPatterns
+                            .filter((sp) => sp.salesCount > 0)
+                            .map((sp) => (
+                              <tr key={sp.month} className="border-t border-primary-50">
+                                <td className="px-3 py-2 text-primary-900">{sp.monthName}</td>
+                                <td className="px-3 py-2 text-right text-primary-700">{sp.salesCount}</td>
+                                <td className="px-3 py-2 text-right text-primary-700">
+                                  {formatCurrency(sp.avgPriceCHF * sp.salesCount, 'CHF')}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4e. Pricing Recommendations */}
+                {pricingData.recommendations.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-primary-800 mb-3">
+                      Pricing Recommendations
+                    </h3>
+                    <div className="space-y-3">
+                      {pricingData.recommendations.map((rec) => {
+                        const dir = directionIcon(rec.currentAvgPrice, rec.recommendedPrice);
+                        return (
+                          <div
+                            key={rec.series}
+                            className="rounded-lg border border-primary-100 p-4"
+                          >
+                            <div className="flex items-center gap-3 mb-1">
+                              <span className="font-medium text-primary-900">{rec.series}</span>
+                              <span className={`text-xs font-semibold ${dir.color}`}>
+                                {dir.label}
+                              </span>
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                                rec.confidence === 'high'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : rec.confidence === 'medium'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-primary-100 text-primary-600'
+                              }`}>
+                                {rec.confidence} confidence
+                              </span>
+                            </div>
+                            <p className="text-sm text-primary-600">{rec.reasoning}</p>
+                            <div className="mt-2 flex gap-4 text-xs text-primary-500">
+                              <span>Current: {formatCurrency(rec.currentAvgPrice, 'CHF')}</span>
+                              <span>Recommended: {formatCurrency(rec.recommendedPrice, 'CHF')}</span>
+                              <span>Projected revenue change: {rec.projectedRevenueChange > 0 ? '+' : ''}{rec.projectedRevenueChange}%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {/* ================================================================== */}
+      {/* Section 5: 5-Year Price Trajectory (collapsible)                   */}
+      {/* ================================================================== */}
+      <Card className="mb-8">
+        <button
+          type="button"
+          className="w-full flex items-center justify-between p-6 text-left"
+          onClick={() => setShowTrajectory((v) => !v)}
+        >
+          <div>
+            <h2 className="font-display text-lg font-semibold text-primary-900">
+              5-Year Price Trajectory
+            </h2>
+            <p className="mt-0.5 text-sm text-primary-500">
+              Conservative, moderate &amp; aggressive pricing scenarios
+            </p>
+          </div>
+          <ChevronIcon open={showTrajectory} />
+        </button>
+
+        {showTrajectory && (
+          <div className="px-6 pb-6">
+            {trajectoryLoading ? (
+              <div className="flex justify-center py-8">
+                <LoadingSpinner />
+              </div>
+            ) : !trajectoryData ? (
+              <p className="text-sm text-primary-500">No trajectory data available.</p>
+            ) : (
+              <div className="space-y-8">
+                {/* KPI Row */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="rounded-lg border border-primary-100 p-4 text-center">
+                    <p className="text-xs text-primary-500 mb-1">Current Avg Price</p>
+                    <p className="text-lg font-semibold text-primary-900">
+                      {formatCurrency(trajectoryData.currentAvgPrice, 'CHF')}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-primary-100 p-4 text-center">
+                    <p className="text-xs text-primary-500 mb-1">Median Price</p>
+                    <p className="text-lg font-semibold text-primary-900">
+                      {formatCurrency(trajectoryData.currentMedianPrice, 'CHF')}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-primary-100 p-4 text-center">
+                    <p className="text-xs text-primary-500 mb-1">Historical Growth</p>
+                    <p className="text-lg font-semibold text-primary-900">
+                      {trajectoryData.historicalGrowthRate > 0 ? '+' : ''}
+                      {trajectoryData.historicalGrowthRate}% / yr
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-primary-100 p-4 text-center">
+                    <p className="text-xs text-primary-500 mb-1">Milestones Achieved</p>
+                    <p className="text-lg font-semibold text-primary-900">
+                      {trajectoryData.milestonesAchieved}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Combined Line Chart */}
+                {trajectoryData.scenarios.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-primary-800 mb-3">
+                      Price Projection (CHF)
+                    </h3>
+                    <div className="h-72">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={trajectoryData.scenarios[0].years.map((y, i) => ({
+                            year: y.year,
+                            conservative: trajectoryData.scenarios.find((s) => s.name === 'conservative')?.years[i]?.avgPrice ?? 0,
+                            moderate: trajectoryData.scenarios.find((s) => s.name === 'moderate')?.years[i]?.avgPrice ?? 0,
+                            aggressive: trajectoryData.scenarios.find((s) => s.name === 'aggressive')?.years[i]?.avgPrice ?? 0,
+                          }))}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} />
+                          <Tooltip formatter={(value: number) => formatCurrency(value, 'CHF')} />
+                          <Legend />
+                          <Line
+                            type="monotone"
+                            dataKey="conservative"
+                            name="Conservative"
+                            stroke={SCENARIO_COLORS.conservative}
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="moderate"
+                            name="Moderate"
+                            stroke={SCENARIO_COLORS.moderate}
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="aggressive"
+                            name="Aggressive"
+                            stroke={SCENARIO_COLORS.aggressive}
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+
+                {/* Summary Table */}
+                <div>
+                  <h3 className="text-sm font-semibold text-primary-800 mb-3">
+                    Scenario Summary
+                  </h3>
+                  <div className="overflow-x-auto rounded-lg border border-primary-100">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-primary-50 text-left">
+                          <th className="px-3 py-2 font-medium text-primary-600">Scenario</th>
+                          <th className="px-3 py-2 font-medium text-primary-600 text-right">Y1 Price</th>
+                          <th className="px-3 py-2 font-medium text-primary-600 text-right">Y3 Price</th>
+                          <th className="px-3 py-2 font-medium text-primary-600 text-right">Y5 Price</th>
+                          <th className="px-3 py-2 font-medium text-primary-600 text-right">Total Revenue</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {trajectoryData.scenarios.map((sc) => (
+                          <tr key={sc.name} className="border-t border-primary-50">
+                            <td className="px-3 py-2">
+                              <span className="font-medium text-primary-900">{sc.label}</span>
+                              <span className="block text-xs text-primary-500">{sc.description}</span>
+                            </td>
+                            <td className="px-3 py-2 text-right text-primary-700">
+                              {sc.years[0] ? formatCurrency(sc.years[0].avgPrice, 'CHF') : '-'}
+                            </td>
+                            <td className="px-3 py-2 text-right text-primary-700">
+                              {sc.years[2] ? formatCurrency(sc.years[2].avgPrice, 'CHF') : '-'}
+                            </td>
+                            <td className="px-3 py-2 text-right text-primary-700">
+                              {sc.years[4] ? formatCurrency(sc.years[4].avgPrice, 'CHF') : '-'}
+                            </td>
+                            <td className="px-3 py-2 text-right font-medium text-primary-900">
+                              {formatCurrency(sc.totalProjectedRevenue, 'CHF')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
     </div>
   );

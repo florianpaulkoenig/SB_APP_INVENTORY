@@ -252,6 +252,9 @@ const ExhibitionsPage = React.lazy(() =>
 const ExhibitionDetailPage = React.lazy(() =>
   import('./pages/ExhibitionDetailPage').then((m) => ({ default: m.ExhibitionDetailPage })),
 );
+const BulkOperationsPage = React.lazy(() =>
+  import('./pages/BulkOperationsPage').then((m) => ({ default: m.BulkOperationsPage })),
+);
 const ArtFairHeatMapPage = React.lazy(() =>
   import('./pages/ArtFairHeatMapPage').then((m) => ({ default: m.ArtFairHeatMapPage })),
 );
@@ -263,6 +266,9 @@ const AuctionTrackingPage = React.lazy(() =>
 );
 const GalleryAvailableWorksPage = React.lazy(() =>
   import('./pages/GalleryAvailableWorksPage').then((m) => ({ default: m.GalleryAvailableWorksPage })),
+);
+const GalleryMarketingPortalPage = React.lazy(() =>
+  import('./pages/gallery/GalleryMarketingPortalPage').then((m) => ({ default: m.GalleryMarketingPortalPage })),
 );
 const InventoryHealthPage = React.lazy(() =>
   import('./pages/analytics/InventoryHealthPage').then((m) => ({ default: m.InventoryHealthPage })),
@@ -987,6 +993,17 @@ const router = createBrowserRouter(
           ),
         },
 
+        {
+          path: 'bulk-operations',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <RouteErrorBoundary><BulkOperationsPage />
+              </RouteErrorBoundary></Suspense>
+            </RoleGuard>
+          ),
+        },
+
         // Gallery portal routes (admin + gallery)
         {
           path: 'gallery/available-works',
@@ -1064,6 +1081,17 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin', 'gallery']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <RouteErrorBoundary><GalleryNewsPage />
+              </RouteErrorBoundary></Suspense>
+            </RoleGuard>
+          ),
+        },
+
+        {
+          path: 'gallery/marketing-portal',
+          element: (
+            <RoleGuard allowed={['admin', 'gallery']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <RouteErrorBoundary><GalleryMarketingPortalPage />
               </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
