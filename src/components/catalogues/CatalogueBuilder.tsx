@@ -16,6 +16,10 @@ import { downloadBlob, sanitizeStoragePath } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
 import { useCatalogues } from '../../hooks/useCatalogues';
 import type { CatalogueConfig } from '../../hooks/useCatalogues';
+import { useExhibitionImages } from '../../hooks/useExhibitionImages';
+import type { ExhibitionImageRow } from '../../hooks/useExhibitionImages';
+import { Modal } from '../ui/Modal';
+import { SearchInput } from '../ui/SearchInput';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -298,6 +302,40 @@ function AppendixImagesManager({
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Exhibition image picker state
+  const { fetchAllExhibitionImages } = useExhibitionImages(undefined);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [exhibitionImgs, setExhibitionImgs] = useState<(ExhibitionImageRow & { exhibition_title: string })[]>([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
+
+  async function openExhibitionPicker() {
+    setPickerOpen(true);
+    setPickerLoading(true);
+    const all = await fetchAllExhibitionImages();
+    setExhibitionImgs(all);
+    setPickerLoading(false);
+  }
+
+  function addFromExhibition(img: ExhibitionImageRow & { exhibition_title: string }) {
+    // Avoid duplicates by checking storagePath
+    if (images.some((existing) => existing.storagePath === img.storage_path)) return;
+    const entry: AppendixImageEntry = {
+      storagePath: img.storage_path,
+      caption: img.caption || '',
+      sortOrder: images.length,
+      previewUrl: img.signedUrl,
+    };
+    onChange([...images, entry]);
+  }
+
+  const filteredExhibitionImgs = pickerSearch.trim()
+    ? exhibitionImgs.filter((img) =>
+        img.exhibition_title.toLowerCase().includes(pickerSearch.toLowerCase()) ||
+        (img.caption || '').toLowerCase().includes(pickerSearch.toLowerCase()),
+      )
+    : exhibitionImgs;
+
   async function handleFiles(files: FileList | File[]) {
     const fileArr = Array.from(files).filter(
       (f) => ACCEPTED_IMAGE_TYPES.includes(f.type) && f.size <= MAX_IMAGE_SIZE,
@@ -335,8 +373,10 @@ function AppendixImagesManager({
 
   function handleRemove(index: number) {
     const img = images[index];
-    // Delete from storage (best-effort)
-    supabase.storage.from('media-files').remove([img.storagePath]);
+    // Only delete from storage if it's a catalogue-appendix upload (not exhibition image reference)
+    if (img.storagePath.startsWith('catalogue-appendix/')) {
+      supabase.storage.from('media-files').remove([img.storagePath]);
+    }
     const updated = images.filter((_, i) => i !== index).map((img, i) => ({ ...img, sortOrder: i }));
     onChange(updated);
   }
@@ -396,35 +436,115 @@ function AppendixImagesManager({
         </div>
       ))}
 
-      {/* Drop zone / upload */}
-      <div
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFiles(e.dataTransfer.files); }}
-        onClick={() => fileInputRef.current?.click()}
-        className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 transition-colors ${
-          isDragging ? 'border-accent bg-accent/5' : 'border-primary-300 hover:border-primary-400'
-        }`}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          multiple
-          className="hidden"
-          onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ''; }}
-        />
-        {uploading ? (
-          <p className="text-sm text-primary-500">Uploading...</p>
-        ) : (
-          <>
-            <p className="text-sm font-medium text-primary-600">
-              Drop images here or click to browse
-            </p>
-            <p className="mt-1 text-xs text-primary-400">JPEG, PNG, WebP (max 20 MB each)</p>
-          </>
-        )}
+      {/* Actions: Upload + Browse Exhibition Images */}
+      <div className="flex gap-3">
+        {/* Drop zone / upload */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFiles(e.dataTransfer.files); }}
+          onClick={() => fileInputRef.current?.click()}
+          className={`flex flex-1 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 transition-colors ${
+            isDragging ? 'border-accent bg-accent/5' : 'border-primary-300 hover:border-primary-400'
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="hidden"
+            onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ''; }}
+          />
+          {uploading ? (
+            <p className="text-sm text-primary-500">Uploading...</p>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-primary-600">
+                Drop images or click to upload
+              </p>
+              <p className="mt-1 text-xs text-primary-400">JPEG, PNG, WebP (max 20 MB)</p>
+            </>
+          )}
+        </div>
+
+        {/* Browse exhibition images button */}
+        <button
+          type="button"
+          onClick={openExhibitionPicker}
+          className="flex flex-col items-center justify-center rounded-lg border-2 border-primary-300 px-6 py-6 text-center transition-colors hover:border-accent hover:bg-accent/5"
+        >
+          <span className="text-lg mb-1">&#128247;</span>
+          <span className="text-sm font-medium text-primary-600">Browse Exhibition Photos</span>
+        </button>
       </div>
+
+      {/* Exhibition Image Picker Modal */}
+      <Modal isOpen={pickerOpen} onClose={() => setPickerOpen(false)} title="Select from Exhibition Photos">
+        <div className="space-y-4">
+          <SearchInput
+            value={pickerSearch}
+            onChange={setPickerSearch}
+            placeholder="Search by exhibition name or caption..."
+          />
+
+          {pickerLoading ? (
+            <p className="text-sm text-primary-400 text-center py-8">Loading exhibition images...</p>
+          ) : filteredExhibitionImgs.length === 0 ? (
+            <p className="text-sm text-primary-400 text-center py-8">
+              {exhibitionImgs.length === 0
+                ? 'No exhibition images found. Upload photos on exhibition detail pages first.'
+                : 'No images match your search.'}
+            </p>
+          ) : (
+            <div className="max-h-96 overflow-y-auto">
+              <div className="grid grid-cols-3 gap-3">
+                {filteredExhibitionImgs.map((img) => {
+                  const alreadyAdded = images.some((ex) => ex.storagePath === img.storage_path);
+                  return (
+                    <button
+                      key={img.id}
+                      type="button"
+                      onClick={() => addFromExhibition(img)}
+                      disabled={alreadyAdded}
+                      className={`group relative rounded-lg overflow-hidden border-2 text-left transition-colors ${
+                        alreadyAdded
+                          ? 'border-green-400 opacity-60 cursor-default'
+                          : 'border-primary-200 hover:border-accent cursor-pointer'
+                      }`}
+                    >
+                      {img.signedUrl ? (
+                        <img src={img.signedUrl} alt={img.caption || img.file_name} className="w-full aspect-square object-cover" />
+                      ) : (
+                        <div className="w-full aspect-square bg-primary-100 flex items-center justify-center text-xs text-primary-400">No preview</div>
+                      )}
+                      <div className="p-2">
+                        <p className="text-xs font-medium text-primary-700 truncate">{img.exhibition_title}</p>
+                        {img.caption && <p className="text-xs text-primary-400 truncate">{img.caption}</p>}
+                      </div>
+                      {alreadyAdded && (
+                        <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                          &#10003;
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2 border-t border-primary-100">
+            <button
+              type="button"
+              onClick={() => setPickerOpen(false)}
+              className="rounded-lg bg-primary-900 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

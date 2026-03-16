@@ -1,5 +1,7 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useMediaFiles } from '../hooks/useMediaFiles';
+import { useExhibitionImages } from '../hooks/useExhibitionImages';
+import type { ExhibitionImageRow } from '../hooks/useExhibitionImages';
 import { useCVEntries } from '../hooks/useCVEntries';
 import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/ui/Card';
@@ -125,6 +127,29 @@ export function GalleryMediaPage() {
           f.file_name.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : publishedFiles;
+
+  // Exhibition photos state
+  const { fetchAllExhibitionImages } = useExhibitionImages(undefined);
+  const [exhibitionPhotos, setExhibitionPhotos] = useState<(ExhibitionImageRow & { exhibition_title: string })[]>([]);
+  const [exhibitionPhotosLoading, setExhibitionPhotosLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeCategory !== 'exhibition_photos') return;
+    setExhibitionPhotosLoading(true);
+    fetchAllExhibitionImages().then((imgs) => {
+      setExhibitionPhotos(imgs);
+      setExhibitionPhotosLoading(false);
+    });
+  }, [activeCategory, fetchAllExhibitionImages]);
+
+  const filteredExhibitionPhotos = searchQuery
+    ? exhibitionPhotos.filter(
+        (img) =>
+          img.exhibition_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          img.caption.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          img.file_name.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : exhibitionPhotos;
 
   const loading = filesLoading || cvLoading;
 
@@ -270,6 +295,16 @@ export function GalleryMediaPage() {
             {cat.label}
           </button>
         ))}
+        <button
+          onClick={() => setActiveCategory('exhibition_photos')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+            activeCategory === 'exhibition_photos'
+              ? 'bg-black text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          Exhibition Photos
+        </button>
       </div>
 
       {/* CV Section — shown when CV category is selected */}
@@ -349,8 +384,39 @@ export function GalleryMediaPage() {
         />
       )}
 
-      {/* File Grid */}
-      {filteredFiles.length === 0 && activeCategory !== 'cv' ? (
+      {/* Exhibition Photos Grid (special tab) */}
+      {activeCategory === 'exhibition_photos' ? (
+        exhibitionPhotosLoading ? (
+          <div className="flex items-center justify-center min-h-[200px]">
+            <LoadingSpinner />
+          </div>
+        ) : filteredExhibitionPhotos.length === 0 ? (
+          <EmptyState
+            title="No exhibition photos"
+            description="Upload photos on exhibition or art fair detail pages to see them here."
+          />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filteredExhibitionPhotos.map((img) => (
+              <Card key={img.id} className="p-0 overflow-hidden">
+                {img.signedUrl ? (
+                  <img src={img.signedUrl} alt={img.caption || img.file_name} className="w-full aspect-square object-cover" />
+                ) : (
+                  <div className="w-full aspect-square bg-gray-100 flex items-center justify-center text-xs text-gray-400">No preview</div>
+                )}
+                <div className="p-3">
+                  <p className="text-sm font-medium text-gray-900 truncate">{img.exhibition_title}</p>
+                  {img.caption && <p className="text-xs text-gray-500 truncate mt-0.5">{img.caption}</p>}
+                  <p className="text-xs text-gray-400 mt-1">{img.file_name}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )
+      ) : (
+
+      /* File Grid */
+      filteredFiles.length === 0 && activeCategory !== 'cv' ? (
         <EmptyState
           title="No files found"
           description={
@@ -402,10 +468,10 @@ export function GalleryMediaPage() {
             </Card>
           ))}
         </div>
-      ) : null}
+      ) : null)}
 
       {/* My Pending Submissions */}
-      {pendingFiles.length > 0 && (
+      {pendingFiles.length > 0 && activeCategory !== 'exhibition_photos' && (
         <div className="space-y-4 mt-8">
           <h2 className="text-lg font-semibold text-gray-900">
             My Pending Submissions

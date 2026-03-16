@@ -19,6 +19,7 @@ const MapView = React.lazy(() =>
 import { getCoordinates } from '../lib/geocoding';
 import { CatalogueArtworkPicker } from '../components/catalogues/CatalogueArtworkPicker';
 import { TaskList } from '../components/crm/TaskList';
+import { useExhibitionImages } from '../hooks/useExhibitionImages';
 
 interface Exhibition {
   id: string;
@@ -98,6 +99,20 @@ export function ExhibitionDetailPage() {
   const [selectedArtworkIds, setSelectedArtworkIds] = useState<string[]>([]);
   const [artworkSaving, setArtworkSaving] = useState(false);
   const initialArtworkIdsRef = useRef<string[]>([]);
+
+  // Exhibition images
+  const {
+    images: exhibitionImages,
+    loading: imagesLoading,
+    uploadImage: uploadExhibitionImage,
+    deleteImage: deleteExhibitionImage,
+    updateCaption: updateImageCaption,
+  } = useExhibitionImages(id);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
+  const [editingCaptionText, setEditingCaptionText] = useState('');
 
   const [linkedPOs, setLinkedPOs] = useState<LinkedProductionOrder[]>([]);
   const [poModalOpen, setPOModalOpen] = useState(false);
@@ -298,6 +313,26 @@ export function ExhibitionDetailPage() {
       toast({ title: 'Failed to remove production order', variant: 'error' });
     }
   }, [fetchLinkedPOs, toast]);
+
+  // ---- Photo handlers -------------------------------------------------------
+
+  const handlePhotoFiles = useCallback(async (files: FileList | File[]) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    const maxSize = 20 * 1024 * 1024;
+    const fileArr = Array.from(files).filter((f) => allowed.includes(f.type) && f.size <= maxSize);
+    if (fileArr.length === 0) return;
+    setUploadingPhoto(true);
+    for (const file of fileArr) {
+      await uploadExhibitionImage(file);
+    }
+    setUploadingPhoto(false);
+  }, [uploadExhibitionImage]);
+
+  const handleSaveCaption = useCallback(async (imageId: string) => {
+    await updateImageCaption(imageId, editingCaptionText);
+    setEditingCaptionId(null);
+    setEditingCaptionText('');
+  }, [editingCaptionText, updateImageCaption]);
 
   const filteredPOOptions = poOptions.filter((p) =>
     (p.title || p.order_number || '').toLowerCase().includes(poSearch.toLowerCase())
@@ -511,6 +546,95 @@ export function ExhibitionDetailPage() {
             </table>
           </div>
         )}
+      </Card>
+
+      {/* Exhibition Photos */}
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Photos</h2>
+          <span className="text-sm text-gray-500">{exhibitionImages.length} image{exhibitionImages.length !== 1 ? 's' : ''}</span>
+        </div>
+
+        {/* Photo grid */}
+        {imagesLoading ? (
+          <LoadingSpinner />
+        ) : exhibitionImages.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+            {exhibitionImages.map((img) => (
+              <div key={img.id} className="group relative rounded-lg overflow-hidden border border-gray-200">
+                {img.signedUrl ? (
+                  <img src={img.signedUrl} alt={img.caption || img.file_name} className="w-full aspect-square object-cover" />
+                ) : (
+                  <div className="w-full aspect-square bg-gray-100 flex items-center justify-center text-xs text-gray-400">No preview</div>
+                )}
+                {/* Caption overlay */}
+                <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
+                  {editingCaptionId === img.id ? (
+                    <div className="flex gap-1">
+                      <input
+                        type="text"
+                        value={editingCaptionText}
+                        onChange={(e) => setEditingCaptionText(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveCaption(img.id); }}
+                        className="flex-1 bg-white/20 text-white text-xs rounded px-1 py-0.5 placeholder-white/50 focus:outline-none"
+                        placeholder="Caption..."
+                        autoFocus
+                      />
+                      <button onClick={() => handleSaveCaption(img.id)} className="text-xs text-green-300 hover:text-green-100">&#10003;</button>
+                      <button onClick={() => setEditingCaptionId(null)} className="text-xs text-red-300 hover:text-red-100">&#10005;</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setEditingCaptionId(img.id); setEditingCaptionText(img.caption || ''); }}
+                      className="text-xs text-white/80 hover:text-white w-full text-left truncate"
+                      title="Click to edit caption"
+                    >
+                      {img.caption || 'Add caption...'}
+                    </button>
+                  )}
+                </div>
+                {/* Delete button */}
+                <button
+                  onClick={() => deleteExhibitionImage(img.id, img.storage_path)}
+                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs transition-opacity hover:bg-red-600"
+                  title="Delete image"
+                >
+                  &#10005;
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-4 mb-4">No photos uploaded yet.</p>
+        )}
+
+        {/* Upload zone */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setIsDraggingPhoto(true); }}
+          onDragLeave={() => setIsDraggingPhoto(false)}
+          onDrop={(e) => { e.preventDefault(); setIsDraggingPhoto(false); handlePhotoFiles(e.dataTransfer.files); }}
+          onClick={() => fileInputRef.current?.click()}
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 transition-colors ${
+            isDraggingPhoto ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="hidden"
+            onChange={(e) => { if (e.target.files) handlePhotoFiles(e.target.files); e.target.value = ''; }}
+          />
+          {uploadingPhoto ? (
+            <p className="text-sm text-gray-500">Uploading...</p>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-gray-600">Drop images here or click to browse</p>
+              <p className="mt-1 text-xs text-gray-400">JPEG, PNG, WebP (max 20 MB each)</p>
+            </>
+          )}
+        </div>
       </Card>
 
       {/* Linked Production Orders */}
