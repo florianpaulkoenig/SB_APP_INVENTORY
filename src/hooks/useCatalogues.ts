@@ -44,6 +44,9 @@ export interface CatalogueConfig {
   showPrice: boolean;
   showSoldDot: boolean;
 
+  // Image quality for PDF export
+  imageQuality: 'full' | 'optimized';
+
   artworkIds: string[];
 
   // Appendix images (full-width pages at end of PDF)

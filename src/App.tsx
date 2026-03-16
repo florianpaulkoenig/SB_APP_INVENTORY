@@ -309,24 +309,6 @@ const IntelligenceChatPage = React.lazy(() =>
 const LiquidityPlanningPage = React.lazy(() =>
   import('./pages/LiquidityPlanningPage').then((m) => ({ default: m.LiquidityPlanningPage })),
 );
-const CommissionDashboardPage = React.lazy(() =>
-  import('./pages/analytics/CommissionDashboardPage').then((m) => ({ default: m.CommissionDashboardPage })),
-);
-const InstitutionalStrategyPage = React.lazy(() =>
-  import('./pages/analytics/InstitutionalStrategyPage').then((m) => ({ default: m.InstitutionalStrategyPage })),
-);
-const ViewingRoomAnalyticsPage = React.lazy(() =>
-  import('./pages/analytics/ViewingRoomAnalyticsPage').then((m) => ({ default: m.ViewingRoomAnalyticsPage })),
-);
-const MediaImpactPage = React.lazy(() =>
-  import('./pages/analytics/MediaImpactPage').then((m) => ({ default: m.MediaImpactPage })),
-);
-const BulkOperationsPage = React.lazy(() =>
-  import('./pages/BulkOperationsPage').then((m) => ({ default: m.BulkOperationsPage })),
-);
-const GalleryMarketingPortalPage = React.lazy(() =>
-  import('./pages/gallery/GalleryMarketingPortalPage').then((m) => ({ default: m.GalleryMarketingPortalPage })),
-);
 
 // ---------------------------------------------------------------------------
 // Suspense fallback with error boundary
@@ -837,52 +819,6 @@ const router = createBrowserRouter(
           ),
         },
 
-        // Commission Dashboard (admin only)
-        {
-          path: 'analytics/commission-dashboard',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <LazyPage><CommissionDashboardPage /></LazyPage>
-            </RoleGuard>
-          ),
-        },
-        // Institutional Strategy (admin only)
-        {
-          path: 'analytics/institutional-strategy',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <LazyPage><InstitutionalStrategyPage /></LazyPage>
-            </RoleGuard>
-          ),
-        },
-        // Viewing Room Analytics (admin only)
-        {
-          path: 'analytics/viewing-room-analytics',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <LazyPage><ViewingRoomAnalyticsPage /></LazyPage>
-            </RoleGuard>
-          ),
-        },
-        // Media Impact (admin only)
-        {
-          path: 'analytics/media-impact',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <LazyPage><MediaImpactPage /></LazyPage>
-            </RoleGuard>
-          ),
-        },
-        // Bulk Operations (admin only)
-        {
-          path: 'bulk-operations',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <LazyPage><BulkOperationsPage /></LazyPage>
-            </RoleGuard>
-          ),
-        },
-
         // Liquidity Planning (admin only)
         {
           path: 'liquidity',
@@ -1136,14 +1072,6 @@ const router = createBrowserRouter(
               <Suspense fallback={<SuspenseFallback />}>
                 <RouteErrorBoundary><GalleryMediaPage />
               </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'gallery/marketing',
-          element: (
-            <RoleGuard allowed={['admin', 'gallery']}>
-              <LazyPage><GalleryMarketingPortalPage /></LazyPage>
             </RoleGuard>
           ),
         },

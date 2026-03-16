@@ -59,6 +59,9 @@ interface CatalogueSettings {
   dimensionUnit: DimensionUnit;
   weightUnit: 'kg' | 'lbs';
 
+  // Image quality for PDF export
+  imageQuality: 'full' | 'optimized';
+
   // Field visibility
   showReferenceCode: boolean;
   showMedium: boolean;
@@ -571,6 +574,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
     dividerMode: initialConfig?.dividerMode ?? 'none',
     dimensionUnit: initialConfig?.dimensionUnit ?? 'cm',
     weightUnit: initialConfig?.weightUnit ?? 'kg',
+    imageQuality: initialConfig?.imageQuality ?? 'optimized',
     showReferenceCode: initialConfig?.showReferenceCode ?? true,
     showMedium: initialConfig?.showMedium ?? true,
     showYear: initialConfig?.showYear ?? true,
@@ -651,15 +655,31 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
         .in('artwork_id', selectedIds)
         .eq('is_primary', true);
 
-      // 3. Generate signed URLs
+      // 3. Generate signed URLs (with image transforms for size optimization)
       const imageMap: Record<string, string> = {};
+
+      // List layout: always use small thumbnails for minimal PDF size (target < 1 MB)
+      // Full-page optimized: compressed images (target 1–20 MB)
+      // Full-page full: original resolution
+      const isListLayout = settings.layout === 'list';
+      const useOptimized = isListLayout || settings.imageQuality === 'optimized';
+
+      const artworkTransform = isListLayout
+        ? { transform: { width: 150, height: 150, quality: 50, resize: 'contain' as const } }
+        : useOptimized
+          ? { transform: { width: 1200, quality: 70 } }
+          : undefined;
 
       if (images && images.length > 0) {
         const urlResults = await Promise.all(
           images.map(async (img) => {
-            const { data: urlData } = await supabase.storage
-              .from('artwork-images')
-              .createSignedUrl(img.storage_path, 600);
+            const { data: urlData } = artworkTransform
+              ? await supabase.storage
+                  .from('artwork-images')
+                  .createSignedUrl(img.storage_path, 600, artworkTransform)
+              : await supabase.storage
+                  .from('artwork-images')
+                  .createSignedUrl(img.storage_path, 600);
             return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
           }),
         );
@@ -703,15 +723,25 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
         coverImageUrl = imageMap[settings.coverImageArtworkId];
       }
 
-      // 6. Resolve appendix image URLs
+      // 6. Resolve appendix image URLs (apply same quality setting)
+      const appendixTransform = useOptimized && !isListLayout
+        ? { transform: { width: 1200, quality: 70 } }
+        : isListLayout
+          ? { transform: { width: 800, quality: 60 } }
+          : undefined;
+
       const appendixForPdf: { imageUrl: string; caption: string }[] = [];
       if (appendixImages.length > 0) {
         const sorted = [...appendixImages].sort((a, b) => a.sortOrder - b.sortOrder);
         const results = await Promise.all(
           sorted.map(async (img) => {
-            const { data } = await supabase.storage
-              .from('media-files')
-              .createSignedUrl(img.storagePath, 600);
+            const { data } = appendixTransform
+              ? await supabase.storage
+                  .from('media-files')
+                  .createSignedUrl(img.storagePath, 600, appendixTransform)
+              : await supabase.storage
+                  .from('media-files')
+                  .createSignedUrl(img.storagePath, 600);
             return { imageUrl: data?.signedUrl ?? null, caption: img.caption };
           }),
         );
@@ -770,6 +800,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
   function buildConfig(): CatalogueConfig {
     return {
       ...settings,
+      imageQuality: settings.imageQuality,
       artworkIds: selectedIds,
       appendixImages: appendixImages.map(({ storagePath, caption, sortOrder }) => ({
         storagePath, caption, sortOrder,
@@ -964,6 +995,48 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
               </div>
             </div>
           </section>
+
+          {/* ---- Image Quality Section (full-page only) ---- */}
+          {settings.layout === 'full-page' && (
+            <section>
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-primary-400">
+                Image Resolution
+              </h3>
+              <div className="space-y-3 rounded-lg border border-primary-200 bg-white p-5">
+                <div className="grid grid-cols-2 gap-3">
+                  {([
+                    {
+                      value: 'optimized' as const,
+                      label: 'Optimized',
+                      description: 'Compressed images — smaller PDF (1–20 MB)',
+                    },
+                    {
+                      value: 'full' as const,
+                      label: 'Full Resolution',
+                      description: 'Original quality — larger PDF',
+                    },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => updateSetting('imageQuality', opt.value)}
+                      className={`rounded-lg border-2 p-3 text-left transition-colors ${
+                        settings.imageQuality === opt.value
+                          ? 'border-accent bg-accent/5'
+                          : 'border-primary-200 hover:border-primary-300'
+                      }`}
+                    >
+                      <p className="text-sm font-medium text-primary-900">{opt.label}</p>
+                      <p className="text-xs text-primary-400">{opt.description}</p>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-primary-400">
+                  List catalogues always use thumbnails for minimal file size.
+                </p>
+              </div>
+            </section>
+          )}
 
           {/* ---- Visible Information Section ---- */}
           <section>
