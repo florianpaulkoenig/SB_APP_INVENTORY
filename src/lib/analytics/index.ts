@@ -10,3 +10,4 @@ export * from './pricing';
 export * from './velocity';
 export * from './series';
 export * from './geography';
+export * from './invoicePaymentVelocity';

@@ -5,8 +5,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
-import type { CollectorProfile } from '../lib/analytics/collector';
-import { repeatBuyerCount, classifySpendTiers, collectorsByCountry } from '../lib/analytics/collector';
+import type { CollectorProfile, CollectorHealth } from '../lib/analytics/collector';
+import { repeatBuyerCount, classifySpendTiers, collectorsByCountry, buildCollectorHealth } from '../lib/analytics/collector';
 import type { SpendTier } from '../lib/analytics/collector';
 
 export interface CollectorIntelligenceData {
@@ -18,6 +18,9 @@ export interface CollectorIntelligenceData {
   topCollectors: CollectorProfile[];
   avgSpend: number;
   anonymousCount: number;
+  collectorHealth: CollectorHealth[];
+  atRiskCount: number;
+  churnCriticalCount: number;
 }
 
 export function useCollectorIntelligence() {
@@ -104,6 +107,14 @@ export function useCollectorIntelligence() {
       const avgSpend = profiles.length > 0 ? totalSpent / profiles.length : 0;
       const anonymousCount = profiles.filter((p) => p.isAnonymous).length;
 
+      const collectorHealth = buildCollectorHealth(profiles);
+      const atRiskCount = collectorHealth.filter(
+        (c) => c.churnRisk === 'high' || c.churnRisk === 'critical',
+      ).length;
+      const churnCriticalCount = collectorHealth.filter(
+        (c) => c.churnRisk === 'critical',
+      ).length;
+
       setData({
         profiles,
         totalCollectors: profiles.length,
@@ -113,6 +124,9 @@ export function useCollectorIntelligence() {
         topCollectors,
         avgSpend,
         anonymousCount,
+        collectorHealth,
+        atRiskCount,
+        churnCriticalCount,
       });
     } catch (err: unknown) {
       toast({ title: 'Error', description: 'Failed to load collector data', variant: 'error' });

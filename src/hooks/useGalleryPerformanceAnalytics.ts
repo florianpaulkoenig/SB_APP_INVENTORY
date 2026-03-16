@@ -30,6 +30,9 @@ export interface GalleryPerformanceRow {
   avgDaysToSale: number | null;
   reportingCompleteness: number;
   partnerScore: number;
+  scoreTrend: 'improving' | 'stable' | 'declining' | null;
+  scoreHistory: number[];  // last 6 months scores
+  momentum: number | null; // slope over last 6 months
 }
 
 export interface GalleryPerformanceData {
@@ -38,6 +41,8 @@ export interface GalleryPerformanceData {
   avgSellThrough: number;
   avgPartnerScore: number;
   topPerformer: string | null;
+  improvingCount: number;
+  decliningCount: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,7 +156,41 @@ export function useGalleryPerformanceAnalytics() {
           avgDaysToSale: avgDays,
           reportingCompleteness: Math.round(repComp),
           partnerScore: Math.round(score),
+          scoreTrend: null,
+          scoreHistory: [],
+          momentum: null,
         });
+      }
+
+      // ---- Score trend from partner_score_snapshots --------------------------
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+      const { data: snapshots } = await supabase
+        .from('partner_score_snapshots')
+        .select('gallery_id, score, calculated_at')
+        .gte('calculated_at', sixMonthsAgo.toISOString())
+        .order('calculated_at', { ascending: true });
+
+      if (snapshots && snapshots.length > 0) {
+        // Group snapshots by gallery_id
+        const snapshotsByGallery = new Map<string, number[]>();
+        for (const snap of snapshots) {
+          const arr = snapshotsByGallery.get(snap.gallery_id) ?? [];
+          arr.push(snap.score);
+          snapshotsByGallery.set(snap.gallery_id, arr);
+        }
+
+        for (const row of rows) {
+          const history = snapshotsByGallery.get(row.id);
+          if (!history || history.length < 2) continue;
+
+          row.scoreHistory = history;
+          const months = history.length - 1;
+          const slope = (history[history.length - 1] - history[0]) / months;
+          row.momentum = Math.round(slope * 100) / 100;
+          row.scoreTrend = slope > 2 ? 'improving' : slope < -2 ? 'declining' : 'stable';
+        }
       }
 
       // Sort by partner score descending
@@ -164,12 +203,17 @@ export function useGalleryPerformanceAnalytics() {
         ? rows.reduce((s, r) => s + r.partnerScore, 0) / rows.length
         : 0;
 
+      const improvingCount = rows.filter((r) => r.scoreTrend === 'improving').length;
+      const decliningCount = rows.filter((r) => r.scoreTrend === 'declining').length;
+
       setData({
         galleries: rows,
         totalGalleries: rows.length,
         avgSellThrough: Math.round(avgST * 10) / 10,
         avgPartnerScore: Math.round(avgPS),
         topPerformer: rows[0]?.name ?? null,
+        improvingCount,
+        decliningCount,
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch gallery performance';

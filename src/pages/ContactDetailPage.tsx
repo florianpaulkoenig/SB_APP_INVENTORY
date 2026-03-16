@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import { useContact } from '../hooks/useContacts';
 import { useContacts } from '../hooks/useContacts';
 import { useContactDeals } from '../hooks/useDeals';
+import { useCollectorJourney } from '../hooks/useCollectorJourney';
+import type { JourneyEvent } from '../hooks/useCollectorJourney';
 import { ContactDetail } from '../components/crm/ContactDetail';
 import { InteractionTimeline } from '../components/crm/InteractionTimeline';
 import { TaskList } from '../components/crm/TaskList';
@@ -14,6 +16,22 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { formatDate, formatCurrency } from '../lib/utils';
 import type { ProductionOrderRow } from '../types/database';
+
+// ---------------------------------------------------------------------------
+// Journey event type badge colors
+// ---------------------------------------------------------------------------
+
+const JOURNEY_TYPE_CONFIG: Record<
+  JourneyEvent['type'],
+  { label: string; bg: string; text: string; dot: string }
+> = {
+  enquiry: { label: 'Enquiry', bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
+  interaction: { label: 'Interaction', bg: 'bg-gray-100', text: 'text-gray-700', dot: 'bg-gray-400' },
+  viewing_room: { label: 'Viewing Room', bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500' },
+  deal: { label: 'Deal', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+  sale: { label: 'Sale', bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
+  wishlist: { label: 'Wish List', bg: 'bg-pink-50', text: 'text-pink-700', dot: 'bg-pink-500' },
+};
 
 // ---------------------------------------------------------------------------
 // Page
@@ -31,6 +49,8 @@ export function ContactDetailPage() {
     updateDeal,
     deleteDeal,
   } = useContactDeals(id!);
+
+  const { data: journeyData, loading: journeyLoading } = useCollectorJourney(id!);
 
   // ---- Production orders linked to this contact ----------------------------
   const [productionOrders, setProductionOrders] = useState<ProductionOrderRow[]>([]);
@@ -259,6 +279,112 @@ export function ContactDetailPage() {
                   </svg>
                 </button>
               ))}
+            </div>
+          )}
+        </section>
+
+        {/* Collector Journey */}
+        <section>
+          <h2 className="mb-4 font-display text-lg font-semibold text-primary-900">
+            Collector Journey
+          </h2>
+
+          {journeyLoading && (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner />
+            </div>
+          )}
+
+          {!journeyLoading && (!journeyData || journeyData.events.length === 0) && (
+            <p className="text-sm text-primary-400">
+              No journey events recorded for this contact.
+            </p>
+          )}
+
+          {!journeyLoading && journeyData && journeyData.events.length > 0 && (
+            <div>
+              {/* Journey Stats */}
+              <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-lg border border-primary-100 bg-white p-4">
+                  <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                    Total Touchpoints
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-primary-900">
+                    {journeyData.totalTouchpoints}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-primary-100 bg-white p-4">
+                  <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                    Journey Duration
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-primary-900">
+                    {journeyData.journeyDurationDays}{' '}
+                    <span className="text-sm font-normal text-primary-500">days</span>
+                  </p>
+                  {journeyData.avgDaysBetweenTouchpoints != null && (
+                    <p className="mt-0.5 text-xs text-primary-400">
+                      ~{journeyData.avgDaysBetweenTouchpoints} days between touchpoints
+                    </p>
+                  )}
+                </div>
+                <div className="rounded-lg border border-primary-100 bg-white p-4">
+                  <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
+                    Total Spent
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-primary-900">
+                    {journeyData.totalSpent > 0
+                      ? formatCurrency(journeyData.totalSpent, 'EUR')
+                      : '--'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Timeline */}
+              <div className="relative">
+                {/* Vertical line */}
+                <div className="absolute left-3 top-2 bottom-2 w-px bg-primary-200" />
+
+                <div className="space-y-4">
+                  {journeyData.events.map((event) => {
+                    const config = JOURNEY_TYPE_CONFIG[event.type];
+                    return (
+                      <div key={event.id} className="relative flex gap-4 pl-8">
+                        {/* Dot */}
+                        <div
+                          className={`absolute left-1.5 top-1.5 h-3 w-3 rounded-full ring-2 ring-white ${config.dot}`}
+                        />
+
+                        {/* Content */}
+                        <div className="min-w-0 flex-1 rounded-lg border border-primary-100 bg-white p-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${config.bg} ${config.text}`}
+                            >
+                              {config.label}
+                            </span>
+                            <span className="text-xs text-primary-400">
+                              {formatDate(event.date)}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm font-medium text-primary-900">
+                            {event.title}
+                          </p>
+                          {event.description && (
+                            <p className="mt-0.5 text-xs text-primary-500 line-clamp-2">
+                              {event.description}
+                            </p>
+                          )}
+                          {event.value != null && (
+                            <p className="mt-1 text-xs font-medium text-primary-700">
+                              {formatCurrency(event.value, event.currency || 'EUR')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
         </section>

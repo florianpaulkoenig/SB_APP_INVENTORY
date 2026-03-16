@@ -9,6 +9,8 @@ import { Button } from '../components/ui/Button';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
 import { useAuctionAlerts } from '../hooks/useAuctionAlerts';
+import { useAuctionBenchmarking } from '../hooks/useAuctionBenchmarking';
+import { useSecondaryMarket } from '../hooks/useSecondaryMarket';
 import { useExchangeRates } from '../hooks/useExchangeRates';
 import { AUCTION_RESULTS, AUCTION_HOUSES, CURRENCIES } from '../lib/constants';
 
@@ -58,6 +60,10 @@ export function AuctionTrackingPage() {
   const showError = (msg: string) => toast({ title: msg, variant: 'error' });
   const { alerts, loading, createAlert, updateAlert, deleteAlert, matchToDatabase } = useAuctionAlerts();
   const { toCHF } = useExchangeRates();
+  const benchmarking = useAuctionBenchmarking(alerts, toCHF);
+  const secondaryMarket = useSecondaryMarket(alerts, toCHF);
+  const [showBenchmarking, setShowBenchmarking] = useState(false);
+  const [showSecondaryMarket, setShowSecondaryMarket] = useState(false);
 
   const [filterHouse, setFilterHouse] = useState('');
   const [filterResult, setFilterResult] = useState('');
@@ -240,6 +246,254 @@ export function AuctionTrackingPage() {
           <p className="text-2xl font-bold">{avgEstimateAccuracy}</p>
         </Card>
       </div>
+
+      {/* Benchmarking Toggle */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Auction Benchmarking</h2>
+        <Button variant="primary" onClick={() => setShowBenchmarking(!showBenchmarking)}>
+          {showBenchmarking ? 'Hide Analytics' : 'Show Analytics'}
+        </Button>
+      </div>
+
+      {showBenchmarking && (
+        <div className="space-y-6">
+          {/* Overall Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+            <Card>
+              <p className="text-xs text-gray-500 uppercase">Overall Sell-Through Rate</p>
+              <p className="text-2xl font-bold">{benchmarking.overallSellThroughRate}%</p>
+            </Card>
+            <Card>
+              <p className="text-xs text-gray-500 uppercase">Auction Strength Index</p>
+              <p className="text-2xl font-bold">{benchmarking.overallStrengthIndex}x</p>
+              <p className="text-xs text-gray-400">Hammer / High Estimate</p>
+            </Card>
+          </div>
+
+          {/* Estimate Accuracy Distribution */}
+          <Card>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Estimate Accuracy Distribution</h3>
+            <div className="flex gap-4">
+              {benchmarking.estimateAccuracy.map((bucket) => (
+                <div key={bucket.label} className="flex-1 text-center">
+                  <div className="text-2xl font-bold text-gray-900">{bucket.percentage}%</div>
+                  <div className="text-xs text-gray-500">{bucket.label}</div>
+                  <div className="text-xs text-gray-400">{bucket.count} lots</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Per-Auction-House Performance */}
+          {benchmarking.houseStats.length > 0 && (
+            <Card>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Performance by Auction House</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">House</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lots</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sold</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bought In</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sell-Through</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Strength Index</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Hammer</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {benchmarking.houseStats.map((h) => (
+                      <tr key={h.auctionHouse} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{h.auctionHouse}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{h.totalLots}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{h.soldCount}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{h.boughtInCount}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={h.sellThroughRate >= 70 ? 'text-green-600 font-medium' : h.sellThroughRate >= 50 ? 'text-yellow-600' : 'text-red-600'}>
+                            {h.sellThroughRate}%
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={h.auctionStrengthIndex >= 1 ? 'text-green-600 font-medium' : 'text-red-600'}>
+                            {h.auctionStrengthIndex}x
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(h.totalHammerCHF, 'CHF')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          {/* Yearly Price Trends */}
+          {benchmarking.priceTrends.length > 0 && (
+            <Card>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Price Trends by Year</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lots Sold</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Hammer (CHF)</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estimate Accuracy</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {benchmarking.priceTrends.map((t) => (
+                      <tr key={t.year} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{t.year}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{t.lotCount}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(t.avgHammerCHF, 'CHF')}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{t.avgEstimateAccuracy}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Secondary Market Toggle */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Secondary Market Analysis</h2>
+        <Button variant="primary" onClick={() => setShowSecondaryMarket(!showSecondaryMarket)}>
+          {showSecondaryMarket ? 'Hide Analysis' : 'Show Analysis'}
+        </Button>
+      </div>
+
+      {showSecondaryMarket && (
+        <div className="space-y-6">
+          {secondaryMarket.loading ? (
+            <LoadingSpinner />
+          ) : (
+            <>
+              {/* Secondary Market KPIs */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <Card>
+                  <p className="text-xs text-gray-500 uppercase">Matched Artworks</p>
+                  <p className="text-2xl font-bold">{secondaryMarket.data.matchedCount}</p>
+                  <p className="text-xs text-gray-400">{secondaryMarket.data.unmatchedCount} unmatched</p>
+                </Card>
+                <Card>
+                  <p className="text-xs text-gray-500 uppercase">Avg Appreciation</p>
+                  <p className={`text-2xl font-bold ${secondaryMarket.data.avgAppreciation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {secondaryMarket.data.avgAppreciation > 0 ? '+' : ''}{secondaryMarket.data.avgAppreciation}%
+                  </p>
+                </Card>
+                <Card>
+                  <p className="text-xs text-gray-500 uppercase">Appreciating</p>
+                  <p className="text-2xl font-bold text-green-600">{secondaryMarket.data.appreciatingCount}</p>
+                </Card>
+                <Card>
+                  <p className="text-xs text-gray-500 uppercase">Depreciating</p>
+                  <p className="text-2xl font-bold text-red-600">{secondaryMarket.data.depreciatingCount}</p>
+                </Card>
+                <Card>
+                  <p className="text-xs text-gray-500 uppercase">Total Secondary Volume</p>
+                  <p className="text-2xl font-bold">{formatCurrency(secondaryMarket.data.totalSecondaryVolume, 'CHF')}</p>
+                </Card>
+              </div>
+
+              {/* Matched Artworks Table */}
+              {secondaryMarket.data.items.length > 0 && (
+                <Card>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Matched Artworks — Primary vs Secondary</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auction House</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Primary Price</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hammer Price</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Appreciation</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Years Held</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gallery of Origin</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {secondaryMarket.data.items.map((item) => (
+                          <tr key={item.auctionAlertId} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.artworkTitle}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{item.auctionHouse}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {item.primarySalePrice !== null && item.primaryCurrency
+                                ? formatCurrency(item.primarySalePrice, item.primaryCurrency)
+                                : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {formatCurrency(item.hammerPrice, item.hammerCurrency)}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {item.appreciation !== null ? (
+                                <span className={item.appreciation >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                                  {item.appreciation > 0 ? '+' : ''}{item.appreciation}%
+                                </span>
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {item.yearsSincePrimary !== null ? `${item.yearsSincePrimary} yr` : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{item.galleryOfOrigin || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )}
+
+              {/* Gallery Performance Summary */}
+              {secondaryMarket.data.galleryPerformance.length > 0 && (
+                <Card>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Gallery Secondary Market Performance</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gallery</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auction Count</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Appreciation</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Hammer (CHF)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {secondaryMarket.data.galleryPerformance.map((g) => (
+                          <tr key={g.galleryId} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{g.galleryName}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{g.auctionCount}</td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={g.avgAppreciation >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                                {g.avgAppreciation > 0 ? '+' : ''}{g.avgAppreciation}%
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(g.totalHammerCHF, 'CHF')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )}
+
+              {secondaryMarket.data.items.length === 0 && (
+                <Card>
+                  <p className="text-gray-500 text-center py-8">
+                    No matched sold artworks found. Match auction alerts to database artworks to see secondary market analysis.
+                  </p>
+                </Card>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Table */}
       <Card>

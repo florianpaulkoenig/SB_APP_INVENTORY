@@ -7,6 +7,7 @@ import { MapView, MapLegend } from '../components/maps/MapView';
 import type { MapMarker } from '../components/maps/MapView';
 import { getCoordinates } from '../lib/geocoding';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { useArtFairOptimizer } from '../hooks/useArtFairOptimizer';
 
 interface FairPerformance {
   id: string;
@@ -31,6 +32,7 @@ interface UntappedMarket {
 }
 
 export function ArtFairHeatMapPage() {
+  const { data: optimizerData, loading: optimizerLoading } = useArtFairOptimizer();
   const [loading, setLoading] = useState(true);
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [fairs, setFairs] = useState<FairPerformance[]>([]);
@@ -345,6 +347,223 @@ export function ArtFairHeatMapPage() {
             </table>
           </div>
         </Card>
+      </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Fair Selection Optimizer                                            */}
+      {/* ------------------------------------------------------------------ */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Fair Selection Optimizer</h2>
+
+        {optimizerLoading ? (
+          <div className="flex h-48 items-center justify-center">
+            <LoadingSpinner />
+          </div>
+        ) : optimizerData ? (
+          <div className="space-y-6">
+            {/* KPI Row */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <Card>
+                <div className="p-4 text-center">
+                  <p className="text-sm text-gray-500">Total Fair Revenue</p>
+                  <p className="mt-1 text-2xl font-semibold text-gray-900">
+                    {formatCurrency(optimizerData.totalFairRevenue, 'CHF')}
+                  </p>
+                </div>
+              </Card>
+              <Card>
+                <div className="p-4 text-center">
+                  <p className="text-sm text-gray-500">Avg ROI</p>
+                  <p className="mt-1 text-2xl font-semibold text-gray-900">
+                    {optimizerData.avgROI.toFixed(1)}%
+                  </p>
+                </div>
+              </Card>
+              <Card>
+                <div className="p-4 text-center">
+                  <p className="text-sm text-gray-500">Best Performing Fair</p>
+                  <p className="mt-1 text-lg font-semibold text-gray-900 truncate" title={optimizerData.bestFair || '—'}>
+                    {optimizerData.bestFair || '—'}
+                  </p>
+                </div>
+              </Card>
+              <Card>
+                <div className="p-4 text-center">
+                  <p className="text-sm text-gray-500">Total Budget</p>
+                  <p className="mt-1 text-2xl font-semibold text-gray-900">
+                    {formatCurrency(optimizerData.totalFairBudget, 'CHF')}
+                  </p>
+                </div>
+              </Card>
+            </div>
+
+            {/* Past Performance Table */}
+            <div>
+              <h3 className="text-md font-semibold text-gray-900 mb-2">Past Performance</h3>
+              <Card>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Fair Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          City
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Year
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Budget
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Revenue
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                          ROI %
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Sales
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {optimizerData.pastPerformance.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
+                            No past fair performance data available.
+                          </td>
+                        </tr>
+                      ) : (
+                        optimizerData.pastPerformance.map((f) => (
+                          <tr key={f.exhibitionId} className="hover:bg-gray-50">
+                            <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                              {f.fairName}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                              {f.city || '—'}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                              {f.year}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 text-right">
+                              {formatCurrency(f.budget, 'CHF')}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 text-right">
+                              {formatCurrency(f.revenueCHF, 'CHF')}
+                            </td>
+                            <td className={`whitespace-nowrap px-6 py-4 text-sm text-right font-medium ${
+                              f.roi > 0 ? 'text-green-600' : f.roi < 0 ? 'text-red-600' : 'text-gray-700'
+                            }`}>
+                              {f.roi.toFixed(1)}%
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 text-right">
+                              {f.salesCount}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </div>
+
+            {/* Recommendations Table */}
+            <div>
+              <h3 className="text-md font-semibold text-gray-900 mb-2">Recommendations</h3>
+              <Card>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Country
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Score
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Historical ROI
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Collector Density
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Gallery Coverage
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Market Growth
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Recommendation
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {optimizerData.recommendations.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
+                            No recommendation data available.
+                          </td>
+                        </tr>
+                      ) : (
+                        optimizerData.recommendations.map((r) => (
+                          <tr key={r.country} className="hover:bg-gray-50">
+                            <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                              {r.country}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-right">
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                r.score >= 70
+                                  ? 'bg-green-100 text-green-800'
+                                  : r.score >= 50
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {r.score}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 text-right">
+                              {r.historicalROI !== null ? `${r.historicalROI}%` : '—'}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 text-right">
+                              {r.collectorDensity}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 text-right">
+                              {r.galleryCoverage}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                r.marketGrowth === 'growing'
+                                  ? 'bg-green-100 text-green-800'
+                                  : r.marketGrowth === 'declining'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {r.marketGrowth}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700">
+                              {r.recommendation}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </div>
+          </div>
+        ) : (
+          <Card>
+            <div className="p-8 text-center text-sm text-gray-500">
+              Unable to load optimizer data.
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );

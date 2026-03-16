@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDeals } from '../hooks/useDeals';
+import { useSalesFunnel } from '../hooks/useSalesFunnel';
 import { DealPipeline } from '../components/crm/DealPipeline';
+import { SalesFunnelSection } from '../components/crm/SalesFunnelSection';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
@@ -16,6 +18,7 @@ import type { DealInsert, DealRow } from '../types/database';
 export function DealsPage() {
   const navigate = useNavigate();
   const { deals, loading, createDeal, updateDeal } = useDeals();
+  const { data: funnelData, loading: funnelLoading } = useSalesFunnel();
 
   // ---- Modal state --------------------------------------------------------
 
@@ -96,6 +99,9 @@ export function DealsPage() {
           New Deal
         </Button>
       </div>
+
+      {/* Sales Funnel */}
+      <SalesFunnelSection data={funnelData} loading={funnelLoading} />
 
       {/* Pipeline */}
       <DealPipeline

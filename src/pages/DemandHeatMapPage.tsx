@@ -21,6 +21,17 @@ interface MarketRow {
   sales: number;
 }
 
+interface ExpansionOpportunity {
+  country: string;
+  enquiries: number;
+  qualified: number;
+  leads: number;
+  sales: number;
+  galleryCount: number;
+  galleryNames: string[];
+  status: 'gap' | 'underserved' | 'covered';
+}
+
 export function DemandHeatMapPage() {
   const [loading, setLoading] = useState(true);
   const [markers, setMarkers] = useState<MapMarker[]>([]);
@@ -38,16 +49,31 @@ export function DemandHeatMapPage() {
     countriesCovered: 0,
   });
   const [marketOpportunities, setMarketOpportunities] = useState<MarketRow[]>([]);
+  const [expansionOpportunities, setExpansionOpportunities] = useState<ExpansionOpportunity[]>([]);
   const [allMarkers, setAllMarkers] = useState<MapMarker[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: enquiriesData } = await supabase
-        .from('enquiries')
-        .select('id, sender_name, subject, location_city, location_country, estimated_value, currency, status');
+      const [{ data: enquiriesData }, { data: galleriesData }] = await Promise.all([
+        supabase
+          .from('enquiries')
+          .select('id, sender_name, subject, location_city, location_country, estimated_value, currency, status'),
+        supabase
+          .from('galleries')
+          .select('id, name, country'),
+      ]);
 
       const enquiries = enquiriesData || [];
+      const galleries = galleriesData || [];
+
+      // Build gallery coverage by country
+      const galleriesByCountry = new Map<string, string[]>();
+      for (const g of galleries) {
+        if (!g.country) continue;
+        if (!galleriesByCountry.has(g.country)) galleriesByCountry.set(g.country, []);
+        galleriesByCountry.get(g.country)!.push(g.name);
+      }
 
       // Pipeline stages — each enquiry belongs to exactly one stage
       const allEnquiryMarkers: MapMarker[] = [];    // All (light blue)
@@ -144,6 +170,26 @@ export function DemandHeatMapPage() {
       }
       opportunities.sort((a, b) => (b.qualified + b.sales + b.leads) - (a.qualified + a.sales + a.leads));
       setMarketOpportunities(opportunities);
+
+      // Compute expansion opportunities: cross-reference demand with gallery coverage
+      const expansion: ExpansionOpportunity[] = [];
+      for (const opp of opportunities) {
+        const galleryNames = galleriesByCountry.get(opp.country) || [];
+        const galleryCount = galleryNames.length;
+        let status: 'gap' | 'underserved' | 'covered';
+        if (galleryCount === 0) {
+          status = 'gap';
+        } else if (opp.enquiries / galleryCount > 5) {
+          status = 'underserved';
+        } else {
+          status = 'covered';
+        }
+        expansion.push({ ...opp, galleryCount, galleryNames, status });
+      }
+      // Sort: gaps first (by enquiry count desc), then underserved, then covered
+      const statusOrder = { gap: 0, underserved: 1, covered: 2 };
+      expansion.sort((a, b) => statusOrder[a.status] - statusOrder[b.status] || b.enquiries - a.enquiries);
+      setExpansionOpportunities(expansion);
     } catch (err) {
       console.error('Failed to fetch demand data:', err);
     } finally {
@@ -358,6 +404,70 @@ export function DemandHeatMapPage() {
           </div>
         </Card>
       </div>
+      {/* Market Expansion Opportunities */}
+      {(() => {
+        const actionable = expansionOpportunities.filter((e) => e.status !== 'covered');
+        const gapCount = actionable.filter((e) => e.status === 'gap').length;
+        const underservedCount = actionable.filter((e) => e.status === 'underserved').length;
+        if (actionable.length === 0) return null;
+        return (
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Market Expansion Opportunities</h2>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <Card>
+                <div className="p-4 text-center">
+                  <p className="text-sm text-gray-500">Markets with No Gallery</p>
+                  <p className="mt-1 text-2xl font-semibold text-red-600">{gapCount}</p>
+                </div>
+              </Card>
+              <Card>
+                <div className="p-4 text-center">
+                  <p className="text-sm text-gray-500">Underserved Markets</p>
+                  <p className="mt-1 text-2xl font-semibold text-yellow-600">{underservedCount}</p>
+                </div>
+              </Card>
+            </div>
+            <Card>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Country</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Demand</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Qualified</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Gallery Coverage</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Gap Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {actionable.map((row) => (
+                      <tr key={row.country} className="hover:bg-gray-50">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{row.country}</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{row.enquiries} enquiries</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-blue-600 font-medium">{row.qualified}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {row.galleryCount === 0 ? (
+                            <span className="text-red-500 font-medium">None</span>
+                          ) : (
+                            <span>{row.galleryCount} ({row.galleryNames.join(', ')})</span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm">
+                          {row.status === 'gap' ? (
+                            <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">Gap</span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">Underserved</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -4,6 +4,8 @@
 // ---------------------------------------------------------------------------
 
 import { useSupplyPlanning } from '../../hooks/useSupplyPlanning';
+import { useProductionRecommendations } from '../../hooks/useProductionRecommendations';
+import type { ProductionRecommendation } from '../../hooks/useProductionRecommendations';
 import { Card } from '../../components/ui/Card';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import {
@@ -22,14 +24,27 @@ const STATUS_COLORS: Record<string, string> = {
   delivered: '#059669',
 };
 
+const PRIORITY_STYLES: Record<string, { bg: string; text: string }> = {
+  high: { bg: '#ef444420', text: '#ef4444' },
+  medium: { bg: '#f59e0b20', text: '#f59e0b' },
+  low: { bg: '#94a3b820', text: '#94a3b8' },
+};
+
+const STATUS_BADGE_STYLES: Record<string, { bg: string; text: string }> = {
+  understocked: { bg: '#ef444420', text: '#ef4444' },
+  balanced: { bg: '#10b98120', text: '#10b981' },
+  overstocked: { bg: '#3b82f620', text: '#3b82f6' },
+};
+
 export function SupplyPlanningPage() {
   const { data, loading } = useSupplyPlanning();
+  const { data: recData, loading: recLoading } = useProductionRecommendations();
 
-  if (loading) {
+  if (loading && recLoading) {
     return <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>;
   }
 
-  if (!data) {
+  if (!data && !recData) {
     return <div className="py-20 text-center text-primary-500">No supply planning data available.</div>;
   }
 
@@ -41,6 +56,7 @@ export function SupplyPlanningPage() {
       </div>
 
       {/* KPI Row */}
+      {data && (
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <KpiBox label="Total Produced" value={data.totalProduced} />
         <KpiBox label="Total Sold" value={data.totalSold} />
@@ -48,7 +64,9 @@ export function SupplyPlanningPage() {
           color={data.supplyDemandRatio > 3 ? '#ef4444' : data.supplyDemandRatio > 1.5 ? '#f59e0b' : '#10b981'} />
         <KpiBox label="Avg Monthly Sales" value={data.avgMonthlySales} />
       </div>
+      )}
 
+      {data && (
       <div className="space-y-6">
         {/* Production vs Sales timeline */}
         {data.monthlyData.length > 0 && (
@@ -158,6 +176,126 @@ export function SupplyPlanningPage() {
               </BarChart>
             </ResponsiveContainer>
           </Card>
+        )}
+      </div>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Production Recommendations Section                                 */}
+      {/* ------------------------------------------------------------------ */}
+
+      <div className="mt-10">
+        <h2 className="font-display text-xl font-bold text-primary-900 mb-1">Production Recommendations</h2>
+        <p className="text-sm text-primary-500 mb-6">Demand-driven suggestions for what to produce next.</p>
+
+        {recLoading ? (
+          <div className="flex items-center justify-center py-10"><LoadingSpinner size="md" /></div>
+        ) : recData ? (
+          <div className="space-y-6">
+            {/* KPI cards */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <KpiBox label="Total Recommendations" value={recData.recommendations.length} />
+              <KpiBox label="High Priority" value={recData.highPriorityCount} color={recData.highPriorityCount > 0 ? '#ef4444' : '#10b981'} />
+              <KpiBox label="Total Qty Recommended" value={recData.totalRecommended} />
+              <KpiBox label="Series Tracked" value={recData.seriesHealth.length} />
+            </div>
+
+            {/* Recommendations table */}
+            {recData.recommendations.length > 0 && (
+              <Card className="p-6">
+                <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">Recommendations</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-primary-200 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                        <th className="pb-3 pr-4">Series</th>
+                        <th className="pb-3 pr-4">Size</th>
+                        <th className="pb-3 pr-4 text-right">Rec. Qty</th>
+                        <th className="pb-3 pr-4">Priority</th>
+                        <th className="pb-3 pr-4">Target Gallery</th>
+                        <th className="pb-3 pr-4">Demand Signals</th>
+                        <th className="pb-3">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recData.recommendations.map((r: ProductionRecommendation, i: number) => {
+                        const ps = PRIORITY_STYLES[r.priority];
+                        return (
+                          <tr key={i} className="border-b border-primary-100 hover:bg-primary-50">
+                            <td className="py-3 pr-4 font-medium text-primary-900">{r.series}</td>
+                            <td className="py-3 pr-4 text-primary-700">{r.sizeCategory ?? '—'}</td>
+                            <td className="py-3 pr-4 text-right font-medium text-primary-900">{r.recommendedQuantity}</td>
+                            <td className="py-3 pr-4">
+                              <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize"
+                                style={{ backgroundColor: ps.bg, color: ps.text }}>
+                                {r.priority}
+                              </span>
+                            </td>
+                            <td className="py-3 pr-4 text-primary-700">{r.targetGallery ?? '—'}</td>
+                            <td className="py-3 pr-4 text-xs text-primary-600">
+                              <span title="Sales (6m)">{r.demandSignals.recentSales}s</span>
+                              {' / '}
+                              <span title="Enquiries">{r.demandSignals.activeEnquiries}e</span>
+                              {' / '}
+                              <span title="Wish list">{r.demandSignals.wishListCount}w</span>
+                              {' / '}
+                              <span title="Stock">{r.demandSignals.currentStock}stk</span>
+                              {' / '}
+                              <span title="Pending production">{r.demandSignals.galleryRequests}prod</span>
+                            </td>
+                            <td className="py-3 text-primary-600 text-xs">{r.reason}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
+
+            {/* Series Health Overview */}
+            {recData.seriesHealth.length > 0 && (
+              <Card className="p-6">
+                <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">Series Health Overview</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-primary-200 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                        <th className="pb-3 pr-4">Series</th>
+                        <th className="pb-3 pr-4 text-right">Available</th>
+                        <th className="pb-3 pr-4 text-right">Sold (6m)</th>
+                        <th className="pb-3 pr-4 text-right">Enquiries</th>
+                        <th className="pb-3 pr-4 text-right">Supply/Demand</th>
+                        <th className="pb-3 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recData.seriesHealth.map((sh) => {
+                        const ss = STATUS_BADGE_STYLES[sh.status];
+                        return (
+                          <tr key={sh.series} className="border-b border-primary-100 hover:bg-primary-50">
+                            <td className="py-3 pr-4 font-medium text-primary-900">{sh.series}</td>
+                            <td className="py-3 pr-4 text-right text-primary-700">{sh.available}</td>
+                            <td className="py-3 pr-4 text-right text-primary-700">{sh.sold6m}</td>
+                            <td className="py-3 pr-4 text-right text-primary-700">{sh.enquiries}</td>
+                            <td className="py-3 pr-4 text-right text-primary-700">{sh.supplyDemandRatio}x</td>
+                            <td className="py-3 text-right">
+                              <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize"
+                                style={{ backgroundColor: ss.bg, color: ss.text }}>
+                                {sh.status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
+          </div>
+        ) : (
+          <p className="text-center text-primary-500 py-10">No recommendation data available.</p>
         )}
       </div>
     </div>
