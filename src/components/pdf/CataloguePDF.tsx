@@ -119,6 +119,7 @@ export interface CataloguePDFProps {
   dividerMode: 'none' | 'series' | 'category';
   dimensionUnit: 'cm' | 'inches';
   weightUnit: 'kg' | 'lbs';
+  appendixImages?: { imageUrl: string; caption: string }[];
 }
 
 // ---------------------------------------------------------------------------
@@ -558,6 +559,34 @@ const s = StyleSheet.create({
     color: PDF_COLORS.primary400,
   },
 
+  // ---- Appendix pages -------------------------------------------------------
+  appendixPage: {
+    fontFamily: 'AnzianoPro',
+    backgroundColor: '#ffffff',
+    paddingTop: 40,
+    paddingBottom: 70,
+    paddingHorizontal: 50,
+  },
+  appendixImageContainer: {
+    width: '100%' as const,
+    flex: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    marginBottom: 16,
+  },
+  appendixImage: {
+    width: '100%' as const,
+    objectFit: 'contain' as const,
+  },
+  appendixCaption: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 10,
+    color: PDF_COLORS.primary400,
+    textAlign: 'center' as const,
+    letterSpacing: 0.5,
+    lineHeight: 1.5,
+  },
+
   // ---- Shared footer -------------------------------------------------------
   footer: {
     position: 'absolute' as const,
@@ -753,6 +782,7 @@ function groupArtworks(
 export function CataloguePDF({
   title, subtitle, coverText, showDate, showContactDetails,
   coverImageUrl, textPageContent, layout, artworks, language, visibility, dividerMode, dimensionUnit, weightUnit,
+  appendixImages,
 }: CataloguePDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
   const groups = groupArtworks(artworks, dividerMode);
@@ -911,6 +941,26 @@ export function CataloguePDF({
           ))}
           <PageFooter />
         </Page>
+      );
+    }
+  }
+
+  // ---- APPENDIX PAGES ----
+  if (appendixImages && appendixImages.length > 0) {
+    for (let i = 0; i < appendixImages.length; i++) {
+      const ai = appendixImages[i];
+      allPages.push(
+        <Page key={`appendix-${i}`} size="A4" style={s.appendixPage}>
+          <View style={s.appendixImageContainer}>
+            <Image src={ai.imageUrl} style={s.appendixImage} />
+          </View>
+          {ai.caption ? (
+            <Text style={[s.appendixCaption, { fontFamily: pdfFont(ai.caption) }]}>
+              {ai.caption}
+            </Text>
+          ) : null}
+          <PageFooter />
+        </Page>,
       );
     }
   }

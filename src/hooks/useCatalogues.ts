@@ -46,6 +46,13 @@ export interface CatalogueConfig {
 
   artworkIds: string[];
 
+  // Appendix images (full-width pages at end of PDF)
+  appendixImages?: {
+    storagePath: string;
+    caption: string;
+    sortOrder: number;
+  }[];
+
   // Legacy (backward compat — ignored in new code)
   catalogueType?: string;
   showPrices?: boolean;
@@ -141,6 +148,13 @@ export function useCatalogues() {
 
   const deleteCatalogue = useCallback(async (id: string): Promise<boolean> => {
     try {
+      // Clean up appendix images from storage (best-effort)
+      const catalogue = catalogues.find((c) => c.id === id);
+      if (catalogue?.config?.appendixImages?.length) {
+        const paths = catalogue.config.appendixImages.map((img) => img.storagePath);
+        await supabase.storage.from('media-files').remove(paths);
+      }
+
       const { error } = await supabase
         .from('catalogues')
         .delete()
@@ -154,7 +168,7 @@ export function useCatalogues() {
       toast({ title: 'Error', description: 'Failed to delete catalogue.', variant: 'error' });
       return false;
     }
-  }, [toast, fetchCatalogues]);
+  }, [toast, fetchCatalogues, catalogues]);
 
   const duplicateCatalogue = useCallback(async (id: string): Promise<CatalogueRow | null> => {
     const original = catalogues.find((c) => c.id === id);

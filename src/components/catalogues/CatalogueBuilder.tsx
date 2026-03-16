@@ -3,7 +3,7 @@
 // Step-based wizard for configuring and generating catalogue PDFs.
 // ---------------------------------------------------------------------------
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
@@ -12,7 +12,7 @@ import { CatalogueArtworkPicker } from './CatalogueArtworkPicker';
 import { CataloguePDF } from '../pdf/CataloguePDF';
 import type { FieldVisibility } from '../pdf/CataloguePDF';
 import { pdf } from '@react-pdf/renderer';
-import { downloadBlob } from '../../lib/utils';
+import { downloadBlob, sanitizeStoragePath } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
 import { useCatalogues } from '../../hooks/useCatalogues';
 import type { CatalogueConfig } from '../../hooks/useCatalogues';
@@ -274,6 +274,162 @@ function FieldCheckbox({
 }
 
 // ---------------------------------------------------------------------------
+// Appendix image entry (transient previewUrl for UI only)
+// ---------------------------------------------------------------------------
+
+interface AppendixImageEntry {
+  storagePath: string;
+  caption: string;
+  sortOrder: number;
+  previewUrl?: string;
+}
+
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20 MB
+
+function AppendixImagesManager({
+  images,
+  onChange,
+}: {
+  images: AppendixImageEntry[];
+  onChange: (imgs: AppendixImageEntry[]) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  async function handleFiles(files: FileList | File[]) {
+    const fileArr = Array.from(files).filter(
+      (f) => ACCEPTED_IMAGE_TYPES.includes(f.type) && f.size <= MAX_IMAGE_SIZE,
+    );
+    if (fileArr.length === 0) return;
+
+    setUploading(true);
+    try {
+      const newEntries: AppendixImageEntry[] = [];
+      for (const file of fileArr) {
+        const safeName = sanitizeStoragePath(file.name);
+        const path = `catalogue-appendix/${Date.now()}_${Math.random().toString(36).substring(2)}_${safeName}`;
+
+        const { error } = await supabase.storage.from('media-files').upload(path, file);
+        if (error) { console.error('Upload failed:', error.message); continue; }
+
+        const { data: urlData } = await supabase.storage
+          .from('media-files')
+          .createSignedUrl(path, 600);
+
+        newEntries.push({
+          storagePath: path,
+          caption: '',
+          sortOrder: images.length + newEntries.length,
+          previewUrl: urlData?.signedUrl ?? undefined,
+        });
+      }
+      if (newEntries.length > 0) {
+        onChange([...images, ...newEntries]);
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleRemove(index: number) {
+    const img = images[index];
+    // Delete from storage (best-effort)
+    supabase.storage.from('media-files').remove([img.storagePath]);
+    const updated = images.filter((_, i) => i !== index).map((img, i) => ({ ...img, sortOrder: i }));
+    onChange(updated);
+  }
+
+  function handleMove(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= images.length) return;
+    const copy = [...images];
+    [copy[index], copy[target]] = [copy[target], copy[index]];
+    onChange(copy.map((img, i) => ({ ...img, sortOrder: i })));
+  }
+
+  function handleCaptionChange(index: number, caption: string) {
+    const copy = [...images];
+    copy[index] = { ...copy[index], caption };
+    onChange(copy);
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Image list */}
+      {images.map((img, i) => (
+        <div key={img.storagePath} className="flex items-start gap-3 rounded-lg border border-primary-200 bg-primary-50/50 p-3">
+          {img.previewUrl ? (
+            <img src={img.previewUrl} alt={img.caption || 'Appendix image'} className="h-20 w-20 rounded object-cover" />
+          ) : (
+            <div className="flex h-20 w-20 items-center justify-center rounded bg-primary-200 text-xs text-primary-400">
+              Loading...
+            </div>
+          )}
+          <div className="flex flex-1 flex-col gap-2">
+            <input
+              type="text"
+              value={img.caption}
+              onChange={(e) => handleCaptionChange(i, e.target.value)}
+              placeholder="Image caption / legend..."
+              className="w-full rounded-md border border-primary-300 px-3 py-1.5 text-sm text-primary-900 placeholder-primary-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+            <div className="flex gap-1">
+              <button type="button" onClick={() => handleMove(i, -1)} disabled={i === 0}
+                className="rounded px-2 py-0.5 text-xs text-primary-500 hover:bg-primary-100 disabled:opacity-30"
+                title="Move up">
+                &#9650;
+              </button>
+              <button type="button" onClick={() => handleMove(i, 1)} disabled={i === images.length - 1}
+                className="rounded px-2 py-0.5 text-xs text-primary-500 hover:bg-primary-100 disabled:opacity-30"
+                title="Move down">
+                &#9660;
+              </button>
+              <button type="button" onClick={() => handleRemove(i)}
+                className="ml-auto rounded px-2 py-0.5 text-xs text-red-500 hover:bg-red-50"
+                title="Remove image">
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Drop zone / upload */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFiles(e.dataTransfer.files); }}
+        onClick={() => fileInputRef.current?.click()}
+        className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 transition-colors ${
+          isDragging ? 'border-accent bg-accent/5' : 'border-primary-300 hover:border-primary-400'
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          className="hidden"
+          onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ''; }}
+        />
+        {uploading ? (
+          <p className="text-sm text-primary-500">Uploading...</p>
+        ) : (
+          <>
+            <p className="text-sm font-medium text-primary-600">
+              Drop images here or click to browse
+            </p>
+            <p className="mt-1 text-xs text-primary-400">JPEG, PNG, WebP (max 20 MB each)</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -308,8 +464,32 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
   const [selectedIds, setSelectedIds] = useState<string[]>(
     initialConfig?.artworkIds ?? [],
   );
+  const [appendixImages, setAppendixImages] = useState<AppendixImageEntry[]>(
+    (initialConfig?.appendixImages ?? []).map((img, i) => ({
+      ...img,
+      sortOrder: img.sortOrder ?? i,
+    })),
+  );
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Resolve preview URLs for appendix images loaded from saved config
+  useEffect(() => {
+    if (!initialConfig?.appendixImages?.length) return;
+    let cancelled = false;
+    (async () => {
+      const resolved = await Promise.all(
+        initialConfig.appendixImages!.map(async (img) => {
+          const { data } = await supabase.storage
+            .from('media-files')
+            .createSignedUrl(img.storagePath, 600);
+          return { ...img, previewUrl: data?.signedUrl ?? undefined };
+        }),
+      );
+      if (!cancelled) setAppendixImages(resolved);
+    })();
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Settings helpers -----------------------------------------------------
 
@@ -403,7 +583,24 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
         coverImageUrl = imageMap[settings.coverImageArtworkId];
       }
 
-      // 6. Build visibility object
+      // 6. Resolve appendix image URLs
+      const appendixForPdf: { imageUrl: string; caption: string }[] = [];
+      if (appendixImages.length > 0) {
+        const sorted = [...appendixImages].sort((a, b) => a.sortOrder - b.sortOrder);
+        const results = await Promise.all(
+          sorted.map(async (img) => {
+            const { data } = await supabase.storage
+              .from('media-files')
+              .createSignedUrl(img.storagePath, 600);
+            return { imageUrl: data?.signedUrl ?? null, caption: img.caption };
+          }),
+        );
+        for (const r of results) {
+          if (r.imageUrl) appendixForPdf.push({ imageUrl: r.imageUrl, caption: r.caption });
+        }
+      }
+
+      // 7. Build visibility object
       const visibility: FieldVisibility = {
         showReferenceCode: settings.showReferenceCode,
         showMedium: settings.showMedium,
@@ -415,7 +612,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
         showSoldDot: settings.showSoldDot,
       };
 
-      // 7. Generate PDF blob
+      // 8. Generate PDF blob
       const blob = await pdf(
         <CataloguePDF
           title={settings.title}
@@ -432,10 +629,11 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
           dividerMode={settings.dividerMode}
           dimensionUnit={settings.dimensionUnit}
           weightUnit={settings.weightUnit}
+          appendixImages={appendixForPdf.length > 0 ? appendixForPdf : undefined}
         />,
       ).toBlob();
 
-      // 8. Trigger download
+      // 9. Trigger download
       downloadBlob(blob, `${settings.title.replace(/\s+/g, '_')}_Catalogue.pdf`);
 
       onGenerated?.();
@@ -453,6 +651,9 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
     return {
       ...settings,
       artworkIds: selectedIds,
+      appendixImages: appendixImages.map(({ storagePath, caption, sortOrder }) => ({
+        storagePath, caption, sortOrder,
+      })),
     };
   }
 
@@ -693,6 +894,20 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
             </div>
           </section>
 
+          {/* ---- Appendix Images Section ---- */}
+          <section>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-primary-400">
+              Appendix Images (optional)
+            </h3>
+            <div className="rounded-lg border border-primary-200 bg-white p-5">
+              <p className="mb-4 text-sm text-primary-500">
+                Add images that appear at the end of the catalogue — installation views, exhibition photos, detail shots, etc.
+                Each image gets its own full-width page with an optional caption.
+              </p>
+              <AppendixImagesManager images={appendixImages} onChange={setAppendixImages} />
+            </div>
+          </section>
+
           {/* Next */}
           <div className="flex justify-end pt-2">
             <Button
@@ -817,6 +1032,15 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
                   {selectedIds.length} selected
                 </dd>
               </div>
+
+              {appendixImages.length > 0 && (
+                <div className="flex justify-between py-2">
+                  <dt className="text-sm text-primary-500">Appendix Images</dt>
+                  <dd className="text-sm font-medium text-primary-900">
+                    {appendixImages.length} image{appendixImages.length !== 1 ? 's' : ''}
+                  </dd>
+                </div>
+              )}
             </dl>
           </div>
 
