@@ -406,10 +406,13 @@ const s = StyleSheet.create({
   },
   artworkImageContainer: {
     width: '100%',
+    maxHeight: 480,
     marginBottom: 24,
+    alignItems: 'center',
   },
   artworkImage: {
-    width: '100%',
+    maxWidth: '100%',
+    maxHeight: 480,
     objectFit: 'contain',
   },
   artworkPlaceholder: {
@@ -569,13 +572,14 @@ const s = StyleSheet.create({
   },
   appendixImageContainer: {
     width: '100%' as const,
-    flex: 1,
+    maxHeight: 640,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
     marginBottom: 16,
   },
   appendixImage: {
-    width: '100%' as const,
+    maxWidth: '100%' as const,
+    maxHeight: 640,
     objectFit: 'contain' as const,
   },
   appendixCaption: {
