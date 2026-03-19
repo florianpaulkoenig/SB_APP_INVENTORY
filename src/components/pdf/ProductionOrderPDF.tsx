@@ -16,6 +16,8 @@ interface TranslationStrings {
   status: string;
   orderDate: string;
   deadline: string;
+  dimensions: string;
+  medium: string;
   gallery: string;
   client: string;
   price: string;
@@ -32,6 +34,8 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     status: 'Status',
     orderDate: 'Order Date',
     deadline: 'Deadline',
+    dimensions: 'Dimensions',
+    medium: 'Medium',
     gallery: 'Gallery',
     client: 'Client',
     price: 'Price',
@@ -46,6 +50,8 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     status: 'Status',
     orderDate: 'Auftragsdatum',
     deadline: 'Frist',
+    dimensions: 'Maße',
+    medium: 'Technik',
     gallery: 'Galerie',
     client: 'Kunde',
     price: 'Preis',
@@ -59,7 +65,9 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     title: 'Titre',
     status: 'Statut',
     orderDate: 'Date de commande',
-    deadline: 'D\u00e9lai',
+    deadline: 'Délai',
+    dimensions: 'Dimensions',
+    medium: 'Technique',
     gallery: 'Galerie',
     client: 'Client',
     price: 'Prix',
@@ -133,11 +141,13 @@ export interface ProductionOrderPDFProps {
 }
 
 // ---------------------------------------------------------------------------
-// Column widths for the items table (Title / Gallery / Deadline)
+// Column widths for the items table
 // ---------------------------------------------------------------------------
-const COL_TITLE = '50%';
-const COL_GALLERY = '30%';
-const COL_DEADLINE = '20%';
+const COL_TITLE = '28%';
+const COL_DIMENSIONS = '20%';
+const COL_MEDIUM = '17%';
+const COL_GALLERY = '20%';
+const COL_DEADLINE = '15%';
 
 // ---------------------------------------------------------------------------
 // Custom styles for the artist version
@@ -311,10 +321,16 @@ export function ProductionOrderPDF({
 
         {/* ----- Items: Black title bar + rows --------------------------- */}
         <View style={styles.table}>
-          {/* Black title bar: Title | Gallery | Deadline */}
+          {/* Black title bar */}
           <View style={artistStyles.titleBar}>
             <Text style={[artistStyles.titleBarText, { width: COL_TITLE }]}>
               {t.title}
+            </Text>
+            <Text style={[artistStyles.titleBarText, { width: COL_DIMENSIONS }]}>
+              {t.dimensions}
+            </Text>
+            <Text style={[artistStyles.titleBarText, { width: COL_MEDIUM }]}>
+              {t.medium}
             </Text>
             <Text style={[artistStyles.titleBarText, { width: COL_GALLERY }]}>
               {t.gallery}
@@ -324,7 +340,7 @@ export function ProductionOrderPDF({
             </Text>
           </View>
 
-          {/* Item rows — each shows: description (title), gallery, deadline */}
+          {/* Item rows */}
           {items.map((item, index) => (
             <View
               style={index % 2 === 1 ? artistStyles.itemRowAlt : artistStyles.itemRow}
@@ -332,6 +348,12 @@ export function ProductionOrderPDF({
             >
               <Text style={[artistStyles.itemTitleText, { width: COL_TITLE }]}>
                 {item.description}
+              </Text>
+              <Text style={[artistStyles.itemText, { width: COL_DIMENSIONS }]}>
+                {item.dimensions || '\u2014'}
+              </Text>
+              <Text style={[artistStyles.itemText, { width: COL_MEDIUM }]}>
+                {item.medium || '\u2014'}
               </Text>
               <Text style={[artistStyles.itemText, { width: COL_GALLERY }]}>
                 {galleryName ?? '\u2014'}
