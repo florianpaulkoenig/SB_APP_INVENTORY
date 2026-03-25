@@ -24,6 +24,8 @@ export interface InvoiceItemFormProps {
   onCancel: () => void;
   invoiceId: string;
   loading?: boolean;
+  /** Currency code for display (defaults to 'CHF') */
+  currency?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -37,6 +39,7 @@ export function InvoiceItemForm({
   onCancel,
   invoiceId,
   loading = false,
+  currency = 'CHF',
 }: InvoiceItemFormProps) {
   // ---- Form state ---------------------------------------------------------
 
@@ -166,7 +169,7 @@ export function InvoiceItemForm({
       <div>
         <p className="mb-1 text-sm font-medium text-primary-700">Line Total</p>
         <p className="text-lg font-semibold text-accent">
-          {formatCurrency(lineTotal, 'CHF')}
+          {formatCurrency(lineTotal, currency)}
         </p>
       </div>
 

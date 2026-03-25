@@ -24,6 +24,7 @@ import { useAuth } from '../hooks/useAuth';
 import { generateArtworkRefCode, downloadBlob, buildCertificateFilename } from '../lib/utils';
 import { DOC_PREFIXES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
 import { Select } from '../components/ui/Select';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
@@ -400,6 +401,15 @@ export function ArtworkDetailPage() {
 
   return (
     <div>
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: 'Artworks', href: '/artworks' },
+          { label: artwork.title },
+        ]}
+        className="mb-4"
+      />
+
       {/* Back navigation */}
       <Button
         variant="ghost"

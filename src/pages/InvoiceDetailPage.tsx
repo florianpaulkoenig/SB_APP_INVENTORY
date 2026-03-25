@@ -7,6 +7,7 @@ import { InvoiceItemForm } from '../components/invoices/InvoiceItemForm';
 import { InvoiceForm } from '../components/invoices/InvoiceForm';
 import { TaskList } from '../components/crm/TaskList';
 import { Button } from '../components/ui/Button';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Modal } from '../components/ui/Modal';
 import type { InvoiceItemInsert, InvoiceUpdate } from '../types/database';
@@ -107,6 +108,15 @@ export function InvoiceDetailPage() {
 
   return (
     <div>
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: 'Invoices', href: '/invoices' },
+          { label: invoice.invoice_number },
+        ]}
+        className="mb-4"
+      />
+
       {/* Back navigation */}
       <Button
         variant="ghost"
@@ -160,6 +170,7 @@ export function InvoiceDetailPage() {
           artworks={artworks}
           onSubmit={handleAddItem}
           onCancel={() => setShowAddItem(false)}
+          currency={invoice.currency ?? 'CHF'}
         />
       </Modal>
 

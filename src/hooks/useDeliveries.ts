@@ -145,7 +145,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
       const message =
         err instanceof Error ? err.message : 'Failed to fetch deliveries';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: message, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -185,7 +185,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create delivery';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -213,7 +213,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update delivery';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -239,7 +239,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete delivery';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return false;
       }
     },
@@ -302,7 +302,7 @@ export function useDelivery(id: string): UseDeliveryReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch delivery';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: message, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -369,7 +369,7 @@ export function useDeliveryItems(deliveryId: string): UseDeliveryItemsReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch delivery items';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: message, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -409,7 +409,7 @@ export function useDeliveryItems(deliveryId: string): UseDeliveryItemsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to add delivery item';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -437,7 +437,7 @@ export function useDeliveryItems(deliveryId: string): UseDeliveryItemsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update delivery item';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -463,7 +463,7 @@ export function useDeliveryItems(deliveryId: string): UseDeliveryItemsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to remove delivery item';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return false;
       }
     },

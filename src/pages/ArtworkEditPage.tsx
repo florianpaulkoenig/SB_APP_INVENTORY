@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useArtwork, useArtworks } from '../hooks/useArtworks';
 import { ArtworkForm } from '../components/artworks/ArtworkForm';
 import { Button } from '../components/ui/Button';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import type { ArtworkInsert } from '../types/database';
 
@@ -68,6 +69,16 @@ export function ArtworkEditPage() {
 
   return (
     <div>
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: 'Artworks', href: '/artworks' },
+          { label: artwork.title, href: `/artworks/${id}` },
+          { label: 'Edit' },
+        ]}
+        className="mb-4"
+      />
+
       {/* Header */}
       <div className="mb-8">
         <Button

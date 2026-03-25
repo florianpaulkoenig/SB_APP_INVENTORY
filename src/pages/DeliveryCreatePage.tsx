@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useDeliveries } from '../hooks/useDeliveries';
 import { useDocumentNumber } from '../hooks/useDocumentNumber';
 import { DeliveryForm } from '../components/deliveries/DeliveryForm';
+import type { InlineDeliveryItem } from '../components/deliveries/DeliveryForm';
 import { Button } from '../components/ui/Button';
+import { supabase } from '../lib/supabase';
 import type { DeliveryInsert } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -33,7 +35,7 @@ export function DeliveryCreatePage() {
 
   // ---- Submit handler -----------------------------------------------------
 
-  async function handleSubmit(data: DeliveryInsert) {
+  async function handleSubmit(data: DeliveryInsert, items?: InlineDeliveryItem[]) {
     setLoading(true);
 
     const created = await createDelivery({
@@ -41,10 +43,33 @@ export function DeliveryCreatePage() {
       delivery_number: deliveryNumber || data.delivery_number,
     });
 
-    setLoading(false);
-
     if (created) {
+      // Add inline items if any were provided
+      if (items && items.length > 0) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (!item.artwork_id) continue;
+
+            await supabase.from('delivery_items').insert({
+              delivery_id: created.id,
+              user_id: session.user.id,
+              artwork_id: item.artwork_id,
+              sort_order: i,
+              notes: item.notes.trim() || null,
+            });
+          }
+        }
+      }
+
+      setLoading(false);
       navigate(`/deliveries/${created.id}`);
+    } else {
+      setLoading(false);
     }
   }
 

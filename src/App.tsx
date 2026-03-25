@@ -381,7 +381,7 @@ const router = createBrowserRouter(
         {
           index: true,
           element: (
-            <RoleGuard allowed={['admin']}>
+            <RoleGuard allowed={['admin', 'gallery', 'collector']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <RouteErrorBoundary><DashboardPage />
               </RouteErrorBoundary></Suspense>
@@ -393,7 +393,7 @@ const router = createBrowserRouter(
         {
           path: 'artworks',
           element: (
-            <RoleGuard allowed={['admin']}>
+            <RoleGuard allowed={['admin', 'gallery', 'collector']}>
               <LazyPage><ArtworksPage /></LazyPage>
             </RoleGuard>
           ),
@@ -473,7 +473,7 @@ const router = createBrowserRouter(
         {
           path: 'deliveries',
           element: (
-            <RoleGuard allowed={['admin']}>
+            <RoleGuard allowed={['admin', 'gallery']}>
               <LazyPage><DeliveriesPage /></LazyPage>
             </RoleGuard>
           ),
@@ -577,7 +577,7 @@ const router = createBrowserRouter(
         {
           path: 'certificates',
           element: (
-            <RoleGuard allowed={['admin']}>
+            <RoleGuard allowed={['admin', 'collector']}>
               <LazyPage><CertificatesPage /></LazyPage>
             </RoleGuard>
           ),
@@ -587,7 +587,7 @@ const router = createBrowserRouter(
         {
           path: 'sales',
           element: (
-            <RoleGuard allowed={['admin']}>
+            <RoleGuard allowed={['admin', 'gallery']}>
               <LazyPage><SalesPage /></LazyPage>
             </RoleGuard>
           ),
@@ -667,7 +667,7 @@ const router = createBrowserRouter(
         {
           path: 'viewing-rooms',
           element: (
-            <RoleGuard allowed={['admin']}>
+            <RoleGuard allowed={['admin', 'gallery']}>
               <LazyPage><ViewingRoomsPage /></LazyPage>
             </RoleGuard>
           ),

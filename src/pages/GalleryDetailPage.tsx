@@ -5,6 +5,7 @@ import { useGalleries } from '../hooks/useGalleries';
 import { GalleryDetail } from '../components/galleries/GalleryDetail';
 import { TaskList } from '../components/crm/TaskList';
 import { Button } from '../components/ui/Button';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import type { GalleryRow } from '../types/database';
 
@@ -93,6 +94,15 @@ export function GalleryDetailPage() {
 
   return (
     <div>
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: 'Galleries', href: '/galleries' },
+          { label: gallery.name },
+        ]}
+        className="mb-4"
+      />
+
       {/* Back navigation */}
       <Button
         variant="ghost"

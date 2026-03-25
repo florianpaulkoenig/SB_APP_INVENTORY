@@ -126,7 +126,7 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
       const message =
         err instanceof Error ? err.message : 'Failed to fetch invoices';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: message, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -166,7 +166,7 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create invoice';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -194,7 +194,7 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update invoice';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -220,7 +220,7 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete invoice';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return false;
       }
     },
@@ -285,7 +285,7 @@ export function useInvoice(id: string): UseInvoiceReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch invoice';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: message, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -396,7 +396,7 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update invoice total';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
       }
     },
     [invoiceId, toast],
@@ -430,7 +430,7 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch invoice items';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: message, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -482,7 +482,7 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to add invoice item';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -522,7 +522,7 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update invoice item';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -560,7 +560,7 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to remove invoice item';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return false;
       }
     },

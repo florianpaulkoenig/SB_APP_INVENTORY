@@ -115,7 +115,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch sales';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: message, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -155,7 +155,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create sale';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -183,7 +183,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update sale';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -209,7 +209,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete sale';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return false;
       }
     },
@@ -272,7 +272,7 @@ export function useSale(id: string): UseSaleReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch sale';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: message, variant: 'error' });
     } finally {
       setLoading(false);
     }

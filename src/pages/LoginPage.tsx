@@ -81,9 +81,12 @@ export function LoginPage() {
       // Refresh session so useAuth sees aal2 and exposes the session
       await supabase.auth.refreshSession();
 
-      // Force a full reload so the app picks up the aal2 session
-      window.location.reload();
-      return; // keep loading state active during reload
+      // Allow session to fully propagate, then hard-refresh to ensure
+      // all components re-initialize with the aal2 session
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+      return;
     } catch {
       setMfaError('Invalid verification code. Please try again.');
       setLoading(false);

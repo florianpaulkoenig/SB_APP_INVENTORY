@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useInvoices } from '../hooks/useInvoices';
 import { useDocumentNumber } from '../hooks/useDocumentNumber';
 import { InvoiceForm } from '../components/invoices/InvoiceForm';
+import type { InlineInvoiceItem } from '../components/invoices/InvoiceForm';
 import { Button } from '../components/ui/Button';
+import { supabase } from '../lib/supabase';
 import type { InvoiceInsert } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -33,7 +35,7 @@ export function InvoiceCreatePage() {
 
   // ---- Submit handler -----------------------------------------------------
 
-  async function handleSubmit(data: InvoiceInsert) {
+  async function handleSubmit(data: InvoiceInsert, items?: InlineInvoiceItem[]) {
     setLoading(true);
 
     const created = await createInvoice({
@@ -41,10 +43,46 @@ export function InvoiceCreatePage() {
       invoice_number: invoiceNumber || data.invoice_number,
     });
 
-    setLoading(false);
-
     if (created) {
+      // Add inline items if any were provided
+      if (items && items.length > 0) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          for (const item of items) {
+            if (!item.description.trim() && !item.artwork_id) continue;
+
+            const lineTotal = item.quantity * item.unit_price;
+
+            await supabase.from('invoice_items').insert({
+              invoice_id: created.id,
+              user_id: session.user.id,
+              artwork_id: item.artwork_id || null,
+              description: item.description.trim(),
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              total: lineTotal,
+            });
+          }
+
+          // Recalculate the invoice total
+          const total = items.reduce(
+            (sum, it) => sum + it.quantity * it.unit_price,
+            0,
+          );
+          await supabase
+            .from('invoices')
+            .update({ total })
+            .eq('id', created.id);
+        }
+      }
+
+      setLoading(false);
       navigate(`/invoices/${created.id}`);
+    } else {
+      setLoading(false);
     }
   }
 

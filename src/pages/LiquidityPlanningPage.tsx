@@ -93,7 +93,10 @@ export function LiquidityPlanningPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">Liquidity Planning</h1>
+        <div>
+          <h1 className="font-display text-2xl font-bold text-primary-900">Liquidity Planning</h1>
+          <p className="mt-1 text-sm text-primary-500">Monthly cash-flow overview for NOA and Simon Berger.</p>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="primary" onClick={() => setYear((y) => y - 1)}>
             &larr;
@@ -143,7 +146,7 @@ export function LiquidityPlanningPage() {
 
           {/* Cumulative Line Chart */}
           <Card className="p-4">
-            <h2 className="mb-4 text-sm font-semibold text-primary-700">
+            <h2 className="mb-4 font-display text-sm font-semibold text-primary-900">
               Cumulative Cash Flow
             </h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -173,7 +176,7 @@ export function LiquidityPlanningPage() {
 
           {/* Monthly Inflow vs Outflow Bar Chart */}
           <Card className="p-4">
-            <h2 className="mb-4 text-sm font-semibold text-primary-700">
+            <h2 className="mb-4 font-display text-sm font-semibold text-primary-900">
               Monthly Inflow vs Outflow
             </h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -212,32 +215,20 @@ export function LiquidityPlanningPage() {
           </Card>
 
           {/* Monthly Breakdown Table */}
-          <Card>
+          <Card className="overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Month
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Revenue In
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Expected
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Expenses Out
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Net
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Cumulative
-                    </th>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-primary-200 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                    <th className="px-4 pb-3 pt-4">Month</th>
+                    <th className="px-4 pb-3 pt-4 text-right">Revenue In</th>
+                    <th className="px-4 pb-3 pt-4 text-right">Expected</th>
+                    <th className="px-4 pb-3 pt-4 text-right">Expenses Out</th>
+                    <th className="px-4 pb-3 pt-4 text-right">Net</th>
+                    <th className="px-4 pb-3 pt-4 text-right">Cumulative</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 bg-white">
+                <tbody>
                   {data.months.map((m) => {
                     const isCurrentMonth =
                       year === new Date().getFullYear() &&
@@ -245,34 +236,34 @@ export function LiquidityPlanningPage() {
                     return (
                       <tr
                         key={m.month}
-                        className={isCurrentMonth ? 'bg-blue-50/60' : ''}
+                        className={`border-b border-primary-100 ${isCurrentMonth ? 'bg-accent/5' : 'hover:bg-primary-50'}`}
                       >
-                        <td className="whitespace-nowrap px-4 py-2 text-sm font-medium text-gray-900">
+                        <td className="whitespace-nowrap px-4 py-2 font-medium text-primary-900">
                           {m.month}
                           {isCurrentMonth && (
-                            <span className="ml-2 text-xs text-blue-600">
+                            <span className="ml-2 text-xs text-accent">
                               (current)
                             </span>
                           )}
                         </td>
-                        <td className="whitespace-nowrap px-4 py-2 text-right text-sm text-gray-700">
+                        <td className="whitespace-nowrap px-4 py-2 text-right text-primary-700">
                           {formatCurrency(Math.round(m.revenueIn), 'CHF')}
                         </td>
-                        <td className="whitespace-nowrap px-4 py-2 text-right text-sm text-emerald-600">
+                        <td className="whitespace-nowrap px-4 py-2 text-right text-emerald-600">
                           {formatCurrency(Math.round(m.expectedIn), 'CHF')}
                         </td>
-                        <td className="whitespace-nowrap px-4 py-2 text-right text-sm text-red-600">
+                        <td className="whitespace-nowrap px-4 py-2 text-right text-red-600">
                           {formatCurrency(Math.round(m.expensesOut), 'CHF')}
                         </td>
                         <td
-                          className={`whitespace-nowrap px-4 py-2 text-right text-sm font-semibold ${
+                          className={`whitespace-nowrap px-4 py-2 text-right font-semibold ${
                             m.net >= 0 ? 'text-emerald-600' : 'text-red-600'
                           }`}
                         >
                           {formatCurrency(Math.round(m.net), 'CHF')}
                         </td>
                         <td
-                          className={`whitespace-nowrap px-4 py-2 text-right text-sm font-semibold ${
+                          className={`whitespace-nowrap px-4 py-2 text-right font-semibold ${
                             m.cumulative >= 0
                               ? 'text-primary-900'
                               : 'text-red-600'
@@ -285,20 +276,20 @@ export function LiquidityPlanningPage() {
                   })}
                 </tbody>
                 {/* Totals row */}
-                <tfoot className="bg-gray-50">
-                  <tr className="font-semibold">
-                    <td className="px-4 py-2 text-sm text-gray-900">Total</td>
-                    <td className="px-4 py-2 text-right text-sm text-gray-900">
+                <tfoot>
+                  <tr className="border-t border-primary-200 bg-primary-50 font-semibold">
+                    <td className="px-4 py-3 text-primary-900">Total</td>
+                    <td className="px-4 py-3 text-right text-primary-900">
                       {formatCurrency(Math.round(data.totalRevenueIn), 'CHF')}
                     </td>
-                    <td className="px-4 py-2 text-right text-sm text-emerald-600">
+                    <td className="px-4 py-3 text-right text-emerald-600">
                       {formatCurrency(Math.round(data.totalExpectedIn), 'CHF')}
                     </td>
-                    <td className="px-4 py-2 text-right text-sm text-red-600">
+                    <td className="px-4 py-3 text-right text-red-600">
                       {formatCurrency(Math.round(data.totalExpensesOut), 'CHF')}
                     </td>
                     <td
-                      className={`px-4 py-2 text-right text-sm ${
+                      className={`px-4 py-3 text-right ${
                         data.totalNet >= 0
                           ? 'text-emerald-600'
                           : 'text-red-600'
@@ -306,7 +297,7 @@ export function LiquidityPlanningPage() {
                     >
                       {formatCurrency(Math.round(data.totalNet), 'CHF')}
                     </td>
-                    <td className="px-4 py-2 text-right text-sm text-primary-900">
+                    <td className="px-4 py-3 text-right text-primary-900">
                       {formatCurrency(Math.round(data.currentBalance), 'CHF')}
                     </td>
                   </tr>

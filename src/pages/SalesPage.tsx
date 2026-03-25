@@ -6,6 +6,7 @@ import { useContacts } from '../hooks/useContacts';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
+import { Combobox } from '../components/ui/Combobox';
 import { Modal } from '../components/ui/Modal';
 import { SearchInput } from '../components/ui/SearchInput';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -485,15 +486,15 @@ export function SalesPage() {
         size="2xl"
       >
         <form onSubmit={handleRecordSale} className="space-y-4">
-          <Select
+          <Combobox
             label="Artwork *"
             options={artworks.map((a) => ({
               value: a.id,
               label: `${a.title} (${a.reference_code || a.inventory_number || 'No ref'})`,
             }))}
             value={artworkId}
-            onChange={(e) => setArtworkId(e.target.value)}
-            placeholder="Select artwork"
+            onChange={setArtworkId}
+            placeholder="Search artworks..."
           />
 
           <GallerySelect
@@ -502,7 +503,7 @@ export function SalesPage() {
             label="Gallery"
           />
 
-          <Select
+          <Combobox
             label="Contact"
             options={[
               { value: '', label: 'No contact' },
@@ -512,7 +513,8 @@ export function SalesPage() {
               })),
             ]}
             value={contactId}
-            onChange={(e) => setContactId(e.target.value)}
+            onChange={setContactId}
+            placeholder="Search contacts..."
           />
 
           <Input

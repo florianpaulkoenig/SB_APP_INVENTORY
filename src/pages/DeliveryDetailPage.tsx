@@ -5,6 +5,7 @@ import { DeliveryDetail } from '../components/deliveries/DeliveryDetail';
 import { DeliveryItemPicker } from '../components/deliveries/DeliveryItemPicker';
 import { DeliveryForm } from '../components/deliveries/DeliveryForm';
 import { Button } from '../components/ui/Button';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Modal } from '../components/ui/Modal';
 import { supabase } from '../lib/supabase';
@@ -143,6 +144,15 @@ export function DeliveryDetailPage() {
 
   return (
     <div>
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: 'Deliveries', href: '/deliveries' },
+          { label: delivery.delivery_number },
+        ]}
+        className="mb-4"
+      />
+
       {/* Back navigation */}
       <Button
         variant="ghost"
@@ -204,6 +214,7 @@ export function DeliveryDetailPage() {
         <DeliveryForm
           delivery={delivery}
           onSubmit={handleEdit}
+          onCancel={() => setShowEditModal(false)}
           loading={editLoading}
         />
       </Modal>

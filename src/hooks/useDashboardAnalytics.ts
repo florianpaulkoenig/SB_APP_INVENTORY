@@ -362,6 +362,7 @@ export function useDashboardAnalytics(
       cfMap.set(mk, entry);
     }
     for (const e of expenses) {
+      if (!e.expense_date) continue;
       const mk = monthKey(e.expense_date);
       const entry = cfMap.get(mk) ?? { cashIn: 0, cashOut: 0 };
       entry.cashOut += toCHF(e.amount, e.currency ?? 'EUR');

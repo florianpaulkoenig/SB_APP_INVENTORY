@@ -167,7 +167,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       const message =
         err instanceof Error ? err.message : 'Failed to fetch artworks';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: message, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -247,7 +247,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to create artwork';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -275,7 +275,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to update artwork';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return null;
       }
     },
@@ -301,7 +301,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Failed to delete artwork';
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: message, variant: 'error' });
         return false;
       }
     },
@@ -422,7 +422,7 @@ export function useArtwork(id: string): UseArtworkReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch artwork';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: message, variant: 'error' });
     } finally {
       setLoading(false);
     }

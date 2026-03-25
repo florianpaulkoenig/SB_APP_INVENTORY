@@ -205,7 +205,10 @@ export function AuctionTrackingPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Auction Tracking</h1>
+        <div>
+          <h1 className="font-display text-2xl font-bold text-primary-900">Auction Tracking</h1>
+          <p className="mt-1 text-sm text-primary-500">Track lots, benchmarks, and secondary market performance.</p>
+        </div>
         <Button variant="primary" onClick={() => { setAlertForm(emptyAlertForm); setAddModalOpen(true); }}>
           Add Alert
         </Button>
@@ -229,27 +232,27 @@ export function AuctionTrackingPage() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <p className="text-xs text-gray-500 uppercase">Upcoming Lots</p>
-          <p className="text-2xl font-bold">{upcomingCount}</p>
+        <Card className="p-4 text-center">
+          <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Upcoming Lots</p>
+          <p className="mt-1 text-2xl font-bold text-primary-900">{upcomingCount}</p>
         </Card>
-        <Card>
-          <p className="text-xs text-gray-500 uppercase">Sold This Year</p>
-          <p className="text-2xl font-bold">{soldThisYear}</p>
+        <Card className="p-4 text-center">
+          <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Sold This Year</p>
+          <p className="mt-1 text-2xl font-bold text-primary-900">{soldThisYear}</p>
         </Card>
-        <Card>
-          <p className="text-xs text-gray-500 uppercase">Total Hammer Value</p>
-          <p className="text-2xl font-bold">{formatCurrency(totalHammerValue, 'CHF')}</p>
+        <Card className="p-4 text-center">
+          <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Total Hammer Value</p>
+          <p className="mt-1 text-2xl font-bold text-primary-900">{formatCurrency(totalHammerValue, 'CHF')}</p>
         </Card>
-        <Card>
-          <p className="text-xs text-gray-500 uppercase">Avg Estimate Accuracy</p>
-          <p className="text-2xl font-bold">{avgEstimateAccuracy}</p>
+        <Card className="p-4 text-center">
+          <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Avg Estimate Accuracy</p>
+          <p className="mt-1 text-2xl font-bold text-primary-900">{avgEstimateAccuracy}</p>
         </Card>
       </div>
 
       {/* Benchmarking Toggle */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Auction Benchmarking</h2>
+        <h2 className="font-display text-lg font-semibold text-primary-900">Auction Benchmarking</h2>
         <Button variant="primary" onClick={() => setShowBenchmarking(!showBenchmarking)}>
           {showBenchmarking ? 'Hide Analytics' : 'Show Analytics'}
         </Button>
@@ -258,27 +261,27 @@ export function AuctionTrackingPage() {
       {showBenchmarking && (
         <div className="space-y-6">
           {/* Overall Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-            <Card>
-              <p className="text-xs text-gray-500 uppercase">Overall Sell-Through Rate</p>
-              <p className="text-2xl font-bold">{benchmarking.overallSellThroughRate}%</p>
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="p-4 text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Overall Sell-Through Rate</p>
+              <p className="mt-1 text-2xl font-bold text-primary-900">{benchmarking.overallSellThroughRate}%</p>
             </Card>
-            <Card>
-              <p className="text-xs text-gray-500 uppercase">Auction Strength Index</p>
-              <p className="text-2xl font-bold">{benchmarking.overallStrengthIndex}x</p>
-              <p className="text-xs text-gray-400">Hammer / High Estimate</p>
+            <Card className="p-4 text-center">
+              <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Auction Strength Index</p>
+              <p className="mt-1 text-2xl font-bold text-primary-900">{benchmarking.overallStrengthIndex}x</p>
+              <p className="text-xs text-primary-400">Hammer / High Estimate</p>
             </Card>
           </div>
 
           {/* Estimate Accuracy Distribution */}
-          <Card>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Estimate Accuracy Distribution</h3>
+          <Card className="p-6">
+            <h3 className="font-display text-sm font-semibold text-primary-900 mb-4">Estimate Accuracy Distribution</h3>
             <div className="flex gap-4">
               {benchmarking.estimateAccuracy.map((bucket) => (
-                <div key={bucket.label} className="flex-1 text-center">
-                  <div className="text-2xl font-bold text-gray-900">{bucket.percentage}%</div>
-                  <div className="text-xs text-gray-500">{bucket.label}</div>
-                  <div className="text-xs text-gray-400">{bucket.count} lots</div>
+                <div key={bucket.label} className="flex-1 text-center rounded-lg border border-primary-100 p-4">
+                  <div className="text-2xl font-bold text-primary-900">{bucket.percentage}%</div>
+                  <div className="text-xs text-primary-600 mt-1">{bucket.label}</div>
+                  <div className="text-xs text-primary-400">{bucket.count} lots</div>
                 </div>
               ))}
             </div>
@@ -286,39 +289,39 @@ export function AuctionTrackingPage() {
 
           {/* Per-Auction-House Performance */}
           {benchmarking.houseStats.length > 0 && (
-            <Card>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Performance by Auction House</h3>
+            <Card className="p-6">
+              <h3 className="font-display text-sm font-semibold text-primary-900 mb-4">Performance by Auction House</h3>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">House</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lots</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sold</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bought In</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sell-Through</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Strength Index</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Hammer</th>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-primary-200 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                      <th className="pb-3 pr-4">House</th>
+                      <th className="pb-3 pr-4">Lots</th>
+                      <th className="pb-3 pr-4">Sold</th>
+                      <th className="pb-3 pr-4">Bought In</th>
+                      <th className="pb-3 pr-4">Sell-Through</th>
+                      <th className="pb-3 pr-4">Strength Index</th>
+                      <th className="pb-3">Total Hammer</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody>
                     {benchmarking.houseStats.map((h) => (
-                      <tr key={h.auctionHouse} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{h.auctionHouse}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{h.totalLots}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{h.soldCount}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{h.boughtInCount}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={h.sellThroughRate >= 70 ? 'text-green-600 font-medium' : h.sellThroughRate >= 50 ? 'text-yellow-600' : 'text-red-600'}>
+                      <tr key={h.auctionHouse} className="border-b border-primary-100 hover:bg-primary-50">
+                        <td className="py-3 pr-4 font-medium text-primary-900">{h.auctionHouse}</td>
+                        <td className="py-3 pr-4 text-primary-600">{h.totalLots}</td>
+                        <td className="py-3 pr-4 text-primary-600">{h.soldCount}</td>
+                        <td className="py-3 pr-4 text-primary-600">{h.boughtInCount}</td>
+                        <td className="py-3 pr-4">
+                          <span className={h.sellThroughRate >= 70 ? 'text-emerald-600 font-medium' : h.sellThroughRate >= 50 ? 'text-amber-600' : 'text-red-600'}>
                             {h.sellThroughRate}%
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={h.auctionStrengthIndex >= 1 ? 'text-green-600 font-medium' : 'text-red-600'}>
+                        <td className="py-3 pr-4">
+                          <span className={h.auctionStrengthIndex >= 1 ? 'text-emerald-600 font-medium' : 'text-red-600'}>
                             {h.auctionStrengthIndex}x
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(h.totalHammerCHF, 'CHF')}</td>
+                        <td className="py-3 text-primary-700">{formatCurrency(h.totalHammerCHF, 'CHF')}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -329,25 +332,25 @@ export function AuctionTrackingPage() {
 
           {/* Yearly Price Trends */}
           {benchmarking.priceTrends.length > 0 && (
-            <Card>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Price Trends by Year</h3>
+            <Card className="p-6">
+              <h3 className="font-display text-sm font-semibold text-primary-900 mb-4">Price Trends by Year</h3>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lots Sold</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Hammer (CHF)</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estimate Accuracy</th>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-primary-200 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                      <th className="pb-3 pr-4">Year</th>
+                      <th className="pb-3 pr-4">Lots Sold</th>
+                      <th className="pb-3 pr-4">Avg Hammer (CHF)</th>
+                      <th className="pb-3">Estimate Accuracy</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody>
                     {benchmarking.priceTrends.map((t) => (
-                      <tr key={t.year} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{t.year}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{t.lotCount}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(t.avgHammerCHF, 'CHF')}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{t.avgEstimateAccuracy}%</td>
+                      <tr key={t.year} className="border-b border-primary-100 hover:bg-primary-50">
+                        <td className="py-3 pr-4 font-medium text-primary-900">{t.year}</td>
+                        <td className="py-3 pr-4 text-primary-600">{t.lotCount}</td>
+                        <td className="py-3 pr-4 text-primary-700">{formatCurrency(t.avgHammerCHF, 'CHF')}</td>
+                        <td className="py-3 text-primary-600">{t.avgEstimateAccuracy}%</td>
                       </tr>
                     ))}
                   </tbody>
@@ -360,7 +363,7 @@ export function AuctionTrackingPage() {
 
       {/* Secondary Market Toggle */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Secondary Market Analysis</h2>
+        <h2 className="font-display text-lg font-semibold text-primary-900">Secondary Market Analysis</h2>
         <Button variant="primary" onClick={() => setShowSecondaryMarket(!showSecondaryMarket)}>
           {showSecondaryMarket ? 'Hide Analysis' : 'Show Analysis'}
         </Button>
@@ -374,74 +377,74 @@ export function AuctionTrackingPage() {
             <>
               {/* Secondary Market KPIs */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <Card>
-                  <p className="text-xs text-gray-500 uppercase">Matched Artworks</p>
-                  <p className="text-2xl font-bold">{secondaryMarket.data.matchedCount}</p>
-                  <p className="text-xs text-gray-400">{secondaryMarket.data.unmatchedCount} unmatched</p>
+                <Card className="p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Matched Artworks</p>
+                  <p className="mt-1 text-2xl font-bold text-primary-900">{secondaryMarket.data.matchedCount}</p>
+                  <p className="text-xs text-primary-400">{secondaryMarket.data.unmatchedCount} unmatched</p>
                 </Card>
-                <Card>
-                  <p className="text-xs text-gray-500 uppercase">Avg Appreciation</p>
-                  <p className={`text-2xl font-bold ${secondaryMarket.data.avgAppreciation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <Card className="p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Avg Appreciation</p>
+                  <p className={`mt-1 text-2xl font-bold ${secondaryMarket.data.avgAppreciation >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     {secondaryMarket.data.avgAppreciation > 0 ? '+' : ''}{secondaryMarket.data.avgAppreciation}%
                   </p>
                 </Card>
-                <Card>
-                  <p className="text-xs text-gray-500 uppercase">Appreciating</p>
-                  <p className="text-2xl font-bold text-green-600">{secondaryMarket.data.appreciatingCount}</p>
+                <Card className="p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Appreciating</p>
+                  <p className="mt-1 text-2xl font-bold text-emerald-600">{secondaryMarket.data.appreciatingCount}</p>
                 </Card>
-                <Card>
-                  <p className="text-xs text-gray-500 uppercase">Depreciating</p>
-                  <p className="text-2xl font-bold text-red-600">{secondaryMarket.data.depreciatingCount}</p>
+                <Card className="p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Depreciating</p>
+                  <p className="mt-1 text-2xl font-bold text-red-600">{secondaryMarket.data.depreciatingCount}</p>
                 </Card>
-                <Card>
-                  <p className="text-xs text-gray-500 uppercase">Total Secondary Volume</p>
-                  <p className="text-2xl font-bold">{formatCurrency(secondaryMarket.data.totalSecondaryVolume, 'CHF')}</p>
+                <Card className="p-4 text-center">
+                  <p className="text-xs font-medium uppercase tracking-wider text-primary-500">Total Secondary Volume</p>
+                  <p className="mt-1 text-2xl font-bold text-primary-900">{formatCurrency(secondaryMarket.data.totalSecondaryVolume, 'CHF')}</p>
                 </Card>
               </div>
 
               {/* Matched Artworks Table */}
               {secondaryMarket.data.items.length > 0 && (
-                <Card>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Matched Artworks — Primary vs Secondary</h3>
+                <Card className="p-6">
+                  <h3 className="font-display text-sm font-semibold text-primary-900 mb-4">Matched Artworks — Primary vs Secondary</h3>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auction House</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Primary Price</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hammer Price</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Appreciation</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Years Held</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gallery of Origin</th>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-primary-200 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                          <th className="pb-3 pr-4">Title</th>
+                          <th className="pb-3 pr-4">Auction House</th>
+                          <th className="pb-3 pr-4">Primary Price</th>
+                          <th className="pb-3 pr-4">Hammer Price</th>
+                          <th className="pb-3 pr-4">Appreciation</th>
+                          <th className="pb-3 pr-4">Years Held</th>
+                          <th className="pb-3">Gallery of Origin</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody>
                         {secondaryMarket.data.items.map((item) => (
-                          <tr key={item.auctionAlertId} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.artworkTitle}</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{item.auctionHouse}</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                          <tr key={item.auctionAlertId} className="border-b border-primary-100 hover:bg-primary-50">
+                            <td className="py-3 pr-4 font-medium text-primary-900">{item.artworkTitle}</td>
+                            <td className="py-3 pr-4 text-primary-600">{item.auctionHouse}</td>
+                            <td className="py-3 pr-4 text-primary-600">
                               {item.primarySalePrice !== null && item.primaryCurrency
                                 ? formatCurrency(item.primarySalePrice, item.primaryCurrency)
                                 : '—'}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="py-3 pr-4 text-primary-600">
                               {formatCurrency(item.hammerPrice, item.hammerCurrency)}
                             </td>
-                            <td className="px-4 py-3 text-sm">
+                            <td className="py-3 pr-4">
                               {item.appreciation !== null ? (
-                                <span className={item.appreciation >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                                <span className={item.appreciation >= 0 ? 'text-emerald-600 font-medium' : 'text-red-600 font-medium'}>
                                   {item.appreciation > 0 ? '+' : ''}{item.appreciation}%
                                 </span>
                               ) : (
-                                '—'
+                                <span className="text-primary-400">—</span>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="py-3 pr-4 text-primary-600">
                               {item.yearsSincePrimary !== null ? `${item.yearsSincePrimary} yr` : '—'}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{item.galleryOfOrigin || '—'}</td>
+                            <td className="py-3 text-primary-600">{item.galleryOfOrigin || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -452,29 +455,29 @@ export function AuctionTrackingPage() {
 
               {/* Gallery Performance Summary */}
               {secondaryMarket.data.galleryPerformance.length > 0 && (
-                <Card>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Gallery Secondary Market Performance</h3>
+                <Card className="p-6">
+                  <h3 className="font-display text-sm font-semibold text-primary-900 mb-4">Gallery Secondary Market Performance</h3>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gallery</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auction Count</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Appreciation</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Hammer (CHF)</th>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-primary-200 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                          <th className="pb-3 pr-4">Gallery</th>
+                          <th className="pb-3 pr-4">Auction Count</th>
+                          <th className="pb-3 pr-4">Avg Appreciation</th>
+                          <th className="pb-3">Total Hammer (CHF)</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody>
                         {secondaryMarket.data.galleryPerformance.map((g) => (
-                          <tr key={g.galleryId} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{g.galleryName}</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{g.auctionCount}</td>
-                            <td className="px-4 py-3 text-sm">
-                              <span className={g.avgAppreciation >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                          <tr key={g.galleryId} className="border-b border-primary-100 hover:bg-primary-50">
+                            <td className="py-3 pr-4 font-medium text-primary-900">{g.galleryName}</td>
+                            <td className="py-3 pr-4 text-primary-600">{g.auctionCount}</td>
+                            <td className="py-3 pr-4">
+                              <span className={g.avgAppreciation >= 0 ? 'text-emerald-600 font-medium' : 'text-red-600 font-medium'}>
                                 {g.avgAppreciation > 0 ? '+' : ''}{g.avgAppreciation}%
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(g.totalHammerCHF, 'CHF')}</td>
+                            <td className="py-3 text-primary-700">{formatCurrency(g.totalHammerCHF, 'CHF')}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -484,8 +487,8 @@ export function AuctionTrackingPage() {
               )}
 
               {secondaryMarket.data.items.length === 0 && (
-                <Card>
-                  <p className="text-gray-500 text-center py-8">
+                <Card className="p-8">
+                  <p className="text-primary-500 text-center">
                     No matched sold artworks found. Match auction alerts to database artworks to see secondary market analysis.
                   </p>
                 </Card>
@@ -496,63 +499,63 @@ export function AuctionTrackingPage() {
       )}
 
       {/* Table */}
-      <Card>
+      <Card className="overflow-hidden">
         {filteredAlerts.length === 0 ? (
-          <p className="text-gray-500 text-center py-12">No auction alerts yet.</p>
+          <p className="text-primary-500 text-center py-12">No auction alerts yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auction House</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sale</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lot #</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estimate</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hammer Price</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Result</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Matched</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">AI</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-primary-200 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                  <th className="px-4 pb-3 pt-4">Auction House</th>
+                  <th className="px-4 pb-3 pt-4">Sale</th>
+                  <th className="px-4 pb-3 pt-4">Date</th>
+                  <th className="px-4 pb-3 pt-4">Lot #</th>
+                  <th className="px-4 pb-3 pt-4">Title</th>
+                  <th className="px-4 pb-3 pt-4">Estimate</th>
+                  <th className="px-4 pb-3 pt-4">Hammer Price</th>
+                  <th className="px-4 pb-3 pt-4">Result</th>
+                  <th className="px-4 pb-3 pt-4">Matched</th>
+                  <th className="px-4 pb-3 pt-4">AI</th>
+                  <th className="px-4 pb-3 pt-4">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody>
                 {filteredAlerts.map((alert) => (
-                  <tr key={alert.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900">{alert.auction_house || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{alert.sale_title || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                  <tr key={alert.id} className="border-b border-primary-100 hover:bg-primary-50">
+                    <td className="px-4 py-3 font-medium text-primary-900">{alert.auction_house || '—'}</td>
+                    <td className="px-4 py-3 text-primary-600">{alert.sale_title || '—'}</td>
+                    <td className="px-4 py-3 text-primary-600 whitespace-nowrap">
                       {alert.sale_date ? formatDate(alert.sale_date) : '—'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{alert.lot_number || '—'}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{alert.artwork_title}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-primary-600">{alert.lot_number || '—'}</td>
+                    <td className="px-4 py-3 font-medium text-primary-900">{alert.artwork_title}</td>
+                    <td className="px-4 py-3 text-primary-600 whitespace-nowrap">
                       {alert.estimate_low && alert.estimate_high
                         ? `${formatCurrency(alert.estimate_low, alert.currency)} – ${formatCurrency(alert.estimate_high, alert.currency)}`
                         : '—'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-primary-700 whitespace-nowrap">
                       {alert.hammer_price ? formatCurrency(alert.hammer_price, alert.currency) : '—'}
                     </td>
-                    <td className="px-4 py-3 text-sm">{getResultBadge(alert.result)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3">{getResultBadge(alert.result)}</td>
+                    <td className="px-4 py-3">
                       {alert.matched_artwork_id ? (
-                        <Badge variant="default">Matched</Badge>
+                        <Badge variant="success">Matched</Badge>
                       ) : (
-                        '—'
+                        <span className="text-primary-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm">
-                      {alert.ai_detected ? <Badge variant="default">AI</Badge> : '—'}
+                    <td className="px-4 py-3">
+                      {alert.ai_detected ? <Badge variant="default">AI</Badge> : <span className="text-primary-400">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-4 py-3">
                       <div className="flex gap-2">
                         {!alert.matched_artwork_id && (
-                          <Button variant="primary" onClick={() => handleMatch(alert.id)}>Match</Button>
+                          <Button size="sm" variant="outline" onClick={() => handleMatch(alert.id)}>Match</Button>
                         )}
-                        <Button variant="primary" onClick={() => openUpdateModal(alert)}>Update</Button>
-                        <Button variant="primary" onClick={() => handleDelete(alert.id)}>Delete</Button>
+                        <Button size="sm" variant="outline" onClick={() => openUpdateModal(alert)}>Update</Button>
+                        <Button size="sm" variant="danger" onClick={() => handleDelete(alert.id)}>Delete</Button>
                       </div>
                     </td>
                   </tr>
@@ -599,9 +602,9 @@ export function AuctionTrackingPage() {
             maxLength={256}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Artwork Description</label>
+            <label className="block text-sm font-medium text-primary-700 mb-1">Artwork Description</label>
             <textarea
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full rounded-lg border border-primary-200 px-3 py-2 text-sm text-primary-900 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               rows={3}
               value={alertForm.artwork_description}
               onChange={(e) => setAlertForm({ ...alertForm, artwork_description: e.target.value })}
@@ -635,9 +638,9 @@ export function AuctionTrackingPage() {
             maxLength={2048}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-primary-700 mb-1">Notes</label>
             <textarea
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full rounded-lg border border-primary-200 px-3 py-2 text-sm text-primary-900 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               rows={3}
               value={alertForm.notes}
               onChange={(e) => setAlertForm({ ...alertForm, notes: e.target.value })}
@@ -669,9 +672,9 @@ export function AuctionTrackingPage() {
             onChange={(e) => setUpdateForm({ ...updateForm, hammer_price: e.target.value })}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-primary-700 mb-1">Notes</label>
             <textarea
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full rounded-lg border border-primary-200 px-3 py-2 text-sm text-primary-900 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               rows={3}
               value={updateForm.notes}
               onChange={(e) => setUpdateForm({ ...updateForm, notes: e.target.value })}

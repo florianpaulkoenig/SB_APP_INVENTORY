@@ -2,12 +2,11 @@ import { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
+import type { UserRole } from '../../types/database';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-type UserRole = 'admin' | 'gallery' | 'collector';
-
 interface NavItem {
   label: string;
   to: string;
@@ -60,6 +59,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M2 4h10v8H2zM12 7h3.5l2.5 3v4h-4M2 14h0M6.5 14a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM14.5 14a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" />
     </svg>
   ),
+  forwarding: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 14l-4-4 4-4M13 6l4 4-4 4M3 10h14" />
+    </svg>
+  ),
   packingList: (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M4 3h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zM3 7h14M8 3v4" />
@@ -78,6 +82,12 @@ const icons = {
   deals: (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M10 2v16M6 6l-3 3 3 3M14 8l3 3-3 3M3 10h4M13 10h4" />
+    </svg>
+  ),
+  enquiry: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093M10 15h.01" />
+      <circle cx="10" cy="10" r="8" />
     </svg>
   ),
   invoices: (
@@ -101,9 +111,56 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M14 11l4-4-4-4M18 7H8a4 4 0 00-4 4v5" />
     </svg>
   ),
+  calendar: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 2v2M14 2v2M3 6h14M3 6v10a2 2 0 002 2h10a2 2 0 002-2V6M3 6a2 2 0 012-2h10a2 2 0 012 2M8 10h4M8 14h2" />
+    </svg>
+  ),
+  project: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h14v3H3zM3 10h8v7H3zM14 10h3v7h-3z" />
+    </svg>
+  ),
   analytics: (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 17V10M7 17V7M11 17V11M15 17V5M19 17V8" />
+    </svg>
+  ),
+  inventoryHealth: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h3v12H4zM9 8h3v8H9zM14 2h3v14h-3z" />
+    </svg>
+  ),
+  galleryPerformance: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 3 2 4-5 3 3M10 3l2 2.5h3v3L17 10l-2 1.5v3h-3L10 17l-2-2.5H5v-3L3 10l2-1.5v-3h3L10 3z" />
+    </svg>
+  ),
+  map: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 2C6.686 2 4 4.686 4 8c0 4.5 6 10 6 10s6-5.5 6-10c0-3.314-2.686-6-6-6z" />
+      <circle cx="10" cy="8" r="2" />
+    </svg>
+  ),
+  exhibition: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2 17h16M4 17V7l6-4 6 4v10M8 17v-4h4v4M8 9h4" />
+    </svg>
+  ),
+  priceTag: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2 4.5V10l8 8 6-6-8-8H2.5zM6 7a1 1 0 100-2 1 1 0 000 2z" />
+    </svg>
+  ),
+  auction: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14 3l3 3-8 8-3-3 8-8zM11 6l3 3M4 17h12M6 14l-2 3" />
+    </svg>
+  ),
+  collections: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h14a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zM10 3l3 2H7l3-2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 5V3.5M14 5V3.5" />
     </svg>
   ),
   emailLog: (
@@ -130,6 +187,7 @@ const navSections: NavSection[] = [
       { label: 'Dashboard', to: '/', icon: icons.dashboard, roles: ['admin', 'gallery', 'collector'] },
       { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin', 'gallery', 'collector'] },
       { label: 'Galleries', to: '/galleries', icon: icons.galleries, roles: ['admin'] },
+      { label: 'Collections', to: '/collections', icon: icons.collections, roles: ['admin'] },
       { label: 'Production Orders', to: '/production', icon: icons.production, roles: ['admin'] },
     ],
   },
@@ -138,6 +196,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Certificates', to: '/certificates', icon: icons.certificate, roles: ['admin', 'collector'] },
       { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin', 'gallery'] },
+      { label: 'Forwarding', to: '/forwarding', icon: icons.forwarding, roles: ['admin'] },
       { label: 'Packing Lists', to: '/packing-lists', icon: icons.packingList, roles: ['admin'] },
       { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
     ],
@@ -147,6 +206,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Contacts', to: '/contacts', icon: icons.contacts, roles: ['admin'] },
       { label: 'Deals', to: '/deals', icon: icons.deals, roles: ['admin'] },
+      { label: 'Enquiries', to: '/enquiries', icon: icons.enquiry, roles: ['admin'] },
       { label: 'Invoices', to: '/invoices', icon: icons.invoices, roles: ['admin'] },
       { label: 'Sales', to: '/sales', icon: icons.sales, roles: ['admin', 'gallery'] },
     ],
@@ -155,13 +215,56 @@ const navSections: NavSection[] = [
     title: 'SHARING',
     items: [
       { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin', 'gallery'] },
-      { label: 'Image Sharing', to: '/image-sharing', icon: icons.imageSharing, roles: ['admin'] },
+      { label: 'Image Sharing', to: '/sharing', icon: icons.imageSharing, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'PLANNING',
+    items: [
+      { label: 'Annual Schedule', to: '/schedule', icon: icons.calendar, roles: ['admin'] },
+      { label: 'Projects', to: '/projects', icon: icons.project, roles: ['admin'] },
     ],
   },
   {
     title: 'ANALYTICS',
     items: [
-      { label: 'Analytics', to: '/analytics', icon: icons.analytics, roles: ['admin'] },
+      { label: 'Portfolio Overview', to: '/analytics/portfolio', icon: icons.inventoryHealth, roles: ['admin'] },
+      { label: 'Revenue & Pricing', to: '/analytics/revenue', icon: icons.sales, roles: ['admin'] },
+      { label: 'Gallery Intelligence', to: '/analytics/galleries', icon: icons.galleryPerformance, roles: ['admin'] },
+      { label: 'Collector & Sales', to: '/analytics/collectors', icon: icons.contacts, roles: ['admin'] },
+      { label: 'Market & Auction', to: '/analytics/market', icon: icons.map, roles: ['admin'] },
+      { label: 'Exhibition & Career', to: '/analytics/exhibitions', icon: icons.exhibition, roles: ['admin'] },
+      { label: 'Series & Artwork', to: '/analytics/series', icon: icons.artworks, roles: ['admin'] },
+      { label: 'Strategic Intelligence', to: '/analytics/strategic', icon: icons.analytics, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'MARKET INTELLIGENCE',
+    items: [
+      { label: 'Exhibitions & Fairs', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
+      { label: 'Price Management', to: '/price-management', icon: icons.priceTag, roles: ['admin'] },
+      { label: 'Auction Tracking', to: '/auction-tracking', icon: icons.auction, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'GALLERY PORTAL',
+    items: [
+      { label: 'Gallery Dashboard', to: '/gallery/dashboard', icon: icons.dashboard, roles: ['gallery'] },
+      { label: 'Available Works', to: '/gallery/available-works', icon: icons.artworks, roles: ['gallery'] },
+      { label: 'My Artworks', to: '/gallery/artworks', icon: icons.artworks, roles: ['gallery'] },
+      { label: 'My Deliveries', to: '/gallery/deliveries', icon: icons.delivery, roles: ['gallery'] },
+      { label: 'Certificates', to: '/gallery/certificates', icon: icons.certificate, roles: ['gallery'] },
+      { label: 'Media Library', to: '/gallery/media', icon: icons.imageSharing, roles: ['gallery'] },
+      { label: 'News', to: '/gallery/news', icon: icons.emailLog, roles: ['gallery'] },
+    ],
+  },
+  {
+    title: 'ADMIN',
+    items: [
+      { label: 'Sale Requests', to: '/admin/sale-requests', icon: icons.sales, roles: ['admin'] },
+      { label: 'Media Library', to: '/media', icon: icons.imageSharing, roles: ['admin'] },
+      { label: 'CV Editor', to: '/cv', icon: icons.catalogue, roles: ['admin'] },
+      { label: 'News', to: '/news', icon: icons.emailLog, roles: ['admin'] },
     ],
   },
 ];
@@ -174,10 +277,6 @@ const bottomItems: NavItem[] = [
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function getCurrentRole(): UserRole {
-  return 'admin';
-}
-
 function filterByRole(items: NavItem[], role: UserRole): NavItem[] {
   return items.filter((item) => item.roles.includes(role));
 }
@@ -186,8 +285,8 @@ function filterByRole(items: NavItem[], role: UserRole): NavItem[] {
 // MobileNav component
 // ---------------------------------------------------------------------------
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {
-  const { user, signOut } = useAuth();
-  const role = getCurrentRole();
+  const { user, signOut, role: authRole } = useAuth();
+  const role: UserRole = authRole ?? 'admin';
 
   // Prevent body scroll when open
   useEffect(() => {

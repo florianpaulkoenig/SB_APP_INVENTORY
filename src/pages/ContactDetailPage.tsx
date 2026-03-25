@@ -12,6 +12,7 @@ import { TaskList } from '../components/crm/TaskList';
 import { WishListView } from '../components/crm/WishListView';
 import { DealCard } from '../components/crm/DealCard';
 import { Button } from '../components/ui/Button';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { formatDate, formatCurrency } from '../lib/utils';
@@ -121,6 +122,15 @@ export function ContactDetailPage() {
 
   return (
     <div>
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: 'Contacts', href: '/contacts' },
+          { label: `${contact.first_name} ${contact.last_name}` },
+        ]}
+        className="mb-4"
+      />
+
       {/* Back navigation */}
       <Button
         variant="ghost"
