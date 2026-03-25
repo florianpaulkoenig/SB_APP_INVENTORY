@@ -81,7 +81,8 @@ export function LoginPage() {
       // Refresh session so useAuth sees aal2 and exposes the session
       await supabase.auth.refreshSession();
 
-      // Navigation happens automatically via the useEffect when session updates
+      // Force a full reload after a short delay so the app picks up the aal2 session
+      setTimeout(() => window.location.reload(), 2000);
     } catch {
       setMfaError('Invalid verification code. Please try again.');
     } finally {
