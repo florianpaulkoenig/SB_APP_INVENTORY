@@ -150,6 +150,25 @@ export function ArtworkImageGallery({
     [onDeleteImage, fetchImages],
   );
 
+  // -- Download handler -----------------------------------------------------
+  const handleDownload = useCallback(async (img: ImageWithUrl) => {
+    try {
+      const response = await fetch(img.signedUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = img.file_name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // Fallback: open in new tab
+      window.open(img.signedUrl, '_blank');
+    }
+  }, []);
+
   // -- Filter images by active tab ------------------------------------------
   const filteredImages = images.filter(
     (img) => img.image_type === (activeTab as ImageType),
@@ -226,8 +245,32 @@ export function ArtworkImageGallery({
               </button>
 
               {/* Action buttons overlay */}
-              {(onDeleteImage || onSetPrimaryImage) && (
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  {/* Download button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownload(img);
+                    }}
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-primary-600 shadow-sm transition-colors hover:bg-accent hover:text-white"
+                    title="Download image"
+                  >
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                      />
+                    </svg>
+                  </button>
+
                   {/* Set primary button */}
                   {onSetPrimaryImage && !img.is_primary && (
                     <button
@@ -283,8 +326,7 @@ export function ArtworkImageGallery({
                       </svg>
                     </button>
                   )}
-                </div>
-              )}
+              </div>
 
               {/* Delete confirmation overlay */}
               {confirmDelete === img.id && (
@@ -357,8 +399,28 @@ export function ArtworkImageGallery({
             </button>
 
             {/* Lightbox action buttons */}
-            {(onDeleteImage || onSetPrimaryImage) && (
-              <div className="absolute -bottom-12 left-1/2 flex -translate-x-1/2 gap-2">
+            <div className="absolute -bottom-12 left-1/2 flex -translate-x-1/2 gap-2">
+                {/* Download button */}
+                <button
+                  type="button"
+                  onClick={() => handleDownload(selectedImage)}
+                  className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-primary-700 shadow transition-colors hover:bg-accent hover:text-white"
+                >
+                  <svg
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                    />
+                  </svg>
+                  Download
+                </button>
                 {onSetPrimaryImage && !selectedImage.is_primary && (
                   <button
                     type="button"
@@ -407,8 +469,7 @@ export function ArtworkImageGallery({
                     Delete
                   </button>
                 )}
-              </div>
-            )}
+            </div>
 
             <img
               src={selectedImage.signedUrl}
