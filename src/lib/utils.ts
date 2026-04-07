@@ -47,6 +47,7 @@ export function formatDimensions(
   width: number | null | undefined,
   depth: number | null | undefined,
   unit: string,
+  isCircular?: boolean,
 ): string {
   const h = height != null && height > 0 ? height : null;
   const w = width != null && width > 0 ? width : null;
@@ -54,8 +55,8 @@ export function formatDimensions(
 
   if (!h && !w && !d) return '';
 
-  // Circular: height === width → show as diameter
-  if (h && w && h === w) {
+  // Only show diameter when explicitly flagged as circular
+  if (isCircular && h) {
     return d ? `\u2300 ${h} \u00D7 ${d} ${unit}` : `\u2300 ${h} ${unit}`;
   }
 
