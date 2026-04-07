@@ -62,9 +62,7 @@ export function ProductionItemEditor({
   );
 
   // Dimensions (unframed)
-  const [isCircular, setIsCircular] = useState(
-    item?.height != null && item?.width != null && item.height > 0 && item.height === item.width,
-  );
+  const [isCircular, setIsCircular] = useState(false);
   const [height, setHeight] = useState(
     item?.height != null ? String(item.height) : '',
   );
