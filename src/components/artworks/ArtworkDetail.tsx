@@ -94,6 +94,7 @@ export function ArtworkDetail({
     artwork.width,
     artwork.depth,
     artwork.dimension_unit,
+    artwork.is_circular,
   );
 
   const framedDimensions = formatDimensions(
@@ -101,6 +102,7 @@ export function ArtworkDetail({
     artwork.framed_width,
     artwork.framed_depth,
     artwork.dimension_unit,
+    artwork.is_circular,
   );
 
   const editionLabel = lookupLabel(EDITION_TYPES, artwork.edition_type);

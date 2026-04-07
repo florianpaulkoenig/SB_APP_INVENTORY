@@ -62,7 +62,7 @@ export function ProductionItemEditor({
   );
 
   // Dimensions (unframed)
-  const [isCircular, setIsCircular] = useState(false);
+  const [isCircular, setIsCircular] = useState(item?.is_circular ?? false);
   const [height, setHeight] = useState(
     item?.height != null ? String(item.height) : '',
   );
@@ -269,6 +269,7 @@ export function ProductionItemEditor({
       height: parseNum(height),
       width: isCircular ? parseNum(height) : parseNum(width),
       depth: parseNum(depth),
+      is_circular: isCircular,
       dimension_unit: dimensionUnit as DimensionUnit,
       framed_height: hasDifferentFramedSize ? parseNum(framedHeight) : parseNum(height),
       framed_width: hasDifferentFramedSize ? parseNum(framedWidth) : (isCircular ? parseNum(height) : parseNum(width)),

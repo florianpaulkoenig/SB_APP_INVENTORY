@@ -30,7 +30,7 @@ export const ArtworkCard = React.memo(function ArtworkCard({ artwork, imageUrl, 
     artwork.width,
     artwork.depth,
     artwork.dimension_unit,
-    false,
+    artwork.is_circular,
   );
 
   const mediumYear = [artwork.medium, artwork.year?.toString()]

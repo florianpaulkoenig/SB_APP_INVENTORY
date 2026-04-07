@@ -279,7 +279,7 @@ export function ProductionOrderDetail({
           item.width,
           item.depth,
           item.dimension_unit ?? 'cm',
-          false,
+          item.is_circular,
         ),
         quantity: item.quantity,
         notes: item.notes,
@@ -324,7 +324,7 @@ export function ProductionOrderDetail({
           .replace(/[^a-zA-Z0-9\s-]/g, '')
           .replace(/\s+/g, '_')
           .substring(0, 60);
-        const dims = formatDimensions(item.height, item.width, item.depth, item.dimension_unit ?? 'cm', item.height != null && item.width != null && item.height > 0 && item.height === item.width)
+        const dims = formatDimensions(item.height, item.width, item.depth, item.dimension_unit ?? 'cm', item.is_circular)
           .replace(/\s+/g, '');
 
         let fileIdx = 0;
@@ -519,7 +519,7 @@ export function ProductionOrderDetail({
                         item.width,
                         item.depth,
                         item.dimension_unit ?? 'cm',
-                        false,
+                        item.is_circular,
                       ) || '\u2014'}
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-primary-800">

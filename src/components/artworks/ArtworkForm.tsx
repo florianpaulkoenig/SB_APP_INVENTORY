@@ -89,7 +89,7 @@ export function ArtworkForm({
   const [color, setColor] = useState(v?.color ?? 'green');
 
   // Dimensions (unframed)
-  const [isCircular, setIsCircular] = useState(false);
+  const [isCircular, setIsCircular] = useState(v?.is_circular ?? false);
   const [height, setHeight] = useState(v?.height != null ? String(v.height) : '');
   const [width, setWidth] = useState(v?.width != null ? String(v.width) : '');
   const [depth, setDepth] = useState(v?.depth != null ? String(v.depth) : '');
@@ -261,6 +261,7 @@ export function ArtworkForm({
       height: height !== '' ? parseFloat(height) : null,
       width: isCircular ? (height !== '' ? parseFloat(height) : null) : (width !== '' ? parseFloat(width) : null),
       depth: depth !== '' ? parseFloat(depth) : null,
+      is_circular: isCircular,
       dimension_unit: dimensionUnit as DimensionUnit,
       framed_height: hasDifferentFramedSize
         ? (framedHeight !== '' ? parseFloat(framedHeight) : null)

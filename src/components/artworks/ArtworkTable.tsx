@@ -106,6 +106,7 @@ const ArtworkRowItem = React.memo(function ArtworkRowItem({
     artwork.width,
     artwork.depth,
     artwork.dimension_unit,
+    artwork.is_circular,
   );
 
   return (

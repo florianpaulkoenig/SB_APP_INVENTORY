@@ -164,6 +164,7 @@ export interface ArtworkRow {
   height: number | null;
   width: number | null;
   depth: number | null;
+  is_circular: boolean;
   dimension_unit: DimensionUnit;
   framed_height: number | null;
   framed_width: number | null;
@@ -208,6 +209,7 @@ export interface ArtworkInsert {
   height?: number | null;
   width?: number | null;
   depth?: number | null;
+  is_circular?: boolean;
   dimension_unit?: DimensionUnit;
   framed_height?: number | null;
   framed_width?: number | null;
@@ -540,6 +542,7 @@ export interface ProductionOrderItemRow {
   height: number | null;
   width: number | null;
   depth: number | null;
+  is_circular: boolean;
   dimension_unit: DimensionUnit;
   framed_height: number | null;
   framed_width: number | null;
@@ -572,6 +575,7 @@ export interface ProductionOrderItemInsert {
   height?: number | null;
   width?: number | null;
   depth?: number | null;
+  is_circular?: boolean;
   dimension_unit?: DimensionUnit;
   framed_height?: number | null;
   framed_width?: number | null;
