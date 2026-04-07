@@ -89,6 +89,7 @@ function ProductionStatusFlow({
     { value: 'in_production', label: 'In Production' },
     { value: 'quality_check', label: 'Quality Check' },
     { value: 'completed', label: 'Completed' },
+    { value: 'shipped', label: 'Shipped' },
   ];
 
   const currentIndex = steps.findIndex((s) => s.value === currentStatus);
@@ -523,12 +524,34 @@ export function ProductionOrderDetail({
                         : '\u2014'}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      {item.artworks ? (
-                        <span className="font-mono text-primary-600">
-                          {item.artworks.reference_code}
+                      {item.artwork_id && item.artworks ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                            Converted
+                          </span>
+                          <button
+                            type="button"
+                            className="font-mono text-xs text-accent hover:underline text-left"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.location.href = `/artworks/${item.artwork_id}`;
+                            }}
+                          >
+                            {item.artworks.reference_code}
+                          </button>
+                        </div>
+                      ) : item.artwork_id ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                          Converted
                         </span>
                       ) : (
-                        <span className="text-primary-400">\u2014</span>
+                        <span className="text-xs text-primary-300">Not converted</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">

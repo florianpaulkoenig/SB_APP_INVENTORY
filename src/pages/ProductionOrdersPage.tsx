@@ -274,7 +274,7 @@ export function ProductionOrdersPage() {
 
     try {
       // Exclude completed orders and filter by date range
-      let dateFilteredOrders = productionOrders.filter((o) => o.status !== 'completed');
+      let dateFilteredOrders = productionOrders.filter((o) => o.status !== 'completed' && o.status !== 'shipped');
       if (artistDateFrom) {
         dateFilteredOrders = dateFilteredOrders.filter(
           (o) => o.deadline && o.deadline >= artistDateFrom
@@ -740,7 +740,7 @@ export function ProductionOrdersPage() {
       )}
 
       {/* Production orders table */}
-      {!loading && productionOrders.length > 0 && (
+      {!loading && productionOrders.filter((o) => o.status !== 'shipped').length > 0 && (
         <div className="overflow-x-auto rounded-lg border border-primary-100">
           <table className="min-w-full divide-y divide-primary-100">
             <thead className="bg-primary-50">
@@ -769,7 +769,7 @@ export function ProductionOrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-primary-50 bg-white">
-              {productionOrders.map((order) => (
+              {productionOrders.filter((o) => o.status !== 'shipped').map((order) => (
                 <tr
                   key={order.id}
                   className="cursor-pointer hover:bg-primary-50 transition-colors"
@@ -797,7 +797,7 @@ export function ProductionOrdersPage() {
                       deadlineDate.setHours(0, 0, 0, 0);
                       const diffMs = deadlineDate.getTime() - today.getTime();
                       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                      const isCompleted = order.status === 'completed';
+                      const isCompleted = order.status === 'completed' || order.status === 'shipped';
                       const isOverdue = diffDays < 0 && !isCompleted;
                       const isUrgent = diffDays >= 0 && diffDays <= 7 && !isCompleted;
                       const isSoon = diffDays > 7 && diffDays <= 21 && !isCompleted;
@@ -882,6 +882,93 @@ export function ProductionOrdersPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Shipped archive */}
+      {!loading && productionOrders.filter((o) => o.status === 'shipped').length > 0 && (
+        <details className="mt-8 group">
+          <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-primary-500 hover:text-primary-700">
+            <svg className="h-4 w-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+            Shipped Archive ({productionOrders.filter((o) => o.status === 'shipped').length})
+          </summary>
+          <div className="mt-3 overflow-x-auto rounded-lg border border-primary-100 opacity-75">
+            <table className="min-w-full divide-y divide-primary-100">
+              <thead className="bg-primary-50">
+                <tr>
+                  <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                    Order #
+                  </th>
+                  <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                    Title
+                  </th>
+                  <th className="hidden md:table-cell px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                    Gallery
+                  </th>
+                  <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                    Status
+                  </th>
+                  <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
+                    Deadline
+                  </th>
+                  <th className="hidden sm:table-cell px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                    Value
+                  </th>
+                  <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-primary-50 bg-white">
+                {productionOrders.filter((o) => o.status === 'shipped').map((order) => (
+                  <tr
+                    key={order.id}
+                    className="cursor-pointer hover:bg-primary-50 transition-colors"
+                    onClick={() => navigate(`/production/${order.id}`)}
+                  >
+                    <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm font-medium text-primary-500">
+                      {order.order_number}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-400">
+                      {order.title}
+                    </td>
+                    <td className="hidden md:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-sm text-primary-400">
+                      {order.gallery_id && galleryNameMap[order.gallery_id]
+                        ? galleryNameMap[order.gallery_id]
+                        : <span className="text-primary-300">—</span>}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3">
+                      <StatusBadge status={order.status} />
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3">
+                      {order.deadline
+                        ? <span className="text-sm text-primary-400">{formatDate(order.deadline)}</span>
+                        : <span className="text-sm text-primary-300">—</span>}
+                    </td>
+                    <td className="hidden sm:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right text-sm font-medium text-primary-500">
+                      {getOrderValueCHF(order) > 0
+                        ? formatCurrency(getOrderValueCHF(order), 'CHF')
+                        : '-'}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/production/${order.id}`);
+                        }}
+                      >
+                        View
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
       )}
     </div>
   );
