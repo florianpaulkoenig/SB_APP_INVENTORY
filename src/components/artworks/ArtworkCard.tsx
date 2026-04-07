@@ -21,6 +21,10 @@ export interface ArtworkCardProps {
 // ---------------------------------------------------------------------------
 
 export const ArtworkCard = React.memo(function ArtworkCard({ artwork, imageUrl, onClick, onDownloadCertificate, downloadingCertificate }: ArtworkCardProps) {
+  const [imgError, setImgError] = React.useState(false);
+
+  // Reset error state when imageUrl changes
+  React.useEffect(() => { setImgError(false); }, [imageUrl]);
   const dimensions = formatDimensions(
     artwork.height,
     artwork.width,
@@ -36,12 +40,13 @@ export const ArtworkCard = React.memo(function ArtworkCard({ artwork, imageUrl, 
     <Card hoverable onClick={onClick} className="group relative overflow-hidden">
       {/* Image area */}
       <div className="aspect-square bg-primary-100">
-        {imageUrl ? (
+        {imageUrl && !imgError ? (
           <img
             src={imageUrl}
             alt={artwork.title}
             loading="lazy"
             className="h-full w-full object-cover"
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">

@@ -200,9 +200,7 @@ export function ArtworksPage() {
       imageData.map(async (img) => {
         const { data: signedData } = await supabase.storage
           .from('artwork-images')
-          .createSignedUrl(img.storage_path, 600, {
-            transform: { width: 400, height: 400, resize: 'cover' },
-          });
+          .createSignedUrl(img.storage_path, 600);
         return { artworkId: img.artwork_id, url: signedData?.signedUrl ?? null };
       }),
     );
