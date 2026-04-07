@@ -274,6 +274,25 @@ export function ArtworkDetail({
         {!unframedDimensions && !framedDimensions && artwork.weight == null && (
           <p className="text-sm text-primary-400">No dimension data provided.</p>
         )}
+        {(artwork as Record<string, unknown>).is_window && (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+              Window Artwork
+            </span>
+            {(artwork as Record<string, unknown>).lamination_needed && (
+              <>
+                <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                  Lamination
+                </span>
+                {(artwork as Record<string, unknown>).lamination_cost != null && (
+                  <span className="text-xs text-primary-500">
+                    Cost: {formatCurrency((artwork as Record<string, unknown>).lamination_cost as number, artwork.currency)}
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </section>
 
       {/* ----------------------------------------------------------------- */}

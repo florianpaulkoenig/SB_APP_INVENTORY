@@ -188,6 +188,9 @@ export interface ArtworkRow {
   notes: string | null;
   consigned_since: string | null;
   available_for_partners: boolean;
+  is_window: boolean;
+  lamination_needed: boolean;
+  lamination_cost: number | null;
   released_at: string | null;
   size_category: SizeCategory | null;
   created_at: string;
@@ -229,6 +232,9 @@ export interface ArtworkInsert {
   notes?: string | null;
   consigned_since?: string | null;
   available_for_partners?: boolean;
+  is_window?: boolean;
+  lamination_needed?: boolean;
+  lamination_cost?: number | null;
   released_at?: string | null;
   size_category?: SizeCategory | null;
   created_at?: string;

@@ -387,6 +387,43 @@ export function ProductionOrderDetailPage() {
     }
   }
 
+  // ---- Link existing artwork by reference code ----------------------------
+
+  async function handleLinkArtwork(itemId: string, referenceCode: string): Promise<boolean> {
+    const { data: artwork, error: lookupErr } = await supabase
+      .from('artworks')
+      .select('id, reference_code, title')
+      .eq('reference_code', referenceCode)
+      .maybeSingle();
+
+    if (lookupErr || !artwork) {
+      toast({
+        title: 'Artwork not found',
+        description: `No artwork with reference code "${referenceCode}" was found.`,
+        variant: 'error',
+      });
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('production_order_items')
+      .update({ artwork_id: artwork.id } as never)
+      .eq('id', itemId);
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to link artwork.', variant: 'error' });
+      return false;
+    }
+
+    toast({
+      title: 'Artwork linked',
+      description: `Linked to "${artwork.title}" (${artwork.reference_code}).`,
+      variant: 'success',
+    });
+    await refetchItems();
+    return true;
+  }
+
   // ---- Loading state ------------------------------------------------------
 
   if (loading) {
@@ -466,6 +503,7 @@ export function ProductionOrderDetailPage() {
           const found = items.find((i) => i.id === itemId);
           if (found) setConvertItem(found);
         }}
+        onLinkArtwork={handleLinkArtwork}
       />
 
       {/* Reference Images */}

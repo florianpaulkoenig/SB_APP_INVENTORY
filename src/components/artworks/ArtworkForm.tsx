@@ -89,6 +89,9 @@ export function ArtworkForm({
   const [color, setColor] = useState(v?.color ?? 'green');
 
   // Dimensions (unframed)
+  const [isCircular, setIsCircular] = useState(
+    v?.height != null && v?.width != null && v.height > 0 && v.height === v.width,
+  );
   const [height, setHeight] = useState(v?.height != null ? String(v.height) : '');
   const [width, setWidth] = useState(v?.width != null ? String(v.width) : '');
   const [depth, setDepth] = useState(v?.depth != null ? String(v.depth) : '');
@@ -138,6 +141,13 @@ export function ArtworkForm({
 
   // Partner availability
   const [availableForPartners, setAvailableForPartners] = useState(v?.available_for_partners ?? false);
+
+  // Window artwork
+  const [isWindow, setIsWindow] = useState(v?.is_window ?? false);
+  const [laminationNeeded, setLaminationNeeded] = useState(v?.lamination_needed ?? false);
+  const [laminationCost, setLaminationCost] = useState(
+    v?.lamination_cost != null ? String(v.lamination_cost) : '',
+  );
 
   // Notes
   const [notes, setNotes] = useState(v?.notes ?? '');
@@ -241,7 +251,7 @@ export function ArtworkForm({
       medium: medium.trim() || null,
       year: year !== '' ? parseInt(year, 10) : null,
       height: height !== '' ? parseFloat(height) : null,
-      width: width !== '' ? parseFloat(width) : null,
+      width: isCircular ? (height !== '' ? parseFloat(height) : null) : (width !== '' ? parseFloat(width) : null),
       depth: depth !== '' ? parseFloat(depth) : null,
       dimension_unit: dimensionUnit as DimensionUnit,
       framed_height: framedHeight !== '' ? parseFloat(framedHeight) : null,
@@ -266,6 +276,9 @@ export function ArtworkForm({
       color: (color || null) as ArtworkColor | null,
       notes: notes.trim() || null,
       available_for_partners: availableForPartners,
+      is_window: isWindow,
+      lamination_needed: isWindow && laminationNeeded,
+      lamination_cost: isWindow && laminationNeeded && laminationCost !== '' ? parseFloat(laminationCost) : null,
     };
 
     await onSubmit(data);
@@ -369,35 +382,72 @@ export function ArtworkForm({
         <SectionHeader>Dimensions (Unframed)</SectionHeader>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Input
-              label="Height"
-              type="number"
-              step="0.1"
-              min="0"
-              placeholder="0"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
+          <label className="flex items-center gap-2 text-sm text-primary-700">
+            <input
+              type="checkbox"
+              checked={isCircular}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setIsCircular(checked);
+                if (checked && height) setWidth(height);
+              }}
+              className="h-4 w-4 rounded border-primary-300 text-primary-900 focus:ring-primary-500"
             />
-            <Input
-              label="Width"
-              type="number"
-              step="0.1"
-              min="0"
-              placeholder="0"
-              value={width}
-              onChange={(e) => setWidth(e.target.value)}
-            />
-            <Input
-              label="Depth"
-              type="number"
-              step="0.1"
-              min="0"
-              placeholder="0"
-              value={depth}
-              onChange={(e) => setDepth(e.target.value)}
-            />
-          </div>
+            Circular artwork
+          </label>
+
+          {isCircular ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input
+                label="Diameter"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0"
+                value={height}
+                onChange={(e) => { setHeight(e.target.value); setWidth(e.target.value); }}
+              />
+              <Input
+                label="Depth"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0"
+                value={depth}
+                onChange={(e) => setDepth(e.target.value)}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Input
+                label="Height"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+              />
+              <Input
+                label="Width"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0"
+                value={width}
+                onChange={(e) => setWidth(e.target.value)}
+              />
+              <Input
+                label="Depth"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0"
+                value={depth}
+                onChange={(e) => setDepth(e.target.value)}
+              />
+            </div>
+          )}
 
           <Select
             label="Unit"
@@ -451,6 +501,62 @@ export function ArtworkForm({
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
           />
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Section 3b: Window Artwork                                         */}
+      {/* ------------------------------------------------------------------ */}
+      <section>
+        <SectionHeader>Window Artwork</SectionHeader>
+
+        <div className="space-y-4">
+          <label className="flex items-center gap-2 text-sm text-primary-700">
+            <input
+              type="checkbox"
+              checked={isWindow}
+              onChange={(e) => {
+                setIsWindow(e.target.checked);
+                if (!e.target.checked) {
+                  setLaminationNeeded(false);
+                  setLaminationCost('');
+                }
+              }}
+              className="h-4 w-4 rounded border-primary-300 text-primary-900 focus:ring-primary-500"
+            />
+            Window artwork (transparent space divider)
+          </label>
+
+          {isWindow && (
+            <div className="ml-6 space-y-4">
+              <label className="flex items-center gap-2 text-sm text-primary-700">
+                <input
+                  type="checkbox"
+                  checked={laminationNeeded}
+                  onChange={(e) => {
+                    setLaminationNeeded(e.target.checked);
+                    if (!e.target.checked) setLaminationCost('');
+                  }}
+                  className="h-4 w-4 rounded border-primary-300 text-primary-900 focus:ring-primary-500"
+                />
+                Lamination needed
+              </label>
+
+              {laminationNeeded && (
+                <div className="max-w-xs">
+                  <Input
+                    label="Lamination Cost"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={laminationCost}
+                    onChange={(e) => setLaminationCost(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 

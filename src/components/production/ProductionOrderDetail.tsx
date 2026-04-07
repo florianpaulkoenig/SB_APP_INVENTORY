@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import JSZip from 'jszip';
 import { Button } from '../ui/Button';
@@ -53,6 +53,7 @@ export interface ProductionOrderDetailProps {
   onRemoveItem: (id: string) => void;
   onStatusChange: (status: ProductionStatus) => void;
   onConvertItem: (itemId: string) => void;
+  onLinkArtwork: (itemId: string, referenceCode: string) => Promise<boolean>;
 }
 
 // ---------------------------------------------------------------------------
@@ -150,11 +151,15 @@ export function ProductionOrderDetail({
   onRemoveItem,
   onStatusChange,
   onConvertItem,
+  onLinkArtwork,
 }: ProductionOrderDetailProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
   const [downloading, setDownloading] = useState(false);
+  const [linkingItemId, setLinkingItemId] = useState<string | null>(null);
+  const [linkRefCode, setLinkRefCode] = useState('');
+  const [linkLoading, setLinkLoading] = useState(false);
   const [downloadingPhotos, setDownloadingPhotos] = useState(false);
 
   // ---- Resolve reference image thumbnails (multiple per item) ---------------
@@ -477,8 +482,8 @@ export function ProductionOrderDetail({
               </thead>
               <tbody>
                 {items.map((item) => (
+                  <React.Fragment key={item.id}>
                   <tr
-                    key={item.id}
                     className="border-b border-primary-100"
                   >
                     {hasAnyRefImages && (
@@ -577,13 +582,28 @@ export function ProductionOrderDetail({
                           </svg>
                         </Button>
                         {!item.artwork_id && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onConvertItem(item.id)}
-                          >
-                            Convert
-                          </Button>
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onConvertItem(item.id)}
+                            >
+                              Convert
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Link existing artwork by reference code"
+                              onClick={() => {
+                                setLinkingItemId(linkingItemId === item.id ? null : item.id);
+                                setLinkRefCode('');
+                              }}
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                              </svg>
+                            </Button>
+                          </>
                         )}
                         <Button
                           variant="ghost"
@@ -595,6 +615,50 @@ export function ProductionOrderDetail({
                       </div>
                     </td>
                   </tr>
+                  {linkingItemId === item.id && (
+                    <tr className="border-b border-primary-100 bg-primary-50">
+                      <td colSpan={hasAnyRefImages ? 8 : 7} className="px-4 py-3">
+                        <form
+                          className="flex items-center gap-3"
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            if (!linkRefCode.trim()) return;
+                            setLinkLoading(true);
+                            const ok = await onLinkArtwork(item.id, linkRefCode.trim());
+                            setLinkLoading(false);
+                            if (ok) {
+                              setLinkingItemId(null);
+                              setLinkRefCode('');
+                            }
+                          }}
+                        >
+                          <label className="text-xs font-medium text-primary-600 whitespace-nowrap">
+                            Link to artwork:
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. NOA-SB-2026-A1B2"
+                            value={linkRefCode}
+                            onChange={(e) => setLinkRefCode(e.target.value)}
+                            className="w-56 rounded-md border border-primary-200 px-3 py-1.5 text-sm font-mono focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                            autoFocus
+                          />
+                          <Button type="submit" size="sm" disabled={linkLoading || !linkRefCode.trim()}>
+                            {linkLoading ? 'Linking...' : 'Link'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setLinkingItemId(null); setLinkRefCode(''); }}
+                          >
+                            Cancel
+                          </Button>
+                        </form>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 ))}
               </tbody>
               {itemPriceSummary.total > 0 && (

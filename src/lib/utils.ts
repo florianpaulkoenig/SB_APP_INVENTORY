@@ -48,11 +48,18 @@ export function formatDimensions(
   depth: number | null | undefined,
   unit: string,
 ): string {
-  const parts = [height, width, depth].filter(
-    (v): v is number => v != null && v > 0,
-  );
+  const h = height != null && height > 0 ? height : null;
+  const w = width != null && width > 0 ? width : null;
+  const d = depth != null && depth > 0 ? depth : null;
 
-  if (parts.length === 0) return '';
+  if (!h && !w && !d) return '';
+
+  // Circular: height === width → show as diameter
+  if (h && w && h === w) {
+    return d ? `\u2300 ${h} \u00D7 ${d} ${unit}` : `\u2300 ${h} ${unit}`;
+  }
+
+  const parts = [h, w, d].filter((v): v is number => v != null);
   return `${parts.join(' \u00D7 ')} ${unit}`;
 }
 
