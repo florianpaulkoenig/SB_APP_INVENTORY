@@ -96,6 +96,16 @@ export function ArtworkForm({
   const [dimensionUnit, setDimensionUnit] = useState<string>(v?.dimension_unit ?? 'cm');
 
   // Dimensions (framed)
+  const [hasDifferentFramedSize, setHasDifferentFramedSize] = useState(() => {
+    if (!v) return false;
+    const fh = v.framed_height, fw = v.framed_width, fd = v.framed_depth;
+    const h = v.height, w = v.width, d = v.depth;
+    // If framed dims exist and differ from artwork dims, show the framed fields
+    if (fh != null && fh > 0 && fh !== h) return true;
+    if (fw != null && fw > 0 && fw !== w) return true;
+    if (fd != null && fd > 0 && fd !== d) return true;
+    return false;
+  });
   const [framedHeight, setFramedHeight] = useState(
     v?.framed_height != null ? String(v.framed_height) : '',
   );
@@ -252,9 +262,15 @@ export function ArtworkForm({
       width: isCircular ? (height !== '' ? parseFloat(height) : null) : (width !== '' ? parseFloat(width) : null),
       depth: depth !== '' ? parseFloat(depth) : null,
       dimension_unit: dimensionUnit as DimensionUnit,
-      framed_height: framedHeight !== '' ? parseFloat(framedHeight) : null,
-      framed_width: framedWidth !== '' ? parseFloat(framedWidth) : null,
-      framed_depth: framedDepth !== '' ? parseFloat(framedDepth) : null,
+      framed_height: hasDifferentFramedSize
+        ? (framedHeight !== '' ? parseFloat(framedHeight) : null)
+        : (height !== '' ? parseFloat(height) : null),
+      framed_width: hasDifferentFramedSize
+        ? (framedWidth !== '' ? parseFloat(framedWidth) : null)
+        : (isCircular ? (height !== '' ? parseFloat(height) : null) : (width !== '' ? parseFloat(width) : null)),
+      framed_depth: hasDifferentFramedSize
+        ? (framedDepth !== '' ? parseFloat(framedDepth) : null)
+        : (depth !== '' ? parseFloat(depth) : null),
       weight: weight !== '' ? parseFloat(weight) : null,
       edition_type: editionType as EditionType,
       edition_number: editionNumber !== '' ? parseInt(editionNumber, 10) : null,
@@ -457,38 +473,54 @@ export function ArtworkForm({
       </section>
 
       <section>
-        <SectionHeader>Dimensions (Framed)</SectionHeader>
+        <SectionHeader>Framed Dimensions</SectionHeader>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Input
-              label="Framed Height"
-              type="number"
-              step="0.1"
-              min="0"
-              placeholder="0"
-              value={framedHeight}
-              onChange={(e) => setFramedHeight(e.target.value)}
+          <label className="flex items-center gap-2 text-sm text-primary-700">
+            <input
+              type="checkbox"
+              checked={hasDifferentFramedSize}
+              onChange={(e) => setHasDifferentFramedSize(e.target.checked)}
+              className="h-4 w-4 rounded border-primary-300 text-primary-900 focus:ring-primary-500"
             />
-            <Input
-              label="Framed Width"
-              type="number"
-              step="0.1"
-              min="0"
-              placeholder="0"
-              value={framedWidth}
-              onChange={(e) => setFramedWidth(e.target.value)}
-            />
-            <Input
-              label="Framed Depth"
-              type="number"
-              step="0.1"
-              min="0"
-              placeholder="0"
-              value={framedDepth}
-              onChange={(e) => setFramedDepth(e.target.value)}
-            />
-          </div>
+            Different framed size
+          </label>
+
+          {!hasDifferentFramedSize && (
+            <p className="text-xs text-primary-400">Framed size equals artwork size.</p>
+          )}
+
+          {hasDifferentFramedSize && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Input
+                label="Framed Height"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0"
+                value={framedHeight}
+                onChange={(e) => setFramedHeight(e.target.value)}
+              />
+              <Input
+                label="Framed Width"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0"
+                value={framedWidth}
+                onChange={(e) => setFramedWidth(e.target.value)}
+              />
+              <Input
+                label="Framed Depth"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0"
+                value={framedDepth}
+                onChange={(e) => setFramedDepth(e.target.value)}
+              />
+            </div>
+          )}
 
           <Input
             label="Weight (kg)"

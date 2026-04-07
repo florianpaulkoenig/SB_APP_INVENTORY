@@ -77,6 +77,15 @@ export function ProductionItemEditor({
   );
 
   // Dimensions (framed)
+  const [hasDifferentFramedSize, setHasDifferentFramedSize] = useState(() => {
+    if (!item) return false;
+    const fh = item.framed_height, fw = item.framed_width, fd = item.framed_depth;
+    const h = item.height, w = item.width, d = item.depth;
+    if (fh != null && fh > 0 && fh !== h) return true;
+    if (fw != null && fw > 0 && fw !== w) return true;
+    if (fd != null && fd > 0 && fd !== d) return true;
+    return false;
+  });
   const [framedHeight, setFramedHeight] = useState(
     item?.framed_height != null ? String(item.framed_height) : '',
   );
@@ -261,9 +270,9 @@ export function ProductionItemEditor({
       width: isCircular ? parseNum(height) : parseNum(width),
       depth: parseNum(depth),
       dimension_unit: dimensionUnit as DimensionUnit,
-      framed_height: parseNum(framedHeight),
-      framed_width: parseNum(framedWidth),
-      framed_depth: parseNum(framedDepth),
+      framed_height: hasDifferentFramedSize ? parseNum(framedHeight) : parseNum(height),
+      framed_width: hasDifferentFramedSize ? parseNum(framedWidth) : (isCircular ? parseNum(height) : parseNum(width)),
+      framed_depth: hasDifferentFramedSize ? parseNum(framedDepth) : parseNum(depth),
       weight: parseNum(weight),
       edition_type: editionType as EditionType,
       edition_number: parseInt_(editionNumber),
@@ -494,46 +503,60 @@ export function ProductionItemEditor({
       {/* ---- Dimensions (Framed) ---- */}
       <div>
         <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-primary-400">
-          Dimensions (Framed)
+          Framed Dimensions
         </h3>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Input
-            label="Framed Height"
-            type="number"
-            min="0"
-            step="0.1"
-            placeholder="0"
-            value={framedHeight}
-            onChange={(e) => setFramedHeight(e.target.value)}
+        <label className="mb-3 flex items-center gap-2 text-sm text-primary-700">
+          <input
+            type="checkbox"
+            checked={hasDifferentFramedSize}
+            onChange={(e) => setHasDifferentFramedSize(e.target.checked)}
+            className="h-4 w-4 rounded border-primary-300 text-primary-900 focus:ring-primary-500"
           />
-          <Input
-            label="Framed Width"
-            type="number"
-            min="0"
-            step="0.1"
-            placeholder="0"
-            value={framedWidth}
-            onChange={(e) => setFramedWidth(e.target.value)}
-          />
-          <Input
-            label="Framed Depth"
-            type="number"
-            min="0"
-            step="0.1"
-            placeholder="0"
-            value={framedDepth}
-            onChange={(e) => setFramedDepth(e.target.value)}
-          />
-          <Input
-            label="Weight (kg)"
-            type="number"
-            min="0"
-            step="0.1"
-            placeholder="0"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-          />
-        </div>
+          Different framed size
+        </label>
+        {!hasDifferentFramedSize && (
+          <p className="mb-3 text-xs text-primary-400">Framed size equals artwork size.</p>
+        )}
+        {hasDifferentFramedSize && (
+          <div className="mb-3 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <Input
+              label="Framed Height"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="0"
+              value={framedHeight}
+              onChange={(e) => setFramedHeight(e.target.value)}
+            />
+            <Input
+              label="Framed Width"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="0"
+              value={framedWidth}
+              onChange={(e) => setFramedWidth(e.target.value)}
+            />
+            <Input
+              label="Framed Depth"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="0"
+              value={framedDepth}
+              onChange={(e) => setFramedDepth(e.target.value)}
+            />
+          </div>
+        )}
+        <Input
+          label="Weight (kg)"
+          type="number"
+          min="0"
+          step="0.1"
+          placeholder="0"
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+        />
       </div>
 
       {/* ---- Edition ---- */}
