@@ -279,7 +279,7 @@ export function ProductionOrderDetail({
           item.width,
           item.depth,
           item.dimension_unit ?? 'cm',
-          item.height != null && item.width != null && item.height > 0 && item.height === item.width,
+          false,
         ),
         quantity: item.quantity,
         notes: item.notes,
@@ -519,7 +519,7 @@ export function ProductionOrderDetail({
                         item.width,
                         item.depth,
                         item.dimension_unit ?? 'cm',
-                        item.height != null && item.width != null && item.height > 0 && item.height === item.width,
+                        false,
                       ) || '\u2014'}
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-primary-800">

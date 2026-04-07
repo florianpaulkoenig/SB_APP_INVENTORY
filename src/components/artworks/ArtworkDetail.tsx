@@ -89,14 +89,11 @@ export function ArtworkDetail({
   const [soldLoading, setSoldLoading] = useState(false);
 
   // Formatted values
-  const isCircular = artwork.height != null && artwork.width != null && artwork.height > 0 && artwork.height === artwork.width;
-
   const unframedDimensions = formatDimensions(
     artwork.height,
     artwork.width,
     artwork.depth,
     artwork.dimension_unit,
-    isCircular,
   );
 
   const framedDimensions = formatDimensions(
@@ -104,7 +101,6 @@ export function ArtworkDetail({
     artwork.framed_width,
     artwork.framed_depth,
     artwork.dimension_unit,
-    artwork.framed_height != null && artwork.framed_width != null && artwork.framed_height > 0 && artwork.framed_height === artwork.framed_width,
   );
 
   const editionLabel = lookupLabel(EDITION_TYPES, artwork.edition_type);
