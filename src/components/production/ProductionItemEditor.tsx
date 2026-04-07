@@ -62,6 +62,7 @@ export function ProductionItemEditor({
   );
 
   // Dimensions (unframed)
+  const [isCircular, setIsCircular] = useState(false);
   const [height, setHeight] = useState(
     item?.height != null ? String(item.height) : '',
   );
@@ -257,7 +258,7 @@ export function ProductionItemEditor({
       medium: medium.trim() || null,
       year: parseInt_(year),
       height: parseNum(height),
-      width: parseNum(width),
+      width: isCircular ? parseNum(height) : parseNum(width),
       depth: parseNum(depth),
       dimension_unit: dimensionUnit as DimensionUnit,
       framed_height: parseNum(framedHeight),
@@ -411,41 +412,83 @@ export function ProductionItemEditor({
         <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-primary-400">
           Dimensions (Unframed)
         </h3>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Input
-            label="Height"
-            type="number"
-            min="0"
-            step="0.1"
-            placeholder="0"
-            value={height}
-            onChange={(e) => setHeight(e.target.value)}
+        <label className="mb-3 flex items-center gap-2 text-sm text-primary-700">
+          <input
+            type="checkbox"
+            checked={isCircular}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setIsCircular(checked);
+              if (checked && height) setWidth(height);
+            }}
+            className="h-4 w-4 rounded border-primary-300 text-primary-900 focus:ring-primary-500"
           />
-          <Input
-            label="Width"
-            type="number"
-            min="0"
-            step="0.1"
-            placeholder="0"
-            value={width}
-            onChange={(e) => setWidth(e.target.value)}
-          />
-          <Input
-            label="Depth"
-            type="number"
-            min="0"
-            step="0.1"
-            placeholder="0"
-            value={depth}
-            onChange={(e) => setDepth(e.target.value)}
-          />
-          <Select
-            label="Unit"
-            options={DIMENSION_UNITS.map((u) => ({ value: u.value, label: u.label }))}
-            value={dimensionUnit}
-            onChange={(e) => setDimensionUnit(e.target.value)}
-          />
-        </div>
+          Circular artwork
+        </label>
+        {isCircular ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <Input
+              label="Diameter"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="0"
+              value={height}
+              onChange={(e) => { setHeight(e.target.value); setWidth(e.target.value); }}
+            />
+            <Input
+              label="Depth"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="0"
+              value={depth}
+              onChange={(e) => setDepth(e.target.value)}
+            />
+            <Select
+              label="Unit"
+              options={DIMENSION_UNITS.map((u) => ({ value: u.value, label: u.label }))}
+              value={dimensionUnit}
+              onChange={(e) => setDimensionUnit(e.target.value)}
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <Input
+              label="Height"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="0"
+              value={height}
+              onChange={(e) => setHeight(e.target.value)}
+            />
+            <Input
+              label="Width"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="0"
+              value={width}
+              onChange={(e) => setWidth(e.target.value)}
+            />
+            <Input
+              label="Depth"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="0"
+              value={depth}
+              onChange={(e) => setDepth(e.target.value)}
+            />
+            <Select
+              label="Unit"
+              options={DIMENSION_UNITS.map((u) => ({ value: u.value, label: u.label }))}
+              value={dimensionUnit}
+              onChange={(e) => setDimensionUnit(e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       {/* ---- Dimensions (Framed) ---- */}
