@@ -236,7 +236,7 @@ export function ArtworksPage() {
       if (!artwork) return;
 
       // Fetch certificate for this artwork
-      const { data: cert } = await supabase
+      let { data: cert } = await supabase
         .from('certificates')
         .select('certificate_number, issue_date, qr_code_url')
         .eq('artwork_id', artworkId)
@@ -244,9 +244,41 @@ export function ArtworksPage() {
         .limit(1)
         .maybeSingle();
 
+      // Auto-create certificate if missing
       if (!cert) {
-        toast({ title: 'No certificate', description: 'No certificate found for this artwork.', variant: 'error' });
-        return;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          toast({ title: 'Error', description: 'You must be logged in.', variant: 'error' });
+          return;
+        }
+
+        const { data: certNumber, error: rpcErr } = await supabase.rpc('generate_document_number', {
+          p_user_id: session.user.id,
+          p_prefix: 'COA',
+        });
+
+        if (rpcErr || !certNumber) {
+          toast({ title: 'Error', description: 'Failed to generate certificate number.', variant: 'error' });
+          return;
+        }
+
+        const issueDate = new Date().toISOString().split('T')[0];
+        const { error: insertErr } = await supabase
+          .from('certificates')
+          .insert({
+            user_id: session.user.id,
+            artwork_id: artworkId,
+            certificate_number: certNumber,
+            issue_date: issueDate,
+          } as never);
+
+        if (insertErr) {
+          toast({ title: 'Error', description: 'Failed to create certificate.', variant: 'error' });
+          return;
+        }
+
+        cert = { certificate_number: certNumber, issue_date: issueDate, qr_code_url: null };
+        toast({ title: 'Certificate created', description: `New certificate ${certNumber} generated.`, variant: 'success' });
       }
 
       // Get signed URL for primary artwork image
