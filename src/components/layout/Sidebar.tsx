@@ -250,6 +250,7 @@ const navSections: NavSection[] = [
       { label: 'Exhibition & Career', to: '/analytics/exhibitions', icon: icons.exhibition, roles: ['admin'] },
       { label: 'Series & Artwork', to: '/analytics/series', icon: icons.artworks, roles: ['admin'] },
       { label: 'Strategic Intelligence', to: '/analytics/strategic', icon: icons.analytics, roles: ['admin'] },
+      { label: 'Monthly Report', to: '/analytics/monthly-report', icon: icons.sales, roles: ['admin'] },
     ],
   },
   {

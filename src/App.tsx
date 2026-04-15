@@ -279,6 +279,9 @@ const GalleryPerformancePage = React.lazy(() =>
 const RevenueOverviewPage = React.lazy(() =>
   import('./pages/analytics/RevenueOverviewPage').then((m) => ({ default: m.RevenueOverviewPage })),
 );
+const MonthlyReportPage = React.lazy(() =>
+  import('./pages/analytics/MonthlyReportPage').then((m) => ({ default: m.MonthlyReportPage })),
+);
 const DemandVelocityPage = React.lazy(() =>
   import('./pages/analytics/DemandVelocityPage').then((m) => ({ default: m.DemandVelocityPage })),
 );
@@ -736,6 +739,16 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <RouteErrorBoundary><RevenueOverviewPage />
+              </RouteErrorBoundary></Suspense>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'analytics/monthly-report',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <RouteErrorBoundary><MonthlyReportPage />
               </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
