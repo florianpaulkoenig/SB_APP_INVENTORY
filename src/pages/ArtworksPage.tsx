@@ -17,7 +17,9 @@ import { SearchInput } from '../components/ui/SearchInput';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Pagination } from '../components/ui/Pagination';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toast';
+import { formatDate } from '../lib/utils';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -83,10 +85,26 @@ export function ArtworksPage() {
   const [filters, setFilters] = useState<ArtworkFiltersType>({});
   const [excelImporterOpen, setExcelImporterOpen] = useState(false);
 
+  const isFilteringByStatus = Boolean(filters.status);
+
   const { artworks, loading, totalCount, refetch, bulkDeleteArtworks, bulkUpdateArtworks } = useArtworks({
-    filters: { ...filters, search, sortBy, sortOrder },
+    filters: {
+      ...filters,
+      search,
+      sortBy,
+      sortOrder,
+      // Exclude archived from main list unless explicitly filtering by archived
+      ...(!isFilteringByStatus ? { excludeStatus: 'archived' as const } : {}),
+    },
     page,
     pageSize: PAGE_SIZE,
+  });
+
+  // Separate query for archived artworks (only when not filtering by a specific status)
+  const { artworks: archivedArtworks, loading: archivedLoading } = useArtworks({
+    filters: { ...filters, search, status: 'archived' as const, sortBy, sortOrder },
+    page: 1,
+    pageSize: 100,
   });
 
   // ---- Bulk selection -------------------------------------------------------
@@ -640,6 +658,50 @@ export function ArtworksPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Archived artworks section */}
+      {!isFilteringByStatus && !archivedLoading && archivedArtworks.length > 0 && (
+        <details className="mt-8 group">
+          <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-primary-500 hover:text-primary-700">
+            <svg className="h-4 w-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+            Archive ({archivedArtworks.length})
+          </summary>
+          <div className="mt-3 overflow-x-auto rounded-lg border border-primary-100 opacity-75">
+            <table className="min-w-full divide-y divide-primary-100">
+              <thead className="bg-primary-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Reference</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Title</th>
+                  <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Medium</th>
+                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Year</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Status</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-primary-50 bg-white">
+                {archivedArtworks.map((artwork) => (
+                  <tr
+                    key={artwork.id}
+                    className="cursor-pointer hover:bg-primary-50 transition-colors"
+                    onClick={() => navigate(`/artworks/${artwork.id}`)}
+                  >
+                    <td className="whitespace-nowrap px-4 py-3 text-sm font-mono text-primary-500">{artwork.reference_code}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-400">{artwork.title}</td>
+                    <td className="hidden md:table-cell whitespace-nowrap px-4 py-3 text-sm text-primary-400">{artwork.medium ?? '—'}</td>
+                    <td className="hidden sm:table-cell whitespace-nowrap px-4 py-3 text-sm text-primary-400">{artwork.year ?? '—'}</td>
+                    <td className="whitespace-nowrap px-4 py-3"><StatusBadge status={artwork.status} /></td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/artworks/${artwork.id}`); }}>View</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
       )}
 
       {/* Excel Import Modal */}

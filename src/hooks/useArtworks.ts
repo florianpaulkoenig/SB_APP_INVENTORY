@@ -19,6 +19,7 @@ import type {
 export interface ArtworkFilters {
   search?: string;
   status?: ArtworkStatus;
+  excludeStatus?: ArtworkStatus;
   category?: ArtworkCategory;
   motif?: ArtworkMotif;
   series?: ArtworkSeries;
@@ -92,6 +93,8 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       // Status filter
       if (filters.status) {
         query = query.eq('status', filters.status);
+      } else if (filters.excludeStatus) {
+        query = query.neq('status', filters.excludeStatus);
       }
 
       // Category filter
@@ -174,6 +177,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
   }, [
     filters.search,
     filters.status,
+    filters.excludeStatus,
     filters.category,
     filters.motif,
     filters.series,
