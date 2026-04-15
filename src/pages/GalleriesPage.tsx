@@ -130,6 +130,7 @@ export function GalleriesPage() {
     for (const a of artworks) {
       if (!a.gallery_id) continue;
       ensure(a.gallery_id);
+      if (a.status === 'archived' || a.status === 'destroyed') continue; // Skip archived/destroyed from counts
       stats[a.gallery_id].total += 1;
       if (a.status === 'on_consignment') stats[a.gallery_id].onConsignment += 1;
       if (a.status === 'sold') stats[a.gallery_id].sold += 1;

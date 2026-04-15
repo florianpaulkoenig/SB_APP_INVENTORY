@@ -675,6 +675,7 @@ export function ArtworksPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Reference</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Title</th>
+                  <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Gallery</th>
                   <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Medium</th>
                   <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Year</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Status</th>
@@ -690,6 +691,7 @@ export function ArtworksPage() {
                   >
                     <td className="whitespace-nowrap px-4 py-3 text-sm font-mono text-primary-500">{artwork.reference_code}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-primary-400">{artwork.title}</td>
+                    <td className="hidden lg:table-cell whitespace-nowrap px-4 py-3 text-sm text-accent truncate">{(artwork as Record<string, unknown> & { galleries?: { name: string } | null }).galleries?.name ?? '—'}</td>
                     <td className="hidden md:table-cell whitespace-nowrap px-4 py-3 text-sm text-primary-400">{artwork.medium ?? '—'}</td>
                     <td className="hidden sm:table-cell whitespace-nowrap px-4 py-3 text-sm text-primary-400">{artwork.year ?? '—'}</td>
                     <td className="whitespace-nowrap px-4 py-3"><StatusBadge status={artwork.status} /></td>

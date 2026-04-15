@@ -59,6 +59,7 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
       .from('artworks')
       .select('*')
       .eq('gallery_id', gallery.id)
+      .neq('status', 'archived')
       .order('created_at', { ascending: false });
 
     const artworks = (data as ArtworkRow[]) ?? [];
