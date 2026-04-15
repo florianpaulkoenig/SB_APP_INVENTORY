@@ -140,6 +140,7 @@ export function GalleryForwardingDetailPage() {
 
     if (updated) {
       // When status changes to 'shipped', update item artworks to 'in_transit'
+      // and create movement history records
       if (newStatus === 'shipped' && items.length > 0) {
         const artworkIds = items
           .map((item) => item.artwork_id)
@@ -150,6 +151,26 @@ export function GalleryForwardingDetailPage() {
             .from('artworks')
             .update({ status: 'in_transit' } as never)
             .in('id', artworkIds);
+
+          // Record gallery transfer in artwork movement history
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            const movementDate = forwardingOrder?.shipping_date || new Date().toISOString().split('T')[0];
+            const movements = artworkIds.map((artworkId) => ({
+              user_id: session.user.id,
+              artwork_id: artworkId,
+              from_location: fromGalleryName || 'Studio',
+              to_location: toGalleryName || 'Unknown',
+              gallery_id: forwardingOrder?.to_gallery_id || null,
+              movement_type: 'gallery_transfer',
+              movement_date: movementDate,
+              notes: `Forwarding ${forwardingOrder?.forwarding_number || ''}`.trim(),
+            }));
+
+            await supabase
+              .from('artwork_movements')
+              .insert(movements as never);
+          }
         }
       }
 
