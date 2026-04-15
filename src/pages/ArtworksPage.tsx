@@ -416,6 +416,11 @@ export function ArtworksPage() {
         <div>
           <h1 className="font-display text-2xl font-bold text-primary-900">
             Artworks
+            {!loading && (
+              <span className="ml-2 text-base font-normal text-primary-400">
+                ({totalCount})
+              </span>
+            )}
           </h1>
           <p className="mt-1 text-sm text-primary-500">
             Manage your artwork inventory, track provenance and status.
