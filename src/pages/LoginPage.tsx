@@ -96,9 +96,9 @@ export function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo / Brand */}
         <div className="mb-10 text-center">
-          <h1 className="font-display text-4xl font-bold text-primary-900">NOA x Simon Berger</h1>
+          <h1 className="font-display text-3xl font-bold text-primary-900">{COMPANY_NAME}</h1>
           <p className="mt-1 text-xs font-medium tracking-[0.3em] text-primary-400">
-            MANAGEMENT
+            INVENTORY MANAGEMENT
           </p>
         </div>
 
