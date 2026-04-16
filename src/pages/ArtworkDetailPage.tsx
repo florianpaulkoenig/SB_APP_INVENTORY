@@ -48,6 +48,7 @@ interface CertificateInfo {
   certificate_number: string;
   issue_date: string;
   qr_code_url: string | null;
+  pdf_path: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -101,7 +102,7 @@ export function ArtworkDetailPage() {
 
       const { data } = await supabase
         .from('certificates')
-        .select('id, certificate_number, issue_date, qr_code_url')
+        .select('id, certificate_number, issue_date, qr_code_url, pdf_path')
         .eq('artwork_id', id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -188,6 +189,83 @@ export function ArtworkDetailPage() {
       setDownloading(false);
     }
   }, [artwork, certificate, language]);
+
+  // ---- Certificate PDF upload -----------------------------------------------
+
+  const [uploadingCertPdf, setUploadingCertPdf] = useState(false);
+
+  async function handleUploadCertificatePdf(file: File) {
+    if (!id || !artwork) return;
+    setUploadingCertPdf(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const storagePath = `${session.user.id}/certificates/${id}/${file.name}`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from('media-files')
+        .upload(storagePath, file, { upsert: true });
+
+      if (uploadErr) {
+        toast({ title: 'Upload failed', description: uploadErr.message, variant: 'error' });
+        return;
+      }
+
+      // If no certificate record exists, create one
+      if (!certificate) {
+        const { data: certNumber } = await supabase.rpc('generate_document_number', {
+          p_user_id: session.user.id,
+          p_prefix: 'COA',
+        });
+
+        if (certNumber) {
+          const { data: newCert } = await supabase
+            .from('certificates')
+            .insert({
+              user_id: session.user.id,
+              artwork_id: id,
+              certificate_number: certNumber,
+              issue_date: new Date().toISOString().split('T')[0],
+              pdf_path: storagePath,
+            } as never)
+            .select('id, certificate_number, issue_date, qr_code_url, pdf_path')
+            .single();
+
+          if (newCert) setCertificate(newCert as CertificateInfo);
+        }
+      } else {
+        // Update existing certificate with pdf_path
+        await supabase
+          .from('certificates')
+          .update({ pdf_path: storagePath } as never)
+          .eq('id', certificate.id);
+
+        setCertificate({ ...certificate, pdf_path: storagePath });
+      }
+
+      toast({ title: 'Certificate uploaded', description: 'PDF saved successfully.', variant: 'success' });
+    } finally {
+      setUploadingCertPdf(false);
+    }
+  }
+
+  async function handleDownloadUploadedCertificate() {
+    if (!certificate?.pdf_path) return;
+
+    const { data, error: dlErr } = await supabase.storage
+      .from('media-files')
+      .download(certificate.pdf_path);
+
+    if (dlErr || !data) {
+      toast({ title: 'Download failed', description: 'Could not download certificate.', variant: 'error' });
+      return;
+    }
+
+    const fileName = certificate.pdf_path.split('/').pop() ?? 'certificate.pdf';
+    downloadBlob(data, fileName);
+  }
 
   // ---- Image upload handler ------------------------------------------------
 
@@ -444,43 +522,91 @@ export function ArtworkDetailPage() {
         />
       </div>
 
-      {/* Certificate PDF download */}
-      {certificate && (
-        <section className="mt-8 rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
-          <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
-            Certificate of Authenticity
-          </h2>
-          <div className="flex flex-wrap items-end gap-3">
-            <p className="mr-auto text-sm text-primary-500">
-              {certificate.certificate_number}
-            </p>
-            <div className="w-full sm:w-48">
-              <Select
-                label="Language"
-                options={[...LANGUAGE_OPTIONS]}
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as Language)}
-              />
-            </div>
-            <Button onClick={handleDownloadCertificate} loading={downloading}>
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+      {/* Certificate of Authenticity */}
+      <section className="mt-8 rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
+        <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
+          Certificate of Authenticity
+        </h2>
+
+        {certificate ? (
+          <div className="space-y-4">
+            <p className="text-sm text-primary-500">{certificate.certificate_number}</p>
+
+            {/* Generate new certificate */}
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="w-full sm:w-48">
+                <Select
+                  label="Language"
+                  options={[...LANGUAGE_OPTIONS]}
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as Language)}
                 />
-              </svg>
-              Download Certificate
-            </Button>
+              </div>
+              <Button onClick={handleDownloadCertificate} loading={downloading}>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Download Certificate
+              </Button>
+            </div>
+
+            {/* Uploaded PDF */}
+            {certificate.pdf_path && (
+              <div className="flex items-center gap-2 rounded-md border border-primary-100 bg-primary-50 px-3 py-2">
+                <svg className="h-4 w-4 text-primary-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+                <span className="mr-auto text-xs text-primary-600 truncate">{certificate.pdf_path.split('/').pop()}</span>
+                <Button variant="ghost" size="sm" onClick={handleDownloadUploadedCertificate}>
+                  Download
+                </Button>
+              </div>
+            )}
+
+            {/* Upload existing certificate PDF */}
+            <div>
+              <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-primary-500 hover:text-primary-700 transition-colors">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+                {uploadingCertPdf ? 'Uploading...' : certificate.pdf_path ? 'Replace uploaded PDF' : 'Upload existing certificate PDF'}
+                <input
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  disabled={uploadingCertPdf}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleUploadCertificatePdf(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
           </div>
-        </section>
-      )}
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-primary-400">No certificate yet.</p>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-primary-200 px-3 py-2 text-sm text-primary-600 hover:bg-primary-50 transition-colors">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              {uploadingCertPdf ? 'Uploading...' : 'Upload existing certificate PDF'}
+              <input
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                disabled={uploadingCertPdf}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleUploadCertificatePdf(file);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+          </div>
+        )}
+      </section>
 
       {/* Image gallery + upload */}
       <div className="mt-8 space-y-6">

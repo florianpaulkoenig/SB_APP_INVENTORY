@@ -680,6 +680,7 @@ export interface CertificateRow {
   certificate_number: string;
   issue_date: string;
   qr_code_url: string | null;
+  pdf_path: string | null;
   notes: string | null;
   created_at: string;
 }
@@ -691,6 +692,7 @@ export interface CertificateInsert {
   certificate_number: string;
   issue_date: string;
   qr_code_url?: string | null;
+  pdf_path?: string | null;
   notes?: string | null;
   created_at?: string;
 }
