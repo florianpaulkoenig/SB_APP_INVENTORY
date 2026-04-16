@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pdf } from '@react-pdf/renderer';
 import JSZip from 'jszip';
@@ -50,6 +50,19 @@ export function ProductionOrdersPage() {
   const [matchingGalleryIds, setMatchingGalleryIds] = useState<string[]>([]);
   const [artistDateFrom, setArtistDateFrom] = useState('');
   const [artistDateTo, setArtistDateTo] = useState('');
+
+  // ---- Sorting --------------------------------------------------------------
+  const [sortCol, setSortCol] = useState<string>('deadline');
+  const [sortAsc, setSortAsc] = useState(true);
+
+  function handleSort(col: string) {
+    if (sortCol === col) {
+      setSortAsc((prev) => !prev);
+    } else {
+      setSortCol(col);
+      setSortAsc(true);
+    }
+  }
 
   // ---- Resolve gallery IDs matching search term ----------------------------
 
@@ -189,6 +202,48 @@ export function ProductionOrdersPage() {
       .map(([gId, val]) => ({ id: gId, name: galleryNameMap[gId] || 'Unknown', value: val }))
       .sort((a, b) => b.value - a.value);
   })();
+
+  // ---- Handlers -----------------------------------------------------------
+
+  // ---- Sorted orders --------------------------------------------------------
+
+  const sortedOrders = useMemo(() => {
+    const list = [...productionOrders];
+    list.sort((a, b) => {
+      let cmp = 0;
+      switch (sortCol) {
+        case 'order_number':
+          cmp = (a.order_number ?? '').localeCompare(b.order_number ?? '');
+          break;
+        case 'title':
+          cmp = (a.title ?? '').localeCompare(b.title ?? '');
+          break;
+        case 'gallery': {
+          const ga = (a.gallery_id && galleryNameMap[a.gallery_id]) || '';
+          const gb = (b.gallery_id && galleryNameMap[b.gallery_id]) || '';
+          cmp = ga.localeCompare(gb);
+          break;
+        }
+        case 'status':
+          cmp = (a.status ?? '').localeCompare(b.status ?? '');
+          break;
+        case 'deadline':
+          cmp = (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999');
+          break;
+        case 'value': {
+          const va = getOrderValueCHF(a);
+          const vb = getOrderValueCHF(b);
+          cmp = va - vb;
+          break;
+        }
+        default:
+          break;
+      }
+      return sortAsc ? cmp : -cmp;
+    });
+    return list;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productionOrders, sortCol, sortAsc, galleryNameMap, orderValueMap]);
 
   // ---- Handlers -----------------------------------------------------------
 
@@ -745,31 +800,36 @@ export function ProductionOrdersPage() {
           <table className="min-w-full divide-y divide-primary-100">
             <thead className="bg-primary-50">
               <tr>
-                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
-                  Order #
-                </th>
-                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
-                  Title
-                </th>
-                <th className="hidden md:table-cell px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
-                  Gallery
-                </th>
-                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
-                  Status
-                </th>
-                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider text-primary-500">
-                  Deadline
-                </th>
-                <th className="hidden sm:table-cell px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
-                  Value
-                </th>
+                {([
+                  ['order_number', 'Order #', ''],
+                  ['title', 'Title', ''],
+                  ['gallery', 'Gallery', 'hidden md:table-cell'],
+                  ['status', 'Status', ''],
+                  ['deadline', 'Deadline', ''],
+                  ['value', 'Value', 'hidden sm:table-cell text-right'],
+                ] as const).map(([col, label, extra]) => (
+                  <th
+                    key={col}
+                    className={`${extra} px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none hover:text-primary-700 ${sortCol === col ? 'text-primary-900' : 'text-primary-500'}`}
+                    onClick={() => handleSort(col)}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {label}
+                      {sortCol === col && (
+                        <svg className={`h-3 w-3 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                ))}
                 <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium uppercase tracking-wider text-primary-500">
                   Action
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-primary-50 bg-white">
-              {productionOrders.filter((o) => o.status !== 'shipped').map((order) => (
+              {sortedOrders.filter((o) => o.status !== 'shipped').map((order) => (
                 <tr
                   key={order.id}
                   className="cursor-pointer hover:bg-primary-50 transition-colors"
