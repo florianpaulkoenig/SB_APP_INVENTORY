@@ -91,24 +91,21 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4">
-      {/* Card */}
-      <div className="w-full max-w-sm">
-        {/* Logo / Brand */}
-        <div className="mb-10 text-center">
-          <h1 className="font-display text-3xl font-bold text-primary-900">{COMPANY_NAME}</h1>
-        </div>
+    <div className="flex min-h-screen items-center justify-center bg-primary-50 px-4">
+      <div className="w-full max-w-xs">
+        {/* Brand */}
+        <h1 className="mb-12 text-center font-display text-2xl font-bold tracking-tight text-primary-900">
+          {COMPANY_NAME}
+        </h1>
 
         {showMfaChallenge ? (
-          <>
-            <p className="mb-6 text-center text-sm text-primary-500">
+          <div className="space-y-5">
+            <p className="text-center text-sm text-primary-400">
               Enter the 6-digit code from your authenticator app.
             </p>
 
-            {/* MFA Form */}
-            <form onSubmit={handleMfaVerify} className="space-y-4">
+            <form onSubmit={handleMfaVerify} className="space-y-5">
               <Input
-                label="Verification Code"
                 value={mfaCode}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -121,13 +118,11 @@ export function LoginPage() {
                 autoComplete="one-time-code"
                 autoFocus
                 required
+                className="text-center text-lg tracking-[0.5em] py-3"
               />
 
-              {/* MFA Error display */}
               {mfaError && (
-                <div className="rounded-md border border-danger/20 bg-danger/5 px-3 py-2">
-                  <p className="text-sm text-danger">{mfaError}</p>
-                </div>
+                <p className="text-center text-xs text-danger">{mfaError}</p>
               )}
 
               <Button
@@ -149,54 +144,50 @@ export function LoginPage() {
                   setMfaError('');
                   supabase.auth.signOut();
                 }}
-                className="w-full text-center text-sm text-primary-500 hover:text-primary-700 transition-colors"
+                className="block w-full text-center text-xs text-primary-400 hover:text-primary-600 transition-colors"
               >
-                Back to sign in
+                Back
               </button>
             </form>
-          </>
+          </div>
         ) : (
-          <>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <Input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              className="py-2.5"
+            />
 
-              <Input
-                label="Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+              className="py-2.5"
+            />
 
-              {/* Error display */}
-              {error && (
-                <div className="rounded-md border border-danger/20 bg-danger/5 px-3 py-2">
-                  <p className="text-sm text-danger">{error}</p>
-                </div>
-              )}
+            {error && (
+              <p className="text-center text-xs text-danger">{error}</p>
+            )}
 
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                loading={loading}
-                className="w-full"
-              >
-                Sign In
-              </Button>
-            </form>
-          </>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={loading}
+              className="w-full"
+            >
+              Sign In
+            </Button>
+          </form>
         )}
       </div>
-
     </div>
   );
 }
