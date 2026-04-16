@@ -97,17 +97,10 @@ export function LoginPage() {
         {/* Logo / Brand */}
         <div className="mb-10 text-center">
           <h1 className="font-display text-3xl font-bold text-primary-900">{COMPANY_NAME}</h1>
-          <p className="mt-1 text-xs font-medium tracking-[0.3em] text-primary-400">
-            INVENTORY MANAGEMENT
-          </p>
         </div>
 
         {showMfaChallenge ? (
           <>
-            {/* MFA Challenge Heading */}
-            <h2 className="mb-2 text-center text-lg font-medium text-primary-700">
-              Two-Factor Authentication
-            </h2>
             <p className="mb-6 text-center text-sm text-primary-500">
               Enter the 6-digit code from your authenticator app.
             </p>
@@ -164,17 +157,10 @@ export function LoginPage() {
           </>
         ) : (
           <>
-            {/* Heading */}
-            <h2 className="mb-6 text-center text-lg font-medium text-primary-700">
-              Sign in to your account
-            </h2>
-
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
                 label="Email"
                 type="email"
-                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -184,7 +170,6 @@ export function LoginPage() {
               <Input
                 label="Password"
                 type="password"
-                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -212,8 +197,6 @@ export function LoginPage() {
         )}
       </div>
 
-      {/* Footer */}
-      <p className="mt-12 text-xs text-primary-400">{COMPANY_NAME}</p>
     </div>
   );
 }
