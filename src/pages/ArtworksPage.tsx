@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, createElement } from 'react';
+import { useState, useEffect, useCallback, createElement, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getSignedUrl } from '../lib/signedUrlCache';
-import { downloadBlob, buildCertificateFilename } from '../lib/utils';
+import { downloadBlob, buildCertificateFilename, formatDimensions, formatCurrency } from '../lib/utils';
 import { useArtworks } from '../hooks/useArtworks';
 import type { ArtworkFilters as ArtworkFiltersType } from '../hooks/useArtworks';
 import { ArtworkCard } from '../components/artworks/ArtworkCard';
@@ -84,6 +84,8 @@ export function ArtworksPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filters, setFilters] = useState<ArtworkFiltersType>({});
   const [excelImporterOpen, setExcelImporterOpen] = useState(false);
+  const [noPhotoFilter, setNoPhotoFilter] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const isFilteringByStatus = Boolean(filters.status);
 
@@ -409,6 +411,86 @@ export function ArtworksPage() {
     setPage(1);
   }
 
+  // ---- Filtered artworks (no photo filter) ---------------------------------
+
+  const displayedArtworks = useMemo(() => {
+    if (!noPhotoFilter) return artworks;
+    return artworks.filter((a) => !imageUrls[a.id]);
+  }, [artworks, imageUrls, noPhotoFilter]);
+
+  // ---- CSV Export -----------------------------------------------------------
+
+  async function handleExportCSV() {
+    setExporting(true);
+    try {
+      // Fetch ALL artworks matching current filters (no pagination)
+      let query = supabase
+        .from('artworks')
+        .select('id, title, reference_code, inventory_number, medium, year, height, width, depth, dimension_unit, is_circular, price, currency, status, category, motif, series, edition_type, edition_number, edition_total, current_location, gallery_id, notes, created_at, galleries:gallery_id(name)')
+        .order('created_at', { ascending: false });
+
+      if (filters.status) query = query.eq('status', filters.status);
+      else query = query.neq('status', 'archived');
+      if (filters.category) query = query.eq('category', filters.category);
+      if (filters.motif) query = query.eq('motif', filters.motif);
+      if (filters.series) query = query.eq('series', filters.series);
+      if (filters.gallery_id) query = query.eq('gallery_id', filters.gallery_id);
+      if (filters.color) query = query.eq('color', filters.color);
+      if (search) {
+        const term = `%${search}%`;
+        query = query.or(`title.ilike.${term},reference_code.ilike.${term},medium.ilike.${term}`);
+      }
+
+      const { data: allArtworks } = await query;
+      if (!allArtworks || allArtworks.length === 0) return;
+
+      let rows = allArtworks as (typeof allArtworks[number] & { galleries?: { name: string } | null })[];
+
+      // If noPhotoFilter, find artworks without images
+      if (noPhotoFilter) {
+        const ids = rows.map((a) => a.id);
+        const { data: imagesData } = await supabase
+          .from('artwork_images')
+          .select('artwork_id')
+          .in('artwork_id', ids)
+          .eq('is_primary', true);
+
+        const idsWithImages = new Set((imagesData ?? []).map((i) => i.artwork_id));
+        rows = rows.filter((a) => !idsWithImages.has(a.id));
+      }
+
+      // Build CSV
+      const headers = ['Reference Code', 'Title', 'Medium', 'Year', 'Dimensions', 'Edition', 'Price', 'Currency', 'Status', 'Category', 'Series', 'Gallery', 'Location', 'Notes'];
+      const csvRows = rows.map((a) => [
+        a.reference_code,
+        a.title,
+        a.medium ?? '',
+        a.year ?? '',
+        formatDimensions(a.height, a.width, a.depth, a.dimension_unit, a.is_circular),
+        a.edition_type === 'unique' ? 'Unique' : a.edition_number && a.edition_total ? `${a.edition_number}/${a.edition_total}` : a.edition_type ?? '',
+        a.price ?? '',
+        a.currency ?? '',
+        a.status,
+        a.category ?? '',
+        a.series ?? '',
+        a.galleries?.name ?? '',
+        a.current_location ?? '',
+        (a.notes ?? '').replace(/[\n\r]+/g, ' '),
+      ]);
+
+      const escape = (v: string | number) => {
+        const s = String(v);
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+
+      const csv = [headers.join(','), ...csvRows.map((r) => r.map(escape).join(','))].join('\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+      downloadBlob(blob, `NOA_Artworks_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div>
       {/* Header */}
@@ -428,19 +510,15 @@ export function ArtworksPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={handleExportCSV} loading={exporting}>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            Export CSV
+          </Button>
           <Button variant="outline" onClick={() => setExcelImporterOpen(true)}>
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-              />
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
             </svg>
             Import Excel
           </Button>
@@ -462,12 +540,24 @@ export function ArtworksPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-6">
+      <div className="mb-4">
         <ArtworkFilters
           filters={filters}
           onChange={handleFiltersChange}
           onClear={handleFiltersClear}
         />
+      </div>
+
+      <div className="mb-6">
+        <label className="inline-flex items-center gap-2 text-sm text-primary-700">
+          <input
+            type="checkbox"
+            checked={noPhotoFilter}
+            onChange={(e) => { setNoPhotoFilter(e.target.checked); setPage(1); }}
+            className="h-4 w-4 rounded border-primary-300 text-primary-900 focus:ring-primary-500"
+          />
+          No photo
+        </label>
       </div>
 
       {/* View toggle & sort */}
@@ -576,7 +666,7 @@ export function ArtworksPage() {
       )}
 
       {/* Empty state */}
-      {!loading && artworks.length === 0 && (
+      {!loading && displayedArtworks.length === 0 && (
         <EmptyState
           icon={
             <svg
@@ -610,10 +700,10 @@ export function ArtworksPage() {
       )}
 
       {/* Artwork grid */}
-      {!loading && artworks.length > 0 && viewMode === 'grid' && (
+      {!loading && displayedArtworks.length > 0 && viewMode === 'grid' && (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {artworks.map((artwork) => (
+            {displayedArtworks.map((artwork) => (
               <ArtworkCard
                 key={artwork.id}
                 artwork={artwork}
@@ -639,10 +729,10 @@ export function ArtworksPage() {
       )}
 
       {/* Artwork table */}
-      {!loading && artworks.length > 0 && viewMode === 'table' && (
+      {!loading && displayedArtworks.length > 0 && viewMode === 'table' && (
         <>
           <ArtworkTable
-            artworks={artworks}
+            artworks={displayedArtworks}
             sortBy={sortBy}
             sortOrder={sortOrder}
             onSort={handleTableSort}
