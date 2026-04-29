@@ -176,6 +176,9 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
         if (storageError) throw storageError;
 
+        // Check if the deleted image was primary before removing it
+        const wasPrimary = images.find((img) => img.id === imageId)?.is_primary ?? false;
+
         // Remove DB record
         const { error: deleteError } = await supabase
           .from('artwork_images')
@@ -183,6 +186,23 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
           .eq('id', imageId);
 
         if (deleteError) throw deleteError;
+
+        // If the primary image was deleted, promote the next available image
+        if (wasPrimary) {
+          const { data: remaining } = await supabase
+            .from('artwork_images')
+            .select('id')
+            .eq('artwork_id', artworkId)
+            .order('sort_order', { ascending: true })
+            .limit(1)
+            .single();
+          if (remaining) {
+            await supabase
+              .from('artwork_images')
+              .update({ is_primary: true })
+              .eq('id', remaining.id);
+          }
+        }
 
         toast({ title: 'Image deleted', variant: 'success' });
 

@@ -159,12 +159,20 @@ function CoverImageSelector({
 
       if (!data) { setArtworks([]); return; }
 
-      // Fetch primary images
-      const { data: images } = await supabase
+      // Fetch best image per artwork (primary if set, otherwise first by sort_order)
+      const { data: allImages } = await supabase
         .from('artwork_images')
-        .select('artwork_id, storage_path')
+        .select('artwork_id, storage_path, is_primary, sort_order')
         .in('artwork_id', selectedIds)
-        .eq('is_primary', true);
+        .order('is_primary', { ascending: false })
+        .order('sort_order', { ascending: true });
+
+      // Deduplicate: keep one image per artwork (first after ordering = primary preferred)
+      const bestImageMap: Record<string, string> = {};
+      for (const img of allImages ?? []) {
+        if (!bestImageMap[img.artwork_id]) bestImageMap[img.artwork_id] = img.storage_path;
+      }
+      const images = Object.entries(bestImageMap).map(([artwork_id, storage_path]) => ({ artwork_id, storage_path }));
 
       const imageMap: Record<string, string> = {};
       if (images && images.length > 0) {
@@ -648,12 +656,19 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
       if (!artworksData || artworksData.length === 0)
         throw new Error('No artwork data found.');
 
-      // 2. Fetch primary images
-      const { data: images } = await supabase
+      // 2. Fetch best image per artwork (primary if set, otherwise first by sort_order)
+      const { data: allImagesRaw } = await supabase
         .from('artwork_images')
-        .select('artwork_id, storage_path')
+        .select('artwork_id, storage_path, is_primary, sort_order')
         .in('artwork_id', selectedIds)
-        .eq('is_primary', true);
+        .order('is_primary', { ascending: false })
+        .order('sort_order', { ascending: true });
+
+      const bestPathMap: Record<string, string> = {};
+      for (const img of allImagesRaw ?? []) {
+        if (!bestPathMap[img.artwork_id]) bestPathMap[img.artwork_id] = img.storage_path;
+      }
+      const images = Object.entries(bestPathMap).map(([artwork_id, storage_path]) => ({ artwork_id, storage_path }));
 
       // 3. Generate signed URLs (with image transforms for size optimization)
       const imageMap: Record<string, string> = {};
