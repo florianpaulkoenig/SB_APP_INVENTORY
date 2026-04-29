@@ -435,7 +435,7 @@ export function ProductionOrdersOverviewPDF({
                   borderBottomColor: PDF_COLORS.border,
                 }}
               >
-                <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: PDF_COLORS.primary400, fontStyle: 'italic' }}>
+                <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: PDF_COLORS.primary400 }}>
                   {t.noItems}
                 </Text>
               </View>

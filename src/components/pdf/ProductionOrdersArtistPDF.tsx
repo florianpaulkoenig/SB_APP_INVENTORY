@@ -153,7 +153,7 @@ export function ProductionOrdersArtistPDF({
             {/* Item rows — each item+images kept together, but items can split across pages */}
             {order.items.length === 0 ? (
               <View style={{ paddingVertical: 6, paddingHorizontal: 10, borderBottomWidth: 0.5, borderBottomColor: PDF_COLORS.border }}>
-                <Text style={{ fontFamily: 'AnzianoPro', fontSize: 9, color: PDF_COLORS.primary400, fontStyle: 'italic' }}>
+                <Text style={{ fontFamily: 'AnzianoPro', fontSize: 9, color: PDF_COLORS.primary400 }}>
                   {t.noItems}
                 </Text>
               </View>

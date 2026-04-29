@@ -14,10 +14,8 @@ const FONT_URL = `${import.meta.env.BASE_URL}fonts/AnzianoPro-Regular.otf`;
 Font.register({
   family: 'AnzianoPro',
   fonts: [
-    { src: FONT_URL, fontWeight: 'normal', fontStyle: 'normal' },
-    { src: FONT_URL, fontWeight: 'bold', fontStyle: 'normal' },
-    { src: FONT_URL, fontWeight: 'normal', fontStyle: 'italic' },
-    { src: FONT_URL, fontWeight: 'bold', fontStyle: 'italic' },
+    { src: FONT_URL, fontWeight: 'normal' },
+    { src: FONT_URL, fontWeight: 'bold' },
   ],
 });
 
