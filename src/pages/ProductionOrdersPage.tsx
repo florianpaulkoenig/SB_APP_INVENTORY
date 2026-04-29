@@ -370,29 +370,38 @@ export function ProductionOrdersPage() {
         if (userId) {
           for (const item of allItems ?? []) {
             const prefix = `${userId}/production-orders/${item.production_order_id}/items/${item.id}`;
-            const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
-            if (files && files.length > 0) {
-              const dataUrls: string[] = [];
-              const blobs: Array<{ blob: Blob; ext: string }> = [];
-              for (const file of files) {
-                if (!file.id) continue;
-                const { data: blob } = await supabase.storage
-                  .from('artwork-images')
-                  .download(`${prefix}/${file.name}`);
-                if (blob) {
-                  const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase() || '.jpg';
-                  blobs.push({ blob, ext });
-                  const dataUrl = await new Promise<string | null>((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string | null);
-                    reader.onerror = () => resolve(null);
-                    reader.readAsDataURL(blob);
-                  });
-                  if (dataUrl) dataUrls.push(dataUrl);
+            // Supabase storage can throw (not just return error) on network failure — wrap each item
+            try {
+              const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
+              if (files && files.length > 0) {
+                const dataUrls: string[] = [];
+                const blobs: Array<{ blob: Blob; ext: string }> = [];
+                for (const file of files) {
+                  if (!file.id) continue;
+                  try {
+                    const { data: blob } = await supabase.storage
+                      .from('artwork-images')
+                      .download(`${prefix}/${file.name}`);
+                    if (blob) {
+                      const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase() || '.jpg';
+                      blobs.push({ blob, ext });
+                      const dataUrl = await new Promise<string | null>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string | null);
+                        reader.onerror = () => resolve(null);
+                        reader.readAsDataURL(blob);
+                      });
+                      if (dataUrl) dataUrls.push(dataUrl);
+                    }
+                  } catch {
+                    // skip files that fail to download
+                  }
                 }
+                if (dataUrls.length > 0) refImageDataUrlsByItem[item.id] = dataUrls;
+                if (blobs.length > 0) refImageBlobsByItem[item.id] = blobs;
               }
-              if (dataUrls.length > 0) refImageDataUrlsByItem[item.id] = dataUrls;
-              if (blobs.length > 0) refImageBlobsByItem[item.id] = blobs;
+            } catch {
+              // skip items whose storage listing fails
             }
           }
         }
