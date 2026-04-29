@@ -680,9 +680,9 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
       const useOptimized = isListLayout || settings.imageQuality === 'optimized';
 
       const artworkTransform = isListLayout
-        ? { transform: { width: 150, height: 150, quality: 50, resize: 'contain' as const } }
+        ? { transform: { width: 150, height: 150, quality: 50, resize: 'contain' as const, format: 'origin' as const } }
         : useOptimized
-          ? { transform: { width: 1200, quality: 70 } }
+          ? { transform: { width: 1200, quality: 70, format: 'origin' as const } }
           : undefined;
 
       if (images && images.length > 0) {
@@ -743,9 +743,9 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
 
       // 6. Resolve appendix image URLs (apply same quality setting)
       const appendixTransform = useOptimized && !isListLayout
-        ? { transform: { width: 1200, quality: 70 } }
+        ? { transform: { width: 1200, quality: 70, format: 'origin' as const } }
         : isListLayout
-          ? { transform: { width: 800, quality: 60 } }
+          ? { transform: { width: 800, quality: 60, format: 'origin' as const } }
           : undefined;
 
       const appendixForPdf: { imageUrl: string; caption: string }[] = [];
