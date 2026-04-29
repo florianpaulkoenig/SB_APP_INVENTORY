@@ -382,12 +382,13 @@ export function ProductionOrdersPage() {
                 if (blob) {
                   const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase() || '.jpg';
                   blobs.push({ blob, ext });
-                  const dataUrl = await new Promise<string>((resolve) => {
+                  const dataUrl = await new Promise<string | null>((resolve) => {
                     const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.onloadend = () => resolve(reader.result as string | null);
+                    reader.onerror = () => resolve(null);
                     reader.readAsDataURL(blob);
                   });
-                  dataUrls.push(dataUrl);
+                  if (dataUrl) dataUrls.push(dataUrl);
                 }
               }
               if (dataUrls.length > 0) refImageDataUrlsByItem[item.id] = dataUrls;
@@ -500,6 +501,9 @@ export function ProductionOrdersPage() {
 
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       downloadBlob(zipBlob, `NOA_SB_Production_Artist_${dateSuffix}.zip`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      toast({ title: 'Export failed', description: msg, variant: 'error' });
     } finally {
       setDownloadingArtist(false);
     }
