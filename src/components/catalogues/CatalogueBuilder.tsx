@@ -688,13 +688,16 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
       if (images && images.length > 0) {
         const urlResults = await Promise.all(
           images.map(async (img) => {
-            const { data: urlData } = artworkTransform
-              ? await supabase.storage
-                  .from('artwork-images')
-                  .createSignedUrl(img.storage_path, 600, artworkTransform)
-              : await supabase.storage
-                  .from('artwork-images')
-                  .createSignedUrl(img.storage_path, 600);
+            if (artworkTransform) {
+              const { data: urlData } = await supabase.storage
+                .from('artwork-images')
+                .createSignedUrl(img.storage_path, 600, artworkTransform);
+              // Fall back to untransformed URL if transform fails (e.g. unsupported format like TIFF)
+              if (urlData?.signedUrl) return { artworkId: img.artwork_id, url: urlData.signedUrl };
+            }
+            const { data: urlData } = await supabase.storage
+              .from('artwork-images')
+              .createSignedUrl(img.storage_path, 600);
             return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
           }),
         );
