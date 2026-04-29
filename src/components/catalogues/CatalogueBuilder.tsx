@@ -679,11 +679,12 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
       const isListLayout = settings.layout === 'list';
       const useOptimized = isListLayout || settings.imageQuality === 'optimized';
 
-      const artworkTransform = isListLayout
-        ? { transform: { width: 150, height: 150, quality: 50, resize: 'contain' as const, format: 'origin' as const } }
-        : useOptimized
-          ? { transform: { width: 1200, quality: 70, format: 'origin' as const } }
-          : undefined;
+      // List layout always uses plain signed URLs — react-pdf can't reliably load
+      // Supabase transform URLs (/render/image/sign/ endpoint). Full-page uses
+      // transforms only for the optimized quality setting.
+      const artworkTransform = (!isListLayout && useOptimized)
+        ? { transform: { width: 1200, quality: 70, format: 'origin' as const } }
+        : undefined;
 
       if (images && images.length > 0) {
         const urlResults = await Promise.all(
@@ -692,7 +693,6 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
               const { data: urlData } = await supabase.storage
                 .from('artwork-images')
                 .createSignedUrl(img.storage_path, 600, artworkTransform);
-              // Fall back to untransformed URL if transform fails (e.g. unsupported format like TIFF)
               if (urlData?.signedUrl) return { artworkId: img.artwork_id, url: urlData.signedUrl };
             }
             const { data: urlData } = await supabase.storage
