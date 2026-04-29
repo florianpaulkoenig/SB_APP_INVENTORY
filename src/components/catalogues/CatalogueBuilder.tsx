@@ -4,6 +4,31 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+
+// Resize an image URL to a JPEG data URL using canvas (client-side, no server transform)
+async function resizeToDataUrl(url: string, maxPx: number, quality: number): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const bitmap = await createImageBitmap(blob);
+    const scale = Math.min(1, maxPx / Math.max(bitmap.width, bitmap.height));
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = new OffscreenCanvas(w, h);
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    const out = await canvas.convertToBlob({ type: 'image/jpeg', quality });
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(out);
+    });
+  } catch {
+    return null;
+  }
+}
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
@@ -679,9 +704,9 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
       const isListLayout = settings.layout === 'list';
       const useOptimized = isListLayout || settings.imageQuality === 'optimized';
 
-      // List layout always uses plain signed URLs — react-pdf can't reliably load
-      // Supabase transform URLs (/render/image/sign/ endpoint). Full-page uses
-      // transforms only for the optimized quality setting.
+      // Full-page optimized: Supabase transform (1200px JPEG). Works fine with react-pdf.
+      // List layout: plain signed URL fetched + resized client-side via canvas → JPEG data URL.
+      //   Supabase transform URLs (/render/image/sign/) don't load reliably in react-pdf.
       const artworkTransform = (!isListLayout && useOptimized)
         ? { transform: { width: 1200, quality: 70, format: 'origin' as const } }
         : undefined;
@@ -698,7 +723,12 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
             const { data: urlData } = await supabase.storage
               .from('artwork-images')
               .createSignedUrl(img.storage_path, 600);
-            return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
+            if (!urlData?.signedUrl) return { artworkId: img.artwork_id, url: null };
+            if (isListLayout) {
+              const dataUrl = await resizeToDataUrl(urlData.signedUrl, 150, 0.6);
+              return { artworkId: img.artwork_id, url: dataUrl ?? urlData.signedUrl };
+            }
+            return { artworkId: img.artwork_id, url: urlData.signedUrl };
           }),
         );
         for (const { artworkId, url } of urlResults) {
