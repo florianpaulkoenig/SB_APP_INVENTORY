@@ -107,6 +107,7 @@ export function ProductionOrdersPage() {
   const [orderValueMap, setOrderValueMap] = useState<Record<string, number>>({});
   const [orderCurrencyMap, setOrderCurrencyMap] = useState<Record<string, string>>({});
   const [orderWorksMap, setOrderWorksMap] = useState<Record<string, number>>({});
+  const [orderCategoriesMap, setOrderCategoriesMap] = useState<Record<string, Record<string, number>>>({});
 
   const fetchOrderMeta = useCallback(async () => {
     if (productionOrders.length === 0) {
@@ -134,16 +135,20 @@ export function ProductionOrdersPage() {
     const orderIds = productionOrders.map((o) => o.id);
     const { data: allItems } = await supabase
       .from('production_order_items')
-      .select('production_order_id, artwork_id, price, currency, quantity')
+      .select('production_order_id, artwork_id, price, currency, quantity, category')
       .in('production_order_id', orderIds);
 
     const valMap: Record<string, number> = {};
     const currMap: Record<string, string> = {};
     const worksMap: Record<string, number> = {};
+    const catMap: Record<string, Record<string, number>> = {};
     for (const item of allItems ?? []) {
       const qty = item.quantity ?? 1;
       worksMap[item.production_order_id] = (worksMap[item.production_order_id] || 0) + qty;
-      if (item.artwork_id) continue; // converted to artwork — value moved to artwork potential revenue
+      const cat = item.category ?? 'Other';
+      if (!catMap[item.production_order_id]) catMap[item.production_order_id] = {};
+      catMap[item.production_order_id][cat] = (catMap[item.production_order_id][cat] || 0) + qty;
+      if (item.artwork_id) continue;
       if (item.price != null && item.price > 0) {
         valMap[item.production_order_id] = (valMap[item.production_order_id] || 0) + item.price * qty;
         if (item.currency) currMap[item.production_order_id] = item.currency;
@@ -152,6 +157,7 @@ export function ProductionOrdersPage() {
     setOrderValueMap(valMap);
     setOrderCurrencyMap(currMap);
     setOrderWorksMap(worksMap);
+    setOrderCategoriesMap(catMap);
 
     // Backfill: update any order whose DB price doesn't match item total
     for (const order of productionOrders) {
@@ -212,6 +218,37 @@ export function ProductionOrdersPage() {
       .map(([gId, val]) => ({ id: gId, name: galleryNameMap[gId] || 'Unknown', value: val }))
       .sort((a, b) => b.value - a.value);
   })();
+
+  interface GalleryStat {
+    id: string;
+    name: string;
+    orderCount: number;
+    works: number;
+    valueCHF: number;
+    categories: Record<string, number>;
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const galleryStats = useMemo<GalleryStat[]>(() => {
+    const map: Record<string, GalleryStat> = {};
+    for (const o of activeOrders) {
+      if (!o.gallery_id) continue;
+      const gId = o.gallery_id;
+      if (!map[gId]) {
+        map[gId] = { id: gId, name: galleryNameMap[gId] || 'Unknown', orderCount: 0, works: 0, valueCHF: 0, categories: {} };
+      }
+      map[gId].orderCount += 1;
+      map[gId].works += orderWorksMap[o.id] ?? 0;
+      const val = orderValueMap[o.id] ?? (o.price != null && o.price > 0 ? o.price : 0);
+      const cur = orderCurrencyMap[o.id] ?? o.currency ?? 'EUR';
+      map[gId].valueCHF += val > 0 ? toCHF(val, cur) : 0;
+      const cats = orderCategoriesMap[o.id] ?? {};
+      for (const [cat, qty] of Object.entries(cats)) {
+        map[gId].categories[cat] = (map[gId].categories[cat] || 0) + qty;
+      }
+    }
+    return Object.values(map).sort((a, b) => b.valueCHF - a.valueCHF);
+  }, [activeOrders, galleryNameMap, orderWorksMap, orderValueMap, orderCurrencyMap, orderCategoriesMap, toCHF]);
 
   // ---- Handlers -----------------------------------------------------------
 
@@ -749,6 +786,55 @@ export function ProductionOrdersPage() {
             <p className="mt-1 text-xs text-primary-400">{preSoldPct}% pre-sold</p>
           </div>
         </div>
+      )}
+
+      {/* Per-gallery breakdown */}
+      {!loading && galleryStats.length > 0 && (
+        <details className="mb-6 group">
+          <summary className="flex cursor-pointer select-none items-center gap-2 text-sm font-medium text-primary-500 hover:text-primary-700">
+            <svg className="h-4 w-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+            Gallery Breakdown ({galleryStats.length} {galleryStats.length === 1 ? 'gallery' : 'galleries'})
+          </summary>
+          <div className="mt-3 overflow-x-auto rounded-lg border border-primary-100">
+            <table className="min-w-full divide-y divide-primary-100">
+              <thead className="bg-primary-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Gallery</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-primary-500">Orders</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-primary-500">Works</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-primary-500">Value (CHF)</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-primary-500">Categories</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-primary-50 bg-white">
+                {galleryStats.map((g, idx) => (
+                  <tr key={g.id} className={idx % 2 === 1 ? 'bg-primary-50/40' : ''}>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-sm font-medium text-primary-900">{g.name}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-right text-sm text-primary-600">{g.orderCount}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-right text-sm text-primary-600">{g.works}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-right text-sm font-medium text-primary-800">
+                      {g.valueCHF > 0 ? formatCurrency(g.valueCHF, 'CHF') : '—'}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex flex-wrap gap-1">
+                        {Object.entries(g.categories)
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 5)
+                          .map(([cat, qty]) => (
+                            <span key={cat} className="inline-flex items-center gap-0.5 rounded-full bg-primary-100 px-2 py-0.5 text-xs text-primary-700">
+                              {cat} <span className="font-medium text-primary-900">{qty}</span>
+                            </span>
+                          ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
       )}
 
       {/* Loading */}
