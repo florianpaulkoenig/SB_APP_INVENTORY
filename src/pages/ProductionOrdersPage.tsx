@@ -644,71 +644,47 @@ export function ProductionOrdersPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="date"
-              value={artistDateFrom}
-              onChange={(e) => setArtistDateFrom(e.target.value)}
-              className="w-full sm:w-auto rounded-md border border-primary-200 bg-white px-2 py-1.5 text-sm text-primary-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              title="From date"
-            />
-            <span className="text-xs text-primary-400">to</span>
-            <input
-              type="date"
-              value={artistDateTo}
-              onChange={(e) => setArtistDateTo(e.target.value)}
-              className="w-full sm:w-auto rounded-md border border-primary-200 bg-white px-2 py-1.5 text-sm text-primary-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              title="To date"
-            />
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto"
-              onClick={handleDownloadArtistExport}
-              loading={downloadingArtist}
-              disabled={productionOrders.length === 0}
-              title="Simplified export for artist: Item, Dimensions, Qty, Category"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-                />
-              </svg>
-              Export: Artist
-            </Button>
-          </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={artistDateFrom}
+            onChange={(e) => setArtistDateFrom(e.target.value)}
+            className="rounded-md border border-primary-200 bg-white px-2 py-1.5 text-sm text-primary-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            title="Artist export: from date"
+          />
+          <span className="text-xs text-primary-400">–</span>
+          <input
+            type="date"
+            value={artistDateTo}
+            onChange={(e) => setArtistDateTo(e.target.value)}
+            className="rounded-md border border-primary-200 bg-white px-2 py-1.5 text-sm text-primary-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            title="Artist export: to date"
+          />
           <Button
             variant="outline"
-            className="w-full sm:w-auto"
+            onClick={handleDownloadArtistExport}
+            loading={downloadingArtist}
+            disabled={productionOrders.length === 0}
+            title="Simplified export for artist: Item, Dimensions, Qty, Category"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            Export: Artist
+          </Button>
+          <Button
+            variant="outline"
             onClick={handleDownloadOverview}
             loading={downloadingOverview}
             disabled={productionOrders.length === 0}
             title="Full export with revenue summary, per-gallery breakdown, and analysis"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-              />
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
             Export: Complete
           </Button>
-          <Button className="w-full sm:w-auto" onClick={() => navigate('/production/new')}>
+          <Button onClick={() => navigate('/production/new')}>
             New Production Order
           </Button>
         </div>
