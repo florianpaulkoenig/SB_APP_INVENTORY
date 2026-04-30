@@ -106,6 +106,7 @@ export function ProductionOrdersPage() {
   const [galleryNameMap, setGalleryNameMap] = useState<Record<string, string>>({});
   const [orderValueMap, setOrderValueMap] = useState<Record<string, number>>({});
   const [orderCurrencyMap, setOrderCurrencyMap] = useState<Record<string, string>>({});
+  const [orderWorksMap, setOrderWorksMap] = useState<Record<string, number>>({});
 
   const fetchOrderMeta = useCallback(async () => {
     if (productionOrders.length === 0) {
@@ -138,16 +139,19 @@ export function ProductionOrdersPage() {
 
     const valMap: Record<string, number> = {};
     const currMap: Record<string, string> = {};
+    const worksMap: Record<string, number> = {};
     for (const item of allItems ?? []) {
+      const qty = item.quantity ?? 1;
+      worksMap[item.production_order_id] = (worksMap[item.production_order_id] || 0) + qty;
       if (item.artwork_id) continue; // converted to artwork — value moved to artwork potential revenue
       if (item.price != null && item.price > 0) {
-        const qty = item.quantity ?? 1;
         valMap[item.production_order_id] = (valMap[item.production_order_id] || 0) + item.price * qty;
         if (item.currency) currMap[item.production_order_id] = item.currency;
       }
     }
     setOrderValueMap(valMap);
     setOrderCurrencyMap(currMap);
+    setOrderWorksMap(worksMap);
 
     // Backfill: update any order whose DB price doesn't match item total
     for (const order of productionOrders) {
@@ -186,14 +190,19 @@ export function ProductionOrdersPage() {
     return toCHF(val, getOrderCurrency(order));
   }
 
-  const totalOrderValue = productionOrders.reduce(
-    (sum, o) => sum + getOrderValueCHF(o),
-    0,
-  );
+  const activeOrders = productionOrders.filter((o) => o.status !== 'shipped');
+
+  const totalOrderValue = activeOrders.reduce((sum, o) => sum + getOrderValueCHF(o), 0);
+
+  const totalWorks = activeOrders.reduce((sum, o) => sum + (orderWorksMap[o.id] ?? 0), 0);
+
+  const preSoldCount = activeOrders.filter((o) => o.status === 'pre_sold').length;
+  const consignmentCount = activeOrders.filter((o) => o.status === 'consignment').length;
+  const preSoldPct = activeOrders.length > 0 ? Math.round((preSoldCount / activeOrders.length) * 100) : 0;
 
   const perGalleryValue: Array<{ id: string; name: string; value: number }> = (() => {
     const map: Record<string, number> = {};
-    for (const o of productionOrders) {
+    for (const o of activeOrders) {
       const val = getOrderValueCHF(o);
       if (o.gallery_id && val > 0) {
         map[o.gallery_id] = (map[o.gallery_id] || 0) + val;
@@ -230,6 +239,9 @@ export function ProductionOrdersPage() {
           break;
         case 'deadline':
           cmp = (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999');
+          break;
+        case 'works':
+          cmp = (orderWorksMap[a.id] ?? 0) - (orderWorksMap[b.id] ?? 0);
           break;
         case 'value': {
           const va = getOrderValueCHF(a);
@@ -730,34 +742,35 @@ export function ProductionOrdersPage() {
         </div>
       </div>
 
-      {/* Revenue summary */}
-      {!loading && productionOrders.length > 0 && totalOrderValue > 0 && (
-        <div className="mb-6">
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Total */}
-            <div className="rounded-lg border border-primary-100 bg-white px-3 py-2 sm:px-5 sm:py-3">
-              <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-                Total Order Value
-              </p>
-              <p className="mt-1 font-display text-lg sm:text-xl font-bold text-primary-900">
-                {formatCurrency(totalOrderValue, 'CHF')}
-              </p>
-            </div>
-            {/* Per gallery */}
-            {perGalleryValue.map((g) => (
-              <div
-                key={g.id}
-                className="cursor-pointer rounded-lg border border-primary-100 bg-white px-3 py-2 sm:px-5 sm:py-3 transition-shadow hover:shadow-md"
-                onClick={() => navigate(`/galleries/${g.id}`)}
-              >
-                <p className="text-xs font-medium uppercase tracking-wider text-primary-400">
-                  {g.name}
-                </p>
-                <p className="mt-1 font-display text-lg sm:text-xl font-bold text-accent">
-                  {formatCurrency(g.value, 'CHF')}
-                </p>
+      {/* Summary KPIs */}
+      {!loading && activeOrders.length > 0 && (
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-lg border border-primary-100 bg-white px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-primary-400">Active Orders</p>
+            <p className="mt-1 font-display text-2xl font-bold text-primary-900">{activeOrders.length}</p>
+          </div>
+          <div className="rounded-lg border border-primary-100 bg-white px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-primary-400">Total Works</p>
+            <p className="mt-1 font-display text-2xl font-bold text-primary-900">{totalWorks}</p>
+          </div>
+          <div className="rounded-lg border border-primary-100 bg-white px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-primary-400">Order Value</p>
+            <p className="mt-1 font-display text-2xl font-bold text-primary-900">
+              {totalOrderValue > 0 ? formatCurrency(totalOrderValue, 'CHF') : '—'}
+            </p>
+          </div>
+          <div className="rounded-lg border border-primary-100 bg-white px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-primary-400">Pre-Sold / Consignment</p>
+            <p className="mt-1 font-display text-2xl font-bold text-primary-900">
+              {preSoldCount} <span className="text-base font-normal text-primary-400">/</span> {consignmentCount}
+            </p>
+            {activeOrders.length > 0 && (
+              <div className="mt-2 flex h-1.5 overflow-hidden rounded-full bg-primary-100">
+                <div className="bg-primary-900 transition-all" style={{ width: `${preSoldPct}%` }} />
+                <div className="bg-amber-400 transition-all" style={{ width: `${Math.round((consignmentCount / activeOrders.length) * 100)}%` }} />
               </div>
-            ))}
+            )}
+            <p className="mt-1 text-xs text-primary-400">{preSoldPct}% pre-sold</p>
           </div>
         </div>
       )}
@@ -820,6 +833,7 @@ export function ProductionOrdersPage() {
                   ['gallery', 'Gallery', 'hidden md:table-cell'],
                   ['status', 'Status', ''],
                   ['deadline', 'Deadline', ''],
+                  ['works', 'Works', 'hidden sm:table-cell text-right'],
                   ['value', 'Value', 'hidden sm:table-cell text-right'],
                 ] as const).map(([col, label, extra]) => (
                   <th
@@ -908,10 +922,13 @@ export function ProductionOrdersPage() {
                       <span className="text-sm text-primary-400">No deadline</span>
                     )}
                   </td>
+                  <td className="hidden sm:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right text-sm text-primary-600">
+                    {orderWorksMap[order.id] ?? '—'}
+                  </td>
                   <td className="hidden sm:table-cell whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right text-sm font-medium text-primary-800">
                     {getOrderValueCHF(order) > 0
                       ? formatCurrency(getOrderValueCHF(order), 'CHF')
-                      : '-'}
+                      : '—'}
                   </td>
                   <td className="whitespace-nowrap px-2 py-2 sm:px-4 sm:py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
