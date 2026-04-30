@@ -95,6 +95,7 @@ export function ProductionOrdersPage() {
       status: (statusFilter || undefined) as ProductionStatus | undefined,
       galleryIds: search && matchingGalleryIds.length > 0 ? matchingGalleryIds : undefined,
     },
+    pageSize: 500,
   });
 
   const { toCHF } = useExchangeRates();
