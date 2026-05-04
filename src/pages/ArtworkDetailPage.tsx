@@ -465,7 +465,7 @@ export function ArtworkDetailPage() {
         </p>
         <Button
           variant="outline"
-          onClick={() => navigate('/artworks')}
+          onClick={() => navigate(-1)}
           className="mt-6"
         >
           Back to Artworks
@@ -482,7 +482,7 @@ export function ArtworkDetailPage() {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => navigate('/artworks')}
+        onClick={() => navigate(-1)}
         className="mb-6"
       >
         <svg

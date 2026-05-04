@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
@@ -66,10 +66,12 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
   const [totalCount, setTotalCount] = useState(0);
 
   const { toast } = useToast();
+  const fetchGenRef = useRef(0);
 
   // ---- Fetch artworks ------------------------------------------------------
 
   const fetchArtworks = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     setError(null);
 
@@ -162,17 +164,21 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
 
       const { data, error: fetchError, count } = await query;
 
+      // Discard if a newer fetch has already started
+      if (gen !== fetchGenRef.current) return;
+
       if (fetchError) throw fetchError;
 
       setArtworks((data as ArtworkRow[]) ?? []);
       setTotalCount(count ?? 0);
     } catch (err: unknown) {
+      if (gen !== fetchGenRef.current) return;
       const message =
         err instanceof Error ? err.message : 'Failed to fetch artworks';
       setError(message);
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
-      setLoading(false);
+      if (gen === fetchGenRef.current) setLoading(false);
     }
   }, [
     filters.search,

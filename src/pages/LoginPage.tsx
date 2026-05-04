@@ -46,10 +46,13 @@ export function LoginPage() {
         return; // Don't navigate yet — useAuth blocks session until MFA done
       }
 
-      // Navigation happens automatically via the useEffect when session updates
+      // Non-MFA login: keep spinner active while AuthContext processes the
+      // SIGNED_IN event and sets session. The useEffect above watching
+      // `session` will navigate and unmount this component. If something goes
+      // wrong and navigation never happens the user can refresh manually, but
+      // at least they don't see a blank "nothing happened" state.
     } catch {
       setError('Invalid email or password. Please try again.');
-    } finally {
       setLoading(false);
     }
   }
@@ -78,12 +81,11 @@ export function LoginPage() {
       });
       if (verifyError) throw verifyError;
 
-      // Refresh session so useAuth sees aal2 and exposes the session
-      await supabase.auth.refreshSession();
-
-      // Force a full reload so the app picks up the aal2 session
-      window.location.reload();
-      return; // keep loading state active during reload
+      // After verify() the SDK promotes the session to aal2 and fires a
+      // TOKEN_REFRESHED / SIGNED_IN event. AuthContext's onAuthStateChange
+      // picks it up, isMfaPending() returns false, and session is exposed.
+      // The useEffect below watching `session` then navigates to '/'.
+      // No reload needed — a reload races against localStorage writes.
     } catch {
       setMfaError('Invalid verification code. Please try again.');
       setLoading(false);

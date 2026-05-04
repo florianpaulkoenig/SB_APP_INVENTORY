@@ -68,23 +68,46 @@ type ViewMode = 'grid' | 'table';
 export function ArtworksPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const shouldFocusSearch = searchParams.get('search') === '1';
 
-  // Clear the search param after reading it (so browser back doesn't re-trigger)
+  // Focus-param: ?search=1 is set externally to auto-focus the search input.
+  // Remove it after reading so browser-back doesn't re-trigger it.
+  const shouldFocusSearch = searchParams.get('search') === '1';
   useEffect(() => {
     if (shouldFocusSearch) {
-      setSearchParams({}, { replace: true });
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.delete('search');
+        return next;
+      }, { replace: true });
     }
   }, [shouldFocusSearch, setSearchParams]);
 
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [sortBy, setSortBy] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [filters, setFilters] = useState<ArtworkFiltersType>({});
+  // ---------------------------------------------------------------------------
+  // All filter/pagination/sort/view state lives in the URL so navigating to an
+  // artwork and pressing Back (or "Back to Artworks") restores the exact state.
+  // ---------------------------------------------------------------------------
+  const search      = searchParams.get('q') ?? '';
+  const page        = Number(searchParams.get('pg')) || 1;
+  const viewMode    = (searchParams.get('view') as ViewMode) ?? 'grid';
+  const sortBy      = searchParams.get('sb') ?? 'created_at';
+  const sortOrder   = (searchParams.get('so') as 'asc' | 'desc') ?? 'desc';
+  const noPhotoFilter = searchParams.get('np') === '1';
+  const filters: ArtworkFiltersType = {
+    status:     (searchParams.get('st') as ArtworkFiltersType['status'])   || undefined,
+    category:   (searchParams.get('cat') as ArtworkFiltersType['category']) || undefined,
+    motif:      (searchParams.get('motif') as ArtworkFiltersType['motif'])  || undefined,
+    series:     (searchParams.get('series') as ArtworkFiltersType['series']) || undefined,
+    gallery_id: searchParams.get('gal') || undefined,
+    color:      searchParams.get('color') || undefined,
+    medium:     searchParams.get('medium') || undefined,
+    minHeight:  searchParams.get('mnh') ? Number(searchParams.get('mnh')) : undefined,
+    maxHeight:  searchParams.get('mxh') ? Number(searchParams.get('mxh')) : undefined,
+    minWidth:   searchParams.get('mnw') ? Number(searchParams.get('mnw')) : undefined,
+    maxWidth:   searchParams.get('mxw') ? Number(searchParams.get('mxw')) : undefined,
+  };
+
+  // UI-only state (no need to persist)
   const [excelImporterOpen, setExcelImporterOpen] = useState(false);
-  const [noPhotoFilter, setNoPhotoFilter] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const isFilteringByStatus = Boolean(filters.status);
@@ -117,10 +140,10 @@ export function ArtworksPage() {
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [bulkEditing, setBulkEditing] = useState(false);
 
-  // Clear selection when page/filters/search change
+  // Clear selection whenever the URL (= any filter/page/sort) changes
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [page, search, filters, sortBy, sortOrder]);
+  }, [searchParams]);
 
   const handleToggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -378,37 +401,64 @@ export function ArtworksPage() {
     }
   }, [artworks, toast]);
 
-  // Reset to page 1 when search or filters change
-  function handleSearchChange(value: string) {
-    setSearch(value);
-    setPage(1);
+  // Helpers for modifying URL params
+  function updateParams(updater: (p: URLSearchParams) => void) {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      updater(next);
+      return next;
+    }, { replace: true });
   }
 
-  function handleFiltersChange(newFilters: typeof filters) {
-    setFilters(newFilters);
-    setPage(1);
+  const FILTER_PARAM_KEYS = ['st','cat','motif','series','gal','color','medium','mnh','mxh','mnw','mxw'];
+
+  function handleSearchChange(value: string) {
+    updateParams(p => {
+      if (value) p.set('q', value); else p.delete('q');
+      p.delete('pg');
+    });
+  }
+
+  function handleFiltersChange(newFilters: ArtworkFiltersType) {
+    updateParams(p => {
+      FILTER_PARAM_KEYS.forEach(k => p.delete(k));
+      if (newFilters.status)     p.set('st',     newFilters.status);
+      if (newFilters.category)   p.set('cat',    newFilters.category);
+      if (newFilters.motif)      p.set('motif',  newFilters.motif);
+      if (newFilters.series)     p.set('series', newFilters.series);
+      if (newFilters.gallery_id) p.set('gal',    newFilters.gallery_id);
+      if (newFilters.color)      p.set('color',  newFilters.color);
+      if (newFilters.medium)     p.set('medium', newFilters.medium);
+      if (newFilters.minHeight != null) p.set('mnh', String(newFilters.minHeight));
+      if (newFilters.maxHeight != null) p.set('mxh', String(newFilters.maxHeight));
+      if (newFilters.minWidth  != null) p.set('mnw', String(newFilters.minWidth));
+      if (newFilters.maxWidth  != null) p.set('mxw', String(newFilters.maxWidth));
+      p.delete('pg');
+    });
   }
 
   function handleFiltersClear() {
-    setFilters({});
-    setPage(1);
+    updateParams(p => {
+      FILTER_PARAM_KEYS.forEach(k => p.delete(k));
+      p.delete('pg');
+    });
   }
 
   function handleSortChange(value: string) {
     const [col, ord] = value.split(':');
-    setSortBy(col);
-    setSortOrder(ord as 'asc' | 'desc');
-    setPage(1);
+    updateParams(p => { p.set('sb', col); p.set('so', ord); p.delete('pg'); });
   }
 
   function handleTableSort(column: string) {
-    if (sortBy === column) {
-      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortBy(column);
-      setSortOrder('asc');
-    }
-    setPage(1);
+    updateParams(p => {
+      if ((p.get('sb') ?? 'created_at') === column) {
+        p.set('so', (p.get('so') ?? 'desc') === 'asc' ? 'desc' : 'asc');
+      } else {
+        p.set('sb', column);
+        p.set('so', 'asc');
+      }
+      p.delete('pg');
+    });
   }
 
   // ---- Filtered artworks (no photo filter) ---------------------------------
@@ -553,7 +603,7 @@ export function ArtworksPage() {
           <input
             type="checkbox"
             checked={noPhotoFilter}
-            onChange={(e) => { setNoPhotoFilter(e.target.checked); setPage(1); }}
+            onChange={(e) => updateParams(p => { if (e.target.checked) p.set('np','1'); else p.delete('np'); p.delete('pg'); })}
             className="h-4 w-4 rounded border-primary-300 text-primary-900 focus:ring-primary-500"
           />
           No photo
@@ -566,7 +616,7 @@ export function ArtworksPage() {
           {/* Grid view button */}
           <button
             type="button"
-            onClick={() => setViewMode('grid')}
+            onClick={() => updateParams(p => p.delete('view'))}
             className={`rounded-md p-1.5 transition-colors ${
               viewMode === 'grid'
                 ? 'bg-primary-900 text-white'
@@ -592,7 +642,7 @@ export function ArtworksPage() {
           {/* Table view button */}
           <button
             type="button"
-            onClick={() => setViewMode('table')}
+            onClick={() => updateParams(p => p.set('view', 'table'))}
             className={`rounded-md p-1.5 transition-colors ${
               viewMode === 'table'
                 ? 'bg-primary-900 text-white'
@@ -721,7 +771,7 @@ export function ArtworksPage() {
               <Pagination
                 currentPage={page}
                 totalPages={totalPages}
-                onPageChange={setPage}
+                onPageChange={(p) => updateParams(n => { if (p === 1) n.delete('pg'); else n.set('pg', String(p)); })}
               />
             </div>
           )}
@@ -748,7 +798,7 @@ export function ArtworksPage() {
               <Pagination
                 currentPage={page}
                 totalPages={totalPages}
-                onPageChange={setPage}
+                onPageChange={(p) => updateParams(n => { if (p === 1) n.delete('pg'); else n.set('pg', String(p)); })}
               />
             </div>
           )}

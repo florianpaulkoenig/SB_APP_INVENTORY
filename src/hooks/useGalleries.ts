@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
@@ -45,10 +45,12 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
   const [totalCount, setTotalCount] = useState(0);
 
   const { toast } = useToast();
+  const fetchGenRef = useRef(0);
 
   // ---- Fetch galleries ----------------------------------------------------
 
   const fetchGalleries = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     setError(null);
 
@@ -84,17 +86,20 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
 
       const { data, error: fetchError, count } = await query;
 
+      if (gen !== fetchGenRef.current) return;
+
       if (fetchError) throw fetchError;
 
       setGalleries((data as GalleryRow[]) ?? []);
       setTotalCount(count ?? 0);
     } catch (err: unknown) {
+      if (gen !== fetchGenRef.current) return;
       const message =
         err instanceof Error ? err.message : 'Failed to fetch galleries';
       setError(message);
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
-      setLoading(false);
+      if (gen === fetchGenRef.current) setLoading(false);
     }
   }, [filters.search, filters.country, filters.sortBy, filters.sortOrder, page, pageSize, toast]);
 

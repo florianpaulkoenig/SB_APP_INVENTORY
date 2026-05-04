@@ -81,8 +81,15 @@ serve(async (req: Request) => {
 
     // ---- Rate limiting (10 emails per minute) --------------------------------
     {
-      const { data: withinLimit } = await supabaseAdmin
+      const { data: withinLimit, error: rateLimitError } = await supabaseAdmin
         .rpc('check_rate_limit', { p_user_id: callerUser.id, p_function_name: 'send-email', p_max_requests: 10 });
+      if (rateLimitError) {
+        console.error('Rate limit check failed:', rateLimitError.message);
+        return new Response(
+          JSON.stringify({ error: 'Rate limit check failed. Please try again later.' }),
+          { status: 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+        );
+      }
       if (withinLimit === false) {
         return new Response(
           JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),

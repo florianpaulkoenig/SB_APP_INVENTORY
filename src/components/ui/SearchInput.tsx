@@ -19,9 +19,14 @@ export function SearchInput({
   const [localValue, setLocalValue] = useState(value);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync external value changes
+  // Sync external resets only when the user is not actively typing.
+  // Without this guard, a parent re-render (e.g. loading state flip) can
+  // fire this effect after the user has already started a new search term,
+  // resetting the input mid-keystroke and swallowing the second search.
   useEffect(() => {
-    setLocalValue(value);
+    if (!timerRef.current) {
+      setLocalValue(value);
+    }
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,6 +35,7 @@ export function SearchInput({
 
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
+      timerRef.current = null; // mark as idle so external sync is allowed again
       onChange(next);
     }, 300);
   };

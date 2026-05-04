@@ -34,6 +34,7 @@ export function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOverlayProp
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchGenRef = useRef(0);
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults>(EMPTY_RESULTS);
@@ -69,6 +70,8 @@ export function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOverlayProp
 
   // Search function
   const performSearch = useCallback(async (term: string) => {
+    const gen = ++searchGenRef.current;
+
     if (!term.trim()) {
       setResults(EMPTY_RESULTS);
       setLoading(false);
@@ -118,6 +121,9 @@ export function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOverlayProp
             .limit(5),
         ]);
 
+      // Discard if a newer search has already started
+      if (gen !== searchGenRef.current) return;
+
       setResults({
         artworks: (artworksRes.data ?? []) as SearchResults['artworks'],
         contacts: (contactsRes.data ?? []) as SearchResults['contacts'],
@@ -126,9 +132,10 @@ export function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOverlayProp
         invoices: (invoicesRes.data ?? []) as SearchResults['invoices'],
       });
     } catch {
+      if (gen !== searchGenRef.current) return;
       setResults(EMPTY_RESULTS);
     } finally {
-      setLoading(false);
+      if (gen === searchGenRef.current) setLoading(false);
     }
   }, []);
 
