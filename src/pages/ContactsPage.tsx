@@ -57,9 +57,6 @@ export function ContactsPage() {
           <h1 className="font-display text-2xl font-bold text-primary-900">
             Contacts
           </h1>
-          <p className="mt-1 text-sm text-primary-500">
-            Manage collectors, prospects, and institutional contacts.
-          </p>
         </div>
 
         <Button onClick={() => navigate('/contacts/new')}>
@@ -68,15 +65,16 @@ export function ContactsPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end">
-        <SearchInput
-          value={search}
-          onChange={handleSearchChange}
-          placeholder="Search contacts by name, company, or email..."
-          className="max-w-md"
-        />
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex-1 max-w-xs">
+          <SearchInput
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Search contacts..."
+          />
+        </div>
 
-        <div className="w-full sm:w-48">
+        <div className="w-44 shrink-0">
           <Select
             options={[...CONTACT_TYPES]}
             value={typeFilter}

@@ -53,9 +53,6 @@ export function DeliveriesPage() {
           <h1 className="font-display text-2xl font-bold text-primary-900">
             Deliveries
           </h1>
-          <p className="mt-1 text-sm text-primary-500">
-            Manage artwork deliveries and shipments.
-          </p>
         </div>
 
         <Button onClick={() => navigate('/deliveries/new')}>
@@ -64,15 +61,16 @@ export function DeliveriesPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end">
-        <SearchInput
-          value={search}
-          onChange={handleSearchChange}
-          placeholder="Search by delivery number or recipient..."
-          className="max-w-md"
-        />
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex-1 max-w-xs">
+          <SearchInput
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Search deliveries..."
+          />
+        </div>
 
-        <div className="w-full sm:w-48">
+        <div className="w-44 shrink-0">
           <Select
             options={[...DELIVERY_STATUSES]}
             value={statusFilter}
@@ -81,11 +79,11 @@ export function DeliveriesPage() {
           />
         </div>
 
-        <div className="w-full sm:w-48">
+        <div className="w-44 shrink-0">
           <GallerySelect
             value={galleryFilter}
             onChange={setGalleryFilter}
-            label="Gallery"
+            label=""
           />
         </div>
       </div>

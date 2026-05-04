@@ -90,9 +90,6 @@ export function DealsPage() {
           <h1 className="font-display text-2xl font-bold text-primary-900">
             Deal Pipeline
           </h1>
-          <p className="mt-1 text-sm text-primary-500">
-            Track opportunities through the sales pipeline.
-          </p>
         </div>
 
         <Button onClick={() => setShowModal(true)}>

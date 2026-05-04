@@ -8,6 +8,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
+import { SearchInput } from '../components/ui/SearchInput';
 import { Button } from '../components/ui/Button';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { ENQUIRY_SOURCES, ENQUIRY_STATUSES, ENQUIRY_PRIORITIES, CURRENCIES } from '../lib/constants';
@@ -128,21 +129,50 @@ export function EnquiriesPage() {
 
   if (loading) return <LoadingSpinner />;
 
+  const hasActiveFilters = Boolean(filterStatus || filterSource || filterPriority || search);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Enquiries</h1>
-        <Button variant="primary" onClick={() => setShowModal(true)}>Add Enquiry</Button>
+    <div>
+      {/* Header */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-primary-900">Enquiries</h1>
+        </div>
+        <Button onClick={() => setShowModal(true)}>Add Enquiry</Button>
       </div>
 
-      <Card>
-        <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-4">
-          <Select label="Status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} options={[{value: '', label: 'All Statuses'}, ...ENQUIRY_STATUSES]} />
-          <Select label="Source" value={filterSource} onChange={(e) => setFilterSource(e.target.value)} options={[{value: '', label: 'All Sources'}, ...ENQUIRY_SOURCES]} />
-          <Select label="Priority" value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} options={[{value: '', label: 'All Priorities'}, ...ENQUIRY_PRIORITIES]} />
-          <Input label="Search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name, subject, email..." />
+      {/* Search & Filters */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex-1 max-w-xs">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search enquiries..."
+          />
         </div>
-      </Card>
+
+        <div className="w-44 shrink-0">
+          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} options={[{value: '', label: 'All Statuses'}, ...ENQUIRY_STATUSES]} />
+        </div>
+
+        <div className="w-44 shrink-0">
+          <Select value={filterSource} onChange={(e) => setFilterSource(e.target.value)} options={[{value: '', label: 'All Sources'}, ...ENQUIRY_SOURCES]} />
+        </div>
+
+        <div className="w-44 shrink-0">
+          <Select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} options={[{value: '', label: 'All Priorities'}, ...ENQUIRY_PRIORITIES]} />
+        </div>
+
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={() => { setFilterStatus(''); setFilterSource(''); setFilterPriority(''); setSearch(''); }}
+            className="shrink-0 text-xs text-primary-400 hover:text-primary-700 transition-colors"
+          >
+            Clear
+          </button>
+        )}
+      </div>
 
       <Card>
         {filteredEnquiries.length === 0 ? (

@@ -209,48 +209,49 @@ export function GalleriesPage() {
       </div>
 
       {/* Search & Sort */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <SearchInput
-          value={search}
-          onChange={handleSearchChange}
-          placeholder="Search galleries by name, city, or country..."
-          className="max-w-md"
-        />
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-primary-400 whitespace-nowrap">Sort by</span>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex-1 max-w-xs">
+          <SearchInput
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Search galleries..."
+          />
+        </div>
+
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           <select
             value={sortBy}
             onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
-            className="rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm text-primary-700 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="border-0 border-b border-primary-200 bg-transparent py-1 text-xs text-primary-500 focus:border-accent focus:outline-none"
           >
             <option value="name">Name</option>
             <option value="status_color">Color</option>
             <option value="type">Category</option>
           </select>
-        </div>
 
-        {/* View mode toggle */}
-        <div className="flex items-center rounded-md border border-primary-200 bg-white">
-          <button
-            type="button"
-            onClick={() => handleViewMode('grid')}
-            className={`p-1.5 ${viewMode === 'grid' ? 'bg-primary-100 text-primary-800' : 'text-primary-400 hover:text-primary-600'}`}
-            title="Grid view"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleViewMode('list')}
-            className={`p-1.5 ${viewMode === 'list' ? 'bg-primary-100 text-primary-800' : 'text-primary-400 hover:text-primary-600'}`}
-            title="List view"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
-            </svg>
-          </button>
+          {/* View mode toggle */}
+          <div className="flex items-center gap-0.5 border border-primary-200 p-0.5">
+            <button
+              type="button"
+              onClick={() => handleViewMode('grid')}
+              className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-primary-900 text-white' : 'text-primary-400 hover:text-primary-700'}`}
+              aria-label="Grid view"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewMode('list')}
+              className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-primary-900 text-white' : 'text-primary-400 hover:text-primary-700'}`}
+              aria-label="List view"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 

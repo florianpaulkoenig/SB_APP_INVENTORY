@@ -72,9 +72,6 @@ export function CertificatesPage() {
           <h1 className="font-display text-2xl font-bold text-primary-900">
             Certificates
           </h1>
-          <p className="mt-1 text-sm text-primary-500">
-            Manage certificates of authenticity for artworks.
-          </p>
         </div>
       </div>
 
@@ -90,13 +87,14 @@ export function CertificatesPage() {
       {activeTab === 'list' && (
         <>
           {/* Search */}
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end">
-            <SearchInput
-              value={search}
-              onChange={handleSearchChange}
-              placeholder="Search by certificate number..."
-              className="max-w-md"
-            />
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 max-w-xs">
+              <SearchInput
+                value={search}
+                onChange={handleSearchChange}
+                placeholder="Search certificates..."
+              />
+            </div>
           </div>
 
           {/* Loading */}

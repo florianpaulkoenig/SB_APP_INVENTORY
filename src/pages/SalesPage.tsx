@@ -217,9 +217,6 @@ export function SalesPage() {
           <h1 className="font-display text-2xl font-bold text-primary-900">
             Sales
           </h1>
-          <p className="mt-1 text-sm text-primary-500">
-            View and record artwork sales.
-          </p>
         </div>
 
         <Button onClick={() => setShowModal(true)}>
@@ -228,25 +225,25 @@ export function SalesPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end">
-        <SearchInput
-          value={search}
-          onChange={handleSearchChange}
-          placeholder="Search by buyer name..."
-          className="max-w-md"
-        />
-
-        <div className="w-full sm:w-48">
-          <GallerySelect
-            value={galleryFilter}
-            onChange={setGalleryFilter}
-            label="Gallery"
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex-1 max-w-xs">
+          <SearchInput
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Search sales..."
           />
         </div>
 
-        <div className="w-full sm:w-40">
+        <div className="w-44 shrink-0">
+          <GallerySelect
+            value={galleryFilter}
+            onChange={setGalleryFilter}
+            label=""
+          />
+        </div>
+
+        <div className="w-44 shrink-0">
           <Select
-            label="Status"
             options={[
               { value: '', label: 'All Statuses' },
               ...REPORTING_STATUSES,

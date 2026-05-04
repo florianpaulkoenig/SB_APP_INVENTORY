@@ -40,9 +40,6 @@ export function PackingListsPage() {
           <h1 className="font-display text-2xl font-bold text-primary-900">
             Packing Lists
           </h1>
-          <p className="mt-1 text-sm text-primary-500">
-            Manage packing lists for artwork shipments.
-          </p>
         </div>
 
         <Button onClick={() => navigate('/packing-lists/new')}>
@@ -51,13 +48,14 @@ export function PackingListsPage() {
       </div>
 
       {/* Search */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end">
-        <SearchInput
-          value={search}
-          onChange={handleSearchChange}
-          placeholder="Search by packing number or recipient..."
-          className="max-w-md"
-        />
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex-1 max-w-xs">
+          <SearchInput
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Search packing lists..."
+          />
+        </div>
       </div>
 
       {/* Loading */}

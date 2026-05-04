@@ -49,9 +49,6 @@ export function InvoicesPage() {
           <h1 className="font-display text-2xl font-bold text-primary-900">
             Invoices
           </h1>
-          <p className="mt-1 text-sm text-primary-500">
-            Create and manage invoices for artwork sales.
-          </p>
         </div>
 
         <Button onClick={() => navigate('/invoices/new')}>
@@ -60,15 +57,16 @@ export function InvoicesPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end">
-        <SearchInput
-          value={search}
-          onChange={handleSearchChange}
-          placeholder="Search by invoice number..."
-          className="max-w-md"
-        />
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex-1 max-w-xs">
+          <SearchInput
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Search invoices..."
+          />
+        </div>
 
-        <div className="w-full sm:w-48">
+        <div className="w-44 shrink-0">
           <Select
             options={[...INVOICE_STATUSES]}
             value={statusFilter}

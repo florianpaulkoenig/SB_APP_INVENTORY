@@ -676,9 +676,6 @@ export function ProductionOrdersPage() {
           <h1 className="font-display text-2xl font-bold text-primary-900">
             Production Orders
           </h1>
-          <p className="mt-1 text-sm text-primary-500">
-            Manage production orders and track manufacturing progress.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -728,15 +725,16 @@ export function ProductionOrdersPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end">
-        <SearchInput
-          value={search}
-          onChange={handleSearchChange}
-          placeholder="Search by order number, title, or gallery..."
-          className="max-w-md"
-        />
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex-1 max-w-xs">
+          <SearchInput
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Search orders..."
+          />
+        </div>
 
-        <div className="w-full sm:w-48">
+        <div className="w-44 shrink-0">
           <Select
             options={[...PRODUCTION_STATUSES]}
             value={statusFilter}
@@ -745,9 +743,8 @@ export function ProductionOrdersPage() {
           />
         </div>
 
-        <div className="w-full sm:w-48">
+        <div className="w-44 shrink-0">
           <Select
-            label="PDF Language"
             options={[...LANGUAGE_OPTIONS]}
             value={language}
             onChange={(e) => setLanguage(e.target.value as Language)}
