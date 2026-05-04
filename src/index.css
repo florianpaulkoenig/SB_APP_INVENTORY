@@ -9,33 +9,102 @@
 }
 
 @theme {
-  --color-primary-50: #fafafa;
-  --color-primary-100: #f5f5f5;
-  --color-primary-200: #e5e5e5;
-  --color-primary-300: #d4d4d4;
-  --color-primary-400: #a3a3a3;
-  --color-primary-500: #737373;
-  --color-primary-600: #525252;
-  --color-primary-700: #404040;
-  --color-primary-800: #262626;
-  --color-primary-900: #171717;
-  --color-primary-950: #0a0a0a;
-  --color-accent: #c9a96e;
-  --color-accent-light: #d4bc8e;
-  --color-accent-dark: #b08d4a;
+  --color-primary-50: #f9f6f2;
+  --color-primary-100: #f0ebe3;
+  --color-primary-200: #dfd6cb;
+  --color-primary-300: #c5b8aa;
+  --color-primary-400: #a09080;
+  --color-primary-500: #7d6d60;
+  --color-primary-600: #5e5048;
+  --color-primary-700: #463c36;
+  --color-primary-800: #2e2620;
+  --color-primary-900: #1c1510;
+  --color-primary-950: #110d09;
+  --color-accent: #b8956a;
+  --color-accent-light: #cba882;
+  --color-accent-dark: #9a7a50;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-info: #3b82f6;
   --font-sans: "Anziano Pro", Georgia, serif;
   --font-display: "Anziano Pro", Georgia, serif;
+
+  /* Badge backgrounds — very light tints, still distinguishable */
+  --color-emerald-100: #e8edea;
+  --color-green-100:   #e8edea;
+  --color-red-100:     #ede8e8;
+  --color-red-200:     #e4d8d8;
+  --color-blue-100:    #e4eaf2;
+  --color-sky-100:     #e4ecf4;
+  --color-sky-500:     #6888a8;
+  --color-sky-600:     #1c1510;
+  --color-sky-700:     #1c1510;
+  --color-amber-100:   #f0eadc;
+  --color-orange-100:  #f0e8dc;
+  --color-purple-100:  #ece8f2;
+  --color-violet-100:  #ece8f2;
+  --color-indigo-100:  #e8eaf2;
+  --color-teal-100:    #e4eeee;
+  --color-cyan-100:    #e4eeee;
+  --color-rose-100:    #ede8ec;
+  --color-pink-100:    #ede8ec;
+
+  /* Schedule calendar backgrounds — muted but still distinct */
+  --color-emerald-500: #7a9e84;
+  --color-blue-500:    #6888a8;
+  --color-amber-500:   #ac8858;
+  --color-purple-500:  #8878b0;
+  --color-indigo-500:  #6870a8;
+  --color-rose-500:    #a87080;
+
+  /* All text variants → near-black (primary-900) */
+  --color-emerald-600: #1c1510;
+  --color-emerald-700: #1c1510;
+  --color-emerald-800: #1c1510;
+  --color-green-600:   #1c1510;
+  --color-green-800:   #1c1510;
+  --color-red-600:     #1c1510;
+  --color-red-700:     #1c1510;
+  --color-red-800:     #1c1510;
+  --color-red-900:     #1c1510;
+  --color-blue-600:    #1c1510;
+  --color-blue-700:    #1c1510;
+  --color-blue-800:    #1c1510;
+  --color-sky-800:     #1c1510;
+  --color-amber-600:   #1c1510;
+  --color-amber-700:   #1c1510;
+  --color-amber-800:   #1c1510;
+  --color-orange-800:  #1c1510;
+  --color-purple-600:  #1c1510;
+  --color-purple-700:  #1c1510;
+  --color-purple-800:  #1c1510;
+  --color-violet-600:  #1c1510;
+  --color-violet-700:  #1c1510;
+  --color-violet-800:  #1c1510;
+  --color-indigo-600:  #1c1510;
+  --color-indigo-700:  #1c1510;
+  --color-indigo-800:  #1c1510;
+  --color-teal-700:    #1c1510;
+  --color-teal-800:    #1c1510;
+  --color-cyan-700:    #1c1510;
+  --color-cyan-800:    #1c1510;
+  --color-rose-700:    #1c1510;
+  --color-rose-800:    #1c1510;
+  --color-pink-700:    #1c1510;
+  --color-pink-800:    #1c1510;
+
+  /* Warm gray — replaces neutral gray */
+  --color-gray-100: #f0ebe3;
+  --color-gray-500: #8a7d70;
+  --color-gray-800: #3a3028;
 }
 
 body {
   margin: 0;
   font-family: var(--font-sans);
   color: var(--color-primary-900);
-  background-color: #f9f8f6;
+  background-color: #f2ede6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: 0.02em;

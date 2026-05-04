@@ -306,8 +306,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-30 flex flex-col border-r border-primary-100 bg-white transition-all duration-200',
-        collapsed ? 'w-16' : 'w-64',
+        'fixed inset-y-0 left-0 z-30 flex flex-col border-r border-primary-100 bg-white transition-all duration-300',
+        collapsed ? 'w-16' : 'w-60',
       )}
     >
       {/* Logo area */}
@@ -334,11 +334,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           return (
             <div key={section.title} className="mb-4">
               {!collapsed && (
-                <p className="mb-1 px-6 text-[10px] font-semibold uppercase tracking-wider text-primary-400">
+                <p className="mb-1 px-6 text-[9px] font-light uppercase tracking-[0.2em] text-primary-300">
                   {section.title}
                 </p>
               )}
-              <ul className="space-y-0.5 px-2">
+              <ul className="space-y-0 px-2">
                 {visibleItems.map((item) => (
                   <li key={item.to}>
                     <NavLink
@@ -346,11 +346,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                       end={item.to === '/'}
                       className={({ isActive }) =>
                         cn(
-                          'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                          'flex items-center gap-3 rounded-none px-3 py-2 text-xs transition-colors',
                           collapsed && 'justify-center px-2',
                           isActive
-                            ? 'border-l-2 border-l-accent bg-accent/10 text-primary-900'
-                            : 'border-l-2 border-l-transparent text-primary-500 hover:bg-primary-50 hover:text-primary-900',
+                            ? 'border-l border-l-accent text-primary-900'
+                            : 'border-l border-l-transparent text-primary-400 hover:text-primary-900',
                         )
                       }
                       title={collapsed ? item.label : undefined}
@@ -376,11 +376,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    'flex items-center gap-3 rounded-none px-3 py-2 text-xs transition-colors',
                     collapsed && 'justify-center px-2',
                     isActive
-                      ? 'border-l-2 border-l-accent bg-accent/10 text-primary-900'
-                      : 'border-l-2 border-l-transparent text-primary-500 hover:bg-primary-50 hover:text-primary-900',
+                      ? 'border-l border-l-accent text-primary-900'
+                      : 'border-l border-l-transparent text-primary-400 hover:text-primary-900',
                   )
                 }
                 title={collapsed ? item.label : undefined}
@@ -409,7 +409,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             type="button"
             onClick={signOut}
             className={cn(
-              'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-primary-500 transition-colors hover:bg-primary-50 hover:text-primary-900',
+              'flex items-center gap-2 rounded-none px-3 py-2 text-xs text-primary-400 transition-colors hover:text-primary-900',
               collapsed && 'justify-center px-2',
             )}
             title="Sign out"

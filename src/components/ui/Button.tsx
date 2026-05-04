@@ -2,18 +2,18 @@ import { type ButtonHTMLAttributes } from 'react';
 import { cn } from '../../lib/utils';
 
 const variantStyles = {
-  primary: 'bg-primary-900 text-white hover:bg-primary-800 active:bg-primary-950 tracking-wide',
-  secondary: 'bg-primary-100 text-primary-900 hover:bg-primary-200 active:bg-primary-300',
+  primary: 'bg-primary-900 text-white hover:bg-primary-700 active:bg-primary-950',
+  secondary: 'bg-transparent text-primary-900 border border-primary-300 hover:border-primary-600 active:bg-primary-50',
   outline:
-    'border border-primary-300 text-primary-700 hover:bg-primary-50 active:bg-primary-100',
-  ghost: 'text-primary-600 hover:bg-primary-100 active:bg-primary-200',
+    'border border-primary-300 text-primary-700 hover:border-primary-600 hover:text-primary-900 active:bg-primary-50',
+  ghost: 'text-primary-500 hover:text-primary-900 active:text-primary-900',
   danger: 'bg-danger text-white hover:bg-red-600 active:bg-red-700',
 } as const;
 
 const sizeStyles = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-6 py-3 text-base',
+  sm: 'px-4 py-1.5 text-[10px]',
+  md: 'px-5 py-2.5 text-[10px]',
+  lg: 'px-8 py-3 text-xs',
 } as const;
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -39,7 +39,7 @@ export function Button({
       type={type}
       disabled={isDisabled}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2',
+        'inline-flex items-center justify-center gap-2 rounded-none font-medium uppercase tracking-widest transition-colors focus:outline-none focus:ring-1 focus:ring-accent focus:ring-offset-1',
         variantStyles[variant],
         sizeStyles[size],
         isDisabled && 'cursor-not-allowed opacity-50',

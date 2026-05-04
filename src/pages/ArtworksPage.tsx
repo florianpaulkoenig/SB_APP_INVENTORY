@@ -554,9 +554,6 @@ export function ArtworksPage() {
               </span>
             )}
           </h1>
-          <p className="mt-1 text-sm text-primary-500">
-            Manage your artwork inventory, track provenance and status.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -578,104 +575,23 @@ export function ArtworksPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-4">
-        <SearchInput
-          value={search}
-          onChange={handleSearchChange}
-          placeholder="Search by title, reference code, medium, year, location, notes..."
-          className="max-w-md"
-          autoFocus={shouldFocusSearch}
-        />
-      </div>
-
-      {/* Filters */}
-      <div className="mb-4">
+      {/* Search + Filters */}
+      <div className="mb-6">
         <ArtworkFilters
           filters={filters}
           onChange={handleFiltersChange}
           onClear={handleFiltersClear}
+          search={search}
+          onSearchChange={handleSearchChange}
+          shouldFocusSearch={shouldFocusSearch}
+          noPhotoFilter={noPhotoFilter}
+          onNoPhotoChange={(v) => updateParams(p => { if (v) p.set('np','1'); else p.delete('np'); p.delete('pg'); })}
+          viewMode={viewMode}
+          onViewModeChange={(v) => updateParams(p => { if (v === 'grid') p.delete('view'); else p.set('view', v); })}
+          sortValue={`${sortBy}:${sortOrder}`}
+          onSortChange={handleSortChange}
+          sortOptions={SORT_OPTIONS}
         />
-      </div>
-
-      <div className="mb-6">
-        <label className="inline-flex items-center gap-2 text-sm text-primary-700">
-          <input
-            type="checkbox"
-            checked={noPhotoFilter}
-            onChange={(e) => updateParams(p => { if (e.target.checked) p.set('np','1'); else p.delete('np'); p.delete('pg'); })}
-            className="h-4 w-4 rounded border-primary-300 text-primary-900 focus:ring-primary-500"
-          />
-          No photo
-        </label>
-      </div>
-
-      {/* View toggle & sort */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-1 rounded-lg border border-primary-200 p-0.5">
-          {/* Grid view button */}
-          <button
-            type="button"
-            onClick={() => updateParams(p => p.delete('view'))}
-            className={`rounded-md p-1.5 transition-colors ${
-              viewMode === 'grid'
-                ? 'bg-primary-900 text-white'
-                : 'text-primary-400 hover:text-primary-600'
-            }`}
-            aria-label="Grid view"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
-              />
-            </svg>
-          </button>
-
-          {/* Table view button */}
-          <button
-            type="button"
-            onClick={() => updateParams(p => p.set('view', 'table'))}
-            className={`rounded-md p-1.5 transition-colors ${
-              viewMode === 'table'
-                ? 'bg-primary-900 text-white'
-                : 'text-primary-400 hover:text-primary-600'
-            }`}
-            aria-label="Table view"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Sort dropdown (grid view only) */}
-        {viewMode === 'grid' && (
-          <div className="w-full sm:w-48">
-            <Select
-              options={SORT_OPTIONS}
-              value={`${sortBy}:${sortOrder}`}
-              onChange={(e) => handleSortChange(e.target.value)}
-            />
-          </div>
-        )}
       </div>
 
       {/* Bulk action bar */}
