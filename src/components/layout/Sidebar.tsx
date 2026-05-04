@@ -320,7 +320,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         ) : (
           <div>
             <span className="font-display text-base font-bold text-primary-900">NOA x Simon Berger</span>
-            <p className="text-[10px] font-medium tracking-widest text-primary-400">MANAGEMENT</p>
+            <p className="text-[10px] font-medium tracking-widest text-accent">MANAGEMENT</p>
           </div>
         )}
       </div>
@@ -349,7 +349,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                           'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                           collapsed && 'justify-center px-2',
                           isActive
-                            ? 'border-l-2 border-l-accent bg-primary-100 text-primary-900'
+                            ? 'border-l-2 border-l-accent bg-accent/10 text-primary-900'
                             : 'border-l-2 border-l-transparent text-primary-500 hover:bg-primary-50 hover:text-primary-900',
                         )
                       }
@@ -379,7 +379,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                     collapsed && 'justify-center px-2',
                     isActive
-                      ? 'border-l-2 border-l-accent bg-primary-100 text-primary-900'
+                      ? 'border-l-2 border-l-accent bg-accent/10 text-primary-900'
                       : 'border-l-2 border-l-transparent text-primary-500 hover:bg-primary-50 hover:text-primary-900',
                   )
                 }

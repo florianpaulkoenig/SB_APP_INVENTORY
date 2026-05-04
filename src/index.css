@@ -35,7 +35,7 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   color: var(--color-primary-900);
-  background-color: #ffffff;
+  background-color: #f9f8f6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: 0.02em;

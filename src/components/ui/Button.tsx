@@ -2,7 +2,7 @@ import { type ButtonHTMLAttributes } from 'react';
 import { cn } from '../../lib/utils';
 
 const variantStyles = {
-  primary: 'bg-primary-900 text-white hover:bg-primary-800 active:bg-primary-950',
+  primary: 'bg-primary-900 text-white hover:bg-primary-800 active:bg-primary-950 tracking-wide',
   secondary: 'bg-primary-100 text-primary-900 hover:bg-primary-200 active:bg-primary-300',
   outline:
     'border border-primary-300 text-primary-700 hover:bg-primary-50 active:bg-primary-100',
