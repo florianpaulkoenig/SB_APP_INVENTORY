@@ -93,11 +93,12 @@ export function LoginPage() {
       });
       if (verifyError) throw verifyError;
 
-      // After verify() the SDK promotes the session to aal2 and fires a
-      // TOKEN_REFRESHED / SIGNED_IN event. AuthContext's onAuthStateChange
-      // picks it up, isMfaPending() returns false, and session is exposed.
-      // The useEffect below watching `session` then navigates to '/'.
-      // No reload needed — a reload races against localStorage writes.
+      // verify() writes the AAL2 session to localStorage synchronously.
+      // We do a hard replace to '/' so AuthContext re-reads the new session
+      // cleanly — relying on onAuthStateChange alone is unreliable when the
+      // MFA form was shown via the hard-refresh detection path (no preceding
+      // signInWithPassword in this render cycle).
+      window.location.replace('/');
     } catch {
       setMfaError('Invalid verification code. Please try again.');
       setLoading(false);
