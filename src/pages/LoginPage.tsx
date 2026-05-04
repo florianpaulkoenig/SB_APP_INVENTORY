@@ -13,15 +13,6 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { signIn, session } = useAuth();
 
-  // Auto-redirect when session becomes available (normal login path only).
-  // The MFA path navigates explicitly via window.location.replace to avoid
-  // race conditions between setMfaVerified and the onAuthStateChange session update.
-  useEffect(() => {
-    if (session && !showMfaChallenge) {
-      navigate('/', { replace: true });
-    }
-  }, [session, navigate, showMfaChallenge]);
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -32,6 +23,15 @@ export function LoginPage() {
   const [mfaCode, setMfaCode] = useState('');
   const [mfaError, setMfaError] = useState('');
   const [mfaVerified, setMfaVerified] = useState(false);
+
+  // Auto-redirect when session becomes available (normal login path only).
+  // The MFA path navigates explicitly via window.location.replace to avoid
+  // race conditions between setMfaVerified and the onAuthStateChange session update.
+  useEffect(() => {
+    if (session && !showMfaChallenge) {
+      navigate('/', { replace: true });
+    }
+  }, [session, navigate, showMfaChallenge]);
 
   // On mount: if Supabase already has an AAL1 session (e.g. after hard
   // refresh) skip the password form and go straight to the MFA step.
