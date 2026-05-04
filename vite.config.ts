@@ -33,8 +33,10 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       VitePWA({
-        // Use 'prompt' so the SW never silently serves stale content
-        registerType: 'prompt',
+        // autoUpdate so the selfDestroying SW installs immediately without
+        // waiting for user confirmation — it activates and unregisters itself,
+        // breaking any stale cache cycle.
+        registerType: 'autoUpdate',
         // selfDestroying cleans up any previously installed service workers
         selfDestroying: true,
         workbox: {
