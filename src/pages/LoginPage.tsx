@@ -13,12 +13,14 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { signIn, session } = useAuth();
 
-  // Auto-redirect when session becomes available (via shared context)
+  // Auto-redirect when session becomes available (normal login path only).
+  // The MFA path navigates explicitly via window.location.replace to avoid
+  // race conditions between setMfaVerified and the onAuthStateChange session update.
   useEffect(() => {
-    if (session) {
+    if (session && !showMfaChallenge) {
       navigate('/', { replace: true });
     }
-  }, [session, navigate]);
+  }, [session, navigate, showMfaChallenge]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
