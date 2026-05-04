@@ -30,6 +30,18 @@ export function LoginPage() {
   const [mfaCode, setMfaCode] = useState('');
   const [mfaError, setMfaError] = useState('');
 
+  // On mount: if Supabase already has an AAL1 session (e.g. after hard
+  // refresh) skip the password form and go straight to the MFA step.
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+      if (!s) return;
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
+        setShowMfaChallenge(true);
+      }
+    });
+  }, []);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
