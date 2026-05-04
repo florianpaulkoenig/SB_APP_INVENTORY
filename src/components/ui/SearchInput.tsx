@@ -51,7 +51,7 @@ export function SearchInput({
     <div className={cn('relative', className)}>
       {/* Search icon */}
       <svg
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary-400"
+        className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-primary-300"
         fill="none"
         viewBox="0 0 24 24"
         strokeWidth="2"
@@ -70,7 +70,7 @@ export function SearchInput({
         onChange={handleChange}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="w-full rounded-md border border-primary-200 bg-white py-2 pl-10 pr-3 text-sm text-primary-900 placeholder:text-primary-400 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
+        className="w-full rounded-none border-0 border-b border-primary-200 bg-transparent py-2 pl-8 pr-3 text-sm text-primary-900 placeholder:text-primary-300 transition-colors focus:border-accent focus:outline-none"
       />
     </div>
   );

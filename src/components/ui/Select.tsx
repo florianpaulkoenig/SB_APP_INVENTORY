@@ -31,10 +31,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           className={cn(
-            'w-full rounded-md border border-primary-200 bg-white px-3 py-2 text-sm text-primary-900 transition-colors',
-            'focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none',
-            error && 'border-danger focus:border-danger focus:ring-danger',
-            props.disabled && 'cursor-not-allowed bg-primary-50 opacity-60',
+            'w-full rounded-none border-0 border-b border-primary-200 bg-transparent px-0 py-2 text-sm text-primary-900 transition-colors',
+            'focus:border-accent focus:outline-none',
+            error && 'border-danger focus:border-danger',
+            props.disabled && 'cursor-not-allowed opacity-60',
             className,
           )}
           {...props}
