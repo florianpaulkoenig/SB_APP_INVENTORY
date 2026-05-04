@@ -29,6 +29,7 @@ export function LoginPage() {
   const [showMfaChallenge, setShowMfaChallenge] = useState(false);
   const [mfaCode, setMfaCode] = useState('');
   const [mfaError, setMfaError] = useState('');
+  const [mfaVerified, setMfaVerified] = useState(false);
 
   // On mount: if Supabase already has an AAL1 session (e.g. after hard
   // refresh) skip the password form and go straight to the MFA step.
@@ -93,12 +94,8 @@ export function LoginPage() {
       });
       if (verifyError) throw verifyError;
 
-      // verify() writes the AAL2 session to localStorage synchronously.
-      // We do a hard replace to '/' so AuthContext re-reads the new session
-      // cleanly — relying on onAuthStateChange alone is unreliable when the
-      // MFA form was shown via the hard-refresh detection path (no preceding
-      // signInWithPassword in this render cycle).
-      window.location.replace('/');
+      setMfaVerified(true);
+      setLoading(false);
     } catch {
       setMfaError('Invalid verification code. Please try again.');
       setLoading(false);
@@ -115,55 +112,71 @@ export function LoginPage() {
 
         {showMfaChallenge ? (
           <div className="space-y-5">
-            <p className="text-center text-sm text-primary-400">
-              Enter the 6-digit code from your authenticator app.
-            </p>
+            {mfaVerified ? (
+              <div className="space-y-5">
+                <p className="text-center text-sm text-primary-400">Verification successful.</p>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  onClick={() => window.location.replace('/')}
+                >
+                  Open App
+                </Button>
+              </div>
+            ) : (
+              <>
+                <p className="text-center text-sm text-primary-400">
+                  Enter the 6-digit code from your authenticator app.
+                </p>
 
-            <form onSubmit={handleMfaVerify} className="space-y-5">
-              <Input
-                value={mfaCode}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                  setMfaCode(val);
-                }}
-                placeholder="000000"
-                maxLength={6}
-                pattern="[0-9]{6}"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                autoFocus
-                required
-                className="text-center text-lg tracking-[0.5em] py-3"
-              />
+                <form onSubmit={handleMfaVerify} className="space-y-5">
+                  <Input
+                    value={mfaCode}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setMfaCode(val);
+                    }}
+                    placeholder="000000"
+                    maxLength={6}
+                    pattern="[0-9]{6}"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    autoFocus
+                    required
+                    className="text-center text-lg tracking-[0.5em] py-3"
+                  />
 
-              {mfaError && (
-                <p className="text-center text-xs text-danger">{mfaError}</p>
-              )}
+                  {mfaError && (
+                    <p className="text-center text-xs text-danger">{mfaError}</p>
+                  )}
 
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                loading={loading}
-                disabled={mfaCode.length !== 6}
-                className="w-full"
-              >
-                Verify
-              </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    loading={loading}
+                    disabled={mfaCode.length !== 6}
+                    className="w-full"
+                  >
+                    Verify
+                  </Button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMfaChallenge(false);
-                  setMfaCode('');
-                  setMfaError('');
-                  supabase.auth.signOut();
-                }}
-                className="block w-full text-center text-xs text-primary-400 hover:text-primary-600 transition-colors"
-              >
-                Back
-              </button>
-            </form>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMfaChallenge(false);
+                      setMfaCode('');
+                      setMfaError('');
+                      supabase.auth.signOut();
+                    }}
+                    className="block w-full text-center text-xs text-primary-400 hover:text-primary-600 transition-colors"
+                  >
+                    Back
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
