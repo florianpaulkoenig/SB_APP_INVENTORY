@@ -8,6 +8,7 @@ import { DeliveryReceiptPDF } from '../pdf/DeliveryReceiptPDF';
 import { formatDate, formatDimensions, downloadBlob } from '../../lib/utils';
 import { DELIVERY_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
+import { resizeToDataUrl } from '../../lib/pdfImageUtils';
 import type { DeliveryRow, DeliveryItemRow, DeliveryStatus } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -180,15 +181,16 @@ export function DeliveryDetail({
         const imagePaths = Object.entries(bestPathMap).map(([artwork_id, storage_path]) => ({ artwork_id, storage_path }));
 
         if (imagePaths.length > 0) {
-          // Use small thumbnails for PDF (44×44 pt display) to keep PDF < 1 MB
+          // Use plain signed URLs + client-side canvas resize.
+          // Supabase transform URLs (/render/image/sign/) don't load reliably in react-pdf.
           const urls = await Promise.all(
             imagePaths.map(async (img) => {
               const { data: urlData } = await supabase.storage
                 .from('artwork-images')
-                .createSignedUrl(img.storage_path, 600, {
-                  transform: { width: 150, height: 150, quality: 50, resize: 'contain' as const },
-                });
-              return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
+                .createSignedUrl(img.storage_path, 600);
+              if (!urlData?.signedUrl) return { artworkId: img.artwork_id, url: null };
+              const dataUrl = await resizeToDataUrl(urlData.signedUrl, 150, 0.6);
+              return { artworkId: img.artwork_id, url: dataUrl ?? urlData.signedUrl };
             }),
           );
           for (const { artworkId, url } of urls) {
