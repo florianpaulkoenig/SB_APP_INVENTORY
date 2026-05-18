@@ -1136,6 +1136,25 @@ export interface ProjectProductionOrderInsert {
   production_order_id: string;
 }
 
+// -- production_order_documents ----------------------------------------------
+
+export interface ProductionOrderDocumentRow {
+  id: string;
+  user_id: string;
+  production_order_id: string;
+  file_name: string;
+  storage_path: string;
+  created_at: string;
+}
+
+export interface ProductionOrderDocumentInsert {
+  id?: string;
+  user_id?: string;
+  production_order_id: string;
+  file_name: string;
+  storage_path: string;
+}
+
 // -- loans -------------------------------------------------------------------
 
 export type LoanStatus = 'pending' | 'active' | 'returned';

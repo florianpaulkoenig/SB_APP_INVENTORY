@@ -8,6 +8,8 @@ import {
 import { ProductionOrderDetail } from '../components/production/ProductionOrderDetail';
 import { ProductionOrderForm } from '../components/production/ProductionOrderForm';
 import { ProductionOrderImages } from '../components/production/ProductionOrderImages';
+import { ProductionOrderDocuments } from '../components/production/ProductionOrderDocuments';
+import { ProductionOrderLinks } from '../components/production/ProductionOrderLinks';
 import { ProductionItemEditor } from '../components/production/ProductionItemEditor';
 import { ConvertToArtworkDialog } from '../components/production/ConvertToArtworkDialog';
 import { Button } from '../components/ui/Button';
@@ -261,6 +263,15 @@ export function ProductionOrderDetailPage() {
     }
 
     const userId = session.user.id;
+
+    // Fetch linked exhibitions and projects so converted artworks inherit the links
+    const [exhRes, projRes] = await Promise.all([
+      supabase.from('exhibition_production_orders').select('exhibition_id').eq('production_order_id', id!),
+      supabase.from('project_production_orders').select('project_id').eq('production_order_id', id!),
+    ]);
+    const linkedExhibitionIds = (exhRes.data ?? []).map((r) => (r as { exhibition_id: string }).exhibition_id);
+    const linkedProjectIds = (projRes.data ?? []).map((r) => (r as { project_id: string }).project_id);
+
     let totalCreated = 0;
 
     for (const item of unconverted) {
@@ -328,6 +339,18 @@ export function ProductionOrderDetailPage() {
 
           lastArtworkId = artwork.id;
           totalCreated++;
+
+          // Link to exhibitions and projects (best-effort)
+          for (const exhibitionId of linkedExhibitionIds) {
+            await supabase.from('exhibition_artworks').insert({
+              user_id: userId, exhibition_id: exhibitionId, artwork_id: artwork.id,
+            } as never);
+          }
+          for (const projectId of linkedProjectIds) {
+            await supabase.from('project_artworks').insert({
+              user_id: userId, project_id: projectId, artwork_id: artwork.id,
+            } as never);
+          }
 
           // Auto-create certificate (best-effort)
           try {
@@ -506,9 +529,19 @@ export function ProductionOrderDetailPage() {
         onLinkArtwork={handleLinkArtwork}
       />
 
+      {/* Linked Exhibitions & Projects */}
+      <div className="mt-8">
+        <ProductionOrderLinks productionOrderId={id!} />
+      </div>
+
       {/* Reference Images */}
       <div className="mt-8">
         <ProductionOrderImages productionOrderId={id!} />
+      </div>
+
+      {/* Documents (PDF attachments) */}
+      <div className="mt-8">
+        <ProductionOrderDocuments productionOrderId={id!} />
       </div>
 
       {/* Add Item Modal */}
