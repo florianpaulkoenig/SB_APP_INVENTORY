@@ -164,16 +164,25 @@ export function DeliveryDetail({
       const imageMap: Record<string, string> = {};
 
       if (artworkIds.length > 0) {
-        const { data: primaryImages } = await supabase
+        const { data: allImages } = await supabase
           .from('artwork_images')
-          .select('artwork_id, storage_path')
+          .select('artwork_id, storage_path, is_primary, sort_order')
           .in('artwork_id', artworkIds)
-          .eq('is_primary', true);
+          .order('is_primary', { ascending: false })
+          .order('sort_order', { ascending: true });
 
-        if (primaryImages && primaryImages.length > 0) {
+        // Deduplicate: one image per artwork, primary preferred
+        const bestPathMap: Record<string, string> = {};
+        for (const img of allImages ?? []) {
+          if (!bestPathMap[img.artwork_id]) bestPathMap[img.artwork_id] = img.storage_path;
+        }
+
+        const imagePaths = Object.entries(bestPathMap).map(([artwork_id, storage_path]) => ({ artwork_id, storage_path }));
+
+        if (imagePaths.length > 0) {
           // Use small thumbnails for PDF (44×44 pt display) to keep PDF < 1 MB
           const urls = await Promise.all(
-            primaryImages.map(async (img) => {
+            imagePaths.map(async (img) => {
               const { data: urlData } = await supabase.storage
                 .from('artwork-images')
                 .createSignedUrl(img.storage_path, 600, {
