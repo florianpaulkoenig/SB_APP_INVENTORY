@@ -20,6 +20,7 @@ export interface GalleryDetailProps {
   gallery: GalleryRow;
   onEdit: () => void;
   onDelete: () => Promise<void>;
+  onGalleryUpdate?: (updated: GalleryRow) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,10 +43,80 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
 // Component
 // ---------------------------------------------------------------------------
 
-export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps) {
+export function GalleryDetail({ gallery, onEdit, onDelete, onGalleryUpdate }: GalleryDetailProps) {
   const navigate = useNavigate();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // ---- Agreement ----------------------------------------------------------
+  const [agreementUploading, setAgreementUploading] = useState(false);
+  const [agreementDeleting, setAgreementDeleting] = useState(false);
+  const [agreementTogglingSign, setAgreementTogglingSign] = useState(false);
+
+  async function handleAgreementUpload(file: File) {
+    if (!file || file.type !== 'application/pdf') return;
+    setAgreementUploading(true);
+    try {
+      const path = `gallery-agreements/${gallery.id}/agreement.pdf`;
+      const { error: uploadError } = await supabase.storage
+        .from('media-files')
+        .upload(path, file, { upsert: true, contentType: 'application/pdf' });
+      if (uploadError) throw uploadError;
+
+      const { data, error: dbError } = await supabase
+        .from('galleries')
+        .update({ agreement_storage_path: path } as never)
+        .eq('id', gallery.id)
+        .select('*')
+        .single();
+      if (dbError) throw dbError;
+      onGalleryUpdate?.(data as GalleryRow);
+    } catch {
+      // upload failed silently — user can retry
+    } finally {
+      setAgreementUploading(false);
+    }
+  }
+
+  async function handleAgreementDelete() {
+    setAgreementDeleting(true);
+    try {
+      const path = `gallery-agreements/${gallery.id}/agreement.pdf`;
+      await supabase.storage.from('media-files').remove([path]);
+      const { data, error } = await supabase
+        .from('galleries')
+        .update({ agreement_storage_path: null, agreement_signed: false } as never)
+        .eq('id', gallery.id)
+        .select('*')
+        .single();
+      if (!error) onGalleryUpdate?.(data as GalleryRow);
+    } finally {
+      setAgreementDeleting(false);
+    }
+  }
+
+  async function handleAgreementDownload() {
+    if (!gallery.agreement_storage_path) return;
+    const { data } = await supabase.storage
+      .from('media-files')
+      .createSignedUrl(gallery.agreement_storage_path, 300);
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+  }
+
+  async function handleToggleSigned() {
+    setAgreementTogglingSign(true);
+    try {
+      const { data, error } = await supabase
+        .from('galleries')
+        .update({ agreement_signed: !gallery.agreement_signed } as never)
+        .eq('id', gallery.id)
+        .select('*')
+        .single();
+      if (!error) onGalleryUpdate?.(data as GalleryRow);
+    } finally {
+      setAgreementTogglingSign(false);
+    }
+  }
 
   // ---- Consignment artworks -----------------------------------------------
   const [consignmentArtworks, setConsignmentArtworks] = useState<ArtworkRow[]>([]);
@@ -297,6 +368,96 @@ export function GalleryDetail({ gallery, onEdit, onDelete }: GalleryDetailProps)
               </div>
             </div>
           </div>
+        )}
+      </section>
+
+      {/* Agreement */}
+      <section className="rounded-lg border border-primary-100 bg-white p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-display text-base font-semibold text-primary-900">
+            Gallery Agreement
+          </h2>
+          {/* Signed badge */}
+          {gallery.agreement_signed ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              Signed
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-600 ring-1 ring-amber-200">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+              Not signed
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Upload */}
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept="application/pdf"
+              className="sr-only"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleAgreementUpload(file);
+                e.target.value = '';
+              }}
+            />
+            <span
+              className={`inline-flex items-center gap-2 rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-50 ${agreementUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              {agreementUploading ? 'Uploading…' : gallery.agreement_storage_path ? 'Replace PDF' : 'Upload PDF'}
+            </span>
+          </label>
+
+          {/* Download */}
+          {gallery.agreement_storage_path && (
+            <Button variant="outline" size="sm" onClick={handleAgreementDownload}>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              Download
+            </Button>
+          )}
+
+          {/* Toggle signed */}
+          {gallery.agreement_storage_path && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleSigned}
+              loading={agreementTogglingSign}
+            >
+              {gallery.agreement_signed ? 'Mark as Unsigned' : 'Mark as Signed'}
+            </Button>
+          )}
+
+          {/* Delete */}
+          {gallery.agreement_storage_path && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAgreementDelete}
+              loading={agreementDeleting}
+              className="text-red-500 hover:text-red-700"
+            >
+              Remove
+            </Button>
+          )}
+        </div>
+
+        {!gallery.agreement_storage_path && (
+          <p className="mt-3 text-sm text-primary-400">
+            No agreement uploaded yet.
+          </p>
         )}
       </section>
 

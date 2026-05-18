@@ -23,6 +23,7 @@ type SortKey =
   | 'type'
   | 'city'
   | 'country'
+  | 'agreement'
   | 'total'
   | 'onConsignment'
   | 'sold'
@@ -34,6 +35,7 @@ const COLUMNS: { key: SortKey; label: string; align?: 'right'; hiddenBelow?: 'sm
   { key: 'type', label: 'Type / Category', hiddenBelow: 'md' },
   { key: 'city', label: 'City', hiddenBelow: 'lg' },
   { key: 'country', label: 'Country', hiddenBelow: 'lg' },
+  { key: 'agreement', label: 'Agreement', hiddenBelow: 'sm' },
   { key: 'total', label: 'Artworks', align: 'right' },
   { key: 'onConsignment', label: 'On Consignment', align: 'right', hiddenBelow: 'md' },
   { key: 'sold', label: 'Sold', align: 'right', hiddenBelow: 'sm' },
@@ -92,6 +94,11 @@ export function GalleryTable({ galleries, galleryStats, onGalleryClick }: Galler
         case 'country':
           av = (a.country ?? '').toLowerCase();
           bv = (b.country ?? '').toLowerCase();
+          break;
+        case 'agreement':
+          // signed > unsigned > none
+          av = a.agreement_signed ? 2 : a.agreement_storage_path ? 1 : 0;
+          bv = b.agreement_signed ? 2 : b.agreement_storage_path ? 1 : 0;
           break;
         case 'total':
         case 'onConsignment':
@@ -196,6 +203,29 @@ export function GalleryTable({ galleries, galleryStats, onGalleryClick }: Galler
                 {/* Country */}
                 <td className="hidden px-2 py-2 text-sm text-primary-600 lg:table-cell sm:px-4 sm:py-3">
                   {gallery.country ?? '\u2014'}
+                </td>
+
+                {/* Agreement */}
+                <td className="hidden px-2 py-2 sm:table-cell sm:px-4 sm:py-3">
+                  {gallery.agreement_storage_path ? (
+                    gallery.agreement_signed ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        Signed
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600 ring-1 ring-amber-200">
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                        Not signed
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-xs text-primary-300">\u2014</span>
+                  )}
                 </td>
 
                 {/* Artworks */}

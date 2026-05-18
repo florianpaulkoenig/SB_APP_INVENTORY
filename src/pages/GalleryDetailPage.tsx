@@ -121,6 +121,7 @@ export function GalleryDetailPage() {
         gallery={gallery}
         onEdit={() => navigate(`/galleries/${id}/edit`)}
         onDelete={handleDelete}
+        onGalleryUpdate={(updated) => setGallery(updated)}
       />
 
       {/* Related Tasks */}

@@ -149,12 +149,29 @@ export const GalleryCard = memo(function GalleryCard({ gallery, stats, artworkCo
         </div>
       )}
 
-      {/* Commission badge */}
+      {/* Commission badge + agreement indicator */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {gallery.commission_rate != null && (
           <span className="inline-block rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
             {gallery.commission_rate}% commission
           </span>
+        )}
+        {gallery.agreement_storage_path != null && (
+          gallery.agreement_signed ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700" title="Agreement signed">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              Signed
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600 ring-1 ring-amber-200" title="Agreement not signed">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+              Not signed
+            </span>
+          )
         )}
       </div>
     </Card>

@@ -123,6 +123,8 @@ export interface GalleryRow {
   status_color: GalleryStatusColor | null;
   sell_through_override: number | null;
   notes: string | null;
+  agreement_storage_path: string | null;
+  agreement_signed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -145,6 +147,8 @@ export interface GalleryInsert {
   status_color?: GalleryStatusColor | null;
   sell_through_override?: number | null;
   notes?: string | null;
+  agreement_storage_path?: string | null;
+  agreement_signed?: boolean;
   created_at?: string;
   updated_at?: string;
 }

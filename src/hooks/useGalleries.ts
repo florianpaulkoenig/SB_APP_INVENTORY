@@ -57,7 +57,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
     try {
       let query = supabase
         .from('galleries')
-        .select('id, name, status_color, city, country, contact_person, email, phone, type, commission_rate, created_at, updated_at', { count: 'exact' });
+        .select('id, name, status_color, city, country, contact_person, email, phone, type, commission_rate, agreement_storage_path, agreement_signed, created_at, updated_at', { count: 'exact' });
 
       // Search filter: match name, city, or country
       if (filters.search) {
