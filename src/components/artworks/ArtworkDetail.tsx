@@ -26,7 +26,7 @@ export interface ArtworkDetailProps {
   isAdmin?: boolean;
   onEdit: () => void;
   onDelete: () => Promise<void>;
-  onMarkSold?: (salePrice: number, currency: string, saleDate: string, saleCity: string, saleCountry: string, saleType: string) => Promise<void>;
+  onMarkSold?: (salePrice: number, currency: string, saleDate: string, saleCity: string, saleCountry: string, saleType: string, paymentExpectedDate: string | null) => Promise<void>;
   onDuplicate?: () => Promise<void>;
   onTogglePartnerAvailability?: () => Promise<void>;
 }
@@ -86,6 +86,7 @@ export function ArtworkDetail({
   const [saleCityState, setSaleCityState] = useState('');
   const [saleCountryState, setSaleCountryState] = useState('');
   const [saleTypeState, setSaleTypeState] = useState('');
+  const [paymentExpectedDate, setPaymentExpectedDate] = useState('');
   const [soldLoading, setSoldLoading] = useState(false);
 
   // Formatted values
@@ -129,7 +130,7 @@ export function ArtworkDetail({
     if (isNaN(price) || price <= 0) return;
 
     setSoldLoading(true);
-    await onMarkSold(price, saleCurrency, saleDate, saleCityState, saleCountryState, saleTypeState);
+    await onMarkSold(price, saleCurrency, saleDate, saleCityState, saleCountryState, saleTypeState, paymentExpectedDate || null);
     setSoldLoading(false);
     setShowSoldDialog(false);
   }
@@ -163,6 +164,7 @@ export function ArtworkDetail({
                 setSaleCityState('');
                 setSaleCountryState('');
                 setSaleTypeState('');
+                setPaymentExpectedDate('');
                 setShowSoldDialog(true);
               }}
             >
@@ -401,6 +403,12 @@ export function ArtworkDetail({
             ]}
             value={saleTypeState}
             onChange={(e) => setSaleTypeState(e.target.value)}
+          />
+          <Input
+            label="Zahlungseingang erwartet (optional)"
+            type="date"
+            value={paymentExpectedDate}
+            onChange={(e) => setPaymentExpectedDate(e.target.value)}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={() => setShowSoldDialog(false)}>

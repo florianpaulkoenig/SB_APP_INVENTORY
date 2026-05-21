@@ -305,7 +305,7 @@ export function ArtworkDetailPage() {
   // ---- Mark as Sold handler ------------------------------------------------
 
   const handleMarkSold = useCallback(
-    async (salePrice: number, currency: string, saleDateStr: string, saleCity: string, saleCountry: string, saleType: string) => {
+    async (salePrice: number, currency: string, saleDateStr: string, saleCity: string, saleCountry: string, saleType: string, paymentExpectedDate: string | null) => {
       if (!id || !artwork) return;
 
       try {
@@ -330,6 +330,7 @@ export function ArtworkDetailPage() {
             sale_city: saleCity.trim() || null,
             sale_country: saleCountry.trim() || null,
             sale_type: saleType || null,
+            payment_expected_date: paymentExpectedDate || null,
             user_id: session.user.id,
           } as never)
           .select()

@@ -340,6 +340,7 @@ export interface SaleRow {
   final_invoiced_amount: number | null;
   negotiation_notes: string | null;
   payment_status: PaymentStatus;
+  payment_expected_date: string | null;
   sales_channel: string | null;
   collector_anonymity_mode: CollectorAnonymityMode;
   created_at: string;
@@ -371,6 +372,7 @@ export interface SaleInsert {
   final_invoiced_amount?: number | null;
   negotiation_notes?: string | null;
   payment_status?: PaymentStatus;
+  payment_expected_date?: string | null;
   sales_channel?: string | null;
   collector_anonymity_mode?: CollectorAnonymityMode;
   created_at?: string;
@@ -2077,6 +2079,80 @@ export interface AiInsightFeedbackInsert {
 }
 
 export type AiInsightFeedbackUpdate = Partial<AiInsightFeedbackInsert>;
+
+// ============================================================================
+// NOA Liquidity types
+// ============================================================================
+
+export interface NOALiquiditySettingsRow {
+  id: string;
+  user_id: string;
+  starting_balance: number;
+  starting_balance_date: string;
+  updated_at: string;
+}
+
+export interface NOALiquiditySettingsInsert {
+  id?: string;
+  user_id?: string;
+  starting_balance: number;
+  starting_balance_date: string;
+  updated_at?: string;
+}
+
+export type NOALiquiditySettingsUpdate = Partial<NOALiquiditySettingsInsert>;
+
+export type LiquidityExpenseType = 'fixed' | 'one_time';
+
+export interface NOALiquidityExpenseRow {
+  id: string;
+  user_id: string;
+  description: string;
+  amount: number;
+  type: LiquidityExpenseType;
+  active: boolean;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NOALiquidityExpenseInsert {
+  id?: string;
+  user_id?: string;
+  description: string;
+  amount: number;
+  type: LiquidityExpenseType;
+  active?: boolean;
+  due_date?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type NOALiquidityExpenseUpdate = Partial<NOALiquidityExpenseInsert>;
+
+export interface NOALiquidityIncomeRow {
+  id: string;
+  user_id: string;
+  description: string;
+  amount: number;
+  expected_date: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NOALiquidityIncomeInsert {
+  id?: string;
+  user_id?: string;
+  description: string;
+  amount: number;
+  expected_date: string;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type NOALiquidityIncomeUpdate = Partial<NOALiquidityIncomeInsert>;
 
 // ---- Supabase Database type (standard pattern) -----------------------------
 
