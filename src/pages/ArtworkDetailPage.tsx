@@ -11,6 +11,7 @@ import { ArtworkImageGallery } from '../components/artworks/ArtworkImageGallery'
 import { ArtworkImageUpload } from '../components/artworks/ArtworkImageUpload';
 import { ArtworkMovementHistory } from '../components/artworks/ArtworkMovementHistory';
 import { ConditionReportPanel } from '../components/artworks/ConditionReportPanel';
+import { AppraisalSection } from '../components/artworks/AppraisalSection';
 import { InsurancePanel } from '../components/artworks/InsurancePanel';
 import { ValuationHistory } from '../components/artworks/ValuationHistory';
 import { ExhibitionHistory } from '../components/artworks/ExhibitionHistory';
@@ -608,6 +609,24 @@ export function ArtworkDetailPage() {
           </div>
         )}
       </section>
+
+      {/* Artwork Appraisal */}
+      <AppraisalSection
+        artworkId={id!}
+        artwork={{
+          title: artwork.title,
+          reference_code: artwork.reference_code,
+          medium: artwork.medium,
+          year: artwork.year,
+          height: artwork.height,
+          width: artwork.width,
+          depth: artwork.depth,
+          dimension_unit: artwork.dimension_unit,
+          edition_type: artwork.edition_type,
+          edition_number: artwork.edition_number,
+          edition_total: artwork.edition_total,
+        }}
+      />
 
       {/* Image gallery + upload */}
       <div className="mt-8 space-y-6">

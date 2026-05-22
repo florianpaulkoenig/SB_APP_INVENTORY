@@ -2154,6 +2154,46 @@ export interface NOALiquidityIncomeInsert {
 
 export type NOALiquidityIncomeUpdate = Partial<NOALiquidityIncomeInsert>;
 
+// ---- Artwork Appraisals ----------------------------------------------------
+
+export type AppraisalPurpose = 'insurance' | 'resale' | 'estate' | 'donation' | 'other';
+
+export interface ArtworkAppraisalRow {
+  id: string;
+  user_id: string;
+  artwork_id: string;
+  appraisal_number: string;
+  appraised_value: number;
+  currency: string;
+  appraisal_date: string;
+  purpose: AppraisalPurpose;
+  appraiser_name: string;
+  appraiser_credentials: string | null;
+  condition: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ArtworkAppraisalInsert {
+  id?: string;
+  user_id?: string;
+  artwork_id: string;
+  appraisal_number: string;
+  appraised_value: number;
+  currency?: string;
+  appraisal_date: string;
+  purpose: AppraisalPurpose;
+  appraiser_name?: string;
+  appraiser_credentials?: string | null;
+  condition?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type ArtworkAppraisalUpdate = Partial<ArtworkAppraisalInsert>;
+
 // ---- Supabase Database type (standard pattern) -----------------------------
 
 export interface Database {

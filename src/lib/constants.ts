@@ -23,6 +23,7 @@ export const DOC_PREFIXES = {
   certificate: 'COA',
   invoice: 'INV',
   forwarding: 'GF',
+  appraisal: 'APR',
 } as const;
 
 // ---------------------------------------------------------------------------
