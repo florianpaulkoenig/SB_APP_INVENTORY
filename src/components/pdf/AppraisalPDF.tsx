@@ -5,7 +5,6 @@
 
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import styles, { PDF_COLORS, pdfFont } from './PDFStyles';
-import { PDFHeader } from './PDFHeader';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 import type { AppraisalPurpose } from '../../types/database';
 
@@ -207,13 +206,59 @@ const MONTH_NAMES: Record<string, string[]> = {
 // Appraisal-specific styles
 // ---------------------------------------------------------------------------
 const s = StyleSheet.create({
+  // ---- Custom header (artist left, NOA Contemporary right) -----------------
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 0,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+    paddingTop: 4,
+  },
+  artistName: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 22,
+    color: PDF_COLORS.primary900,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  docTitle: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 14,
+    color: PDF_COLORS.primary700,
+    marginTop: 4,
+    letterSpacing: 1,
+  },
+  companyNameRight: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 10,
+    color: PDF_COLORS.primary400,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textAlign: 'right',
+  },
+  headerAccentLine: {
+    width: 60,
+    height: 1,
+    backgroundColor: PDF_COLORS.border,
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  // ---- Image + detail grid ------------------------------------------------
   imageContainer: {
     marginBottom: 24,
     alignItems: 'center',
   },
   artworkImage: {
     width: '100%',
-    maxHeight: 320,
+    maxHeight: 420,
     objectFit: 'contain',
   },
   signatureImage: {
@@ -221,17 +266,10 @@ const s = StyleSheet.create({
     height: 40,
     objectFit: 'contain',
   },
-  appraisalNumber: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 8,
-    color: PDF_COLORS.primary400,
-    marginBottom: 20,
-    letterSpacing: 0.5,
-  },
   valueHighlight: {
     fontFamily: 'AnzianoPro',
     fontWeight: 'bold' as const,
-    fontSize: 12,
+    fontSize: 10,
     color: PDF_COLORS.primary900,
     flex: 1,
   },
@@ -360,7 +398,10 @@ function formatDateFull(dateStr: string, language: string): string {
 }
 
 function formatCurrencyValue(amount: number, currency: string): string {
-  return new Intl.NumberFormat('de-CH', {
+  // CHF uses Swiss format (apostrophe separator: 85'000)
+  // All other currencies use en-US format (comma separator: 85,000)
+  const locale = currency === 'CHF' ? 'de-CH' : 'en-US';
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
@@ -417,18 +458,17 @@ export function AppraisalPDF({ artwork, appraisal, artworkImageUrl, signatureUrl
     <Document>
       <Page size="A4" style={styles.page}>
 
-        {/* Header */}
-        <PDFHeader
-          title={t.appraisalTitle}
-          subtitle={COMPANY_NAME}
-          language={language}
-          companyName={ARTIST_NAME}
-        />
-
-        {/* Appraisal number */}
-        <Text style={s.appraisalNumber}>
-          {t.appraisalNumber} {appraisal.appraisal_number}
-        </Text>
+        {/* Custom header — artist left, NOA Contemporary right */}
+        <View style={s.headerRow}>
+          <View style={s.headerLeft}>
+            <Text style={s.artistName}>{ARTIST_NAME}</Text>
+            <Text style={s.docTitle}>{t.appraisalTitle}</Text>
+          </View>
+          <View style={s.headerRight}>
+            <Text style={s.companyNameRight}>{COMPANY_NAME}</Text>
+          </View>
+        </View>
+        <View style={s.headerAccentLine} />
 
         {/* Artwork image */}
         {artworkImageUrl && (
