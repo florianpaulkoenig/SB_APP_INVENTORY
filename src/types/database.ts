@@ -2170,6 +2170,10 @@ export interface ArtworkAppraisalRow {
   appraiser_name: string;
   appraiser_credentials: string | null;
   condition: string | null;
+  provenance: string | null;
+  sale_date: string | null;
+  sale_price: number | null;
+  sale_currency: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -2187,6 +2191,10 @@ export interface ArtworkAppraisalInsert {
   appraiser_name?: string;
   appraiser_credentials?: string | null;
   condition?: string | null;
+  provenance?: string | null;
+  sale_date?: string | null;
+  sale_price?: number | null;
+  sale_currency?: string | null;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
