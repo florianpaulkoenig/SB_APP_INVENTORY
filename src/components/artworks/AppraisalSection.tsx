@@ -130,11 +130,13 @@ export function AppraisalSection({ artworkId, artwork }: AppraisalSectionProps) 
     return await getSignedUrl('artwork-images', img.storage_path);
   }
 
+  // Uses appraiser_signature.png (gallery owner / NOA Contemporary signatory),
+  // NOT the artist's signature.png used on COAs.
   async function getSignatureUrl(): Promise<string | null> {
     try {
       const { data: sigBlob, error } = await supabase.storage
         .from('assets')
-        .download('signature.png');
+        .download('appraiser_signature.png');
       if (!sigBlob || error) return null;
       return await new Promise<string>((resolve) => {
         const reader = new FileReader();
