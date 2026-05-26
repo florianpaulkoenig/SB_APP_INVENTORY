@@ -71,6 +71,7 @@ export function ArtworkDetailPage() {
   const [certificate, setCertificate] = useState<CertificateInfo | null>(null);
   const [language, setLanguage] = useState<Language>('en');
   const [downloading, setDownloading] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   // ---- Fetch gallery name if gallery_id is set ----------------------------
 
@@ -266,6 +267,101 @@ export function ArtworkDetailPage() {
 
     const fileName = certificate.pdf_path.split('/').pop() ?? 'certificate.pdf';
     downloadBlob(data, fileName);
+  }
+
+  // ---- Generate certificate (create DB record + download PDF) ---------------
+
+  async function handleGenerateCertificate() {
+    if (!id || !artwork) return;
+    setGenerating(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const certNumber = await generateNumber(DOC_PREFIXES.certificate);
+      if (!certNumber) return;
+
+      const issueDate = new Date().toISOString().split('T')[0];
+
+      const { data: newCert } = await supabase
+        .from('certificates')
+        .insert({
+          user_id: session.user.id,
+          artwork_id: id,
+          certificate_number: certNumber,
+          issue_date: issueDate,
+        } as never)
+        .select('id, certificate_number, issue_date, qr_code_url, pdf_path')
+        .single();
+
+      if (!newCert) return;
+      setCertificate(newCert as CertificateInfo);
+
+      // Get artwork image + signature, then download the PDF immediately
+      let artworkImageUrl: string | null = null;
+      const primaryImage = (await supabase
+        .from('artwork_images')
+        .select('storage_path')
+        .eq('artwork_id', artwork.id)
+        .eq('is_primary', true)
+        .limit(1)
+        .maybeSingle()
+      ).data;
+      if (primaryImage?.storage_path) {
+        const url = await getSignedUrl('artwork-images', primaryImage.storage_path);
+        if (url) artworkImageUrl = url;
+      }
+
+      let signatureUrl: string | null = null;
+      try {
+        const { data: sigBlob, error: sigError } = await supabase.storage
+          .from('assets')
+          .download('signature.png');
+        if (sigBlob && !sigError) {
+          signatureUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(sigBlob);
+          });
+        }
+      } catch { /* signature is optional */ }
+
+      const cert = newCert as CertificateInfo;
+      const blob = await pdf(
+        <CertificatePDF
+          artwork={{
+            title: artwork.title,
+            reference_code: artwork.reference_code,
+            medium: artwork.medium,
+            year: artwork.year,
+            height: artwork.height,
+            width: artwork.width,
+            depth: artwork.depth,
+            dimension_unit: artwork.dimension_unit,
+            framed_height: artwork.framed_height,
+            framed_width: artwork.framed_width,
+            framed_depth: artwork.framed_depth,
+            edition_type: artwork.edition_type,
+            edition_number: artwork.edition_number,
+            edition_total: artwork.edition_total,
+          }}
+          certificate={{
+            certificate_number: cert.certificate_number,
+            issue_date: cert.issue_date,
+            qr_code_url: cert.qr_code_url,
+          }}
+          artworkImageUrl={artworkImageUrl}
+          signatureUrl={signatureUrl}
+          language={language}
+        />,
+      ).toBlob();
+
+      downloadBlob(blob, buildCertificateFilename(artwork));
+      toast({ title: 'Certificate created', description: certNumber, variant: 'success' });
+    } finally {
+      setGenerating(false);
+    }
   }
 
   // ---- Image upload handler ------------------------------------------------
@@ -587,9 +683,29 @@ export function ArtworkDetailPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className="text-sm text-primary-400">No certificate yet.</p>
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-primary-200 px-3 py-2 text-sm text-primary-600 hover:bg-primary-50 transition-colors">
+
+            {/* Generate new certificate */}
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="w-full sm:w-48">
+                <Select
+                  label="Language"
+                  options={[...LANGUAGE_OPTIONS]}
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as Language)}
+                />
+              </div>
+              <Button onClick={handleGenerateCertificate} loading={generating}>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.746 3.746 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                </svg>
+                Generate Certificate
+              </Button>
+            </div>
+
+            {/* Upload existing certificate PDF */}
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-primary-500 hover:text-primary-700 transition-colors">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
