@@ -29,6 +29,7 @@ interface TranslationStrings {
   horsCommerce: string;
   epreuveArtiste: string;
   of: string;
+  provenance: string;
 }
 
 const TRANSLATIONS: Record<string, TranslationStrings> = {
@@ -51,6 +52,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     horsCommerce: 'Hors Commerce',
     epreuveArtiste: "Epreuve d'Artiste",
     of: 'of',
+    provenance: 'Provenance',
   },
   de: {
     certificateTitle: 'Echtheitszertifikat',
@@ -71,6 +73,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     horsCommerce: 'Hors Commerce',
     epreuveArtiste: "Epreuve d'Artiste",
     of: 'von',
+    provenance: 'Provenienz',
   },
   fr: {
     certificateTitle: "Certificat d'Authenticit\u00e9",
@@ -91,6 +94,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     horsCommerce: 'Hors Commerce',
     epreuveArtiste: "Epreuve d'Artiste",
     of: 'de',
+    provenance: 'Provenance',
   },
 };
 
@@ -125,6 +129,43 @@ const s = StyleSheet.create({
     objectFit: 'contain',
   },
 
+  // Provenance section
+  provenanceTitle: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 8,
+    fontWeight: 700,
+    color: PDF_COLORS.primary400,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 18,
+    marginBottom: 6,
+  },
+  provenanceRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+    gap: 8,
+  },
+  provenanceDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: PDF_COLORS.primary400,
+    marginTop: 2,
+    flexShrink: 0,
+  },
+  provenanceName: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 8,
+    color: PDF_COLORS.primary900,
+    flex: 1,
+  },
+  provenanceMeta: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 7,
+    color: PDF_COLORS.primary400,
+  },
+
   // Divider line before disclaimer
   divider: {
     borderBottomWidth: 0.5,
@@ -145,6 +186,13 @@ const s = StyleSheet.create({
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
+export interface CertificateProvenanceEntry {
+  owner_name: string;
+  owner_type: string;
+  acquisition_date: string | null;
+  acquisition_method: string | null;
+}
+
 export interface CertificatePDFProps {
   artwork: {
     title: string;
@@ -170,6 +218,7 @@ export interface CertificatePDFProps {
   artworkImageUrl?: string | null;
   signatureUrl?: string | null;
   language: 'en' | 'de' | 'fr';
+  provenanceEntries?: CertificateProvenanceEntry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -234,6 +283,7 @@ export function CertificatePDF({
   artworkImageUrl,
   signatureUrl,
   language,
+  provenanceEntries,
 }: CertificatePDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
 
@@ -320,6 +370,28 @@ export function CertificatePDF({
             </View>
           </View>
         </View>
+
+        {/* ----- Provenance ----------------------------------------------- */}
+        {provenanceEntries && provenanceEntries.length > 0 && (
+          <View>
+            <Text style={s.provenanceTitle}>{t.provenance}</Text>
+            {provenanceEntries.map((entry, i) => (
+              <View key={i} style={s.provenanceRow}>
+                <View style={s.provenanceDot} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.provenanceName}>{entry.owner_name}</Text>
+                  {(entry.acquisition_date || entry.acquisition_method) && (
+                    <Text style={s.provenanceMeta}>
+                      {[entry.acquisition_date, entry.acquisition_method?.replace(/_/g, ' ')]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* ----- Divider -------------------------------------------------- */}
         <View style={s.divider} />

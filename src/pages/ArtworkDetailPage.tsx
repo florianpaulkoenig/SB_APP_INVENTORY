@@ -19,8 +19,10 @@ import { CollectionHistory } from '../components/artworks/CollectionHistory';
 import { LoanPanel } from '../components/artworks/LoanPanel';
 import { ExpenseTracker } from '../components/artworks/ExpenseTracker';
 import { SaleRecordPanel } from '../components/artworks/SaleRecordPanel';
+import { ProvenancePanel } from '../components/artworks/ProvenancePanel';
 import { CertificatePDF } from '../components/pdf/CertificatePDF';
 import { useDocumentNumber } from '../hooks/useDocumentNumber';
+import { useArtworkProvenance } from '../hooks/useArtworkProvenance';
 import { useAuth } from '../hooks/useAuth';
 import { generateArtworkRefCode, downloadBlob, buildCertificateFilename } from '../lib/utils';
 import { DOC_PREFIXES } from '../lib/constants';
@@ -65,8 +67,10 @@ export function ArtworkDetailPage() {
   const { uploadImage, deleteImage, setPrimaryImage } = useArtworkImages(id!);
   const { toast } = useToast();
   const { isAdmin } = useAuth();
+  const { entries: provenanceEntries } = useArtworkProvenance(id);
 
   const [galleryName, setGalleryName] = useState<string | null>(null);
+  const [gallerySaleDate, setGallerySaleDate] = useState<string | null>(null);
   const [imageRefreshKey, setImageRefreshKey] = useState(0);
   const [certificate, setCertificate] = useState<CertificateInfo | null>(null);
   const [language, setLanguage] = useState<Language>('en');
@@ -76,25 +80,30 @@ export function ArtworkDetailPage() {
   // ---- Fetch gallery name if gallery_id is set ----------------------------
 
   useEffect(() => {
-    async function fetchGalleryName() {
+    async function fetchGalleryInfo() {
       if (!artwork?.gallery_id) {
         setGalleryName(null);
+        setGallerySaleDate(null);
         return;
       }
 
-      const { data } = await supabase
-        .from('galleries')
-        .select('name')
-        .eq('id', artwork.gallery_id)
-        .single();
+      const [galleryRes, saleRes] = await Promise.all([
+        supabase.from('galleries').select('name').eq('id', artwork.gallery_id).single(),
+        supabase
+          .from('sales')
+          .select('sale_date')
+          .eq('artwork_id', artwork.id)
+          .order('sale_date', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+      ]);
 
-      if (data) {
-        setGalleryName(data.name);
-      }
+      if (galleryRes.data) setGalleryName(galleryRes.data.name);
+      if (saleRes.data) setGallerySaleDate(saleRes.data.sale_date);
     }
 
-    fetchGalleryName();
-  }, [artwork?.gallery_id]);
+    fetchGalleryInfo();
+  }, [artwork?.gallery_id, artwork?.id]);
 
   // ---- Fetch certificate for this artwork -----------------------------------
 
@@ -183,6 +192,7 @@ export function ArtworkDetailPage() {
           artworkImageUrl={artworkImageUrl}
           signatureUrl={signatureUrl}
           language={language}
+          provenanceEntries={provenanceEntries.filter((e) => e.confirmed)}
         />,
       ).toBlob();
 
@@ -190,7 +200,7 @@ export function ArtworkDetailPage() {
     } finally {
       setDownloading(false);
     }
-  }, [artwork, certificate, language]);
+  }, [artwork, certificate, language, provenanceEntries]);
 
   // ---- Certificate PDF upload -----------------------------------------------
 
@@ -354,6 +364,7 @@ export function ArtworkDetailPage() {
           artworkImageUrl={artworkImageUrl}
           signatureUrl={signatureUrl}
           language={language}
+          provenanceEntries={provenanceEntries.filter((e) => e.confirmed)}
         />,
       ).toBlob();
 
@@ -725,6 +736,16 @@ export function ArtworkDetailPage() {
           </div>
         )}
       </section>
+
+      {/* Provenance */}
+      <ProvenancePanel
+        artworkId={id!}
+        gallerySuggestion={
+          galleryName
+            ? { name: galleryName, saleDate: gallerySaleDate ?? undefined }
+            : null
+        }
+      />
 
       {/* Artwork Appraisal */}
       <AppraisalSection
