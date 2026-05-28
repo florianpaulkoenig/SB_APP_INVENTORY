@@ -2135,6 +2135,7 @@ export interface NOALiquidityIncomeRow {
   user_id: string;
   description: string;
   amount: number;
+  currency: string;
   expected_date: string;
   notes: string | null;
   created_at: string;
@@ -2146,6 +2147,7 @@ export interface NOALiquidityIncomeInsert {
   user_id?: string;
   description: string;
   amount: number;
+  currency?: string;
   expected_date: string;
   notes?: string | null;
   created_at?: string;
