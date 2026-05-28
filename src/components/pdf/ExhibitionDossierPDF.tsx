@@ -448,7 +448,9 @@ export function ExhibitionDossierPDF({
           {exhibition.type && (
             <View style={d.titleMetaRow}>
               <Text style={d.titleMetaLabel}>Category</Text>
-              <Text style={d.titleMetaValue}>{exhibition.type}</Text>
+              <Text style={d.titleMetaValue}>
+                {exhibition.type.charAt(0).toUpperCase() + exhibition.type.slice(1)}
+              </Text>
             </View>
           )}
           {exhibition.venue && (
