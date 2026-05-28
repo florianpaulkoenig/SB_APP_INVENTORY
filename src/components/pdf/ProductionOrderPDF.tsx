@@ -409,9 +409,8 @@ export function ProductionOrderPDF({
               .filter((i) => i.referenceImageUrls && i.referenceImageUrls.length > 0)
               .map((item, idx) => {
                 const imgs = item.referenceImageUrls!;
-                // Always 2 columns \u2014 uniform size regardless of image count
-                const cellW = '47%';
-                const gapW  = '6%';
+                // 2-column grid \u2014 equal 8pt gap in both directions
+                const cellW = '49%';
 
                 return (
                   <View style={artistStyles.refPhotoItem} key={`ref-${idx}`} wrap={false}>
@@ -432,8 +431,8 @@ export function ProductionOrderPDF({
                             key={`ref-img-${idx}-${imgIdx}`}
                             style={{
                               width: cellW,
-                              marginRight: isLastInRow ? '0%' : gapW,
-                              marginBottom: 6,
+                              marginRight: isLastInRow ? 0 : 8,
+                              marginBottom: 8,
                             }}
                           >
                             <View style={artistStyles.refPhotoCellBox}>

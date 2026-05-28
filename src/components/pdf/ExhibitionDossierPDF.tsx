@@ -681,9 +681,8 @@ export function ExhibitionDossierPDF({
                   <Text style={d.refSectionLabel}>Reference Photos</Text>
                   {itemsWithPhotos.map((item, rIdx) => {
                     const imgs = item.referenceImageUrls!;
-                    // Always 2 columns — uniform size regardless of image count
-                    const cellW = '47%';
-                    const gapW  = '6%';
+                    // 2-column grid — equal 8pt gap in both directions
+                    const cellW = '49%';
                     return (
                       <View key={`rp-${rIdx}`} style={d.refItemBlock} wrap={false}>
                         <Text style={d.refItemCaption}>
@@ -695,7 +694,7 @@ export function ExhibitionDossierPDF({
                             return (
                               <View
                                 key={`rp-img-${rIdx}-${imgIdx}`}
-                                style={{ width: cellW, marginRight: isLast ? '0%' : gapW, marginBottom: 4 }}
+                                style={{ width: cellW, marginRight: isLast ? 0 : 8, marginBottom: 8 }}
                               >
                                 <View style={d.refPhotoCellBox}>
                                   <Image style={d.refPhotoCellImage} src={url} />
