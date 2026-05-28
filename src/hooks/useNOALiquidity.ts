@@ -10,6 +10,7 @@ import { useToast } from '../components/ui/Toast';
 import type {
   NOALiquidityIncomeRow,
   NOALiquidityExpenseRow,
+  NOALiquidityExpensePaymentRow,
   NOALiquiditySettingsRow,
   NOALiquidityActualBalanceRow,
   LiquidityExpenseType,
@@ -33,6 +34,11 @@ export interface MonthBucket {
    */
   lateEntries: NOALiquidityIncomeRow[];
   expenses: NOALiquidityExpenseRow[];
+  /**
+   * Map from expense_id → payment_id for expenses paid in this month.
+   * If expense_id is a key, the expense instance for this month is paid.
+   */
+  paidExpenseMap: Record<string, string>;
   /** Running projected balance at end of this month */
   projectedBalance: number;
   /** User-entered actual account balance (null if not set) */
@@ -81,6 +87,8 @@ export interface UseNOALiquidityReturn {
   }) => Promise<boolean>;
   deleteExpense: (id: string) => Promise<boolean>;
   toggleExpenseActive: (id: string, active: boolean) => Promise<boolean>;
+  markExpensePaid:   (expenseId: string, year: number, month: number) => Promise<boolean>;
+  markExpenseUnpaid: (paymentId: string) => Promise<boolean>;
   // Startsaldo
   upsertStartsaldo: (amount: number, currency: string) => Promise<boolean>;
   // Ist-Saldo
@@ -152,7 +160,12 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       const wsStr = windowStart.toISOString().slice(0, 10);
       const weStr = windowEnd.toISOString().slice(0, 10);
 
-      const [incomeRes, lateRes, expensesRes, settingsRes, actualBalancesRes] = await Promise.all([
+      const windowStartYear  = windowStart.getFullYear();
+      const windowStartMonth = windowStart.getMonth() + 1; // 1-indexed
+      const windowEndYear    = new Date(today.getFullYear(), today.getMonth() + 12, 0).getFullYear();
+      const windowEndMonth   = new Date(today.getFullYear(), today.getMonth() + 12, 0).getMonth() + 1;
+
+      const [incomeRes, lateRes, expensesRes, settingsRes, actualBalancesRes, expPaymentsRes] = await Promise.all([
         // Income within the 12-month window (paid or unpaid)
         supabase
           .from('noa_liquidity_income' as never)
@@ -182,6 +195,16 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         supabase
           .from('noa_liquidity_actual_balances' as never)
           .select('*'),
+
+        // Expense payments within the 12-month window
+        supabase
+          .from('noa_liquidity_expense_payments' as never)
+          .select('*')
+          .or(
+            `and(year.eq.${windowStartYear},month.gte.${windowStartMonth}),` +
+            `and(year.gt.${windowStartYear},year.lt.${windowEndYear}),` +
+            `and(year.eq.${windowEndYear},month.lte.${windowEndMonth})`
+          ),
       ]);
 
       if (incomeRes.error) {
@@ -190,11 +213,19 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         return;
       }
 
-      const windowEntries = (incomeRes.data   ?? []) as NOALiquidityIncomeRow[];
-      const lateEntries   = (lateRes.data      ?? []) as NOALiquidityIncomeRow[];
-      const allExpenses   = (expensesRes.data  ?? []) as NOALiquidityExpenseRow[];
-      const settings      = settingsRes.data          as NOALiquiditySettingsRow | null;
-      const actualBalList = (actualBalancesRes.data ?? []) as NOALiquidityActualBalanceRow[];
+      const windowEntries  = (incomeRes.data       ?? []) as NOALiquidityIncomeRow[];
+      const lateEntries    = (lateRes.data          ?? []) as NOALiquidityIncomeRow[];
+      const allExpenses    = (expensesRes.data      ?? []) as NOALiquidityExpenseRow[];
+      const settings       = settingsRes.data             as NOALiquiditySettingsRow | null;
+      const actualBalList  = (actualBalancesRes.data ?? []) as NOALiquidityActualBalanceRow[];
+      const expPaymentList = (expPaymentsRes.data   ?? []) as NOALiquidityExpensePaymentRow[];
+
+      // Expense payment lookup: "expenseId:year-MM" → payment_id
+      const expPaymentMap: Record<string, string> = {};
+      for (const p of expPaymentList) {
+        const key = `${p.expense_id}:${p.year}-${String(p.month).padStart(2, '0')}`;
+        expPaymentMap[key] = p.id;
+      }
 
       const saldo    = settings?.starting_balance ?? 0;
       const currency = settings?.currency         ?? 'CHF';
@@ -225,6 +256,14 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
 
         const monthExpenses = allExpenses.filter((e) => expenseAppliesTo(e, year, month));
 
+        // Build paidExpenseMap for this month: expenseId → paymentId
+        const monthKey1 = String(month + 1).padStart(2, '0'); // 1-indexed month string
+        const paidExpenseMap: Record<string, string> = {};
+        for (const e of monthExpenses) {
+          const pKey = `${e.id}:${year}-${monthKey1}`;
+          if (expPaymentMap[pKey]) paidExpenseMap[e.id] = expPaymentMap[pKey];
+        }
+
         // Projected income = all expected amounts for this month (including late & paid)
         const incomeSum  = [...unpaid, ...paid, ...late].reduce((s, e) => s + e.amount, 0);
         const expenseSum = monthExpenses.reduce((s, e) => s + e.amount, 0);
@@ -243,6 +282,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           paidEntries:     paid,
           lateEntries:     late,
           expenses:        monthExpenses,
+          paidExpenseMap,
           projectedBalance,
           actualBalance:   abEntry?.balance  ?? null,
           actualBalanceId: abEntry?.id       ?? null,
@@ -424,6 +464,37 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     return true;
   }, [toast, refetch]);
 
+  const markExpensePaid = useCallback(async (expenseId: string, year: number, month: number): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return false;
+
+    const { error } = await supabase
+      .from('noa_liquidity_expense_payments' as never)
+      .upsert({
+        user_id:    session.user.id,
+        expense_id: expenseId,
+        year,
+        month,
+        paid_at:    new Date().toISOString(),
+      } as never, { onConflict: 'user_id,expense_id,year,month' } as never);
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+    toast({ title: 'Ausgabe als bezahlt markiert', variant: 'success' });
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
+  const markExpenseUnpaid = useCallback(async (paymentId: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('noa_liquidity_expense_payments' as never)
+      .delete()
+      .eq('id', paymentId);
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
   // ---- Startsaldo -----------------------------------------------------------
 
   const upsertStartsaldo = useCallback(async (amount: number, currency: string): Promise<boolean> => {
@@ -501,6 +572,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     updateExpense,
     deleteExpense,
     toggleExpenseActive,
+    markExpensePaid,
+    markExpenseUnpaid,
     upsertStartsaldo,
     upsertActualBalance,
     deleteActualBalance,

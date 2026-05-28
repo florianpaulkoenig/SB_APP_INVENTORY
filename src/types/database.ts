@@ -2221,6 +2221,16 @@ export interface NOALiquidityIncomeInsert {
 
 export type NOALiquidityIncomeUpdate = Partial<NOALiquidityIncomeInsert>;
 
+export interface NOALiquidityExpensePaymentRow {
+  id: string;
+  user_id: string;
+  expense_id: string;
+  year: number;
+  month: number;   // 1-indexed
+  paid_at: string; // ISO timestamp
+  created_at: string;
+}
+
 // ---- Artwork Appraisals ----------------------------------------------------
 
 export type AppraisalPurpose = 'insurance' | 'resale' | 'estate' | 'donation' | 'other';

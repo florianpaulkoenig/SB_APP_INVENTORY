@@ -399,10 +399,15 @@ function PaidIncomeRow({
 }
 
 // ---------------------------------------------------------------------------
-// Expense row inside month section
+// Expense row inside month section — unpaid
 // ---------------------------------------------------------------------------
 
-function MonthExpenseRow({ expense }: { expense: NOALiquidityExpenseRow }) {
+function MonthExpenseRow({
+  expense, onMarkPaid,
+}: {
+  expense: NOALiquidityExpenseRow;
+  onMarkPaid: (expenseId: string) => void;
+}) {
   const badge = RECURRENCE_BADGES[expense.type];
   return (
     <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0">
@@ -411,6 +416,48 @@ function MonthExpenseRow({ expense }: { expense: NOALiquidityExpenseRow }) {
       <span className="shrink-0 text-sm font-medium text-red-500 tabular-nums">
         -{formatCurrency(expense.amount, expense.currency)}
       </span>
+      <button
+        onClick={() => onMarkPaid(expense.id)}
+        className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-50 transition-colors shrink-0"
+        title="Als bezahlt markieren"
+      >
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+        Bezahlt
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Expense row inside month section — paid
+// ---------------------------------------------------------------------------
+
+function PaidExpenseRow({
+  expense, onMarkUnpaid,
+}: {
+  expense: NOALiquidityExpenseRow;
+  onMarkUnpaid: (expenseId: string) => void;
+}) {
+  const badge = RECURRENCE_BADGES[expense.type];
+  return (
+    <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0 opacity-60">
+      <svg className="h-3.5 w-3.5 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+      </svg>
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      <span className="min-w-0 flex-1 text-sm text-primary-500 line-through">{expense.description}</span>
+      <span className="shrink-0 text-sm text-primary-400 tabular-nums line-through">
+        -{formatCurrency(expense.amount, expense.currency)}
+      </span>
+      <button
+        onClick={() => onMarkUnpaid(expense.id)}
+        className="text-xs text-primary-400 hover:text-primary-700 transition-colors shrink-0"
+        title="Als unbezahlt markieren"
+      >
+        Rückgängig
+      </button>
     </div>
   );
 }
@@ -804,6 +851,8 @@ function MonthSection({
   onDeleteIncome,
   onMarkIncomePaid,
   onMarkIncomeUnpaid,
+  onMarkExpensePaid,
+  onMarkExpenseUnpaid,
   onUpsertActualBalance,
   onDeleteActualBalance,
 }: {
@@ -814,16 +863,24 @@ function MonthSection({
   onDeleteIncome: (id: string) => void;
   onMarkIncomePaid: (id: string) => void;
   onMarkIncomeUnpaid: (id: string) => void;
+  onMarkExpensePaid: (expenseId: string, year: number, month: number) => void;
+  onMarkExpenseUnpaid: (paymentId: string) => void;
   onUpsertActualBalance: (year: number, month: number, balance: number, currency: string) => Promise<boolean>;
   onDeleteActualBalance: (id: string) => Promise<boolean>;
 }) {
-  const [showPaid, setShowPaid] = useState(false);
+  const [showPaidIncome,   setShowPaidIncome]   = useState(false);
+  const [showPaidExpenses, setShowPaidExpenses] = useState(false);
 
-  const hasUnpaid   = bucket.entries.length > 0;
-  const hasLate     = bucket.lateEntries.length > 0;
-  const hasPaid     = bucket.paidEntries.length > 0;
-  const hasExpenses = bucket.expenses.length > 0;
-  const hasAny      = hasUnpaid || hasLate || hasPaid || hasExpenses;
+  const unpaidExpenses = bucket.expenses.filter((e) => !bucket.paidExpenseMap[e.id]);
+  const paidExpenses   = bucket.expenses.filter((e) =>  bucket.paidExpenseMap[e.id]);
+
+  const hasUnpaid        = bucket.entries.length > 0;
+  const hasLate          = bucket.lateEntries.length > 0;
+  const hasPaidIncome    = bucket.paidEntries.length > 0;
+  const hasUnpaidExpenses = unpaidExpenses.length > 0;
+  const hasPaidExpenses  = paidExpenses.length > 0;
+  const hasExpenses      = bucket.expenses.length > 0;
+  const hasAny           = hasUnpaid || hasLate || hasPaidIncome || hasExpenses;
 
   return (
     <div className={`rounded-lg border overflow-hidden ${
@@ -845,7 +902,7 @@ function MonthSection({
       {/* Entries */}
       {hasAny && (
         <div className="border-t border-primary-50 px-4 pb-1">
-          {/* Late (overdue) entries */}
+          {/* Late (overdue) income entries */}
           {hasLate && (
             <div className="border-b border-red-50 pb-0.5 mb-0.5">
               {bucket.lateEntries.map((e) => (
@@ -857,7 +914,7 @@ function MonthSection({
             </div>
           )}
 
-          {/* Unpaid entries for this month */}
+          {/* Unpaid income entries for this month */}
           {hasUnpaid && (
             <div>
               {bucket.entries.map((e) => (
@@ -869,29 +926,55 @@ function MonthSection({
             </div>
           )}
 
-          {/* Expenses */}
-          {hasExpenses && (
+          {/* Unpaid expenses */}
+          {hasUnpaidExpenses && (
             <div className={hasUnpaid || hasLate ? 'border-t border-primary-50 pt-0.5' : ''}>
-              {bucket.expenses.map((e) => <MonthExpenseRow key={e.id} expense={e} />)}
+              {unpaidExpenses.map((e) => (
+                <MonthExpenseRow
+                  key={e.id} expense={e}
+                  onMarkPaid={(id) => onMarkExpensePaid(id, bucket.year, bucket.month + 1)}
+                />
+              ))}
             </div>
           )}
 
-          {/* Paid section toggle */}
-          {hasPaid && (
+          {/* Paid income (collapsible) */}
+          {hasPaidIncome && (
             <div className="border-t border-primary-50 pt-1">
               <button
-                onClick={() => setShowPaid((v) => !v)}
+                onClick={() => setShowPaidIncome((v) => !v)}
                 className="flex items-center gap-1.5 py-1.5 text-xs text-primary-400 hover:text-primary-600 transition-colors"
               >
-                <svg className={`h-3 w-3 transition-transform ${showPaid ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                <svg className={`h-3 w-3 transition-transform ${showPaidIncome ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                 </svg>
-                {bucket.paidEntries.length} bezahlt
+                {bucket.paidEntries.length} Einnahme{bucket.paidEntries.length !== 1 ? 'n' : ''} bezahlt
               </button>
-              {showPaid && bucket.paidEntries.map((e) => (
+              {showPaidIncome && bucket.paidEntries.map((e) => (
                 <PaidIncomeRow
                   key={e.id} entry={e}
                   onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkUnpaid={onMarkIncomeUnpaid}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Paid expenses (collapsible) */}
+          {hasPaidExpenses && (
+            <div className="border-t border-primary-50 pt-1">
+              <button
+                onClick={() => setShowPaidExpenses((v) => !v)}
+                className="flex items-center gap-1.5 py-1.5 text-xs text-primary-400 hover:text-primary-600 transition-colors"
+              >
+                <svg className={`h-3 w-3 transition-transform ${showPaidExpenses ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+                {paidExpenses.length} Ausgabe{paidExpenses.length !== 1 ? 'n' : ''} bezahlt
+              </button>
+              {showPaidExpenses && paidExpenses.map((e) => (
+                <PaidExpenseRow
+                  key={e.id} expense={e}
+                  onMarkUnpaid={(id) => onMarkExpenseUnpaid(bucket.paidExpenseMap[id])}
                 />
               ))}
             </div>
@@ -923,7 +1006,7 @@ export function LiquidityPlanningPage() {
     startsaldo, startsaldoCurrency,
     loading,
     addIncome, updateIncome, deleteIncome, markIncomePaid, markIncomeUnpaid,
-    addExpense, updateExpense, deleteExpense, toggleExpenseActive,
+    addExpense, updateExpense, deleteExpense, toggleExpenseActive, markExpensePaid, markExpenseUnpaid,
     upsertStartsaldo, upsertActualBalance, deleteActualBalance,
   } = useNOALiquidity();
 
@@ -1004,6 +1087,8 @@ export function LiquidityPlanningPage() {
                 onDeleteIncome={deleteIncome}
                 onMarkIncomePaid={markIncomePaid}
                 onMarkIncomeUnpaid={markIncomeUnpaid}
+                onMarkExpensePaid={markExpensePaid}
+                onMarkExpenseUnpaid={markExpenseUnpaid}
                 onUpsertActualBalance={upsertActualBalance}
                 onDeleteActualBalance={deleteActualBalance}
               />
