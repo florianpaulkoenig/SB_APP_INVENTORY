@@ -26,6 +26,7 @@ export interface DossierProductionOrder {
     medium: string | null;
     dimensions: string;
     quantity: number;
+    referenceImageUrls?: string[];
   }>;
 }
 
@@ -310,6 +311,51 @@ const d = StyleSheet.create({
     width: '8%',
     textAlign: 'right' as const,
   },
+
+  // ---------- Reference photos (per order) ---------------------------------
+  refSection: {
+    paddingTop: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+    borderTopWidth: 0.5,
+    borderTopColor: PDF_COLORS.border,
+  },
+  refSectionLabel: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 7,
+    color: PDF_COLORS.primary400,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  refItemBlock: {
+    marginBottom: 10,
+  },
+  refItemCaption: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 8,
+    color: PDF_COLORS.primary900,
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  refPhotoGrid: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+  },
+  refPhotoCellBox: {
+    height: 120,
+    backgroundColor: '#F4F3F1',
+    borderRadius: 2,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  refPhotoCellImage: {
+    width: '100%',
+    height: 120,
+    objectFit: 'contain' as const,
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -456,8 +502,12 @@ export function ExhibitionDossierPDF({
             Production Orders
           </Text>
 
-          {productionOrders.map((po) => (
-            <View key={po.order_number} style={d.poOrderBlock} wrap={false}>
+          {productionOrders.map((po) => {
+            const itemsWithPhotos = po.items.filter(
+              (it) => it.referenceImageUrls && it.referenceImageUrls.length > 0,
+            );
+            return (
+            <View key={po.order_number} style={d.poOrderBlock}>
               {/* Order meta row */}
               <View style={d.poOrderMeta}>
                 <Text style={d.poOrderNumber}>{po.order_number}</Text>
@@ -495,8 +545,44 @@ export function ExhibitionDossierPDF({
                   </Text>
                 </View>
               )}
+
+              {/* Reference photos — one grid per item that has images */}
+              {itemsWithPhotos.length > 0 && (
+                <View style={d.refSection}>
+                  <Text style={d.refSectionLabel}>Reference Photos</Text>
+                  {itemsWithPhotos.map((item, rIdx) => {
+                    const imgs = item.referenceImageUrls!;
+                    const cols = imgs.length >= 3 ? 3 : imgs.length;
+                    const cellW = cols === 1 ? '58%' : cols === 2 ? '47%' : '31.3%';
+                    const gapW  = cols === 1 ? '0%'  : cols === 2 ? '6%'  : '3.05%';
+                    return (
+                      <View key={`rp-${rIdx}`} style={d.refItemBlock} wrap={false}>
+                        <Text style={d.refItemCaption}>
+                          {item.description}{item.dimensions ? ` — ${item.dimensions}` : ''}
+                        </Text>
+                        <View style={d.refPhotoGrid}>
+                          {imgs.map((url, imgIdx) => {
+                            const isLast = (imgIdx + 1) % cols === 0 || imgIdx === imgs.length - 1;
+                            return (
+                              <View
+                                key={`rp-img-${rIdx}-${imgIdx}`}
+                                style={{ width: cellW, marginRight: isLast ? '0%' : gapW, marginBottom: 4 }}
+                              >
+                                <View style={d.refPhotoCellBox}>
+                                  <Image style={d.refPhotoCellImage} src={url} />
+                                </View>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
             </View>
-          ))}
+            );
+          })}
 
           {/* Footer */}
           <View style={styles.footer} fixed>

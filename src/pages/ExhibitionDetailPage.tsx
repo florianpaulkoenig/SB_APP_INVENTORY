@@ -270,29 +270,56 @@ export function ExhibitionDetailPage() {
         }
       }
 
-      // 2. Fetch items for each linked production order
+      // 2. Fetch items (+ ref images) for each linked production order
+      const { data: { session: dossierSession } } = await supabase.auth.getSession();
+      const dossierUserId = dossierSession?.user?.id;
+
       const ordersWithItems: DossierProductionOrder[] = await Promise.all(
         linkedPOs.map(async (lpo) => {
           const { data: items } = await supabase
             .from('production_order_items')
-            .select('description, medium, height, width, depth, dimension_unit, is_circular, quantity')
+            .select('id, description, medium, height, width, depth, dimension_unit, is_circular, quantity')
             .eq('production_order_id', lpo.production_order_id)
             .order('sort_order', { ascending: true });
+
+          const mappedItems = await Promise.all(
+            (items ?? []).map(async (item) => {
+              // Fetch reference photos from storage
+              const refUrls: string[] = [];
+              if (dossierUserId) {
+                const prefix = `${dossierUserId}/production-orders/${lpo.production_order_id}/items/${item.id}`;
+                const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
+                if (files && files.length > 0) {
+                  const { blobToDataUrl } = await import('../lib/pdfToDataUrls');
+                  for (const file of files) {
+                    if (!file.id) continue;
+                    const { data: blob } = await supabase.storage
+                      .from('artwork-images')
+                      .download(`${prefix}/${file.name}`);
+                    if (blob) refUrls.push(await blobToDataUrl(blob));
+                  }
+                }
+              }
+              return {
+                description: item.description,
+                medium: item.medium,
+                dimensions: formatDimensions(
+                  item.height, item.width, item.depth,
+                  (item.dimension_unit as string) ?? 'cm',
+                  item.is_circular,
+                ),
+                quantity: item.quantity,
+                referenceImageUrls: refUrls,
+              };
+            }),
+          );
+
           return {
             order_number: lpo.production_orders.order_number,
             title: lpo.production_orders.title,
             status: lpo.production_orders.status ?? '',
             deadline: lpo.production_orders.deadline,
-            items: (items ?? []).map((item) => ({
-              description: item.description,
-              medium: item.medium,
-              dimensions: formatDimensions(
-                item.height, item.width, item.depth,
-                (item.dimension_unit as string) ?? 'cm',
-                item.is_circular,
-              ),
-              quantity: item.quantity,
-            })),
+            items: mappedItems,
           };
         }),
       );
