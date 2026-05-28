@@ -254,7 +254,7 @@ const artistStyles = StyleSheet.create({
   },
   // image cell container (warm background fills letterbox areas)
   refPhotoCellBox: {
-    height: 200,
+    height: 120,
     backgroundColor: '#F4F3F1',
     borderRadius: 2,
     padding: 10,
@@ -263,7 +263,7 @@ const artistStyles = StyleSheet.create({
   },
   refPhotoCellImage: {
     width: '100%',
-    height: 180,
+    height: 100,
     objectFit: 'contain' as const,
   },
 });

@@ -136,6 +136,9 @@ export function ExhibitionDetailPage() {
 
   // ---- Dossier PDF download -----------------------------------------------
   const [downloadingDossier, setDownloadingDossier] = useState(false);
+  const [dossierCreatedBy, setDossierCreatedBy] = useState(
+    'Florian Paul Koenig, +41 76 511 92 94, florian.koenig@noacontemporary.com',
+  );
 
   const [linkedPOs, setLinkedPOs] = useState<LinkedProductionOrder[]>([]);
   const [poModalOpen, setPOModalOpen] = useState(false);
@@ -371,6 +374,7 @@ export function ExhibitionDetailPage() {
           venuePhotos={venuePhotos}
           exhibitionPhotos={exhibitionPhotos}
           productionOrders={ordersWithItems}
+          createdBy={dossierCreatedBy}
         />
       ).toBlob();
 
@@ -557,22 +561,34 @@ export function ExhibitionDetailPage() {
             )}
           </div>
         </div>
-        <Button
-          variant="primary"
-          onClick={handleDownloadDossier}
-          disabled={downloadingDossier}
-        >
-          {downloadingDossier ? (
-            'Generating…'
-          ) : (
-            <>
-              <svg className="h-4 w-4 mr-1.5 inline-block" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-              </svg>
-              Download Dossier
-            </>
-          )}
-        </Button>
+        <div className="flex flex-col items-end gap-2">
+          <Button
+            variant="primary"
+            onClick={handleDownloadDossier}
+            disabled={downloadingDossier}
+          >
+            {downloadingDossier ? (
+              'Generating…'
+            ) : (
+              <>
+                <svg className="h-4 w-4 mr-1.5 inline-block" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Download Dossier
+              </>
+            )}
+          </Button>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-gray-400 whitespace-nowrap">Created by:</span>
+            <input
+              type="text"
+              value={dossierCreatedBy}
+              onChange={(e) => setDossierCreatedBy(e.target.value)}
+              className="w-64 rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-700 focus:border-gray-400 focus:outline-none"
+              placeholder="Name, phone, email…"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Info Card */}

@@ -51,6 +51,8 @@ export interface ExhibitionDossierPDFProps {
   /** Exhibition photos — installation views / artwork in situ */
   exhibitionPhotos?: Array<{ dataUrl: string; caption?: string }>;
   productionOrders: DossierProductionOrder[];
+  /** Shown on the cover page under "Created by" */
+  createdBy?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -216,6 +218,7 @@ const d = StyleSheet.create({
   floorPlanImageWrap: {
     flex: 1,
     justifyContent: 'flex-start',
+    marginHorizontal: -50, // break out of page padding → full page width
   },
   floorPlanImage: {
     width: '100%',
@@ -384,7 +387,7 @@ const d = StyleSheet.create({
     flexWrap: 'wrap' as const,
   },
   refPhotoCellBox: {
-    height: 170,
+    height: 120,
     backgroundColor: '#F4F3F1',
     borderRadius: 2,
     padding: 10,
@@ -393,7 +396,7 @@ const d = StyleSheet.create({
   },
   refPhotoCellImage: {
     width: '100%',
-    height: 150,
+    height: 100,
     objectFit: 'contain' as const,
   },
 });
@@ -408,6 +411,7 @@ export function ExhibitionDossierPDF({
   venuePhotos = [],
   exhibitionPhotos = [],
   productionOrders,
+  createdBy,
 }: ExhibitionDossierPDFProps) {
   const location = [exhibition.city, exhibition.country].filter(Boolean).join(', ');
   const dateStr = [
@@ -483,6 +487,14 @@ export function ExhibitionDossierPDF({
               </Text>
             </View>
           )}
+          {createdBy?.trim() && (
+            <View style={[d.titleMetaRow, { marginTop: 14 }]}>
+              <Text style={d.titleMetaLabel}>Created by</Text>
+              <Text style={[d.titleMetaValue, { fontSize: 9, lineHeight: 1.5 }]}>
+                {createdBy}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={d.titleSpacer} />
@@ -540,20 +552,15 @@ export function ExhibitionDossierPDF({
               <Text style={d.textPageLabel}>{exhibition.title}</Text>
             </View>
 
-            {/* Section title */}
+            {/* Section title — includes description after the counter */}
             <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>
-              {`Floor Plans / 3D Model${floorPlanImages.length > 1 ? ` (${idx + 1}/${floorPlanImages.length})` : ''}`}
+              {`Floor Plans / 3D Model${floorPlanImages.length > 1 ? ` (${idx + 1}/${floorPlanImages.length})` : ''}${description?.trim() ? ` — ${description}` : ''}`}
             </Text>
 
-            {/* Image */}
+            {/* Image — full page width (marginHorizontal cancels page padding) */}
             <View style={d.floorPlanImageWrap}>
               <Image src={dataUrl} style={d.floorPlanImage} />
             </View>
-
-            {/* Optional description caption */}
-            {description?.trim() && (
-              <Text style={d.floorPlanDesc}>{description}</Text>
-            )}
 
             {/* Footer */}
             <View style={styles.footer}>
