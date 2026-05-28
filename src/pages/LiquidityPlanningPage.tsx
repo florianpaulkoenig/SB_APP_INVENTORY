@@ -416,18 +416,72 @@ function MonthExpenseRow({ expense }: { expense: NOALiquidityExpenseRow }) {
 }
 
 // ---------------------------------------------------------------------------
+// Inline expense edit form
+// ---------------------------------------------------------------------------
+
+function InlineExpenseEditForm({
+  expense,
+  onSave,
+  onCancel,
+}: {
+  expense: NOALiquidityExpenseRow;
+  onSave: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
+  onCancel: () => void;
+}) {
+  const [description, setDescription] = useState(expense.description);
+  const [amount, setAmount]           = useState(String(expense.amount));
+  const [currency, setCurrency]       = useState(expense.currency);
+  const [type, setType]               = useState<LiquidityExpenseType>(expense.type);
+  const [dueDate, setDueDate]         = useState(expense.due_date ?? '');
+  const [saving, setSaving]           = useState(false);
+
+  async function handleSave() {
+    const n = parseFloat(amount);
+    if (!description.trim() || isNaN(n) || n <= 0 || !dueDate) return;
+    setSaving(true);
+    const ok = await onSave(expense.id, { description: description.trim(), amount: n, currency, type, due_date: dueDate });
+    setSaving(false);
+    if (ok) onCancel();
+  }
+
+  return (
+    <div className="py-3 border-b border-primary-50">
+      <div className="grid gap-2 sm:grid-cols-2 mb-2">
+        <div className="sm:col-span-2">
+          <Input label="" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Beschreibung" />
+        </div>
+        <Input label="" type="number" min="0" step="100" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Betrag" />
+        <Select label="" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
+        <Select label="" options={RECURRENCE_OPTIONS} value={type} onChange={(e) => setType(e.target.value as LiquidityExpenseType)} />
+        <Input label="" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+      </div>
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={handleSave} loading={saving} disabled={!description.trim() || !amount || !dueDate}>Speichern</Button>
+        <Button size="sm" variant="ghost" onClick={onCancel}>Abbrechen</Button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Expense management row
 // ---------------------------------------------------------------------------
 
 function ExpenseManagementRow({
-  expense, onDelete, onToggleActive,
+  expense, onUpdate, onDelete, onToggleActive,
 }: {
   expense: NOALiquidityExpenseRow;
+  onUpdate: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
   onDelete: (id: string) => void;
   onToggleActive: (id: string, active: boolean) => void;
 }) {
+  const [editing, setEditing]       = useState(false);
   const [confirming, setConfirming] = useState(false);
   const badge = RECURRENCE_BADGES[expense.type];
+
+  if (editing) {
+    return <InlineExpenseEditForm expense={expense} onSave={onUpdate} onCancel={() => setEditing(false)} />;
+  }
 
   return (
     <div className={`flex items-center gap-3 py-2.5 border-b border-primary-50 last:border-0 ${!expense.active ? 'opacity-50' : ''}`}>
@@ -450,6 +504,16 @@ function ExpenseManagementRow({
           <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${expense.active ? 'translate-x-4' : 'translate-x-1'}`} />
         </button>
       )}
+      {/* Edit button */}
+      <button
+        onClick={() => setEditing(true)}
+        className="shrink-0 p-1 text-primary-300 hover:text-primary-600 transition-colors"
+        title="Bearbeiten"
+      >
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+        </svg>
+      </button>
       {confirming ? (
         <div className="flex items-center gap-1 shrink-0">
           <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
@@ -467,18 +531,75 @@ function ExpenseManagementRow({
 }
 
 // ---------------------------------------------------------------------------
-// Expense management card
+// Expense management card (with sort controls)
 // ---------------------------------------------------------------------------
 
+type ExpenseSortKey = 'description' | 'amount' | 'type' | 'due_date';
+
+const TYPE_ORDER: Record<LiquidityExpenseType, number> = {
+  monthly: 0, quarterly: 1, semi_annual: 2, annual: 3, one_time: 4,
+};
+
+function SortButton({
+  label, active, dir, onClick,
+}: {
+  label: string;
+  active: boolean;
+  dir: 'asc' | 'desc';
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
+        active ? 'bg-primary-100 text-primary-800 font-semibold' : 'text-primary-400 hover:text-primary-700'
+      }`}
+    >
+      {label}
+      {active && (
+        <svg className={`h-3 w-3 transition-transform ${dir === 'desc' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 function ExpenseManagementCard({
-  expenses, onDelete, onToggleActive,
+  expenses, onUpdate, onDelete, onToggleActive,
 }: {
   expenses: NOALiquidityExpenseRow[];
+  onUpdate: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
   onDelete: (id: string) => void;
   onToggleActive: (id: string, active: boolean) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen]           = useState(true);
+  const [sortKey, setSortKey]     = useState<ExpenseSortKey | null>(null);
+  const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('asc');
+
   if (expenses.length === 0) return null;
+
+  function handleSort(key: ExpenseSortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }
+
+  const sorted = sortKey
+    ? [...expenses].sort((a, b) => {
+        let cmp = 0;
+        switch (sortKey) {
+          case 'description': cmp = a.description.localeCompare(b.description, 'de'); break;
+          case 'amount':      cmp = a.amount - b.amount; break;
+          case 'type':        cmp = TYPE_ORDER[a.type] - TYPE_ORDER[b.type]; break;
+          case 'due_date':    cmp = (a.due_date ?? '').localeCompare(b.due_date ?? ''); break;
+        }
+        return sortDir === 'asc' ? cmp : -cmp;
+      })
+    : expenses;
 
   return (
     <div className="mb-6 rounded-lg border border-primary-100 bg-white">
@@ -492,9 +613,32 @@ function ExpenseManagementCard({
         </svg>
       </button>
       {open && (
-        <div className="border-t border-primary-50 px-4 pb-1">
-          {expenses.map((e) => <ExpenseManagementRow key={e.id} expense={e} onDelete={onDelete} onToggleActive={onToggleActive} />)}
-        </div>
+        <>
+          {/* Sort controls */}
+          <div className="flex items-center gap-1 border-t border-primary-50 px-4 py-2">
+            <span className="mr-1 text-xs text-primary-400 shrink-0">Sortieren:</span>
+            <SortButton label="Bezeichnung" active={sortKey === 'description'} dir={sortDir} onClick={() => handleSort('description')} />
+            <SortButton label="Betrag"      active={sortKey === 'amount'}      dir={sortDir} onClick={() => handleSort('amount')} />
+            <SortButton label="Typ"         active={sortKey === 'type'}        dir={sortDir} onClick={() => handleSort('type')} />
+            <SortButton label="Datum"       active={sortKey === 'due_date'}    dir={sortDir} onClick={() => handleSort('due_date')} />
+            {sortKey !== null && (
+              <button onClick={() => setSortKey(null)} className="ml-1 text-xs text-primary-300 hover:text-primary-600 transition-colors">
+                Zurücksetzen
+              </button>
+            )}
+          </div>
+          <div className="border-t border-primary-50 px-4 pb-1">
+            {sorted.map((e) => (
+              <ExpenseManagementRow
+                key={e.id}
+                expense={e}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+                onToggleActive={onToggleActive}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -779,7 +923,7 @@ export function LiquidityPlanningPage() {
     startsaldo, startsaldoCurrency,
     loading,
     addIncome, updateIncome, deleteIncome, markIncomePaid, markIncomeUnpaid,
-    addExpense, deleteExpense, toggleExpenseActive,
+    addExpense, updateExpense, deleteExpense, toggleExpenseActive,
     upsertStartsaldo, upsertActualBalance, deleteActualBalance,
   } = useNOALiquidity();
 
@@ -835,7 +979,7 @@ export function LiquidityPlanningPage() {
       {!showingAForm && (
         <>
           <StartsaldoCard startsaldo={startsaldo} currency={startsaldoCurrency} onSave={upsertStartsaldo} />
-          <ExpenseManagementCard expenses={expenses} onDelete={deleteExpense} onToggleActive={toggleExpenseActive} />
+          <ExpenseManagementCard expenses={expenses} onUpdate={updateExpense} onDelete={deleteExpense} onToggleActive={toggleExpenseActive} />
         </>
       )}
 

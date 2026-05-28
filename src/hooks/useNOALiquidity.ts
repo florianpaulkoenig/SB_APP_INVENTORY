@@ -72,6 +72,13 @@ export interface UseNOALiquidityReturn {
     type: LiquidityExpenseType;
     due_date: string;
   }) => Promise<boolean>;
+  updateExpense: (id: string, data: {
+    description: string;
+    amount: number;
+    currency: string;
+    type: LiquidityExpenseType;
+    due_date: string;
+  }) => Promise<boolean>;
   deleteExpense: (id: string) => Promise<boolean>;
   toggleExpenseActive: (id: string, active: boolean) => Promise<boolean>;
   // Startsaldo
@@ -392,6 +399,31 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     return true;
   }, [toast, refetch]);
 
+  const updateExpense = useCallback(async (id: string, data: {
+    description: string;
+    amount: number;
+    currency: string;
+    type: LiquidityExpenseType;
+    due_date: string;
+  }): Promise<boolean> => {
+    const { error } = await supabase
+      .from('noa_liquidity_expenses' as never)
+      .update({
+        description: data.description,
+        amount:      data.amount,
+        currency:    data.currency,
+        type:        data.type,
+        due_date:    data.due_date,
+        updated_at:  new Date().toISOString(),
+      } as never)
+      .eq('id', id);
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+    toast({ title: 'Ausgabe aktualisiert', variant: 'success' });
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
   // ---- Startsaldo -----------------------------------------------------------
 
   const upsertStartsaldo = useCallback(async (amount: number, currency: string): Promise<boolean> => {
@@ -466,6 +498,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     markIncomePaid,
     markIncomeUnpaid,
     addExpense,
+    updateExpense,
     deleteExpense,
     toggleExpenseActive,
     upsertStartsaldo,
