@@ -384,7 +384,7 @@ const d = StyleSheet.create({
     flexWrap: 'wrap' as const,
   },
   refPhotoCellBox: {
-    height: 120,
+    height: 170,
     backgroundColor: '#F4F3F1',
     borderRadius: 2,
     alignItems: 'center' as const,
@@ -392,7 +392,7 @@ const d = StyleSheet.create({
   },
   refPhotoCellImage: {
     width: '100%',
-    height: 120,
+    height: 170,
     objectFit: 'contain' as const,
   },
 });
@@ -701,9 +701,9 @@ export function ExhibitionDossierPDF({
                   <Text style={d.refSectionLabel}>Reference Photos</Text>
                   {itemsWithPhotos.map((item, rIdx) => {
                     const imgs = item.referenceImageUrls!;
-                    const cols = imgs.length >= 3 ? 3 : imgs.length;
-                    const cellW = cols === 1 ? '58%' : cols === 2 ? '47%' : '31.3%';
-                    const gapW  = cols === 1 ? '0%'  : cols === 2 ? '6%'  : '3.05%';
+                    // Always 2 columns — uniform size regardless of image count
+                    const cellW = '47%';
+                    const gapW  = '6%';
                     return (
                       <View key={`rp-${rIdx}`} style={d.refItemBlock} wrap={false}>
                         <Text style={d.refItemCaption}>
@@ -711,7 +711,7 @@ export function ExhibitionDossierPDF({
                         </Text>
                         <View style={d.refPhotoGrid}>
                           {imgs.map((url, imgIdx) => {
-                            const isLast = (imgIdx + 1) % cols === 0 || imgIdx === imgs.length - 1;
+                            const isLast = imgIdx % 2 === 1 || imgIdx === imgs.length - 1;
                             return (
                               <View
                                 key={`rp-img-${rIdx}-${imgIdx}`}

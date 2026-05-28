@@ -254,7 +254,7 @@ const artistStyles = StyleSheet.create({
   },
   // image cell container (warm background fills letterbox areas)
   refPhotoCellBox: {
-    height: 150,
+    height: 200,
     backgroundColor: '#F4F3F1',
     borderRadius: 2,
     alignItems: 'center' as const,
@@ -262,7 +262,7 @@ const artistStyles = StyleSheet.create({
   },
   refPhotoCellImage: {
     width: '100%',
-    height: 150,
+    height: 200,
     objectFit: 'contain' as const,
   },
 });
@@ -408,10 +408,9 @@ export function ProductionOrderPDF({
               .filter((i) => i.referenceImageUrls && i.referenceImageUrls.length > 0)
               .map((item, idx) => {
                 const imgs = item.referenceImageUrls!;
-                // Adaptive columns: 1 \u2192 centred wide, 2 \u2192 halves, 3+ \u2192 thirds
-                const cols = imgs.length >= 3 ? 3 : imgs.length;
-                const cellW  = cols === 1 ? '58%'    : cols === 2 ? '47%'    : '31.3%';
-                const gapW   = cols === 1 ? '0%'     : cols === 2 ? '6%'     : '3.05%';
+                // Always 2 columns \u2014 uniform size regardless of image count
+                const cellW = '47%';
+                const gapW  = '6%';
 
                 return (
                   <View style={artistStyles.refPhotoItem} key={`ref-${idx}`} wrap={false}>
@@ -426,7 +425,7 @@ export function ProductionOrderPDF({
                     {/* Grid row */}
                     <View style={artistStyles.refPhotoGrid}>
                       {imgs.map((url, imgIdx) => {
-                        const isLastInRow = (imgIdx + 1) % cols === 0 || imgIdx === imgs.length - 1;
+                        const isLastInRow = imgIdx % 2 === 1 || imgIdx === imgs.length - 1;
                         return (
                           <View
                             key={`ref-img-${idx}-${imgIdx}`}
