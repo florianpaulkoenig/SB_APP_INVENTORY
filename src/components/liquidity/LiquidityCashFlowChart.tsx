@@ -6,6 +6,7 @@
 //   Dots  (right Y-axis) — Ist-Saldo where entered (green filled dots)
 // ---------------------------------------------------------------------------
 
+import { useState } from 'react';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   ResponsiveContainer, ReferenceLine, Cell, Legend,
@@ -91,6 +92,9 @@ function IstSaldoActiveDot(props: any) {
 // Component
 // ---------------------------------------------------------------------------
 
+const RANGE_OPTIONS = [3, 6, 9, 12] as const;
+type Range = typeof RANGE_OPTIONS[number];
+
 export function LiquidityCashFlowChart({
   months,
   currency = 'CHF',
@@ -98,7 +102,9 @@ export function LiquidityCashFlowChart({
   months: MonthBucket[];
   currency?: string;
 }) {
-  const data: ChartPoint[] = months.map((bucket) => {
+  const [range, setRange] = useState<Range>(12);
+
+  const allData: ChartPoint[] = months.map((bucket) => {
     const allIncome  = [...bucket.entries, ...bucket.lateEntries, ...bucket.paidEntries];
     const incomeSum  = allIncome.reduce((s, e) => s + e.amount, 0);
     const expenseSum = bucket.expenses.reduce((s, e) => s + e.amount, 0);
@@ -110,6 +116,8 @@ export function LiquidityCashFlowChart({
     };
   });
 
+  const data = allData.slice(0, range);
+
   const tickFmt = (v: number) => {
     if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
     if (Math.abs(v) >= 1_000)     return `${(v / 1_000).toFixed(0)}k`;
@@ -118,9 +126,26 @@ export function LiquidityCashFlowChart({
 
   return (
     <div className="rounded-lg border border-primary-100 bg-white p-4 mb-6">
-      <h2 className="mb-4 text-sm font-semibold text-primary-700 uppercase tracking-wide">
-        Cashflow &amp; Saldo — 12 Monate
-      </h2>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-primary-700 uppercase tracking-wide">
+          Cashflow &amp; Saldo
+        </h2>
+        <div className="flex items-center gap-1 rounded-lg border border-primary-100 bg-primary-50 p-0.5">
+          {RANGE_OPTIONS.map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                range === r
+                  ? 'bg-white text-primary-900 shadow-sm'
+                  : 'text-primary-400 hover:text-primary-700'
+              }`}
+            >
+              {r} M
+            </button>
+          ))}
+        </div>
+      </div>
 
       <ResponsiveContainer width="100%" height={300}>
         <ComposedChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 4 }}>
