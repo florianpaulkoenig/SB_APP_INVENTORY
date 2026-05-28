@@ -54,6 +54,7 @@ export interface ProductionOrderDetailProps {
   onStatusChange: (status: ProductionStatus) => void;
   onConvertItem: (itemId: string) => void;
   onLinkArtwork: (itemId: string, referenceCode: string) => Promise<boolean>;
+  onReorderItems?: (orderedIds: string[]) => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -152,6 +153,7 @@ export function ProductionOrderDetail({
   onStatusChange,
   onConvertItem,
   onLinkArtwork,
+  onReorderItems,
 }: ProductionOrderDetailProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -161,6 +163,10 @@ export function ProductionOrderDetail({
   const [linkRefCode, setLinkRefCode] = useState('');
   const [linkLoading, setLinkLoading] = useState(false);
   const [downloadingPhotos, setDownloadingPhotos] = useState(false);
+
+  // ---- Drag-and-drop state --------------------------------------------------
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   // ---- Resolve reference image thumbnails (multiple per item) ---------------
   const [refImageUrls, setRefImageUrls] = useState<Record<string, string[]>>({});
@@ -453,6 +459,10 @@ export function ProductionOrderDetail({
             <table className="w-full">
               <thead>
                 <tr>
+                  {/* Drag handle column */}
+                  {onReorderItems && (
+                    <th className="w-8 px-1 py-3" aria-label="Drag to reorder" />
+                  )}
                   {hasAnyRefImages && (
                     <th className="px-2 py-3 text-center text-xs font-medium uppercase tracking-wider text-primary-400 w-14">
                       Ref
@@ -485,8 +495,39 @@ export function ProductionOrderDetail({
                 {items.map((item) => (
                   <React.Fragment key={item.id}>
                   <tr
-                    className="border-b border-primary-100"
+                    className={`border-b border-primary-100 transition-colors ${
+                      draggingId === item.id ? 'opacity-40' : ''
+                    } ${
+                      dragOverId === item.id && draggingId !== item.id
+                        ? 'bg-primary-50 border-t-2 border-t-accent'
+                        : ''
+                    }`}
+                    draggable={!!onReorderItems}
+                    onDragStart={onReorderItems ? () => setDraggingId(item.id) : undefined}
+                    onDragOver={onReorderItems ? (e) => { e.preventDefault(); setDragOverId(item.id); } : undefined}
+                    onDragLeave={onReorderItems ? () => setDragOverId(null) : undefined}
+                    onDrop={onReorderItems ? (e) => {
+                      e.preventDefault();
+                      if (!draggingId || draggingId === item.id) return;
+                      const newOrder = [...items];
+                      const fromIdx = newOrder.findIndex((i) => i.id === draggingId);
+                      const toIdx   = newOrder.findIndex((i) => i.id === item.id);
+                      const [moved] = newOrder.splice(fromIdx, 1);
+                      newOrder.splice(toIdx, 0, moved);
+                      setDraggingId(null);
+                      setDragOverId(null);
+                      onReorderItems(newOrder.map((i) => i.id));
+                    } : undefined}
+                    onDragEnd={onReorderItems ? () => { setDraggingId(null); setDragOverId(null); } : undefined}
                   >
+                    {/* Drag handle */}
+                    {onReorderItems && (
+                      <td className="w-8 px-1 py-3 text-center cursor-grab active:cursor-grabbing text-primary-300 hover:text-primary-500">
+                        <svg className="h-4 w-4 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"/>
+                        </svg>
+                      </td>
+                    )}
                     {hasAnyRefImages && (
                       <td className="px-2 py-3 text-center">
                         {refImageUrls[item.id] && refImageUrls[item.id].length > 0 ? (

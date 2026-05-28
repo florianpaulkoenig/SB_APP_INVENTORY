@@ -302,6 +302,7 @@ export interface UseProductionOrderItemsReturn {
   addItem: (data: ProductionOrderItemInsert) => Promise<ProductionOrderItemRow | null>;
   updateItem: (id: string, data: ProductionOrderItemUpdate) => Promise<ProductionOrderItemRow | null>;
   removeItem: (id: string) => Promise<boolean>;
+  reorderItems: (orderedIds: string[]) => Promise<void>;
 }
 
 export function useProductionOrderItems(productionOrderId: string): UseProductionOrderItemsReturn {
@@ -440,6 +441,38 @@ export function useProductionOrderItems(productionOrderId: string): UseProductio
     [toast, fetchItems],
   );
 
+  // ---- Reorder items (drag-and-drop) ----------------------------------------
+
+  const reorderItems = useCallback(
+    async (orderedIds: string[]): Promise<void> => {
+      // Optimistic update — reorder local state immediately
+      setItems((prev) => {
+        const map = new Map(prev.map((item) => [item.id, item]));
+        return orderedIds
+          .map((id, idx) => {
+            const item = map.get(id);
+            return item ? { ...item, sort_order: idx + 1 } : null;
+          })
+          .filter((item): item is ProductionOrderItemWithJoins => item !== null);
+      });
+
+      try {
+        await Promise.all(
+          orderedIds.map((id, index) =>
+            supabase
+              .from('production_order_items')
+              .update({ sort_order: index + 1 } as never)
+              .eq('id', id),
+          ),
+        );
+      } catch {
+        toast({ title: 'Error', description: 'Could not save new order.', variant: 'error' });
+        await fetchItems(); // revert on failure
+      }
+    },
+    [fetchItems, toast],
+  );
+
   return {
     items,
     loading,
@@ -448,5 +481,6 @@ export function useProductionOrderItems(productionOrderId: string): UseProductio
     addItem,
     updateItem,
     removeItem,
+    reorderItems,
   };
 }

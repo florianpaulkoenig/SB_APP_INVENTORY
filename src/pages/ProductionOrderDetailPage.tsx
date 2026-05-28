@@ -49,6 +49,7 @@ export function ProductionOrderDetailPage() {
     addItem,
     updateItem,
     removeItem,
+    reorderItems,
     refetch: refetchItems,
   } = useProductionOrderItems(id!);
   const { deleteProductionOrder, updateProductionOrder } = useProductionOrders();
@@ -527,6 +528,7 @@ export function ProductionOrderDetailPage() {
           if (found) setConvertItem(found);
         }}
         onLinkArtwork={handleLinkArtwork}
+        onReorderItems={reorderItems}
       />
 
       {/* Linked Exhibitions & Projects */}
