@@ -2117,6 +2117,7 @@ export interface NOALiquiditySettingsRow {
   user_id: string;
   starting_balance: number;
   starting_balance_date: string;
+  currency: string;
   updated_at: string;
 }
 
@@ -2125,18 +2126,51 @@ export interface NOALiquiditySettingsInsert {
   user_id?: string;
   starting_balance: number;
   starting_balance_date: string;
+  currency?: string;
   updated_at?: string;
 }
 
 export type NOALiquiditySettingsUpdate = Partial<NOALiquiditySettingsInsert>;
 
-export type LiquidityExpenseType = 'fixed' | 'one_time';
+export interface NOALiquidityActualBalanceRow {
+  id: string;
+  user_id: string;
+  year: number;
+  month: number;   // 1-indexed
+  balance: number;
+  currency: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NOALiquidityActualBalanceInsert {
+  id?: string;
+  user_id?: string;
+  year: number;
+  month: number;
+  balance: number;
+  currency?: string;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type NOALiquidityActualBalanceUpdate = Partial<NOALiquidityActualBalanceInsert>;
+
+export type LiquidityExpenseType =
+  | 'one_time'
+  | 'monthly'
+  | 'quarterly'
+  | 'semi_annual'
+  | 'annual';
 
 export interface NOALiquidityExpenseRow {
   id: string;
   user_id: string;
   description: string;
   amount: number;
+  currency: string;
   type: LiquidityExpenseType;
   active: boolean;
   due_date: string | null;
@@ -2149,6 +2183,7 @@ export interface NOALiquidityExpenseInsert {
   user_id?: string;
   description: string;
   amount: number;
+  currency?: string;
   type: LiquidityExpenseType;
   active?: boolean;
   due_date?: string | null;
@@ -2166,6 +2201,7 @@ export interface NOALiquidityIncomeRow {
   currency: string;
   expected_date: string;
   notes: string | null;
+  paid_at: string | null;   // null = unpaid, ISO string = paid timestamp
   created_at: string;
   updated_at: string;
 }
@@ -2178,6 +2214,7 @@ export interface NOALiquidityIncomeInsert {
   currency?: string;
   expected_date: string;
   notes?: string | null;
+  paid_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
