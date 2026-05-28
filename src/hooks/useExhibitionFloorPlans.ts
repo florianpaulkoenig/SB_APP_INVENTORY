@@ -107,16 +107,22 @@ export function useExhibitionFloorPlans(exhibitionId: string | undefined) {
 
   const updateDescription = useCallback(async (id: string, description: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
+      const trimmed = description.trim() || null;
+      const { data, error } = await supabase
         .from('exhibition_floor_plans')
-        .update({ description: description || null } as never)
-        .eq('id', id);
+        .update({ description: trimmed } as never)
+        .eq('id', id)
+        .select('id, description')
+        .single();
       if (error) throw error;
+      // Sync local state with what DB actually stored
+      const saved = (data as { id: string; description: string | null } | null)?.description ?? trimmed;
       setFloorPlans((prev) =>
-        prev.map((fp) => fp.id === id ? { ...fp, description: description || null } : fp),
+        prev.map((fp) => fp.id === id ? { ...fp, description: saved } : fp),
       );
       return true;
-    } catch {
+    } catch (err) {
+      console.error('[useExhibitionFloorPlans] updateDescription error:', err);
       toast({ title: 'Error', description: 'Failed to save description.', variant: 'error' });
       return false;
     }
