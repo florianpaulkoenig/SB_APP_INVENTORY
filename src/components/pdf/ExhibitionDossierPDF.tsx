@@ -425,6 +425,12 @@ export function ExhibitionDossierPDF({
         .filter(Boolean)
     : [];
 
+  // Group floor plan images in pairs — 2 per page when possible
+  const floorPlanPairs: Array<Array<{ dataUrl: string; description?: string | null }>> = [];
+  for (let i = 0; i < floorPlanImages.length; i += 2) {
+    floorPlanPairs.push(floorPlanImages.slice(i, i + 2));
+  }
+
   return (
     <Document>
       {/* ================================================================ */}
@@ -519,27 +525,33 @@ export function ExhibitionDossierPDF({
       )}
 
       {/* ================================================================ */}
-      {/* FLOOR PLAN PAGES — one per image                                 */}
+      {/* FLOOR PLAN PAGES — up to 2 per page                             */}
       {/* ================================================================ */}
       {hasFloors &&
-        floorPlanImages.map(({ dataUrl, description }, idx) => (
-          <Page key={`fp-${idx}`} size="A4" style={d.floorPlanPage}>
+        floorPlanPairs.map((pair, pairIdx) => (
+          <Page key={`fp-${pairIdx}`} size="A4" style={d.floorPlanPage}>
             <View style={d.pageHeader} fixed>
               <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
               <Text style={d.pageHeaderText}>{exhibition.title}</Text>
             </View>
 
-            {/* Section title — includes description after the counter */}
-            <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>
-              {`Floor Plans / 3D Model${floorPlanImages.length > 1 ? ` (${idx + 1}/${floorPlanImages.length})` : ''}${description?.trim() ? ` — ${description}` : ''}`}
-            </Text>
+            {pair.map((fp, fpIdx) => {
+              const globalIdx = pairIdx * 2 + fpIdx;
+              return (
+                <View
+                  key={`fp-item-${globalIdx}`}
+                  style={{ flex: 1, marginBottom: fpIdx < pair.length - 1 ? 20 : 0 }}
+                >
+                  <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
+                    {`Floor Plans / 3D Model${floorPlanImages.length > 1 ? ` (${globalIdx + 1}/${floorPlanImages.length})` : ''}${fp.description?.trim() ? ` — ${fp.description}` : ''}`}
+                  </Text>
+                  <View style={d.floorPlanImageWrap}>
+                    <Image src={fp.dataUrl} style={d.floorPlanImage} />
+                  </View>
+                </View>
+              );
+            })}
 
-            {/* Image — full page width (marginHorizontal cancels page padding) */}
-            <View style={d.floorPlanImageWrap}>
-              <Image src={dataUrl} style={d.floorPlanImage} />
-            </View>
-
-            {/* Footer */}
             <View style={styles.footer} fixed>
               <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
               <Text
