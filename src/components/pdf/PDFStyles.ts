@@ -11,15 +11,20 @@ import { StyleSheet, Font } from '@react-pdf/renderer';
 // ---------------------------------------------------------------------------
 const FONT_URL = `${import.meta.env.BASE_URL}fonts/AnzianoPro-Regular.otf`;
 
+// EB Garamond Italic — used as italic substitute for AnzianoPro (which has no
+// true italic variant). Served via Google Fonts GitHub raw CDN (stable, CORS-enabled).
+const EB_ITALIC_URL      = 'https://raw.githubusercontent.com/google/fonts/main/ofl/ebgaramond/static/EBGaramond-Italic.ttf';
+const EB_BOLD_ITALIC_URL = 'https://raw.githubusercontent.com/google/fonts/main/ofl/ebgaramond/static/EBGaramond-BoldItalic.ttf';
+
 Font.register({
   family: 'AnzianoPro',
   fonts: [
-    { src: FONT_URL, fontWeight: 'normal' },
-    { src: FONT_URL, fontWeight: 'bold' },
-    // Italic variants — same file (no true italic available).
-    // react-pdf uses this entry for fontStyle:'italic' lookups.
-    { src: FONT_URL, fontWeight: 'normal', fontStyle: 'italic' },
-    { src: FONT_URL, fontWeight: 'bold',   fontStyle: 'italic' },
+    { src: FONT_URL,           fontWeight: 'normal' },
+    { src: FONT_URL,           fontWeight: 'bold' },
+    // True italic glyphs via EB Garamond Italic — elegant serif that complements
+    // AnzianoPro in display contexts without a dedicated italic cut.
+    { src: EB_ITALIC_URL,      fontWeight: 'normal', fontStyle: 'italic' },
+    { src: EB_BOLD_ITALIC_URL, fontWeight: 'bold',   fontStyle: 'italic' },
   ],
 });
 

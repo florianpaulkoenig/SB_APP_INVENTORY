@@ -419,11 +419,10 @@ function tokenStyle(token: RichToken) {
   const isItalic = token.type === 'italic' || token.type === 'bold-italic';
   return {
     ...BASE_TEXT_STYLE,
-    fontWeight:  isBold   ? ('bold'   as const) : ('normal' as const),
-    fontStyle:   isItalic ? ('italic' as const) : ('normal' as const),
-    // Visual hint for italic since we don't have a true italic font file:
-    // slightly shifted color so it's distinguishable in the PDF.
-    color: isItalic && !isBold ? '#4a4a5a' : BASE_TEXT_STYLE.color,
+    fontWeight: isBold   ? ('bold'   as const) : ('normal' as const),
+    fontStyle:  isItalic ? ('italic' as const) : ('normal' as const),
+    // EB Garamond Italic is registered as the italic variant of AnzianoPro,
+    // so react-pdf automatically uses real italic glyphs here.
   };
 }
 
