@@ -202,14 +202,13 @@ const d = StyleSheet.create({
   floorPlanPage: {
     fontFamily: 'AnzianoPro',
     backgroundColor: PDF_COLORS.white,
-    paddingTop: 0,
+    paddingTop: 50,
     paddingBottom: 60,
     paddingHorizontal: 50,
   },
   floorPlanHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 24,
     paddingBottom: 12,
     marginBottom: 12,
     borderBottomWidth: 0.5,
@@ -502,7 +501,7 @@ export function ExhibitionDossierPDF({
         {/* Bottom: copyright line */}
         <View style={d.titleBottom}>
           <View style={d.titleBottomLine} />
-          <Text style={d.titleBottomText}>{`© ${ARTIST_NAME} · ${COMPANY_NAME}`}</Text>
+          <Text style={d.titleBottomText}>{`© ${COMPANY_NAME}`}</Text>
         </View>
       </Page>
 
@@ -531,7 +530,7 @@ export function ExhibitionDossierPDF({
 
           {/* Standard footer */}
           <View style={styles.footer} fixed>
-            <Text style={styles.footerText}>{`© ${ARTIST_NAME}`}</Text>
+            <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
             <Text
               style={styles.pageNumber}
               render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
@@ -564,7 +563,7 @@ export function ExhibitionDossierPDF({
 
             {/* Footer */}
             <View style={styles.footer}>
-              <Text style={styles.footerText}>{`© ${ARTIST_NAME}`}</Text>
+              <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
               <Text
                 style={styles.pageNumber}
                 render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
@@ -597,7 +596,7 @@ export function ExhibitionDossierPDF({
             })}
           </View>
           <View style={styles.footer} fixed>
-            <Text style={styles.footerText}>{`© ${ARTIST_NAME}`}</Text>
+            <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
             <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
           </View>
         </Page>
@@ -635,7 +634,7 @@ export function ExhibitionDossierPDF({
 
           {/* Footer */}
           <View style={styles.footer} fixed>
-            <Text style={styles.footerText}>{`© ${ARTIST_NAME}`}</Text>
+            <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
             <Text
               style={styles.pageNumber}
               render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
@@ -743,7 +742,7 @@ export function ExhibitionDossierPDF({
 
           {/* Footer */}
           <View style={styles.footer} fixed>
-            <Text style={styles.footerText}>{`© ${ARTIST_NAME}`}</Text>
+            <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
             <Text
               style={styles.pageNumber}
               render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
