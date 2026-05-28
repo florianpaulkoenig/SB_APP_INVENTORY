@@ -59,3 +59,39 @@ export function blobToDataUrl(blob: Blob): Promise<string> {
     reader.readAsDataURL(blob);
   });
 }
+
+/**
+ * Convert any image Blob to a JPEG data URL via an off-screen canvas.
+ * Normalises WebP / HEIC / AVIF to JPEG, which @react-pdf/renderer supports.
+ * @param blob     Any browser-decodable image blob
+ * @param quality  JPEG quality 0–1 (default 0.92)
+ * @param maxDim   Longest edge cap in pixels — downscales large photos (default 1800)
+ */
+export function blobToJpegDataUrl(
+  blob: Blob,
+  quality = 0.92,
+  maxDim = 1800,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new window.Image();
+    img.onload = () => {
+      let { naturalWidth: w, naturalHeight: h } = img;
+      if (Math.max(w, h) > maxDim) {
+        const ratio = maxDim / Math.max(w, h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width  = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { URL.revokeObjectURL(url); reject(new Error('No canvas 2d context')); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+    img.src = url;
+  });
+}

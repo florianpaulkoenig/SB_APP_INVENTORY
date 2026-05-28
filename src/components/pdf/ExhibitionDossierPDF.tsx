@@ -246,9 +246,7 @@ const d = StyleSheet.create({
     letterSpacing: 0.5,
   },
   poOrderBlock: {
-    marginBottom: 16,
-    borderWidth: 0.5,
-    borderColor: PDF_COLORS.border,
+    marginBottom: 20,
   },
   poOrderMeta: {
     flexDirection: 'row',
@@ -449,7 +447,7 @@ export function ExhibitionDossierPDF({
 
           {exhibition.type && (
             <View style={d.titleMetaRow}>
-              <Text style={d.titleMetaLabel}>Exhibition</Text>
+              <Text style={d.titleMetaLabel}>Category</Text>
               <Text style={d.titleMetaValue}>{exhibition.type}</Text>
             </View>
           )}

@@ -277,16 +277,21 @@ export function ExhibitionDetailPage() {
         }
       }
 
-      // 2. Convert exhibition photos to data URLs
-      const { blobToDataUrl: blobToUrl } = await import('../lib/pdfToDataUrls');
+      // 2. Convert exhibition photos to JPEG data URLs
+      // blobToJpegDataUrl normalises WebP/HEIC/AVIF → JPEG which react-pdf supports
+      const { blobToJpegDataUrl } = await import('../lib/pdfToDataUrls');
       const exhibitionPhotos: Array<{ dataUrl: string; caption?: string }> = [];
       for (const img of exhibitionImages) {
         const { data: imgBlob } = await supabase.storage
           .from('media-files')
           .download(img.storage_path);
         if (!imgBlob) continue;
-        const dataUrl = await blobToUrl(imgBlob);
-        exhibitionPhotos.push({ dataUrl, caption: img.caption || undefined });
+        try {
+          const dataUrl = await blobToJpegDataUrl(imgBlob);
+          exhibitionPhotos.push({ dataUrl, caption: img.caption || undefined });
+        } catch {
+          // skip images that fail to convert
+        }
       }
 
       // 4. Fetch items (+ ref images) for each linked production order
