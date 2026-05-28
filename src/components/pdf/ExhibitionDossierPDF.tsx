@@ -167,29 +167,28 @@ const d = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
-  // ---------- Exhibition text page -----------------------------------------
-  textPageHeader: {
-    flexDirection: 'row',
+  // ---------- Fixed page header (all non-cover pages) ----------------------
+  // Mirrors styles.footer: position absolute, same top/left/right as footer's bottom/left/right
+  pageHeader: {
+    position: 'absolute' as const,
+    top: 30,
+    left: 50,
+    right: 50,
+    flexDirection: 'row' as const,
     justifyContent: 'space-between',
-    marginBottom: 24,
-    paddingBottom: 12,
+    alignItems: 'center',
     borderBottomWidth: 0.5,
     borderBottomColor: PDF_COLORS.border,
+    paddingBottom: 6,
   },
-  textPageArtist: {
+  pageHeaderText: {
     fontFamily: 'AnzianoPro',
-    fontWeight: 'bold' as const,
-    fontSize: 10,
-    color: PDF_COLORS.primary900,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-  },
-  textPageLabel: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 10,
+    fontSize: 7,
     color: PDF_COLORS.primary400,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
+
+  // ---------- Exhibition text page -----------------------------------------
   textParagraph: {
     fontFamily: 'AnzianoPro',
     fontSize: 11,
@@ -206,30 +205,13 @@ const d = StyleSheet.create({
     paddingBottom: 60,
     paddingHorizontal: 50,
   },
-  floorPlanHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingBottom: 12,
-    marginBottom: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: PDF_COLORS.border,
-  },
   floorPlanImageWrap: {
     flex: 1,
     justifyContent: 'flex-start',
-    marginHorizontal: -50, // break out of page padding → full page width
   },
   floorPlanImage: {
     width: '100%',
     objectFit: 'contain' as const,
-  },
-  floorPlanDesc: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 7,
-    color: PDF_COLORS.primary400,
-    letterSpacing: 0.5,
-    lineHeight: 1.4,
-    marginTop: 6,
   },
 
   // ---------- Production orders page ---------------------------------------
@@ -510,13 +492,11 @@ export function ExhibitionDossierPDF({
       {/* ================================================================ */}
       {hasText && (
         <Page size="A4" style={styles.page}>
-          {/* Header */}
-          <View style={d.textPageHeader}>
-            <Text style={d.textPageArtist}>{ARTIST_NAME}</Text>
-            <Text style={d.textPageLabel}>{exhibition.title}</Text>
+          <View style={d.pageHeader} fixed>
+            <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
+            <Text style={d.pageHeaderText}>{exhibition.title}</Text>
           </View>
 
-          {/* Section label */}
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
             Exhibition Text
           </Text>
@@ -545,10 +525,9 @@ export function ExhibitionDossierPDF({
       {hasFloors &&
         floorPlanImages.map(({ dataUrl, description }, idx) => (
           <Page key={`fp-${idx}`} size="A4" style={d.floorPlanPage}>
-            {/* Header */}
-            <View style={d.floorPlanHeader}>
-              <Text style={d.textPageArtist}>{ARTIST_NAME}</Text>
-              <Text style={d.textPageLabel}>{exhibition.title}</Text>
+            <View style={d.pageHeader} fixed>
+              <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
+              <Text style={d.pageHeaderText}>{exhibition.title}</Text>
             </View>
 
             {/* Section title — includes description after the counter */}
@@ -562,7 +541,7 @@ export function ExhibitionDossierPDF({
             </View>
 
             {/* Footer */}
-            <View style={styles.footer}>
+            <View style={styles.footer} fixed>
               <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
               <Text
                 style={styles.pageNumber}
@@ -577,9 +556,9 @@ export function ExhibitionDossierPDF({
       {/* ================================================================ */}
       {hasVenue && (
         <Page size="A4" style={styles.page}>
-          <View style={d.textPageHeader}>
-            <Text style={d.textPageArtist}>{ARTIST_NAME}</Text>
-            <Text style={d.textPageLabel}>{exhibition.title}</Text>
+          <View style={d.pageHeader} fixed>
+            <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
+            <Text style={d.pageHeaderText}>{exhibition.title}</Text>
           </View>
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>Venue Photos</Text>
           <View style={d.photoGrid}>
@@ -607,10 +586,9 @@ export function ExhibitionDossierPDF({
       {/* ================================================================ */}
       {hasPhotos && (
         <Page size="A4" style={styles.page}>
-          {/* Header */}
-          <View style={d.textPageHeader}>
-            <Text style={d.textPageArtist}>{ARTIST_NAME}</Text>
-            <Text style={d.textPageLabel}>{exhibition.title}</Text>
+          <View style={d.pageHeader} fixed>
+            <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
+            <Text style={d.pageHeaderText}>{exhibition.title}</Text>
           </View>
 
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
@@ -648,10 +626,9 @@ export function ExhibitionDossierPDF({
       {/* ================================================================ */}
       {hasPOs && (
         <Page size="A4" style={styles.page}>
-          {/* Header */}
-          <View style={d.textPageHeader}>
-            <Text style={d.textPageArtist}>{ARTIST_NAME}</Text>
-            <Text style={d.textPageLabel}>{exhibition.title}</Text>
+          <View style={d.pageHeader} fixed>
+            <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
+            <Text style={d.pageHeaderText}>{exhibition.title}</Text>
           </View>
 
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
