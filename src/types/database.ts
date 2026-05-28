@@ -1044,6 +1044,7 @@ export interface ExhibitionFloorPlanRow {
   storage_path: string;
   file_name: string;
   sort_order: number;
+  description: string | null;
   created_at: string;
 }
 
@@ -1054,6 +1055,7 @@ export interface ExhibitionFloorPlanInsert {
   storage_path: string;
   file_name: string;
   sort_order?: number;
+  description?: string | null;
   created_at?: string;
 }
 

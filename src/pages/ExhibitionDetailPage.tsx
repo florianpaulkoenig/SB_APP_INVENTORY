@@ -95,7 +95,7 @@ export function ExhibitionDetailPage() {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
 
   const { galleries, loading: galleriesLoading, linkGallery, unlinkGallery } = useExhibitionGalleries(id!);
-  const { floorPlans, loading: floorPlansLoading, uploadFloorPlan, deleteFloorPlan } = useExhibitionFloorPlans(id);
+  const { floorPlans, loading: floorPlansLoading, uploadFloorPlan, deleteFloorPlan, updateDescription: updateFloorPlanDesc } = useExhibitionFloorPlans(id);
 
   const [addGalleryOpen, setAddGalleryOpen] = useState(false);
   const [selectedGalleryId, setSelectedGalleryId] = useState('');
@@ -126,9 +126,11 @@ export function ExhibitionDetailPage() {
   const [descSaved, setDescSaved] = useState(false);
   const descSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ---- Floor plan upload --------------------------------------------------
+  // ---- Floor plan upload + description editing ----------------------------
   const floorPlanInputRef = useRef<HTMLInputElement>(null);
   const [uploadingFloorPlan, setUploadingFloorPlan] = useState(false);
+  const [editingFPDescId, setEditingFPDescId] = useState<string | null>(null);
+  const [editingFPDescText, setEditingFPDescText] = useState('');
 
   // ---- Dossier PDF download -----------------------------------------------
   const [downloadingDossier, setDownloadingDossier] = useState(false);
@@ -251,8 +253,8 @@ export function ExhibitionDetailPage() {
     setDownloadingDossier(true);
 
     try {
-      // 1. Convert floor plans to image data URLs
-      const floorPlanImages: string[] = [];
+      // 1. Convert floor plans to image data URLs (preserve descriptions)
+      const floorPlanImages: Array<{ dataUrl: string; description?: string | null }> = [];
       for (const fp of floorPlans) {
         const { data: blob } = await supabase.storage
           .from('media-files')
@@ -263,10 +265,15 @@ export function ExhibitionDetailPage() {
         if (lowerName.endsWith('.pdf')) {
           const { pdfBlobToDataUrls } = await import('../lib/pdfToDataUrls');
           const pages = await pdfBlobToDataUrls(blob, 2.0);
-          floorPlanImages.push(...pages);
+          pages.forEach((dataUrl, pageIdx) => {
+            const desc = fp.description
+              ? (pages.length > 1 ? `${fp.description} (${pageIdx + 1}/${pages.length})` : fp.description)
+              : null;
+            floorPlanImages.push({ dataUrl, description: desc });
+          });
         } else {
           const { blobToDataUrl } = await import('../lib/pdfToDataUrls');
-          floorPlanImages.push(await blobToDataUrl(blob));
+          floorPlanImages.push({ dataUrl: await blobToDataUrl(blob), description: fp.description ?? null });
         }
       }
 
@@ -336,6 +343,7 @@ export function ExhibitionDetailPage() {
             start_date: exhibition.start_date,
             end_date: exhibition.end_date,
             description_text: exhibition.description_text ?? descText,
+            notes: exhibition.notes,
           }}
           floorPlanImages={floorPlanImages}
           productionOrders={ordersWithItems}
@@ -846,22 +854,57 @@ export function ExhibitionDetailPage() {
         ) : floorPlans.length > 0 ? (
           <ul className="mb-4 divide-y divide-gray-100">
             {floorPlans.map((fp, idx) => (
-              <li key={fp.id} className="flex items-center gap-3 py-2.5">
-                {/* Icon: PDF or image */}
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500 uppercase">
-                  {fp.file_name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'IMG'}
-                </span>
-                <span className="flex-1 truncate text-sm text-gray-800">{fp.file_name}</span>
-                <span className="text-xs text-gray-400 shrink-0">#{idx + 1}</span>
-                <button
-                  onClick={() => deleteFloorPlan(fp.id, fp.storage_path)}
-                  className="shrink-0 text-gray-300 hover:text-red-400 transition-colors"
-                  title="Delete"
-                >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+              <li key={fp.id} className="py-3">
+                <div className="flex items-center gap-3">
+                  {/* Icon: PDF or image */}
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500 uppercase">
+                    {fp.file_name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'IMG'}
+                  </span>
+                  <span className="flex-1 truncate text-sm text-gray-800">{fp.file_name}</span>
+                  <span className="text-xs text-gray-400 shrink-0">#{idx + 1}</span>
+                  <button
+                    onClick={() => deleteFloorPlan(fp.id, fp.storage_path)}
+                    className="shrink-0 text-gray-300 hover:text-red-400 transition-colors"
+                    title="Delete"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Description field */}
+                {editingFPDescId === fp.id ? (
+                  <div className="mt-2 flex items-center gap-2 pl-11">
+                    <input
+                      type="text"
+                      value={editingFPDescText}
+                      onChange={(e) => setEditingFPDescText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          updateFloorPlanDesc(fp.id, editingFPDescText);
+                          setEditingFPDescId(null);
+                        }
+                        if (e.key === 'Escape') setEditingFPDescId(null);
+                      }}
+                      className="flex-1 rounded border border-gray-200 px-2 py-1 text-xs focus:border-gray-400 focus:outline-none"
+                      placeholder="Caption shown in PDF…"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => { updateFloorPlanDesc(fp.id, editingFPDescText); setEditingFPDescId(null); }}
+                      className="text-xs text-green-600 hover:text-green-700"
+                    >Save</button>
+                    <button onClick={() => setEditingFPDescId(null)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setEditingFPDescId(fp.id); setEditingFPDescText(fp.description ?? ''); }}
+                    className="mt-1 ml-11 text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                  >
+                    {fp.description ? fp.description : '+ Add caption'}
+                  </button>
+                )}
               </li>
             ))}
           </ul>

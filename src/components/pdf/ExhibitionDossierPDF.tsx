@@ -42,8 +42,8 @@ export interface ExhibitionDossierPDFProps {
     description_text?: string | null;
     notes?: string | null;
   };
-  /** data-URL of each floor plan page (JPEG) */
-  floorPlanImages: string[];
+  /** One entry per rendered floor plan page */
+  floorPlanImages: Array<{ dataUrl: string; description?: string | null }>;
   productionOrders: DossierProductionOrder[];
 }
 
@@ -194,29 +194,36 @@ const d = StyleSheet.create({
   floorPlanPage: {
     fontFamily: 'AnzianoPro',
     backgroundColor: PDF_COLORS.white,
-    padding: 0,
+    paddingTop: 0,
+    paddingBottom: 60,
+    paddingHorizontal: 50,
+  },
+  floorPlanHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 24,
+    paddingBottom: 12,
+    marginBottom: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: PDF_COLORS.border,
+  },
+  floorPlanImageWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   floorPlanImage: {
     width: '100%',
     height: '100%',
     objectFit: 'contain' as const,
   },
-  floorPlanLabel: {
-    position: 'absolute',
-    bottom: 16,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  floorPlanLabelText: {
+  floorPlanDesc: {
     fontFamily: 'AnzianoPro',
-    fontSize: 7,
+    fontSize: 8,
     color: PDF_COLORS.primary400,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    backgroundColor: PDF_COLORS.white,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    textAlign: 'center' as const,
+    letterSpacing: 1,
+    marginTop: 8,
   },
 
   // ---------- Production orders page ---------------------------------------
@@ -403,11 +410,14 @@ export function ExhibitionDossierPDF({
         <View style={d.titleCenter}>
           <Text style={d.artistNameTitle}>{ARTIST_NAME}</Text>
           <Text style={d.exhibitionTitleLarge}>{exhibition.title}</Text>
-          {exhibition.type && (
-            <Text style={d.exhibitionType}>{exhibition.type}</Text>
-          )}
           <View style={d.titleDivider} />
 
+          {exhibition.type && (
+            <View style={d.titleMetaRow}>
+              <Text style={d.titleMetaLabel}>Exhibition</Text>
+              <Text style={d.titleMetaValue}>{exhibition.type}</Text>
+            </View>
+          )}
           {exhibition.venue && (
             <View style={d.titleMetaRow}>
               <Text style={d.titleMetaLabel}>Venue</Text>
@@ -424,6 +434,14 @@ export function ExhibitionDossierPDF({
             <View style={d.titleMetaRow}>
               <Text style={d.titleMetaLabel}>Dates</Text>
               <Text style={d.titleMetaValue}>{dateStr}</Text>
+            </View>
+          )}
+          {exhibition.notes?.trim() && (
+            <View style={[d.titleMetaRow, { marginTop: 14 }]}>
+              <Text style={d.titleMetaLabel}>Notes</Text>
+              <Text style={[d.titleMetaValue, { fontSize: 9, lineHeight: 1.5 }]}>
+                {exhibition.notes}
+              </Text>
             </View>
           )}
         </View>
@@ -475,14 +493,31 @@ export function ExhibitionDossierPDF({
       {/* FLOOR PLAN PAGES — one per image                                 */}
       {/* ================================================================ */}
       {hasFloors &&
-        floorPlanImages.map((imgUrl, idx) => (
+        floorPlanImages.map(({ dataUrl, description }, idx) => (
           <Page key={`fp-${idx}`} size="A4" style={d.floorPlanPage}>
-            <Image src={imgUrl} style={d.floorPlanImage} />
-            {/* Floating label */}
-            <View style={d.floorPlanLabel} fixed>
-              <Text style={d.floorPlanLabelText}>
-                {`Floor Plan${floorPlanImages.length > 1 ? ` ${idx + 1}` : ''} · ${exhibition.title}`}
-              </Text>
+            {/* Header */}
+            <View style={d.floorPlanHeader}>
+              <Text style={d.textPageArtist}>{ARTIST_NAME}</Text>
+              <Text style={d.textPageLabel}>{exhibition.title}</Text>
+            </View>
+
+            {/* Image */}
+            <View style={d.floorPlanImageWrap}>
+              <Image src={dataUrl} style={d.floorPlanImage} />
+            </View>
+
+            {/* Optional description caption */}
+            {description?.trim() && (
+              <Text style={d.floorPlanDesc}>{description}</Text>
+            )}
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>{`© ${ARTIST_NAME}`}</Text>
+              <Text
+                style={styles.pageNumber}
+                render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+              />
             </View>
           </Page>
         ))}

@@ -103,6 +103,25 @@ export function useExhibitionFloorPlans(exhibitionId: string | undefined) {
     }
   }, [exhibitionId, fetchFloorPlans, toast]);
 
+  // ---- Update description --------------------------------------------------
+
+  const updateDescription = useCallback(async (id: string, description: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('exhibition_floor_plans')
+        .update({ description: description || null } as never)
+        .eq('id', id);
+      if (error) throw error;
+      setFloorPlans((prev) =>
+        prev.map((fp) => fp.id === id ? { ...fp, description: description || null } : fp),
+      );
+      return true;
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save description.', variant: 'error' });
+      return false;
+    }
+  }, [toast]);
+
   // ---- Delete ---------------------------------------------------------------
 
   const deleteFloorPlan = useCallback(async (id: string, storagePath: string): Promise<boolean> => {
@@ -122,5 +141,5 @@ export function useExhibitionFloorPlans(exhibitionId: string | undefined) {
     }
   }, [fetchFloorPlans, toast]);
 
-  return { floorPlans, loading, uploadFloorPlan, deleteFloorPlan, refetch: fetchFloorPlans };
+  return { floorPlans, loading, uploadFloorPlan, deleteFloorPlan, updateDescription, refetch: fetchFloorPlans };
 }
