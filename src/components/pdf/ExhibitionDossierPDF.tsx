@@ -167,6 +167,18 @@ const d = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
+  // ---------- Content pages (all non-cover pages) --------------------------
+  // paddingTop: 64 → header bottom border is ~43pt, giving a ~21pt gap to content
+  contentPage: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 10,
+    color: PDF_COLORS.primary900,
+    backgroundColor: PDF_COLORS.white,
+    paddingTop: 64,
+    paddingBottom: 60,
+    paddingHorizontal: 50,
+  },
+
   // ---------- Fixed page header (all non-cover pages) ----------------------
   // Mirrors styles.footer: position absolute, same top/left/right as footer's bottom/left/right
   pageHeader: {
@@ -201,7 +213,7 @@ const d = StyleSheet.create({
   floorPlanPage: {
     fontFamily: 'AnzianoPro',
     backgroundColor: PDF_COLORS.white,
-    paddingTop: 50,
+    paddingTop: 64,
     paddingBottom: 60,
     paddingHorizontal: 50,
   },
@@ -338,7 +350,6 @@ const d = StyleSheet.create({
   // ---------- Reference photos (per order) ---------------------------------
   refSection: {
     paddingTop: 10,
-    paddingHorizontal: 10,
     paddingBottom: 10,
     borderTopWidth: 0.5,
     borderTopColor: PDF_COLORS.border,
@@ -420,12 +431,6 @@ export function ExhibitionDossierPDF({
       {/* PAGE 1 — TITLE PAGE                                              */}
       {/* ================================================================ */}
       <Page size="A4" style={d.titlePage}>
-        {/* Top bar: company | dossier tag */}
-        <View style={d.titleTop}>
-          <Text style={d.companySmall}>{COMPANY_NAME}</Text>
-          <Text style={d.dossierTag}>Exhibition Dossier</Text>
-        </View>
-
         <View style={d.titleSpacer} />
 
         {/* Main title block */}
@@ -479,19 +484,13 @@ export function ExhibitionDossierPDF({
         </View>
 
         <View style={d.titleSpacer} />
-
-        {/* Bottom: copyright line */}
-        <View style={d.titleBottom}>
-          <View style={d.titleBottomLine} />
-          <Text style={d.titleBottomText}>{`© ${COMPANY_NAME}`}</Text>
-        </View>
       </Page>
 
       {/* ================================================================ */}
       {/* EXHIBITION TEXT                                                   */}
       {/* ================================================================ */}
       {hasText && (
-        <Page size="A4" style={styles.page}>
+        <Page size="A4" style={d.contentPage}>
           <View style={d.pageHeader} fixed>
             <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
             <Text style={d.pageHeaderText}>{exhibition.title}</Text>
@@ -555,7 +554,7 @@ export function ExhibitionDossierPDF({
       {/* VENUE PHOTOS                                                      */}
       {/* ================================================================ */}
       {hasVenue && (
-        <Page size="A4" style={styles.page}>
+        <Page size="A4" style={d.contentPage}>
           <View style={d.pageHeader} fixed>
             <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
             <Text style={d.pageHeaderText}>{exhibition.title}</Text>
@@ -585,7 +584,7 @@ export function ExhibitionDossierPDF({
       {/* EXHIBITION PHOTOS                                                 */}
       {/* ================================================================ */}
       {hasPhotos && (
-        <Page size="A4" style={styles.page}>
+        <Page size="A4" style={d.contentPage}>
           <View style={d.pageHeader} fixed>
             <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
             <Text style={d.pageHeaderText}>{exhibition.title}</Text>
@@ -625,7 +624,7 @@ export function ExhibitionDossierPDF({
       {/* PRODUCTION ORDERS                                                */}
       {/* ================================================================ */}
       {hasPOs && (
-        <Page size="A4" style={styles.page}>
+        <Page size="A4" style={d.contentPage}>
           <View style={d.pageHeader} fixed>
             <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
             <Text style={d.pageHeaderText}>{exhibition.title}</Text>
