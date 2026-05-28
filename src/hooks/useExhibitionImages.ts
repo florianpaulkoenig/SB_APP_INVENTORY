@@ -13,6 +13,8 @@ import { useToast } from '../components/ui/Toast';
 // Types
 // ---------------------------------------------------------------------------
 
+export type ExhibitionPhotoType = 'exhibition' | 'venue';
+
 export interface ExhibitionImageRow {
   id: string;
   user_id: string;
@@ -21,6 +23,7 @@ export interface ExhibitionImageRow {
   file_name: string;
   caption: string;
   sort_order: number;
+  photo_type: ExhibitionPhotoType;
   created_at: string;
   /** Transient — resolved at runtime, not stored in DB */
   signedUrl?: string;
@@ -177,6 +180,23 @@ export function useExhibitionImages(exhibitionId: string | undefined) {
     }
   }, [toast]);
 
+  // ---- Update photo type ----------------------------------------------------
+
+  const updatePhotoType = useCallback(async (imageId: string, photoType: ExhibitionPhotoType): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('exhibition_images')
+        .update({ photo_type: photoType } as never)
+        .eq('id', imageId);
+      if (error) throw error;
+      setImages((prev) => prev.map((img) => img.id === imageId ? { ...img, photo_type: photoType } : img));
+      return true;
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update photo type.', variant: 'error' });
+      return false;
+    }
+  }, [toast]);
+
   // ---- Fetch all exhibition images (across all exhibitions) ------------------
   // Used by the catalogue builder picker and media library
 
@@ -219,6 +239,7 @@ export function useExhibitionImages(exhibitionId: string | undefined) {
     uploadImage,
     deleteImage,
     updateCaption,
+    updatePhotoType,
     fetchAllExhibitionImages,
     refetch: fetchImages,
   };

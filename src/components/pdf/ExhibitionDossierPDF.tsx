@@ -3,8 +3,9 @@
 // Structure:
 //   Page 1  — Title page (exhibition name, venue, dates)
 //   Page 2+ — Exhibition text (if present)
-//   Page N+ — Floor plan pages (one per uploaded page)
-//   Page N+ — Exhibition photos (2-column grid, optional captions)
+//   Page N+ — Floor plan / 3D model pages (one per uploaded file)
+//   Page N+ — Venue photos (space shots without artwork)
+//   Page N+ — Exhibition photos (installation views, 2-column grid)
 //   Last    — Linked production orders
 // ---------------------------------------------------------------------------
 
@@ -45,7 +46,9 @@ export interface ExhibitionDossierPDFProps {
   };
   /** One entry per rendered floor plan page */
   floorPlanImages: Array<{ dataUrl: string; description?: string | null }>;
-  /** Exhibition photos — installation views, booth shots, etc. */
+  /** Venue photos — space shots without artwork, shown before exhibition photos */
+  venuePhotos?: Array<{ dataUrl: string; caption?: string }>;
+  /** Exhibition photos — installation views / artwork in situ */
   exhibitionPhotos?: Array<{ dataUrl: string; caption?: string }>;
   productionOrders: DossierProductionOrder[];
 }
@@ -212,21 +215,19 @@ const d = StyleSheet.create({
   },
   floorPlanImageWrap: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   floorPlanImage: {
     width: '100%',
-    height: '100%',
     objectFit: 'contain' as const,
   },
   floorPlanDesc: {
     fontFamily: 'AnzianoPro',
-    fontSize: 8,
+    fontSize: 7,
     color: PDF_COLORS.primary400,
-    textAlign: 'center' as const,
-    letterSpacing: 1,
-    marginTop: 8,
+    letterSpacing: 0.5,
+    lineHeight: 1.4,
+    marginTop: 6,
   },
 
   // ---------- Production orders page ---------------------------------------
@@ -403,6 +404,7 @@ const d = StyleSheet.create({
 export function ExhibitionDossierPDF({
   exhibition,
   floorPlanImages,
+  venuePhotos = [],
   exhibitionPhotos = [],
   productionOrders,
 }: ExhibitionDossierPDFProps) {
@@ -414,6 +416,7 @@ export function ExhibitionDossierPDF({
 
   const hasText   = !!exhibition.description_text?.trim();
   const hasFloors = floorPlanImages.length > 0;
+  const hasVenue  = venuePhotos.length > 0;
   const hasPhotos = exhibitionPhotos.length > 0;
   const hasPOs    = productionOrders.length > 0;
 
@@ -536,6 +539,11 @@ export function ExhibitionDossierPDF({
               <Text style={d.textPageLabel}>{exhibition.title}</Text>
             </View>
 
+            {/* Section title */}
+            <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>
+              {`Floor Plans / 3D Model${floorPlanImages.length > 1 ? ` (${idx + 1}/${floorPlanImages.length})` : ''}`}
+            </Text>
+
             {/* Image */}
             <View style={d.floorPlanImageWrap}>
               <Image src={dataUrl} style={d.floorPlanImage} />
@@ -556,6 +564,36 @@ export function ExhibitionDossierPDF({
             </View>
           </Page>
         ))}
+
+      {/* ================================================================ */}
+      {/* VENUE PHOTOS                                                      */}
+      {/* ================================================================ */}
+      {hasVenue && (
+        <Page size="A4" style={styles.page}>
+          <View style={d.textPageHeader}>
+            <Text style={d.textPageArtist}>{ARTIST_NAME}</Text>
+            <Text style={d.textPageLabel}>{exhibition.title}</Text>
+          </View>
+          <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>Venue Photos</Text>
+          <View style={d.photoGrid}>
+            {venuePhotos.map((photo, idx) => {
+              const isRight = idx % 2 === 1;
+              return (
+                <View key={`vp-${idx}`} style={isRight ? d.photoCellRight : d.photoCell}>
+                  <Image src={photo.dataUrl} style={d.photoCellImage} />
+                  {photo.caption?.trim() && (
+                    <Text style={d.photoCellCaption}>{photo.caption}</Text>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+          <View style={styles.footer} fixed>
+            <Text style={styles.footerText}>{`© ${ARTIST_NAME}`}</Text>
+            <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+          </View>
+        </Page>
+      )}
 
       {/* ================================================================ */}
       {/* EXHIBITION PHOTOS                                                 */}

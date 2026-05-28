@@ -24,6 +24,7 @@ import { getCoordinates } from '../lib/geocoding';
 import { CatalogueArtworkPicker } from '../components/catalogues/CatalogueArtworkPicker';
 import { TaskList } from '../components/crm/TaskList';
 import { useExhibitionImages } from '../hooks/useExhibitionImages';
+import type { ExhibitionPhotoType } from '../hooks/useExhibitionImages';
 
 interface Exhibition {
   id: string;
@@ -113,6 +114,7 @@ export function ExhibitionDetailPage() {
     uploadImage: uploadExhibitionImage,
     deleteImage: deleteExhibitionImage,
     updateCaption: updateImageCaption,
+    updatePhotoType: updateImagePhotoType,
   } = useExhibitionImages(id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
@@ -277,10 +279,11 @@ export function ExhibitionDetailPage() {
         }
       }
 
-      // 2. Convert exhibition photos to JPEG data URLs
+      // 2. Convert exhibition photos to JPEG data URLs, split by photo_type
       // blobToJpegDataUrl normalises WebP/HEIC/AVIF → JPEG which react-pdf supports
       const { blobToJpegDataUrl } = await import('../lib/pdfToDataUrls');
       const exhibitionPhotos: Array<{ dataUrl: string; caption?: string }> = [];
+      const venuePhotos:      Array<{ dataUrl: string; caption?: string }> = [];
       for (const img of exhibitionImages) {
         const { data: imgBlob } = await supabase.storage
           .from('media-files')
@@ -288,7 +291,9 @@ export function ExhibitionDetailPage() {
         if (!imgBlob) continue;
         try {
           const dataUrl = await blobToJpegDataUrl(imgBlob);
-          exhibitionPhotos.push({ dataUrl, caption: img.caption || undefined });
+          const entry = { dataUrl, caption: img.caption || undefined };
+          if (img.photo_type === 'venue') venuePhotos.push(entry);
+          else exhibitionPhotos.push(entry);
         } catch {
           // skip images that fail to convert
         }
@@ -363,6 +368,7 @@ export function ExhibitionDetailPage() {
             notes: exhibition.notes,
           }}
           floorPlanImages={floorPlanImages}
+          venuePhotos={venuePhotos}
           exhibitionPhotos={exhibitionPhotos}
           productionOrders={ordersWithItems}
         />
@@ -813,6 +819,16 @@ export function ExhibitionDetailPage() {
                     </button>
                   )}
                 </div>
+                {/* Photo type toggle (top-left) */}
+                <button
+                  onClick={() => updateImagePhotoType(img.id, img.photo_type === 'venue' ? 'exhibition' : 'venue' as ExhibitionPhotoType)}
+                  className={`absolute top-1 left-1 opacity-0 group-hover:opacity-100 text-white rounded px-1.5 py-0.5 text-[10px] font-medium transition-opacity ${
+                    img.photo_type === 'venue' ? 'bg-blue-500/80 hover:bg-blue-600' : 'bg-gray-600/80 hover:bg-gray-700'
+                  }`}
+                  title={img.photo_type === 'venue' ? 'Venue photo — click to set as Exhibition photo' : 'Exhibition photo — click to set as Venue photo'}
+                >
+                  {img.photo_type === 'venue' ? 'Venue' : 'Exhibition'}
+                </button>
                 {/* Delete button */}
                 <button
                   onClick={() => deleteExhibitionImage(img.id, img.storage_path)}
