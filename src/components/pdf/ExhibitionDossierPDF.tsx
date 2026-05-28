@@ -4,6 +4,7 @@
 //   Page 1  — Title page (exhibition name, venue, dates)
 //   Page 2+ — Exhibition text (if present)
 //   Page N+ — Floor plan pages (one per uploaded page)
+//   Page N+ — Exhibition photos (2-column grid, optional captions)
 //   Last    — Linked production orders
 // ---------------------------------------------------------------------------
 
@@ -44,6 +45,8 @@ export interface ExhibitionDossierPDFProps {
   };
   /** One entry per rendered floor plan page */
   floorPlanImages: Array<{ dataUrl: string; description?: string | null }>;
+  /** Exhibition photos — installation views, booth shots, etc. */
+  exhibitionPhotos?: Array<{ dataUrl: string; caption?: string }>;
   productionOrders: DossierProductionOrder[];
 }
 
@@ -319,6 +322,36 @@ const d = StyleSheet.create({
     textAlign: 'right' as const,
   },
 
+  // ---------- Exhibition photos page ---------------------------------------
+  photoGrid: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    marginTop: 4,
+  },
+  photoCell: {
+    width: '48.5%',
+    marginBottom: 14,
+  },
+  photoCellRight: {
+    width: '48.5%',
+    marginLeft: '3%',
+    marginBottom: 14,
+  },
+  photoCellImage: {
+    width: '100%',
+    height: 180,
+    objectFit: 'cover' as const,
+    borderRadius: 1,
+  },
+  photoCellCaption: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 7,
+    color: PDF_COLORS.primary400,
+    marginTop: 4,
+    letterSpacing: 0.5,
+    lineHeight: 1.4,
+  },
+
   // ---------- Reference photos (per order) ---------------------------------
   refSection: {
     paddingTop: 10,
@@ -372,6 +405,7 @@ const d = StyleSheet.create({
 export function ExhibitionDossierPDF({
   exhibition,
   floorPlanImages,
+  exhibitionPhotos = [],
   productionOrders,
 }: ExhibitionDossierPDFProps) {
   const location = [exhibition.city, exhibition.country].filter(Boolean).join(', ');
@@ -382,6 +416,7 @@ export function ExhibitionDossierPDF({
 
   const hasText   = !!exhibition.description_text?.trim();
   const hasFloors = floorPlanImages.length > 0;
+  const hasPhotos = exhibitionPhotos.length > 0;
   const hasPOs    = productionOrders.length > 0;
 
   // Split exhibition text into paragraphs
@@ -521,6 +556,47 @@ export function ExhibitionDossierPDF({
             </View>
           </Page>
         ))}
+
+      {/* ================================================================ */}
+      {/* EXHIBITION PHOTOS                                                 */}
+      {/* ================================================================ */}
+      {hasPhotos && (
+        <Page size="A4" style={styles.page}>
+          {/* Header */}
+          <View style={d.textPageHeader}>
+            <Text style={d.textPageArtist}>{ARTIST_NAME}</Text>
+            <Text style={d.textPageLabel}>{exhibition.title}</Text>
+          </View>
+
+          <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
+            Exhibition Photos
+          </Text>
+
+          {/* 2-column grid */}
+          <View style={d.photoGrid}>
+            {exhibitionPhotos.map((photo, idx) => {
+              const isRight = idx % 2 === 1;
+              return (
+                <View key={`photo-${idx}`} style={isRight ? d.photoCellRight : d.photoCell}>
+                  <Image src={photo.dataUrl} style={d.photoCellImage} />
+                  {photo.caption?.trim() && (
+                    <Text style={d.photoCellCaption}>{photo.caption}</Text>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer} fixed>
+            <Text style={styles.footerText}>{`© ${ARTIST_NAME}`}</Text>
+            <Text
+              style={styles.pageNumber}
+              render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+            />
+          </View>
+        </Page>
+      )}
 
       {/* ================================================================ */}
       {/* PRODUCTION ORDERS                                                */}

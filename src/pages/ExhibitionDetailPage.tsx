@@ -277,7 +277,19 @@ export function ExhibitionDetailPage() {
         }
       }
 
-      // 2. Fetch items (+ ref images) for each linked production order
+      // 2. Convert exhibition photos to data URLs
+      const { blobToDataUrl: blobToUrl } = await import('../lib/pdfToDataUrls');
+      const exhibitionPhotos: Array<{ dataUrl: string; caption?: string }> = [];
+      for (const img of exhibitionImages) {
+        const { data: imgBlob } = await supabase.storage
+          .from('media-files')
+          .download(img.storage_path);
+        if (!imgBlob) continue;
+        const dataUrl = await blobToUrl(imgBlob);
+        exhibitionPhotos.push({ dataUrl, caption: img.caption || undefined });
+      }
+
+      // 4. Fetch items (+ ref images) for each linked production order
       const { data: { session: dossierSession } } = await supabase.auth.getSession();
       const dossierUserId = dossierSession?.user?.id;
 
@@ -331,7 +343,7 @@ export function ExhibitionDetailPage() {
         }),
       );
 
-      // 3. Generate and download
+      // 5. Generate and download
       const blob = await pdf(
         <ExhibitionDossierPDF
           exhibition={{
@@ -346,6 +358,7 @@ export function ExhibitionDetailPage() {
             notes: exhibition.notes,
           }}
           floorPlanImages={floorPlanImages}
+          exhibitionPhotos={exhibitionPhotos}
           productionOrders={ordersWithItems}
         />
       ).toBlob();
