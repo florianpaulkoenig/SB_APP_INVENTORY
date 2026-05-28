@@ -9,24 +9,35 @@ import { StyleSheet, Font } from '@react-pdf/renderer';
 // Register Anziano Pro font for all PDF exports
 // Uses the same Regular weight for both normal and bold (only weight available)
 // ---------------------------------------------------------------------------
-const FONT_URL = `${import.meta.env.BASE_URL}fonts/AnzianoPro-Regular.otf`;
-
-// EB Garamond Italic — used as italic substitute for AnzianoPro (which has no
-// true italic variant). Served via Google Fonts GitHub raw CDN (stable, CORS-enabled).
-const EB_ITALIC_URL      = 'https://raw.githubusercontent.com/google/fonts/main/ofl/ebgaramond/static/EBGaramond-Italic.ttf';
-const EB_BOLD_ITALIC_URL = 'https://raw.githubusercontent.com/google/fonts/main/ofl/ebgaramond/static/EBGaramond-BoldItalic.ttf';
+const FONT_URL          = `${import.meta.env.BASE_URL}fonts/AnzianoPro-Regular.otf`;
+// EB Garamond Italic — true italic substitute, served from /public/fonts/
+// Download from https://fonts.google.com/specimen/EB+Garamond → "Download family"
+// Place EBGaramond-Italic.ttf + EBGaramond-BoldItalic.ttf in /public/fonts/
+const EB_ITALIC_URL      = `${import.meta.env.BASE_URL}fonts/EBGaramond-Italic.ttf`;
+const EB_BOLD_ITALIC_URL = `${import.meta.env.BASE_URL}fonts/EBGaramond-BoldItalic.ttf`;
 
 Font.register({
   family: 'AnzianoPro',
   fonts: [
-    { src: FONT_URL,           fontWeight: 'normal' },
-    { src: FONT_URL,           fontWeight: 'bold' },
-    // True italic glyphs via EB Garamond Italic — elegant serif that complements
-    // AnzianoPro in display contexts without a dedicated italic cut.
-    { src: EB_ITALIC_URL,      fontWeight: 'normal', fontStyle: 'italic' },
-    { src: EB_BOLD_ITALIC_URL, fontWeight: 'bold',   fontStyle: 'italic' },
+    { src: FONT_URL, fontWeight: 'normal' },
+    { src: FONT_URL, fontWeight: 'bold' },
   ],
 });
+
+// Separate family for italic — registered only when the font files are present.
+// Falls back gracefully: if the files are missing, AnzianoPro (regular) is used
+// for italic tokens, which is still readable.
+try {
+  Font.register({
+    family: 'AnzianoProItalic',
+    fonts: [
+      { src: EB_ITALIC_URL,      fontWeight: 'normal' },
+      { src: EB_BOLD_ITALIC_URL, fontWeight: 'bold' },
+    ],
+  });
+} catch {
+  // Font files not yet added to /public/fonts/ — italic falls back to regular
+}
 
 // ---------------------------------------------------------------------------
 // Register Noto Sans SC for CJK (Chinese/Japanese/Korean) character support
