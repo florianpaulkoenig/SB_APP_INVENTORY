@@ -13,6 +13,8 @@ import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/render
 import styles, { PDF_COLORS } from './PDFStyles';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 import { formatDate } from '../../lib/utils';
+import { parseRichText, superscript } from '../../lib/richText';
+import type { RichToken } from '../../lib/richText';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -394,6 +396,77 @@ const d = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
+// Rich-text paragraph renderer (for exhibition text)
+// ---------------------------------------------------------------------------
+
+const BASE_TEXT_STYLE = {
+  fontFamily: 'AnzianoPro',
+  fontSize: 11,
+  color: PDF_COLORS.primary700,
+  lineHeight: 1.7,
+} as const;
+
+const FOOTNOTE_STYLE = {
+  fontFamily: 'AnzianoPro',
+  fontSize: 8,
+  color: PDF_COLORS.primary400,
+  lineHeight: 1.5,
+  marginBottom: 3,
+} as const;
+
+function tokenStyle(token: RichToken) {
+  const isBold   = token.type === 'bold'   || token.type === 'bold-italic';
+  const isItalic = token.type === 'italic' || token.type === 'bold-italic';
+  return {
+    ...BASE_TEXT_STYLE,
+    fontWeight:  isBold   ? ('bold'   as const) : ('normal' as const),
+    fontStyle:   isItalic ? ('italic' as const) : ('normal' as const),
+    // Visual hint for italic since we don't have a true italic font file:
+    // slightly shifted color so it's distinguishable in the PDF.
+    color: isItalic && !isBold ? '#4a4a5a' : BASE_TEXT_STYLE.color,
+  };
+}
+
+/** Renders a single paragraph with inline bold / italic / footnote-ref tokens. */
+function RichPara({ tokens }: { tokens: RichToken[] }) {
+  return (
+    <Text style={{ ...BASE_TEXT_STYLE, marginBottom: 14 }}>
+      {tokens.map((tok, i) => {
+        if (tok.type === 'linebreak') {
+          return <Text key={i}>{'\n'}</Text>;
+        }
+        if (tok.type === 'fn-ref') {
+          return (
+            <Text key={i} style={{ ...BASE_TEXT_STYLE, fontSize: 7, lineHeight: 1 }}>
+              {superscript(tok.num)}
+            </Text>
+          );
+        }
+        return (
+          <Text key={i} style={tokenStyle(tok)}>
+            {tok.text}
+          </Text>
+        );
+      })}
+    </Text>
+  );
+}
+
+/** Renders footnotes section below the exhibition text. */
+function FootnotesSection({ footnotes }: { footnotes: string[] }) {
+  if (footnotes.length === 0) return null;
+  return (
+    <View style={{ marginTop: 16, paddingTop: 8, borderTopWidth: 0.5, borderTopColor: PDF_COLORS.border }}>
+      {footnotes.map((fn, i) => (
+        <Text key={i} style={FOOTNOTE_STYLE}>
+          {superscript(i + 1)}{'  '}{fn}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -417,13 +490,10 @@ export function ExhibitionDossierPDF({
   const hasPhotos = exhibitionPhotos.length > 0;
   const hasPOs    = productionOrders.length > 0;
 
-  // Split exhibition text into paragraphs
-  const paragraphs = hasText
-    ? exhibition.description_text!
-        .split(/\n{2,}/)
-        .map((p) => p.trim())
-        .filter(Boolean)
-    : [];
+  // Parse rich text (bold / italic / footnotes)
+  const richText = hasText
+    ? parseRichText(exhibition.description_text!)
+    : { paragraphs: [], footnotes: [] };
 
   return (
     <Document>
@@ -500,12 +570,13 @@ export function ExhibitionDossierPDF({
             Exhibition Text
           </Text>
 
-          {/* Paragraphs */}
-          {paragraphs.map((para, i) => (
-            <Text key={i} style={d.textParagraph}>
-              {para}
-            </Text>
+          {/* Rich-text paragraphs (bold / italic / footnote refs) */}
+          {richText.paragraphs.map((para, i) => (
+            <RichPara key={i} tokens={para.tokens} />
           ))}
+
+          {/* Footnotes */}
+          <FootnotesSection footnotes={richText.footnotes} />
 
           {/* Standard footer */}
           <View style={styles.footer} fixed>

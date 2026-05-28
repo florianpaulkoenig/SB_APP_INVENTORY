@@ -16,6 +16,10 @@ Font.register({
   fonts: [
     { src: FONT_URL, fontWeight: 'normal' },
     { src: FONT_URL, fontWeight: 'bold' },
+    // Italic variants — same file (no true italic available).
+    // react-pdf uses this entry for fontStyle:'italic' lookups.
+    { src: FONT_URL, fontWeight: 'normal', fontStyle: 'italic' },
+    { src: FONT_URL, fontWeight: 'bold',   fontStyle: 'italic' },
   ],
 });
 

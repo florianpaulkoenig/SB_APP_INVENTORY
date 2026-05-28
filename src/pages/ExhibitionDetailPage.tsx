@@ -25,6 +25,7 @@ import { CatalogueArtworkPicker } from '../components/catalogues/CatalogueArtwor
 import { TaskList } from '../components/crm/TaskList';
 import { useExhibitionImages } from '../hooks/useExhibitionImages';
 import type { ExhibitionPhotoType } from '../hooks/useExhibitionImages';
+import { RichTextEditor } from '../components/ui/RichTextEditor';
 
 interface Exhibition {
   id: string;
@@ -623,21 +624,19 @@ export function ExhibitionDetailPage() {
 
       {/* Exhibition Text (dossier statement) */}
       <Card>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-lg font-semibold">Exhibition Text</h2>
-            <p className="text-xs text-gray-400 mt-0.5">This text appears in the Exhibition Dossier PDF. Write in full paragraphs; blank lines create paragraph breaks.</p>
-          </div>
-          <span className="text-xs text-gray-400 h-5">
-            {descSaving ? 'Saving…' : descSaved ? '✓ Saved' : ''}
-          </span>
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold">Exhibition Text</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Erscheint im Dossier PDF. Leerzeile = neuer Absatz.
+            Toolbar: <strong>B</strong> fett · <em>I</em> kursiv · Fn¹ Fussnote
+          </p>
         </div>
-        <textarea
-          className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-800 leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400 placeholder-gray-300"
-          rows={10}
-          placeholder="Enter the exhibition statement, curatorial text or artist note here…"
+        <RichTextEditor
           value={descText}
-          onChange={(e) => handleDescTextChange(e.target.value)}
+          onChange={handleDescTextChange}
+          placeholder="Ausstellungstext, kuratorischen Text oder Künstlernotiz eingeben…"
+          rows={12}
+          saveStatus={descSaving ? 'saving' : descSaved ? 'saved' : 'idle'}
         />
       </Card>
 
