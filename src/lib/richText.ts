@@ -41,30 +41,23 @@ export function superscript(n: number): string {
   return SUPS[n] ?? String(n);
 }
 
+const FN_MARKER = '\x00FN';
+
 // ---------------------------------------------------------------------------
-// Tokenise a single line (no paragraph breaks)
+// Tokenise a single line — footnotes already replaced with \x00FNn\x00 markers
 // ---------------------------------------------------------------------------
-function tokeniseLine(line: string, footnotes: string[]): RichToken[] {
+function tokeniseLine(line: string): RichToken[] {
   const tokens: RichToken[] = [];
-
-  // 1. Extract footnotes and replace with placeholders
-  const FN_MARKER = '\x00FN';
-  let processed = line.replace(/\^\[([^\]]*)\]/g, (_, fnText: string) => {
-    footnotes.push(fnText.trim());
-    return `${FN_MARKER}${footnotes.length}\x00`;
-  });
-
-  // 2. Tokenise: bold-italic first, then bold, then italic, then fn-ref, then plain
+  // bold-italic first, then bold, then italic, then fn-ref marker, then plain text
   const RE = /\*\*\*([^*]+)\*\*\*|\*\*([^*]+)\*\*|_([^_\n]+)_|\x00FN(\d+)\x00|([^\x00*_]+)/g;
   let m: RegExpExecArray | null;
-  while ((m = RE.exec(processed)) !== null) {
+  while ((m = RE.exec(line)) !== null) {
     if (m[1] !== undefined) tokens.push({ type: 'bold-italic', text: m[1] });
-    else if (m[2] !== undefined) tokens.push({ type: 'bold',        text: m[2] });
-    else if (m[3] !== undefined) tokens.push({ type: 'italic',      text: m[3] });
-    else if (m[4] !== undefined) tokens.push({ type: 'fn-ref',      num: parseInt(m[4]) });
-    else if (m[5] !== undefined) tokens.push({ type: 'text',        text: m[5] });
+    else if (m[2] !== undefined) tokens.push({ type: 'bold',   text: m[2] });
+    else if (m[3] !== undefined) tokens.push({ type: 'italic', text: m[3] });
+    else if (m[4] !== undefined) tokens.push({ type: 'fn-ref', num: parseInt(m[4]) });
+    else if (m[5] !== undefined) tokens.push({ type: 'text',   text: m[5] });
   }
-
   return tokens;
 }
 
@@ -83,10 +76,19 @@ export function parseRichText(input: string): ParseResult {
     .map((raw) => raw.trim())
     .filter(Boolean)
     .map((raw) => {
-      const lines = raw.split('\n');
+      // Extract footnotes at PARAGRAPH level before splitting into lines.
+      // [\s\S]*? matches lazily across newlines — fixes multi-line footnotes
+      // like ^[text that\nspans multiple\nlines].
+      const processed = raw.replace(/\^\[([\s\S]*?)\]/g, (_, fnText: string) => {
+        // Normalise internal whitespace: newlines → single space
+        footnotes.push(fnText.trim().replace(/\s+/g, ' '));
+        return `${FN_MARKER}${footnotes.length}\x00`;
+      });
+
+      const lines = processed.split('\n');
       const tokens: RichToken[] = [];
       lines.forEach((line, i) => {
-        tokens.push(...tokeniseLine(line, footnotes));
+        tokens.push(...tokeniseLine(line));
         if (i < lines.length - 1) tokens.push({ type: 'linebreak' });
       });
       return { tokens };
