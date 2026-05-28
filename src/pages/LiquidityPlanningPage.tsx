@@ -602,6 +602,52 @@ function BalanceRow({
 }
 
 // ---------------------------------------------------------------------------
+// Month summary footer — income / expenses / net (3-column)
+// ---------------------------------------------------------------------------
+
+function MonthSummaryFooter({
+  bucket,
+  currency,
+}: {
+  bucket: MonthBucket;
+  currency: string;
+}) {
+  // Sum ALL income (unpaid + late + paid) as face value
+  const allIncome = [...bucket.entries, ...bucket.lateEntries, ...bucket.paidEntries];
+  const incomeTotal  = allIncome.reduce((s, e) => s + e.amount, 0);
+  const expenseTotal = bucket.expenses.reduce((s, e) => s + e.amount, 0);
+  const net          = incomeTotal - expenseTotal;
+
+  return (
+    <div className="grid grid-cols-3 divide-x divide-primary-100 border-t border-primary-100 bg-primary-50/60">
+      {/* Einnahmen */}
+      <div className="px-4 py-3">
+        <p className="text-xs text-primary-400 mb-1">Einnahmen</p>
+        <p className={`text-base font-semibold tabular-nums ${incomeTotal > 0 ? 'text-emerald-700' : 'text-primary-300'}`}>
+          {incomeTotal > 0 ? '+' : ''}{formatCurrency(incomeTotal, currency)}
+        </p>
+      </div>
+
+      {/* Ausgaben */}
+      <div className="px-4 py-3">
+        <p className="text-xs text-primary-400 mb-1">Ausgaben</p>
+        <p className={`text-base font-semibold tabular-nums ${expenseTotal > 0 ? 'text-red-500' : 'text-primary-300'}`}>
+          {expenseTotal > 0 ? '-' : ''}{formatCurrency(expenseTotal, currency)}
+        </p>
+      </div>
+
+      {/* Netto */}
+      <div className="px-4 py-3">
+        <p className="text-xs text-primary-400 mb-1">Netto</p>
+        <p className={`text-base font-semibold tabular-nums ${net > 0 ? 'text-primary-800' : net < 0 ? 'text-red-600' : 'text-primary-300'}`}>
+          {net !== 0 ? (net > 0 ? '+' : '') : ''}{formatCurrency(net, currency)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Month section
 // ---------------------------------------------------------------------------
 
@@ -634,62 +680,22 @@ function MonthSection({
   const hasExpenses = bucket.expenses.length > 0;
   const hasAny      = hasUnpaid || hasLate || hasPaid || hasExpenses;
 
-  // Income totals (all unpaid + late for display in header)
-  const pendingIncome = [...bucket.entries, ...bucket.lateEntries];
-  const incomeTotals: Record<string, number> = {};
-  for (const e of pendingIncome) {
-    incomeTotals[e.currency] = (incomeTotals[e.currency] ?? 0) + e.amount;
-  }
-  const expenseTotals: Record<string, number> = {};
-  for (const e of bucket.expenses) {
-    expenseTotals[e.currency] = (expenseTotals[e.currency] ?? 0) + e.amount;
-  }
-  const incomeCHF  = incomeTotals[balanceCurrency]  ?? 0;
-  const expenseCHF = expenseTotals[balanceCurrency] ?? 0;
-  const showNet    = incomeCHF > 0 && expenseCHF > 0;
-
   return (
     <div className={`rounded-lg border overflow-hidden ${
       isCurrentMonth ? 'border-primary-300 bg-white' : hasAny ? 'border-primary-100 bg-white' : 'border-primary-50 bg-primary-50/40'
     }`}>
-      {/* Month header */}
-      <div className="flex items-center justify-between gap-3 px-4 py-3">
-        <div className="flex items-center gap-2">
-          {isCurrentMonth && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />}
-          <span className={`text-sm font-semibold ${hasAny ? 'text-primary-900' : 'text-primary-400'}`}>{bucket.label}</span>
-          {hasLate && (
-            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
-              {bucket.lateEntries.length} überfällig
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          {Object.keys(incomeTotals).length > 0 && (
-            <span className="text-sm font-semibold text-emerald-700">
-              +{Object.entries(incomeTotals).map(([c, a]) => formatCurrency(a, c)).join(' + ')}
-            </span>
-          )}
-          {hasExpenses && (
-            <span className="text-sm font-medium text-red-500">
-              -{Object.entries(expenseTotals).map(([c, a]) => formatCurrency(a, c)).join(' + ')}
-            </span>
-          )}
-          {showNet && (
-            <span className={`text-sm font-semibold ${incomeCHF - expenseCHF >= 0 ? 'text-primary-700' : 'text-red-700'}`}>
-              = {formatCurrency(incomeCHF - expenseCHF, balanceCurrency)}
-            </span>
-          )}
-          {!hasAny && <span className="text-xs text-primary-300">—</span>}
-        </div>
+      {/* Month header — name + late badge only */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        {isCurrentMonth && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />}
+        <span className={`text-sm font-semibold ${hasAny ? 'text-primary-900' : 'text-primary-400'}`}>
+          {bucket.label}
+        </span>
+        {hasLate && (
+          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
+            {bucket.lateEntries.length} überfällig
+          </span>
+        )}
       </div>
-
-      {/* Balance row */}
-      <BalanceRow
-        bucket={bucket}
-        currency={balanceCurrency}
-        onUpsert={onUpsertActualBalance}
-        onDelete={onDeleteActualBalance}
-      />
 
       {/* Entries */}
       {hasAny && (
@@ -708,7 +714,7 @@ function MonthSection({
 
           {/* Unpaid entries for this month */}
           {hasUnpaid && (
-            <div className={hasExpenses ? '' : ''}>
+            <div>
               {bucket.entries.map((e) => (
                 <IncomeEntryRow
                   key={e.id} entry={e}
@@ -747,6 +753,17 @@ function MonthSection({
           )}
         </div>
       )}
+
+      {/* Summary footer — Einnahmen / Ausgaben / Netto */}
+      <MonthSummaryFooter bucket={bucket} currency={balanceCurrency} />
+
+      {/* Balance row — Saldo per Ende Monat + Ist-Saldo */}
+      <BalanceRow
+        bucket={bucket}
+        currency={balanceCurrency}
+        onUpsert={onUpsertActualBalance}
+        onDelete={onDeleteActualBalance}
+      />
     </div>
   );
 }
@@ -786,7 +803,7 @@ export function LiquidityPlanningPage() {
   const showingAForm = showIncomeForm || showExpenseForm;
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       {/* Page header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
