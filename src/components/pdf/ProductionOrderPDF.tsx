@@ -138,6 +138,7 @@ export interface ProductionOrderPDFProps {
   galleryName?: string | null;
   contactName?: string | null;
   language: 'en' | 'de' | 'fr';
+  showPrice?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -231,10 +232,7 @@ const artistStyles = StyleSheet.create({
     letterSpacing: 1,
   },
   refPhotoItem: {
-    marginBottom: 14,
-    borderBottomWidth: 0.5,
-    borderBottomColor: PDF_COLORS.border,
-    paddingBottom: 10,
+    marginBottom: 18,
   },
   refPhotoCaption: {
     fontFamily: 'AnzianoPro',
@@ -242,9 +240,29 @@ const artistStyles = StyleSheet.create({
     fontSize: 9,
     color: PDF_COLORS.primary900,
     marginBottom: 6,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
   },
-  refPhotoImage: {
-    width: 180,
+  refPhotoDivider: {
+    height: 0.5,
+    backgroundColor: PDF_COLORS.border,
+    marginBottom: 10,
+  },
+  refPhotoGrid: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+  },
+  // image cell container (warm background fills letterbox areas)
+  refPhotoCellBox: {
+    height: 150,
+    backgroundColor: '#F4F3F1',
+    borderRadius: 2,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  refPhotoCellImage: {
+    width: '100%',
+    height: 150,
     objectFit: 'contain' as const,
   },
 });
@@ -268,6 +286,7 @@ export function ProductionOrderPDF({
   galleryName,
   contactName,
   language,
+  showPrice = true,
 }: ProductionOrderPDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
 
@@ -285,7 +304,7 @@ export function ProductionOrderPDF({
     infoRows.push({ label: t.client, value: contactName });
   }
 
-  if (order.price != null && order.price > 0) {
+  if (showPrice && order.price != null && order.price > 0) {
     const formatted = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: order.currency ?? 'EUR',
@@ -387,21 +406,49 @@ export function ProductionOrderPDF({
             <Text style={artistStyles.refPhotosTitle}>{t.referencePhotos}</Text>
             {items
               .filter((i) => i.referenceImageUrls && i.referenceImageUrls.length > 0)
-              .map((item, idx) => (
-                <View style={artistStyles.refPhotoItem} key={`ref-${idx}`}>
-                  <Text style={artistStyles.refPhotoCaption}>
-                    {item.description}
-                    {item.dimensions ? ` \u2014 ${item.dimensions}` : ''}
-                  </Text>
-                  {item.referenceImageUrls!.map((url, imgIdx) => (
-                    <Image
-                      key={`ref-img-${idx}-${imgIdx}`}
-                      style={artistStyles.refPhotoImage}
-                      src={url}
-                    />
-                  ))}
-                </View>
-              ))}
+              .map((item, idx) => {
+                const imgs = item.referenceImageUrls!;
+                // Adaptive columns: 1 \u2192 centred wide, 2 \u2192 halves, 3+ \u2192 thirds
+                const cols = imgs.length >= 3 ? 3 : imgs.length;
+                const cellW  = cols === 1 ? '58%'    : cols === 2 ? '47%'    : '31.3%';
+                const gapW   = cols === 1 ? '0%'     : cols === 2 ? '6%'     : '3.05%';
+
+                return (
+                  <View style={artistStyles.refPhotoItem} key={`ref-${idx}`} wrap={false}>
+                    {/* Divider above item (skip first) */}
+                    {idx > 0 && <View style={artistStyles.refPhotoDivider} />}
+
+                    <Text style={artistStyles.refPhotoCaption}>
+                      {item.description}
+                      {item.dimensions ? ` \u2014 ${item.dimensions}` : ''}
+                    </Text>
+
+                    {/* Grid row */}
+                    <View style={artistStyles.refPhotoGrid}>
+                      {imgs.map((url, imgIdx) => {
+                        const isLastInRow = (imgIdx + 1) % cols === 0 || imgIdx === imgs.length - 1;
+                        return (
+                          <View
+                            key={`ref-img-${idx}-${imgIdx}`}
+                            style={{
+                              width: cellW,
+                              marginRight: isLastInRow ? '0%' : gapW,
+                              marginBottom: 6,
+                            }}
+                          >
+                            <View style={artistStyles.refPhotoCellBox}>
+                              <Image
+                                style={artistStyles.refPhotoCellImage}
+                                src={url}
+                              />
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+                );
+              })}
           </View>
         )}
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { pdf } from '@react-pdf/renderer';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -7,10 +8,13 @@ import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { formatCurrency, formatDate } from '../lib/utils';
+import { formatCurrency, formatDate, formatDimensions, downloadBlob } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
 import { useExhibitionGalleries } from '../hooks/useExhibitionGalleries';
+import { useExhibitionFloorPlans } from '../hooks/useExhibitionFloorPlans';
 import { EXHIBITION_TYPES } from '../lib/constants';
+import { ExhibitionDossierPDF } from '../components/pdf/ExhibitionDossierPDF';
+import type { DossierProductionOrder } from '../components/pdf/ExhibitionDossierPDF';
 
 // Lazy-load MapView to avoid pulling 1.7MB mapbox-gl into this chunk
 const MapView = React.lazy(() =>
@@ -34,6 +38,7 @@ interface Exhibition {
   budget_currency: string | null;
   catalogue_reference: string | null;
   notes: string | null;
+  description_text: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -90,6 +95,7 @@ export function ExhibitionDetailPage() {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
 
   const { galleries, loading: galleriesLoading, linkGallery, unlinkGallery } = useExhibitionGalleries(id!);
+  const { floorPlans, loading: floorPlansLoading, uploadFloorPlan, deleteFloorPlan } = useExhibitionFloorPlans(id);
 
   const [addGalleryOpen, setAddGalleryOpen] = useState(false);
   const [selectedGalleryId, setSelectedGalleryId] = useState('');
@@ -114,6 +120,19 @@ export function ExhibitionDetailPage() {
   const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
   const [editingCaptionText, setEditingCaptionText] = useState('');
 
+  // ---- Exhibition text (dossier statement) --------------------------------
+  const [descText, setDescText] = useState('');
+  const [descSaving, setDescSaving] = useState(false);
+  const [descSaved, setDescSaved] = useState(false);
+  const descSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ---- Floor plan upload --------------------------------------------------
+  const floorPlanInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingFloorPlan, setUploadingFloorPlan] = useState(false);
+
+  // ---- Dossier PDF download -----------------------------------------------
+  const [downloadingDossier, setDownloadingDossier] = useState(false);
+
   const [linkedPOs, setLinkedPOs] = useState<LinkedProductionOrder[]>([]);
   const [poModalOpen, setPOModalOpen] = useState(false);
   const [poOptions, setPOOptions] = useState<ProductionOrderOption[]>([]);
@@ -136,6 +155,8 @@ export function ExhibitionDetailPage() {
         const coords = getCoordinates(data.city, data.country);
         if (coords) setCoordinates(coords);
       }
+      // Sync description text from DB
+      setDescText(data.description_text ?? '');
     } catch {
       toast({ title: 'Failed to load exhibition', variant: 'error' });
     } finally {
@@ -191,6 +212,114 @@ export function ExhibitionDetailPage() {
     fetchLinkedPOs();
     fetchGalleryOptions();
   }, [fetchExhibition, fetchArtworks, fetchLinkedPOs, fetchGalleryOptions]);
+
+  // ---- Debounced description_text save ------------------------------------
+
+  function handleDescTextChange(value: string) {
+    setDescText(value);
+    setDescSaved(false);
+    if (descSaveTimer.current) clearTimeout(descSaveTimer.current);
+    descSaveTimer.current = setTimeout(async () => {
+      if (!id) return;
+      setDescSaving(true);
+      await supabase
+        .from('exhibitions')
+        .update({ description_text: value } as never)
+        .eq('id', id);
+      setDescSaving(false);
+      setDescSaved(true);
+      setTimeout(() => setDescSaved(false), 2000);
+    }, 900);
+  }
+
+  // ---- Floor plan upload --------------------------------------------------
+
+  async function handleFloorPlanFiles(files: FileList | File[]) {
+    const fileArr = Array.from(files);
+    if (fileArr.length === 0) return;
+    setUploadingFloorPlan(true);
+    for (const file of fileArr) {
+      await uploadFloorPlan(file);
+    }
+    setUploadingFloorPlan(false);
+  }
+
+  // ---- Dossier PDF download -----------------------------------------------
+
+  async function handleDownloadDossier() {
+    if (!exhibition) return;
+    setDownloadingDossier(true);
+
+    try {
+      // 1. Convert floor plans to image data URLs
+      const floorPlanImages: string[] = [];
+      for (const fp of floorPlans) {
+        const { data: blob } = await supabase.storage
+          .from('media-files')
+          .download(fp.storage_path);
+        if (!blob) continue;
+
+        const lowerName = fp.file_name.toLowerCase();
+        if (lowerName.endsWith('.pdf')) {
+          const { pdfBlobToDataUrls } = await import('../lib/pdfToDataUrls');
+          const pages = await pdfBlobToDataUrls(blob, 2.0);
+          floorPlanImages.push(...pages);
+        } else {
+          const { blobToDataUrl } = await import('../lib/pdfToDataUrls');
+          floorPlanImages.push(await blobToDataUrl(blob));
+        }
+      }
+
+      // 2. Fetch items for each linked production order
+      const ordersWithItems: DossierProductionOrder[] = await Promise.all(
+        linkedPOs.map(async (lpo) => {
+          const { data: items } = await supabase
+            .from('production_order_items')
+            .select('description, medium, height, width, depth, dimension_unit, is_circular, quantity')
+            .eq('production_order_id', lpo.production_order_id)
+            .order('sort_order', { ascending: true });
+          return {
+            order_number: lpo.production_orders.order_number,
+            title: lpo.production_orders.title,
+            status: lpo.production_orders.status ?? '',
+            deadline: lpo.production_orders.deadline,
+            items: (items ?? []).map((item) => ({
+              description: item.description,
+              medium: item.medium,
+              dimensions: formatDimensions(
+                item.height, item.width, item.depth,
+                (item.dimension_unit as string) ?? 'cm',
+                item.is_circular,
+              ),
+              quantity: item.quantity,
+            })),
+          };
+        }),
+      );
+
+      // 3. Generate and download
+      const blob = await pdf(
+        <ExhibitionDossierPDF
+          exhibition={{
+            title: exhibition.title,
+            type: exhibition.type,
+            venue: exhibition.venue,
+            city: exhibition.city,
+            country: exhibition.country,
+            start_date: exhibition.start_date,
+            end_date: exhibition.end_date,
+            description_text: exhibition.description_text ?? descText,
+          }}
+          floorPlanImages={floorPlanImages}
+          productionOrders={ordersWithItems}
+        />
+      ).toBlob();
+
+      downloadBlob(blob, `${exhibition.title.replace(/\s+/g, '_')}_Dossier.pdf`);
+    } finally {
+      setDownloadingDossier(false);
+    }
+  }
 
   const handleLinkGallery = useCallback(async () => {
     if (!selectedGalleryId) {
@@ -351,22 +480,40 @@ export function ExhibitionDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="primary" onClick={() => navigate('/exhibitions')}>
-          &larr; Back
-        </Button>
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">{exhibition.title}</h1>
-            {exhibition.type && getTypeBadge(exhibition.type)}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="primary" onClick={() => navigate('/exhibitions')}>
+            &larr; Back
+          </Button>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900">{exhibition.title}</h1>
+              {exhibition.type && getTypeBadge(exhibition.type)}
+            </div>
+            {(exhibition.start_date || exhibition.end_date) && (
+              <p className="text-sm text-gray-500 mt-1">
+                {exhibition.start_date ? formatDate(exhibition.start_date) : ''}
+                {exhibition.end_date ? ` — ${formatDate(exhibition.end_date)}` : ''}
+              </p>
+            )}
           </div>
-          {(exhibition.start_date || exhibition.end_date) && (
-            <p className="text-sm text-gray-500 mt-1">
-              {exhibition.start_date ? formatDate(exhibition.start_date) : ''}
-              {exhibition.end_date ? ` — ${formatDate(exhibition.end_date)}` : ''}
-            </p>
-          )}
         </div>
+        <Button
+          variant="primary"
+          onClick={handleDownloadDossier}
+          disabled={downloadingDossier}
+        >
+          {downloadingDossier ? (
+            'Generating…'
+          ) : (
+            <>
+              <svg className="h-4 w-4 mr-1.5 inline-block" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              Download Dossier
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Info Card */}
@@ -397,6 +544,26 @@ export function ExhibitionDetailPage() {
             <p className="text-sm text-gray-700 whitespace-pre-wrap">{exhibition.notes}</p>
           </div>
         )}
+      </Card>
+
+      {/* Exhibition Text (dossier statement) */}
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-semibold">Exhibition Text</h2>
+            <p className="text-xs text-gray-400 mt-0.5">This text appears in the Exhibition Dossier PDF. Write in full paragraphs; blank lines create paragraph breaks.</p>
+          </div>
+          <span className="text-xs text-gray-400 h-5">
+            {descSaving ? 'Saving…' : descSaved ? '✓ Saved' : ''}
+          </span>
+        </div>
+        <textarea
+          className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-800 leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400 placeholder-gray-300"
+          rows={10}
+          placeholder="Enter the exhibition statement, curatorial text or artist note here…"
+          value={descText}
+          onChange={(e) => handleDescTextChange(e.target.value)}
+        />
       </Card>
 
       {/* KPI Row */}
@@ -632,6 +799,68 @@ export function ExhibitionDetailPage() {
             <>
               <p className="text-sm font-medium text-gray-600">Drop images here or click to browse</p>
               <p className="mt-1 text-xs text-gray-400">JPEG, PNG, WebP (max 20 MB each)</p>
+            </>
+          )}
+        </div>
+      </Card>
+
+      {/* Floor Plans */}
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold">Floor Plans</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Upload PDF or image files. Each page appears full-bleed in the Dossier PDF.</p>
+          </div>
+          <span className="text-xs text-gray-500">{floorPlans.length} file{floorPlans.length !== 1 ? 's' : ''}</span>
+        </div>
+
+        {floorPlansLoading ? (
+          <LoadingSpinner />
+        ) : floorPlans.length > 0 ? (
+          <ul className="mb-4 divide-y divide-gray-100">
+            {floorPlans.map((fp, idx) => (
+              <li key={fp.id} className="flex items-center gap-3 py-2.5">
+                {/* Icon: PDF or image */}
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500 uppercase">
+                  {fp.file_name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'IMG'}
+                </span>
+                <span className="flex-1 truncate text-sm text-gray-800">{fp.file_name}</span>
+                <span className="text-xs text-gray-400 shrink-0">#{idx + 1}</span>
+                <button
+                  onClick={() => deleteFloorPlan(fp.id, fp.storage_path)}
+                  className="shrink-0 text-gray-300 hover:text-red-400 transition-colors"
+                  title="Delete"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-400 text-center py-3 mb-4 text-sm">No floor plans uploaded yet.</p>
+        )}
+
+        {/* Upload zone */}
+        <div
+          onClick={() => floorPlanInputRef.current?.click()}
+          className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 px-4 py-5 transition-colors hover:border-gray-400"
+        >
+          <input
+            ref={floorPlanInputRef}
+            type="file"
+            accept="application/pdf,image/jpeg,image/png,image/webp"
+            multiple
+            className="hidden"
+            onChange={(e) => { if (e.target.files) handleFloorPlanFiles(e.target.files); e.target.value = ''; }}
+          />
+          {uploadingFloorPlan ? (
+            <p className="text-sm text-gray-500">Uploading…</p>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-gray-600">Drop files here or click to browse</p>
+              <p className="mt-1 text-xs text-gray-400">PDF, JPEG, PNG or WebP · max 50 MB</p>
             </>
           )}
         </div>

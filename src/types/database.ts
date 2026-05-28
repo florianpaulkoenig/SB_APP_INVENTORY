@@ -512,6 +512,7 @@ export interface ProductionOrderRow {
   currency: Currency;
   planned_release_date: string | null;
   notes: string | null;
+  show_price: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -531,6 +532,7 @@ export interface ProductionOrderInsert {
   currency?: Currency;
   planned_release_date?: string | null;
   notes?: string | null;
+  show_price?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -1005,6 +1007,7 @@ export interface ExhibitionRow {
   budget: number | null;
   budget_currency: Currency | null;
   notes: string | null;
+  description_text: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -1025,11 +1028,34 @@ export interface ExhibitionInsert {
   budget?: number | null;
   budget_currency?: Currency | null;
   notes?: string | null;
+  description_text?: string | null;
   created_at?: string;
   updated_at?: string;
 }
 
 export type ExhibitionUpdate = Partial<ExhibitionInsert>;
+
+// -- exhibition_floor_plans ---------------------------------------------------
+
+export interface ExhibitionFloorPlanRow {
+  id: string;
+  user_id: string;
+  exhibition_id: string;
+  storage_path: string;
+  file_name: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface ExhibitionFloorPlanInsert {
+  id?: string;
+  user_id?: string;
+  exhibition_id: string;
+  storage_path: string;
+  file_name: string;
+  sort_order?: number;
+  created_at?: string;
+}
 
 // -- exhibition_artworks -----------------------------------------------------
 

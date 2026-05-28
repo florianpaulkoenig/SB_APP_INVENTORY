@@ -232,6 +232,12 @@ export function ProductionOrderDetailPage() {
     }
   }
 
+  async function handleToggleShowPrice(showPrice: boolean) {
+    if (!id) return;
+    await updateProductionOrder(id, { show_price: showPrice });
+    await refetchOrder();
+  }
+
   async function handleStatusChange(newStatus: ProductionStatus) {
     if (!id) return;
 
@@ -529,6 +535,7 @@ export function ProductionOrderDetailPage() {
         }}
         onLinkArtwork={handleLinkArtwork}
         onReorderItems={reorderItems}
+        onUpdateShowPrice={handleToggleShowPrice}
       />
 
       {/* Linked Exhibitions & Projects */}

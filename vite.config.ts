@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
             'jszip': ['jszip'],
             'recharts': ['recharts'],
             'mapbox-gl': ['mapbox-gl'],
+            'pdfjs-dist': ['pdfjs-dist'],
           },
         },
       },
