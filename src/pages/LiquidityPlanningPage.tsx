@@ -12,6 +12,7 @@ import { CURRENCIES } from '../lib/constants';
 import { useNOALiquidity } from '../hooks/useNOALiquidity';
 import type { MonthBucket } from '../hooks/useNOALiquidity';
 import type { NOALiquidityIncomeRow, NOALiquidityExpenseRow, LiquidityExpenseType } from '../types/database';
+import { LiquidityCashFlowChart } from '../components/liquidity/LiquidityCashFlowChart';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -836,6 +837,11 @@ export function LiquidityPlanningPage() {
           <StartsaldoCard startsaldo={startsaldo} currency={startsaldoCurrency} onSave={upsertStartsaldo} />
           <ExpenseManagementCard expenses={expenses} onDelete={deleteExpense} onToggleActive={toggleExpenseActive} />
         </>
+      )}
+
+      {/* Cashflow chart */}
+      {!loading && !showingAForm && (
+        <LiquidityCashFlowChart months={months} currency={startsaldoCurrency} />
       )}
 
       {loading ? (
