@@ -387,12 +387,13 @@ const d = StyleSheet.create({
     height: 170,
     backgroundColor: '#F4F3F1',
     borderRadius: 2,
+    padding: 10,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
   refPhotoCellImage: {
     width: '100%',
-    height: 170,
+    height: 150,
     objectFit: 'contain' as const,
   },
 });
