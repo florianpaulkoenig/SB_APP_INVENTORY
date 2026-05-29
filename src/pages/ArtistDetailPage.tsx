@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useArtist } from '../hooks/useArtists';
+import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -48,19 +50,40 @@ export function ArtistDetailPage() {
   const totalEstimated = artworks.reduce((s: number, a: any) => s + (a.estimated_value ?? 0), 0);
   const gain = totalPurchase > 0 ? ((totalEstimated - totalPurchase) / totalPurchase) * 100 : null;
 
-  // ---- Value trend chart ----------------------------------------------------
-  // Group by estimated_value_date, take max estimated_value per date
+  // ---- Portfolio value timeline from valuations history ---------------------
 
-  const byDate: Record<string, number> = {};
-  for (const aw of artworks) {
-    if (aw.estimated_value_date && aw.estimated_value) {
-      const d = aw.estimated_value_date.slice(0, 7); // YYYY-MM
-      byDate[d] = (byDate[d] ?? 0) + aw.estimated_value;
-    }
-  }
-  const chartData = Object.entries(byDate)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, value]) => ({ date, value }));
+  const [chartData, setChartData] = useState<{ date: string; value: number }[]>([]);
+
+  useEffect(() => {
+    if (loading || artworks.length === 0) return;
+
+    const artworkIds: string[] = artworks.map((aw: any) => aw.id);
+
+    supabase
+      .from('valuations')
+      .select('artwork_id, value, valuation_date')
+      .in('artwork_id', artworkIds)
+      .order('valuation_date', { ascending: true })
+      .then(({ data }) => {
+        if (!data || data.length === 0) return;
+
+        // Build one entry per unique YYYY-MM that appears in the data
+        const months = [...new Set(data.map((v: any) => (v.valuation_date as string).slice(0, 7)))].sort();
+
+        const computed = months.map((month) => ({
+          date: month,
+          value: artworkIds.reduce((sum, aid) => {
+            // Most recent valuation for this artwork as of this month
+            const latest = [...data]
+              .filter((v: any) => v.artwork_id === aid && (v.valuation_date as string).slice(0, 7) <= month)
+              .at(-1); // data is already sorted ascending by valuation_date
+            return sum + ((latest?.value as number) ?? 0);
+          }, 0),
+        }));
+
+        setChartData(computed);
+      });
+  }, [loading, artworks]);
 
   return (
     <div className="space-y-8">
@@ -107,7 +130,7 @@ export function ArtistDetailPage() {
       {/* Value trend chart */}
       {chartData.length >= 2 && (
         <div className="bg-white border border-primary-100 p-6">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-primary-400 mb-4">Estimated Value Over Time</h2>
+          <h2 className="text-xs font-medium uppercase tracking-wider text-primary-400 mb-4">Gesamtportfolio-Wert (CHF)</h2>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <defs>

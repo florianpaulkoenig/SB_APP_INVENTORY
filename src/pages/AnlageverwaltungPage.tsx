@@ -30,8 +30,6 @@ interface EditState {
   purchase_price: string;
   purchase_currency: string;
   purchase_date: string;
-  estimated_value: string;
-  estimated_value_date: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +77,9 @@ export function AnlageverwaltungPage() {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [artistFilter, setArtistFilter] = useState('');
+  const [valuationModal, setValuationModal] = useState<{ artwork: ArtworkInvestment } | null>(null);
+  const [valForm, setValForm] = useState({ value: '', date: new Date().toISOString().split('T')[0], notes: '' });
+  const [valSaving, setValSaving] = useState(false);
 
   // ---- Fetch -----------------------------------------------------------------
 
@@ -144,14 +145,53 @@ export function AnlageverwaltungPage() {
       purchase_price: a.purchase_price?.toString() ?? '',
       purchase_currency: a.purchase_currency ?? 'CHF',
       purchase_date: a.purchase_date ?? '',
-      estimated_value: a.estimated_value?.toString() ?? '',
-      estimated_value_date: a.estimated_value_date ?? '',
     });
   }
 
   function cancelEdit() {
     setEditingId(null);
     setEditState(null);
+  }
+
+  function openValuationModal(a: ArtworkInvestment) {
+    setValuationModal({ artwork: a });
+    setValForm({
+      value: a.estimated_value?.toString() ?? '',
+      date: new Date().toISOString().split('T')[0],
+      notes: '',
+    });
+  }
+
+  async function submitValuation() {
+    if (!valuationModal) return;
+    const val = Number(valForm.value);
+    if (!valForm.value || isNaN(val) || val <= 0) return;
+
+    setValSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const { error } = await supabase
+        .from('valuations')
+        .insert({
+          artwork_id: valuationModal.artwork.id,
+          user_id: session.user.id,
+          value: val,
+          currency: 'CHF',
+          valuation_date: valForm.date,
+          notes: valForm.notes || null,
+        } as never);
+
+      if (error) throw error;
+      toast({ title: 'Schätzwert gespeichert', variant: 'success' });
+      setValuationModal(null);
+      await fetchArtworks();
+    } catch {
+      toast({ title: 'Fehler', description: 'Schätzwert konnte nicht gespeichert werden.', variant: 'error' });
+    } finally {
+      setValSaving(false);
+    }
   }
 
   async function saveEdit(id: string) {
@@ -164,8 +204,6 @@ export function AnlageverwaltungPage() {
           purchase_price: editState.purchase_price ? Number(editState.purchase_price) : null,
           purchase_currency: editState.purchase_currency || 'CHF',
           purchase_date: editState.purchase_date || null,
-          estimated_value: editState.estimated_value ? Number(editState.estimated_value) : null,
-          estimated_value_date: editState.estimated_value_date || null,
         } as never)
         .eq('id', id);
 
@@ -572,33 +610,26 @@ export function AnlageverwaltungPage() {
                       ) : fmtDate(a.purchase_date)}
                     </td>
 
-                    {/* Schätzwert */}
+                    {/* Schätzwert — read-only, driven by valuations history */}
                     <td className="px-3 py-2 text-right">
-                      {isEditing ? (
-                        <input
-                          type="number"
-                          value={editState?.estimated_value ?? ''}
-                          onChange={(e) => setEditState((s) => s ? { ...s, estimated_value: e.target.value } : s)}
-                          placeholder="0"
-                          className="w-28 border border-primary-200 px-2 py-1 text-right text-xs focus:outline-none focus:ring-1 focus:ring-accent"
-                        />
-                      ) : (
+                      <div className="flex items-center justify-end gap-2">
                         <span className="text-primary-900">
                           {a.estimated_value != null ? formatCurrency(a.estimated_value, a.purchase_currency) : '—'}
                         </span>
-                      )}
+                        <button
+                          type="button"
+                          onClick={() => openValuationModal(a)}
+                          title="Neuen Schätzwert erfassen"
+                          className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-primary-200 text-[10px] text-primary-400 hover:border-primary-500 hover:text-primary-700"
+                        >
+                          +
+                        </button>
+                      </div>
                     </td>
 
-                    {/* Schätzwertdatum */}
+                    {/* Schätzwertdatum — read-only */}
                     <td className="px-3 py-2 text-center text-primary-600">
-                      {isEditing ? (
-                        <input
-                          type="date"
-                          value={editState?.estimated_value_date ?? ''}
-                          onChange={(e) => setEditState((s) => s ? { ...s, estimated_value_date: e.target.value } : s)}
-                          className="border border-primary-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-accent"
-                        />
-                      ) : fmtDate(a.estimated_value_date)}
+                      {fmtDate(a.estimated_value_date)}
                     </td>
 
                     {/* Performance */}
@@ -645,6 +676,69 @@ export function AnlageverwaltungPage() {
           </table>
         )}
       </div>
+
+      {/* Add Valuation Modal */}
+      {valuationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm bg-white p-6 shadow-xl">
+            <h3 className="mb-1 font-display text-base font-semibold text-primary-900">
+              Neuer Schätzwert
+            </h3>
+            <p className="mb-5 text-xs text-primary-400 truncate">
+              {valuationModal.artwork.title}
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-primary-600">Wert (CHF)</label>
+                <input
+                  type="number"
+                  value={valForm.value}
+                  onChange={(e) => setValForm((f) => ({ ...f, value: e.target.value }))}
+                  placeholder="0"
+                  autoFocus
+                  className="w-full border border-primary-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-primary-600">Datum</label>
+                <input
+                  type="date"
+                  value={valForm.date}
+                  onChange={(e) => setValForm((f) => ({ ...f, date: e.target.value }))}
+                  className="w-full border border-primary-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-primary-600">Notiz (optional)</label>
+                <input
+                  type="text"
+                  value={valForm.notes}
+                  onChange={(e) => setValForm((f) => ({ ...f, notes: e.target.value }))}
+                  placeholder="z. B. Gutachten Kunsthalle Basel"
+                  className="w-full border border-primary-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setValuationModal(null)}
+                className="px-4 py-2 text-sm text-primary-500 hover:text-primary-900"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={submitValuation}
+                disabled={valSaving || !valForm.value}
+                className="bg-primary-900 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+              >
+                {valSaving ? 'Speichern…' : 'Speichern'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
