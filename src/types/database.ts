@@ -103,6 +103,36 @@ export type InstitutionType = 'museum' | 'foundation' | 'corporate' | 'universit
 
 // ---- Table row / insert / update types -------------------------------------
 
+// -- artists -----------------------------------------------------------------
+
+export interface ArtistRow {
+  id: string;
+  user_id: string;
+  portfolio: string;
+  name: string;
+  nationality: string | null;
+  birth_year: number | null;
+  biography: string | null;
+  website: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ArtistInsert {
+  id?: string;
+  user_id?: string;
+  portfolio?: string;
+  name: string;
+  nationality?: string | null;
+  birth_year?: number | null;
+  biography?: string | null;
+  website?: string | null;
+  notes?: string | null;
+}
+
+export type ArtistUpdate = Partial<ArtistInsert>;
+
 // -- galleries ---------------------------------------------------------------
 
 export interface GalleryRow {
@@ -192,6 +222,7 @@ export interface ArtworkRow {
   color: ArtworkColor | null;
   notes: string | null;
   artist_name: string | null;
+  artist_id: string | null;
   consigned_since: string | null;
   available_for_partners: boolean;
   is_window: boolean;
@@ -238,6 +269,7 @@ export interface ArtworkInsert {
   color?: ArtworkColor | null;
   notes?: string | null;
   artist_name?: string | null;
+  artist_id?: string | null;
   consigned_since?: string | null;
   available_for_partners?: boolean;
   is_window?: boolean;

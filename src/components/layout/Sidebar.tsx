@@ -191,6 +191,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M8 4l5 6-5 6" />
     </svg>
   ),
+  artists: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 10a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM3 18v-1.5a5 5 0 015-5h4a5 5 0 015 5V18" />
+    </svg>
+  ),
 };
 
 // ---------------------------------------------------------------------------
@@ -316,6 +321,7 @@ const noaNavSections: NavSection[] = [
     title: 'INVENTORY',
     items: [
       { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin'] },
+      { label: 'Artists', to: '/artists', icon: icons.artists, roles: ['admin'] },
     ],
   },
   {

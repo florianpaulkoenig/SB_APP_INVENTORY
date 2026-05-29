@@ -61,6 +61,12 @@ const DashboardPage = React.lazy(() =>
 const NotFoundPage = React.lazy(() =>
   import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
 );
+const ArtistsPage = React.lazy(() =>
+  import('./pages/ArtistsPage').then((m) => ({ default: m.ArtistsPage })),
+);
+const ArtistDetailPage = React.lazy(() =>
+  import('./pages/ArtistDetailPage').then((m) => ({ default: m.ArtistDetailPage })),
+);
 const GalleriesPage = React.lazy(() =>
   import('./pages/GalleriesPage').then((m) => ({ default: m.GalleriesPage })),
 );
@@ -431,6 +437,22 @@ const router = createBrowserRouter(
         },
 
         // Galleries (admin only)
+        {
+          path: 'artists',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ArtistsPage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'artists/:id',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ArtistDetailPage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
         {
           path: 'galleries',
           element: (

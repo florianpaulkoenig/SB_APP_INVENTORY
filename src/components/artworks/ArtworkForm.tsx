@@ -5,6 +5,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { GallerySelect } from '../galleries/GallerySelect';
+import { ArtistSelect } from '../artists/ArtistSelect';
 import {
   ARTWORK_STATUSES,
   ARTWORK_CATEGORIES,
@@ -163,7 +164,8 @@ export function ArtworkForm({
   // Notes
   const [notes, setNotes] = useState(v?.notes ?? '');
 
-  // Artist name (NOA Collection)
+  // Artist (NOA Collection)
+  const [artistId, setArtistId] = useState<string | null>(v?.artist_id ?? null);
   const [artistName, setArtistName] = useState(v?.artist_name ?? '');
 
   // Resolved inventory number & reference code
@@ -297,6 +299,7 @@ export function ArtworkForm({
       color: (color || null) as ArtworkColor | null,
       notes: notes.trim() || null,
       artist_name: artistName.trim() || null,
+      artist_id: artistId,
       available_for_partners: availableForPartners,
       is_window: isWindow,
       lamination_needed: isWindow && laminationNeeded,
@@ -757,11 +760,24 @@ export function ArtworkForm({
       {isNOA && (
         <section>
           <SectionHeader>Artist</SectionHeader>
-          <Input
-            type="text"
-            placeholder="Artist name"
-            value={artistName}
-            onChange={(e) => setArtistName(e.target.value)}
+          <ArtistSelect
+            value={artistId}
+            onChange={(id) => setArtistId(id)}
+            onChangeName={(name) => setArtistName(name ?? '')}
+            allowCreate
+            onCreateNew={async (name) => {
+              const { supabase } = await import('../../lib/supabase');
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session?.user) return null;
+              const { data, error } = await supabase
+                .from('artists')
+                .insert({ name, user_id: session.user.id, portfolio: 'noa_collection' } as never)
+                .select('id, name')
+                .single();
+              if (error || !data) return null;
+              setArtistName(name);
+              return (data as { id: string }).id;
+            }}
           />
         </section>
       )}
