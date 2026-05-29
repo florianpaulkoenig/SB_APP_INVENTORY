@@ -205,24 +205,19 @@ export function ArtworkForm({
     }
 
     if (editionType === 'numbered') {
-      if (!editionNumber.trim()) {
-        next.editionNumber = 'Edition number is required for numbered editions';
+      const num = editionNumber.trim() ? parseInt(editionNumber, 10) : null;
+      const total = editionTotal.trim() ? parseInt(editionTotal, 10) : null;
+      if (num !== null && (isNaN(num) || num < 1)) {
+        next.editionNumber = 'Must be a positive number';
       }
-      if (!editionTotal.trim()) {
-        next.editionTotal = 'Edition total is required for numbered editions';
+      if (total !== null && (isNaN(total) || total < 1)) {
+        next.editionTotal = 'Must be a positive number';
       }
-      if (editionNumber && editionTotal) {
-        const num = parseInt(editionNumber, 10);
-        const total = parseInt(editionTotal, 10);
-        if (isNaN(num) || num < 1) {
-          next.editionNumber = 'Must be a positive number';
-        }
-        if (isNaN(total) || total < 1) {
-          next.editionTotal = 'Must be a positive number';
-        }
-        if (!isNaN(num) && !isNaN(total) && num > total) {
-          next.editionNumber = 'Edition number cannot exceed edition total';
-        }
+      if (num !== null && total !== null && !isNaN(num) && !isNaN(total) && num > total) {
+        next.editionNumber = 'Edition number cannot exceed edition total';
+      }
+      if ((editionNumber.trim() && !editionTotal.trim()) || (!editionNumber.trim() && editionTotal.trim())) {
+        next.editionNumber = next.editionNumber ?? 'Provide both edition number and total, or leave both empty';
       }
     }
 
