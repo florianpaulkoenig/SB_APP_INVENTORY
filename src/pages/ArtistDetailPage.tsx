@@ -60,15 +60,21 @@ export function ArtistDetailPage() {
 
         const computed = allMonths.map((month) => ({
           date: month,
-          // Sum of most-recent valuation per artwork as of this month
-          estimatedValue: vals
-            ? artworkIds.reduce((sum, aid) => {
-                const latest = vals
+          // Sum of most-recent valuation per artwork as of this month.
+          // Fallback: if the artwork was already purchased but has no valuation yet,
+          // use its purchase price as the starting estimate (= Ankaufswert).
+          estimatedValue: artworkIds.reduce((sum, aid) => {
+            const aw = (artworks as any[]).find((a) => a.id === aid);
+            // Skip artworks not yet purchased by this month
+            if (!aw?.purchase_date || (aw.purchase_date as string).slice(0, 7) > month) return sum;
+            const latest = vals
+              ? vals
                   .filter((v: any) => v.artwork_id === aid && (v.valuation_date as string).slice(0, 7) <= month)
-                  .at(-1);
-                return sum + ((latest?.value as number) ?? 0);
-              }, 0)
-            : 0,
+                  .at(-1)
+              : null;
+            const value = latest ? (latest.value as number) : ((aw.purchase_price as number) ?? 0);
+            return sum + value;
+          }, 0),
           // Cumulative purchase price of all artworks bought up to this month
           purchaseValue: (artworks as any[]).reduce((sum, aw) => {
             if (aw.purchase_date && aw.purchase_price && (aw.purchase_date as string).slice(0, 7) <= month) {
