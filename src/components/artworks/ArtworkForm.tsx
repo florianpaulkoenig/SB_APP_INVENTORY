@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { usePortfolio } from '../../contexts/PortfolioContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
@@ -71,6 +72,8 @@ export function ArtworkForm({
   loading = false,
 }: ArtworkFormProps) {
   const isEdit = Boolean(artwork);
+  const { portfolio } = usePortfolio();
+  const isNOA = portfolio === 'noa_collection';
 
   // Helper: pick from artwork first, then defaultValues, then fallback
   const v = artwork ?? dv;
@@ -159,6 +162,9 @@ export function ArtworkForm({
 
   // Notes
   const [notes, setNotes] = useState(v?.notes ?? '');
+
+  // Artist name (NOA Collection)
+  const [artistName, setArtistName] = useState(v?.artist_name ?? '');
 
   // Resolved inventory number & reference code
   const displayInventoryNumber = artwork?.inventory_number ?? inventoryNumber ?? '';
@@ -290,6 +296,7 @@ export function ArtworkForm({
       series: (series || null) as ArtworkSeries | null,
       color: (color || null) as ArtworkColor | null,
       notes: notes.trim() || null,
+      artist_name: artistName.trim() || null,
       available_for_partners: availableForPartners,
       is_window: isWindow,
       lamination_needed: isWindow && laminationNeeded,
@@ -743,6 +750,21 @@ export function ArtworkForm({
           Commission split is defined on the gallery profile.
         </p>
       </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Artist (NOA Collection only)                                       */}
+      {/* ------------------------------------------------------------------ */}
+      {isNOA && (
+        <section>
+          <SectionHeader>Artist</SectionHeader>
+          <Input
+            type="text"
+            placeholder="Artist name"
+            value={artistName}
+            onChange={(e) => setArtistName(e.target.value)}
+          />
+        </section>
+      )}
 
       {/* ------------------------------------------------------------------ */}
       {/* Section 8: Notes                                                   */}

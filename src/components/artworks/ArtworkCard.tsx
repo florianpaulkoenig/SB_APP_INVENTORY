@@ -94,6 +94,10 @@ export const ArtworkCard = React.memo(function ArtworkCard({ artwork, imageUrl, 
           )}
         </div>
 
+        {artwork.artist_name && (
+          <p className="text-xs font-medium text-primary-600 truncate">{artwork.artist_name}</p>
+        )}
+
         {galleryName && (
           <p className="text-xs text-primary-400 truncate">{galleryName}</p>
         )}

@@ -66,6 +66,7 @@ export const MAPPABLE_FIELDS = [
   { value: 'series', label: 'Series' },
   { value: 'color', label: 'Color' },
   { value: 'notes', label: 'Notes' },
+  { value: 'artist_name', label: 'Artist Name' },
   { value: '_skip', label: '-- Skip Column --' },
 ] as const;
 
@@ -442,6 +443,7 @@ export function autoDetectMappings(headers: string[]): ColumnMapping[] {
     series: ['series', 'collection', 'group'],
     color: ['color', 'colour', 'farbe'],
     notes: ['notes', 'note', 'comments', 'comment', 'remarks', 'description'],
+    artist_name: ['artist', 'artist name', 'künstler', 'künstler:in', 'creator', 'author'],
   };
 
   return headers.map((header) => {

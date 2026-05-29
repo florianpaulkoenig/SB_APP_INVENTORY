@@ -28,6 +28,7 @@ export interface ArtworkFilters {
   year?: number;
   color?: string;
   medium?: string;
+  artist?: string;
   minHeight?: number;
   maxHeight?: number;
   minWidth?: number;
@@ -81,7 +82,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       let query = supabase
         .from('artworks')
         .select(
-          'id, title, inventory_number, reference_code, medium, year, height, width, depth, dimension_unit, price, currency, status, category, motif, series, edition_type, edition_number, edition_total, gallery_id, current_location, created_at, galleries:gallery_id(name)',
+          'id, title, artist_name, inventory_number, reference_code, medium, year, height, width, depth, dimension_unit, price, currency, status, category, motif, series, edition_type, edition_number, edition_total, gallery_id, current_location, created_at, galleries:gallery_id(name)',
           { count: 'exact' },
         )
         .eq('portfolio', portfolio);
@@ -91,7 +92,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         const term = `%${sanitizeFilterTerm(filters.search)}%`;
         const yearCondition = /^\d{4}$/.test(filters.search.trim()) ? `,year.eq.${Number(filters.search.trim())}` : '';
         query = query.or(
-          `title.ilike.${term},inventory_number.ilike.${term},reference_code.ilike.${term},medium.ilike.${term},notes.ilike.${term},current_location.ilike.${term},category.ilike.${term},motif.ilike.${term},series.ilike.${term},color.ilike.${term},edition_type.ilike.${term}${yearCondition}`,
+          `title.ilike.${term},artist_name.ilike.${term},inventory_number.ilike.${term},reference_code.ilike.${term},medium.ilike.${term},notes.ilike.${term},current_location.ilike.${term},category.ilike.${term},motif.ilike.${term},series.ilike.${term},color.ilike.${term},edition_type.ilike.${term}${yearCondition}`,
         );
       }
 
@@ -137,6 +138,11 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         query = query.ilike('medium', `%${sanitizeFilterTerm(filters.medium)}%`);
       }
 
+      // Artist filter (partial match)
+      if (filters.artist) {
+        query = query.ilike('artist_name', `%${sanitizeFilterTerm(filters.artist)}%`);
+      }
+
       // Height range filter
       if (filters.minHeight != null) {
         query = query.gte('height', filters.minHeight);
@@ -154,7 +160,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       }
 
       // Sorting (whitelist to prevent SQL injection via arbitrary column names)
-      const VALID_SORT_COLUMNS: readonly string[] = ['created_at', 'title', 'inventory_number', 'reference_code', 'medium', 'year', 'status', 'price', 'current_location', 'category', 'color', 'edition_type', 'motif', 'series'];
+      const VALID_SORT_COLUMNS: readonly string[] = ['created_at', 'title', 'artist_name', 'inventory_number', 'reference_code', 'medium', 'year', 'status', 'price', 'current_location', 'category', 'color', 'edition_type', 'motif', 'series'];
       const rawSortBy = filters.sortBy || 'created_at';
       const safeSortBy = VALID_SORT_COLUMNS.includes(rawSortBy) ? rawSortBy : 'created_at';
       const sortOrder = filters.sortOrder || 'desc';
@@ -194,6 +200,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
     filters.year,
     filters.color,
     filters.medium,
+    filters.artist,
     filters.minHeight,
     filters.maxHeight,
     filters.minWidth,

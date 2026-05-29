@@ -16,6 +16,7 @@ export interface ArtworkTableProps {
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
   onToggleSelectAll?: () => void;
+  showArtist?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -93,6 +94,7 @@ interface ArtworkRowProps {
   onRowClick: (id: string) => void;
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
+  showArtist?: boolean;
 }
 
 const ArtworkRowItem = React.memo(function ArtworkRowItem({
@@ -100,6 +102,7 @@ const ArtworkRowItem = React.memo(function ArtworkRowItem({
   onRowClick,
   selected,
   onToggleSelect,
+  showArtist,
 }: ArtworkRowProps) {
   const dimensions = formatDimensions(
     artwork.height,
@@ -146,6 +149,13 @@ const ArtworkRowItem = React.memo(function ArtworkRowItem({
       <td className="px-2 py-2 text-sm font-medium text-primary-900 sm:px-4 sm:py-3">
         {artwork.title}
       </td>
+
+      {/* Artist (NOA Collection) */}
+      {showArtist && (
+        <td className="hidden px-2 py-2 text-sm text-primary-600 md:table-cell sm:px-4 sm:py-3">
+          {artwork.artist_name ?? '—'}
+        </td>
+      )}
 
       {/* Medium */}
       <td className="hidden px-2 py-2 text-sm text-primary-600 md:table-cell sm:px-4 sm:py-3">
@@ -206,10 +216,15 @@ export function ArtworkTable({
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
+  showArtist,
 }: ArtworkTableProps) {
   const selectable = !!onToggleSelect;
   const allSelected = selectable && artworks.length > 0 && artworks.every((a) => selectedIds?.has(a.id));
   const someSelected = selectable && artworks.some((a) => selectedIds?.has(a.id)) && !allSelected;
+
+  const columns = showArtist
+    ? [...COLUMNS.slice(0, 3), { key: 'artist_name', label: 'Artist', sortable: true, hiddenClass: 'hidden md:table-cell' }, ...COLUMNS.slice(3)]
+    : COLUMNS;
 
   return (
     <div className="overflow-x-auto">
@@ -230,7 +245,7 @@ export function ArtworkTable({
                 />
               </th>
             )}
-            {COLUMNS.map((col) => (
+            {columns.map((col) => (
               <th
                 key={col.key}
                 className={
@@ -263,6 +278,7 @@ export function ArtworkTable({
               onRowClick={onRowClick}
               selected={selectedIds?.has(artwork.id)}
               onToggleSelect={onToggleSelect}
+              showArtist={showArtist}
             />
           ))}
         </tbody>

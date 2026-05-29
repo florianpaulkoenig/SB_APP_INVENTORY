@@ -20,6 +20,7 @@ import { Pagination } from '../components/ui/Pagination';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toast';
 import { formatDate } from '../lib/utils';
+import { usePortfolio } from '../contexts/PortfolioContext';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -68,6 +69,8 @@ type ViewMode = 'grid' | 'table';
 export function ArtworksPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { portfolio } = usePortfolio();
+  const isNOA = portfolio === 'noa_collection';
 
   // Focus-param: ?search=1 is set externally to auto-focus the search input.
   // Remove it after reading so browser-back doesn't re-trigger it.
@@ -100,6 +103,7 @@ export function ArtworksPage() {
     gallery_id: searchParams.get('gal') || undefined,
     color:      searchParams.get('color') || undefined,
     medium:     searchParams.get('medium') || undefined,
+    artist:     searchParams.get('artist') || undefined,
     minHeight:  searchParams.get('mnh') ? Number(searchParams.get('mnh')) : undefined,
     maxHeight:  searchParams.get('mxh') ? Number(searchParams.get('mxh')) : undefined,
     minWidth:   searchParams.get('mnw') ? Number(searchParams.get('mnw')) : undefined,
@@ -410,7 +414,7 @@ export function ArtworksPage() {
     }, { replace: true });
   }
 
-  const FILTER_PARAM_KEYS = ['st','cat','motif','series','gal','color','medium','mnh','mxh','mnw','mxw'];
+  const FILTER_PARAM_KEYS = ['st','cat','motif','series','gal','color','medium','artist','mnh','mxh','mnw','mxw'];
 
   function handleSearchChange(value: string) {
     updateParams(p => {
@@ -429,6 +433,7 @@ export function ArtworksPage() {
       if (newFilters.gallery_id) p.set('gal',    newFilters.gallery_id);
       if (newFilters.color)      p.set('color',  newFilters.color);
       if (newFilters.medium)     p.set('medium', newFilters.medium);
+      if (newFilters.artist)     p.set('artist', newFilters.artist);
       if (newFilters.minHeight != null) p.set('mnh', String(newFilters.minHeight));
       if (newFilters.maxHeight != null) p.set('mxh', String(newFilters.maxHeight));
       if (newFilters.minWidth  != null) p.set('mnw', String(newFilters.minWidth));
@@ -476,7 +481,7 @@ export function ArtworksPage() {
       // Fetch ALL artworks matching current filters (no pagination)
       let query = supabase
         .from('artworks')
-        .select('id, title, reference_code, inventory_number, medium, year, height, width, depth, dimension_unit, is_circular, price, currency, status, category, motif, series, edition_type, edition_number, edition_total, current_location, gallery_id, notes, created_at, galleries:gallery_id(name)')
+        .select('id, title, artist_name, reference_code, inventory_number, medium, year, height, width, depth, dimension_unit, is_circular, price, currency, status, category, motif, series, edition_type, edition_number, edition_total, current_location, gallery_id, notes, created_at, galleries:gallery_id(name)')
         .order('created_at', { ascending: false });
 
       if (filters.status) query = query.eq('status', filters.status);
@@ -591,6 +596,7 @@ export function ArtworksPage() {
           sortValue={`${sortBy}:${sortOrder}`}
           onSortChange={handleSortChange}
           sortOptions={SORT_OPTIONS}
+          showArtistFilter={isNOA}
         />
       </div>
 
@@ -706,6 +712,7 @@ export function ArtworksPage() {
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
             onToggleSelectAll={handleToggleSelectAll}
+            showArtist={isNOA}
           />
 
           {/* Pagination */}

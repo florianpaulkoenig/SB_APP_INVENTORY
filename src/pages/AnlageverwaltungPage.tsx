@@ -12,6 +12,7 @@ import { getSignedUrls } from '../lib/signedUrlCache';
 interface ArtworkInvestment {
   id: string;
   title: string;
+  artist_name: string | null;
   reference_code: string | null;
   year: number | null;
   category: string | null;
@@ -77,6 +78,7 @@ export function AnlageverwaltungPage() {
   const [editState, setEditState] = useState<EditState | null>(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [artistFilter, setArtistFilter] = useState('');
 
   // ---- Fetch -----------------------------------------------------------------
 
@@ -88,7 +90,7 @@ export function AnlageverwaltungPage() {
 
       const { data, error } = await supabase
         .from('artworks')
-        .select('id, title, reference_code, year, category, medium, purchase_price, purchase_currency, purchase_date, estimated_value, estimated_value_date')
+        .select('id, title, artist_name, reference_code, year, category, medium, purchase_price, purchase_currency, purchase_date, estimated_value, estimated_value_date')
         .eq('portfolio', portfolio)
         .order('title', { ascending: true });
 
@@ -179,6 +181,12 @@ export function AnlageverwaltungPage() {
     }
   }
 
+  // ---- Artist filter ---------------------------------------------------------
+
+  const displayedArtworks = artistFilter.trim()
+    ? artworks.filter((a) => (a.artist_name ?? '').toLowerCase().includes(artistFilter.toLowerCase()))
+    : artworks;
+
   // ---- Summary ---------------------------------------------------------------
 
   const totalPurchase = artworks.reduce((s, a) => s + (a.purchase_price ?? 0), 0);
@@ -198,6 +206,7 @@ export function AnlageverwaltungPage() {
       ws.columns = [
         { header: 'Referenz', key: 'ref', width: 18 },
         { header: 'Titel', key: 'title', width: 35 },
+        { header: 'Künstler:in', key: 'artist', width: 24 },
         { header: 'Jahr', key: 'year', width: 8 },
         { header: 'Kategorie', key: 'category', width: 14 },
         { header: 'Ankaufswert', key: 'purchase', width: 16 },
@@ -215,12 +224,13 @@ export function AnlageverwaltungPage() {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F0EB' } };
       });
 
-      artworks.forEach((a) => {
+      displayedArtworks.forEach((a) => {
         const gAbs = gainAbs(a.purchase_price, a.estimated_value);
         const gPct = gainPercent(a.purchase_price, a.estimated_value);
         ws.addRow({
           ref: a.reference_code ?? '',
           title: a.title,
+          artist: a.artist_name ?? '',
           year: a.year ?? '',
           category: a.category ?? '',
           purchase: a.purchase_price ?? '',
@@ -318,7 +328,7 @@ export function AnlageverwaltungPage() {
             </View>
 
             {/* Rows */}
-            {artworks.map((a, i) => {
+            {displayedArtworks.map((a, i) => {
               const gPct = gainPercent(a.purchase_price, a.estimated_value);
               const gainColor = gPct == null ? '#666' : gPct >= 0 ? '#1a6640' : '#b91c1c';
               return (
@@ -390,12 +400,30 @@ export function AnlageverwaltungPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-primary-900">Anlageverwaltung</h1>
           <p className="mt-1 text-sm text-primary-400">
             NOA Collection · {artworks.length} Werke · Stand: {new Date().toLocaleDateString('de-CH')}
           </p>
+        </div>
+        <div className="flex flex-1 max-w-xs items-center mt-1">
+          <input
+            type="text"
+            placeholder="Nach Künstler:in filtern..."
+            value={artistFilter}
+            onChange={(e) => setArtistFilter(e.target.value)}
+            className="w-full border-0 border-b border-primary-200 bg-transparent px-0 py-2 text-sm text-primary-900 placeholder:text-primary-300 focus:border-accent focus:outline-none"
+          />
+          {artistFilter && (
+            <button
+              type="button"
+              onClick={() => setArtistFilter('')}
+              className="ml-2 text-xs text-primary-400 hover:text-primary-700"
+            >
+              ✕
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -468,6 +496,7 @@ export function AnlageverwaltungPage() {
               <tr className="border-b border-primary-100 bg-primary-50">
                 <th className="w-12 px-3 py-3" />
                 <th className="px-3 py-3 text-left font-medium uppercase tracking-wider text-primary-400">Werk</th>
+                <th className="hidden px-3 py-3 text-left font-medium uppercase tracking-wider text-primary-400 md:table-cell">Künstler:in</th>
                 <th className="px-3 py-3 text-right font-medium uppercase tracking-wider text-primary-400">Ankaufswert</th>
                 <th className="px-3 py-3 text-center font-medium uppercase tracking-wider text-primary-400">Ankaufsdatum</th>
                 <th className="px-3 py-3 text-right font-medium uppercase tracking-wider text-primary-400">Schätzwert</th>
@@ -477,7 +506,7 @@ export function AnlageverwaltungPage() {
               </tr>
             </thead>
             <tbody>
-              {artworks.map((a, i) => {
+              {displayedArtworks.map((a, i) => {
                 const isEditing = editingId === a.id;
                 const gPct = gainPercent(a.purchase_price, a.estimated_value);
                 const gAbs = gainAbs(a.purchase_price, a.estimated_value);
@@ -498,6 +527,11 @@ export function AnlageverwaltungPage() {
                     <td className="px-3 py-2">
                       <p className="font-medium text-primary-900">{a.title}</p>
                       <p className="text-[10px] text-primary-400">{a.reference_code ?? '—'} {a.year ? `· ${a.year}` : ''}</p>
+                    </td>
+
+                    {/* Künstler:in */}
+                    <td className="hidden px-3 py-2 text-sm text-primary-600 md:table-cell">
+                      {a.artist_name ?? '—'}
                     </td>
 
                     {/* Ankaufswert */}

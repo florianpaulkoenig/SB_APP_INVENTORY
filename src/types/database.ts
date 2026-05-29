@@ -191,6 +191,7 @@ export interface ArtworkRow {
   series: ArtworkSeries | null;
   color: ArtworkColor | null;
   notes: string | null;
+  artist_name: string | null;
   consigned_since: string | null;
   available_for_partners: boolean;
   is_window: boolean;
@@ -236,6 +237,7 @@ export interface ArtworkInsert {
   series?: ArtworkSeries | null;
   color?: ArtworkColor | null;
   notes?: string | null;
+  artist_name?: string | null;
   consigned_since?: string | null;
   available_for_partners?: boolean;
   is_window?: boolean;

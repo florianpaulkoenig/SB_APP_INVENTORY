@@ -19,11 +19,13 @@ export interface ArtworkFiltersProps {
     gallery_id?: string;
     color?: string;
     medium?: string;
+    artist?: string;
     minHeight?: number;
     maxHeight?: number;
     minWidth?: number;
     maxWidth?: number;
   };
+  showArtistFilter?: boolean;
   onChange: (filters: ArtworkFiltersProps['filters']) => void;
   onClear: () => void;
   search?: string;
@@ -44,12 +46,13 @@ export function ArtworkFilters({
   noPhotoFilter, onNoPhotoChange,
   viewMode, onViewModeChange,
   sortValue, onSortChange, sortOptions,
+  showArtistFilter,
 }: ArtworkFiltersProps) {
   const [expanded, setExpanded] = useState(false);
 
   const secondaryActive = Boolean(
     filters.category || filters.motif || filters.series ||
-    filters.color || filters.medium ||
+    filters.color || filters.medium || filters.artist ||
     filters.minHeight != null || filters.maxHeight != null ||
     filters.minWidth != null || filters.maxWidth != null ||
     noPhotoFilter,
@@ -212,6 +215,16 @@ export function ArtworkFilters({
             onChange={(e) => update('medium', e.target.value)}
             className={inputCls}
           />
+
+          {showArtistFilter && (
+            <input
+              type="text"
+              placeholder="Artist"
+              value={filters.artist ?? ''}
+              onChange={(e) => update('artist', e.target.value)}
+              className={inputCls}
+            />
+          )}
 
           <div className="flex items-center gap-1">
             <input type="number" placeholder="H min" value={filters.minHeight ?? ''} onChange={(e) => updateNum('minHeight', e.target.value)} className={inputCls} />
