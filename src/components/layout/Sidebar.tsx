@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
+import { usePortfolio, type Portfolio } from '../../contexts/PortfolioContext';
 import type { UserRole } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -194,6 +196,23 @@ const icons = {
 // ---------------------------------------------------------------------------
 // Navigation definition
 // ---------------------------------------------------------------------------
+
+// Anlageverwaltung icon (investment/portfolio chart)
+const anlageIcon = (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2 16l4-5 3 3 4-6 3 4" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2 4h16M2 4v12a1 1 0 001 1h14a1 1 0 001-1V4" />
+  </svg>
+);
+
+const liquidityIcon = (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10 2v1M10 17v1M4.22 4.22l.7.7M15.08 15.08l.7.7M2 10h1M17 10h1M4.22 15.78l.7-.7M15.08 4.92l.7-.7" />
+    <circle cx="10" cy="10" r="4" />
+  </svg>
+);
+
+// Simon Berger navigation (full feature set)
 const navSections: NavSection[] = [
   {
     title: 'INVENTORY',
@@ -237,6 +256,12 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Annual Schedule', to: '/schedule', icon: icons.calendar, roles: ['admin'] },
       { label: 'Projects', to: '/projects', icon: icons.project, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'FINANCE',
+    items: [
+      { label: 'Liquidity', to: '/liquidity', icon: liquidityIcon, roles: ['admin'] },
     ],
   },
   {
@@ -284,6 +309,49 @@ const navSections: NavSection[] = [
   },
 ];
 
+// NOA Collection navigation (subset: Artworks, Deliveries, Catalogues,
+// Viewing Rooms, Image Sharing, Exhibitions, Anlageverwaltung + Liquidity)
+const noaNavSections: NavSection[] = [
+  {
+    title: 'INVENTORY',
+    items: [
+      { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'DOCUMENTS',
+    items: [
+      { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin'] },
+      { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'SHARING',
+    items: [
+      { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin'] },
+      { label: 'Image Sharing', to: '/sharing', icon: icons.imageSharing, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'EXHIBITIONS',
+    items: [
+      { label: 'Exhibitions', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'ANLAGEN',
+    items: [
+      { label: 'Anlageverwaltung', to: '/anlageverwaltung', icon: anlageIcon, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'FINANCE',
+    items: [
+      { label: 'Liquidity', to: '/liquidity', icon: liquidityIcon, roles: ['admin'] },
+    ],
+  },
+];
+
 const bottomItems: NavItem[] = [
   { label: 'Email Log', to: '/email-log', icon: icons.emailLog, roles: ['admin'] },
   { label: 'Settings', to: '/settings', icon: icons.settings, roles: ['admin'] },
@@ -299,9 +367,16 @@ function filterByRole(items: NavItem[], role: UserRole): NavItem[] {
 // ---------------------------------------------------------------------------
 // Sidebar component
 // ---------------------------------------------------------------------------
+const PORTFOLIO_LABELS: Record<Portfolio, { name: string; sub: string }> = {
+  simon_berger: { name: 'Simon Berger', sub: 'MANAGEMENT' },
+  noa_collection: { name: 'NOA Collection', sub: 'MANAGEMENT' },
+};
+
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { user, signOut, role: authRole } = useAuth();
   const role: UserRole = authRole ?? 'admin';
+  const { portfolio, setPortfolio } = usePortfolio();
+  const [switcherOpen, setSwitcherOpen] = useState(false);
 
   return (
     <aside
@@ -310,24 +385,63 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         collapsed ? 'w-16' : 'w-60',
       )}
     >
-      {/* Logo area */}
+      {/* Portfolio switcher */}
       <div className={cn(
-        'flex h-16 shrink-0 items-center border-b border-primary-100',
+        'relative flex h-16 shrink-0 items-center border-b border-primary-100',
         collapsed ? 'justify-center px-2' : 'px-6',
       )}>
         {collapsed ? (
           <span className="font-display text-lg font-bold text-primary-900">N</span>
         ) : (
-          <div>
-            <span className="font-display text-base font-bold text-primary-900">NOA x Simon Berger</span>
-            <p className="text-[10px] font-medium tracking-widest text-accent">MANAGEMENT</p>
-          </div>
+          <button
+            onClick={() => setSwitcherOpen((o) => !o)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <div>
+              <span className="font-display text-base font-bold text-primary-900">
+                NOA contemporary
+              </span>
+              <p className="text-[10px] font-medium tracking-widest text-accent">
+                {PORTFOLIO_LABELS[portfolio].sub}
+              </p>
+            </div>
+            <svg className="h-3 w-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        )}
+
+        {/* Dropdown */}
+        {switcherOpen && !collapsed && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setSwitcherOpen(false)} />
+            <div className="absolute left-4 right-4 top-14 z-50 rounded-md border border-primary-100 bg-white shadow-lg">
+              {(['simon_berger', 'noa_collection'] as Portfolio[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => { setPortfolio(p); setSwitcherOpen(false); }}
+                  className={cn(
+                    'flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-primary-50',
+                    p === portfolio ? 'text-primary-900' : 'text-primary-500',
+                  )}
+                >
+                  <span className={cn(
+                    'h-2 w-2 rounded-full',
+                    p === portfolio ? 'bg-accent' : 'bg-primary-200',
+                  )} />
+                  <div>
+                    <p className="text-xs font-semibold">{PORTFOLIO_LABELS[p].name}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
-        {navSections.map((section) => {
+        {(portfolio === 'noa_collection' ? noaNavSections : navSections).map((section) => {
           const visibleItems = filterByRole(section.items, role);
           if (visibleItems.length === 0) return null;
 

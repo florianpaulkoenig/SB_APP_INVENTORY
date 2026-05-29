@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
+import { usePortfolio } from '../contexts/PortfolioContext';
 import type {
   DeliveryRow,
   DeliveryInsert,
@@ -86,6 +87,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
   const [totalCount, setTotalCount] = useState(0);
 
   const { toast } = useToast();
+  const { portfolio } = usePortfolio();
 
   // ---- Fetch deliveries -----------------------------------------------------
 
@@ -99,7 +101,8 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
         .select(
           DELIVERY_SELECT,
           { count: 'exact' },
-        );
+        )
+        .eq('portfolio', portfolio);
 
       // Status filter
       if (filters.status) {
@@ -149,7 +152,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
     } finally {
       setLoading(false);
     }
-  }, [filters.status, filters.galleryId, filters.search, filters.sortBy, filters.sortOrder, page, pageSize, toast]);
+  }, [filters.status, filters.galleryId, filters.search, filters.sortBy, filters.sortOrder, page, pageSize, portfolio, toast]);
 
   useEffect(() => {
     fetchDeliveries();
@@ -172,7 +175,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
 
         const { data: created, error: insertError } = await supabase
           .from('deliveries')
-          .insert({ ...data, user_id: session.user.id })
+          .insert({ ...data, user_id: session.user.id, portfolio })
           .select()
           .single();
 

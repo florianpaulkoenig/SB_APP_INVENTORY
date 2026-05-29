@@ -249,7 +249,7 @@ export function MonthlyReportPDF({ year, monthLabel, data }: MonthlyReportPDFPro
         )}
 
         <Text style={s.footer}>
-          NOA x Simon Berger — Monthly Report — {monthLabel} {year} — Generated {new Date().toLocaleDateString('de-CH')}
+          NOA contemporary — Monthly Report — {monthLabel} {year} — Generated {new Date().toLocaleDateString('de-CH')}
         </Text>
       </Page>
     </Document>

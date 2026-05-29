@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { usePortfolio } from '../contexts/PortfolioContext';
 import type { ExhibitionRow, ExhibitionInsert, ExhibitionUpdate, ExhibitionArtworkInsert } from '../types/database';
 
 export function useExhibitions() {
@@ -8,6 +9,7 @@ export function useExhibitions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { portfolio } = usePortfolio();
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -22,6 +24,7 @@ export function useExhibitions() {
         .from('exhibitions')
         .select('*')
         .eq('user_id', session.user.id)
+        .eq('portfolio', portfolio)
         .order('start_date', { ascending: false, nullsFirst: false });
       if (fetchError) throw fetchError;
       setExhibitions((data as ExhibitionRow[]) ?? []);
@@ -32,7 +35,7 @@ export function useExhibitions() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [portfolio, toast]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
@@ -45,7 +48,7 @@ export function useExhibitions() {
       }
       const { data: created, error: insertError } = await supabase
         .from('exhibitions')
-        .insert({ ...data, user_id: session.user.id })
+        .insert({ ...data, user_id: session.user.id, portfolio })
         .select()
         .single();
       if (insertError) throw insertError;

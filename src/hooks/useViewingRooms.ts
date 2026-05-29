@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { getSignedUrls } from '../lib/signedUrlCache';
 import { verifyPassword } from '../lib/crypto';
 import { useToast } from '../components/ui/Toast';
+import { usePortfolio } from '../contexts/PortfolioContext';
 import type { ViewingRoomRow, ViewingRoomInsert, ViewingRoomUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -46,6 +47,7 @@ export function useViewingRooms() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { portfolio } = usePortfolio();
 
   // ---- Fetch viewing rooms --------------------------------------------------
 
@@ -63,6 +65,7 @@ export function useViewingRooms() {
         .from('viewing_rooms')
         .select('id, user_id, title, description, slug, artwork_ids, visibility, contact_id, published, created_at, updated_at')
         .eq('user_id', session.user.id)
+        .eq('portfolio', portfolio)
         .order('updated_at', { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -75,7 +78,7 @@ export function useViewingRooms() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [portfolio, toast]);
 
   useEffect(() => { fetchRooms(); }, [fetchRooms]);
 
@@ -91,7 +94,7 @@ export function useViewingRooms() {
 
       const { data: created, error: insertError } = await supabase
         .from('viewing_rooms')
-        .insert({ ...data, user_id: session.user.id })
+        .insert({ ...data, user_id: session.user.id, portfolio })
         .select()
         .single();
 

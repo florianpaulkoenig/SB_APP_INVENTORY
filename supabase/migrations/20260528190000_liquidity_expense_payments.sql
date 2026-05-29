@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS noa_liquidity_expense_payments (
 
 ALTER TABLE noa_liquidity_expense_payments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users manage own expense payments" ON noa_liquidity_expense_payments;
 CREATE POLICY "Users manage own expense payments"
   ON noa_liquidity_expense_payments
   FOR ALL
@@ -24,6 +25,7 @@ CREATE POLICY "Users manage own expense payments"
   WITH CHECK (auth.uid() = user_id);
 
 -- Admin full access
+DROP POLICY IF EXISTS "Admins manage all expense payments" ON noa_liquidity_expense_payments;
 CREATE POLICY "Admins manage all expense payments"
   ON noa_liquidity_expense_payments
   FOR ALL

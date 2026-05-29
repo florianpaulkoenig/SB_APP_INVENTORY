@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
+import { usePortfolio } from '../contexts/PortfolioContext';
 import type {
   ArtworkRow,
   ArtworkInsert,
@@ -66,6 +67,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
   const [totalCount, setTotalCount] = useState(0);
 
   const { toast } = useToast();
+  const { portfolio } = usePortfolio();
   const fetchGenRef = useRef(0);
 
   // ---- Fetch artworks ------------------------------------------------------
@@ -81,7 +83,8 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         .select(
           'id, title, inventory_number, reference_code, medium, year, height, width, depth, dimension_unit, price, currency, status, category, motif, series, edition_type, edition_number, edition_total, gallery_id, current_location, created_at, galleries:gallery_id(name)',
           { count: 'exact' },
-        );
+        )
+        .eq('portfolio', portfolio);
 
       // Search filter: match across all text fields + year
       if (filters.search) {
@@ -199,6 +202,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
     filters.sortOrder,
     page,
     pageSize,
+    portfolio,
     toast,
   ]);
 
@@ -223,7 +227,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
 
         const { data: created, error: insertError } = await supabase
           .from('artworks')
-          .insert({ ...data, user_id: session.user.id })
+          .insert({ ...data, user_id: session.user.id, portfolio })
           .select()
           .single();
 

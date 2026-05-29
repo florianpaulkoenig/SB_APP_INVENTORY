@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { getSignedUrls } from '../lib/signedUrlCache';
 import { useToast } from '../components/ui/Toast';
+import { usePortfolio } from '../contexts/PortfolioContext';
 import type { ShareLinkRow, ShareLinkInsert } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -23,6 +24,7 @@ export function useShareLinks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { portfolio } = usePortfolio();
 
   // ---- Fetch share links ---------------------------------------------------
 
@@ -40,6 +42,7 @@ export function useShareLinks() {
         .from('share_links')
         .select('id, user_id, token, artwork_ids, image_types, expiry, download_count, created_at')
         .eq('user_id', session.user.id)
+        .eq('portfolio', portfolio)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -52,7 +55,7 @@ export function useShareLinks() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [portfolio, toast]);
 
   useEffect(() => { fetchLinks(); }, [fetchLinks]);
 
@@ -68,7 +71,7 @@ export function useShareLinks() {
 
       const { data: created, error: insertError } = await supabase
         .from('share_links')
-        .insert({ ...data, user_id: session.user.id })
+        .insert({ ...data, user_id: session.user.id, portfolio })
         .select()
         .single();
 

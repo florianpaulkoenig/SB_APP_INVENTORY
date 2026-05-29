@@ -191,6 +191,11 @@ export function DashboardPage() {
   // ---- Fetch raw data from Supabase (currency-agnostic) -------------------
 
   const fetchRawData = useCallback(async () => {
+    setState((prev) => ({ ...prev, loading: true }));
+    // Safety net: if queries hang (network issue), unblock the UI after 20s
+    const safetyTimer = setTimeout(() => {
+      setState((prev) => ({ ...prev, loading: false }));
+    }, 20_000);
     try {
     // Phase 1: Run three independent queries in parallel
     const [artworksResult, prodOrdersResult, salesResult] = await Promise.all([
@@ -368,6 +373,8 @@ export function DashboardPage() {
     } catch (err) {
       console.error('Dashboard fetchRawData error:', err);
       setState((prev) => ({ ...prev, loading: false }));
+    } finally {
+      clearTimeout(safetyTimer);
     }
   }, []);
 

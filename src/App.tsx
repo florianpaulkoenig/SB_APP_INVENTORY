@@ -1,6 +1,7 @@
 import React, { Suspense, Component, type ReactNode, type ErrorInfo } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { PortfolioProvider } from './contexts/PortfolioContext';
 import { ToastProvider } from './components/ui/Toast';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -311,6 +312,9 @@ const IntelligenceChatPage = React.lazy(() =>
 );
 const LiquidityPlanningPage = React.lazy(() =>
   import('./pages/LiquidityPlanningPage').then((m) => ({ default: m.LiquidityPlanningPage })),
+);
+const AnlageverwaltungPage = React.lazy(() =>
+  import('./pages/AnlageverwaltungPage').then((m) => ({ default: m.AnlageverwaltungPage })),
 );
 // Consolidated dashboards
 const PortfolioOverviewPage = React.lazy(() =>
@@ -941,6 +945,17 @@ const router = createBrowserRouter(
             </RoleGuard>
           ),
         },
+        // Anlageverwaltung — NOA Collection (admin only)
+        {
+          path: 'anlageverwaltung',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <RouteErrorBoundary><AnlageverwaltungPage />
+              </RouteErrorBoundary></Suspense>
+            </RoleGuard>
+          ),
+        },
 
         // Email Log (admin only)
         {
@@ -1293,9 +1308,11 @@ const router = createBrowserRouter(
 export default function App() {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
+      <PortfolioProvider>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </PortfolioProvider>
     </AuthProvider>
   );
 }

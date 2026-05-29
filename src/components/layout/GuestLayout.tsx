@@ -66,7 +66,7 @@ export function GuestLayout() {
         {/* Logo */}
         <div className="flex h-16 items-center border-b border-primary-100 px-6">
           <div>
-            <span className="font-display text-base font-bold text-primary-900">NOA x Simon Berger</span>
+            <span className="font-display text-base font-bold text-primary-900">NOA contemporary</span>
             <p className="text-[10px] font-medium tracking-widest text-primary-400">MANAGEMENT</p>
           </div>
         </div>

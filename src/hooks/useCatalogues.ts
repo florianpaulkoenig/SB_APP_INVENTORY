@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { usePortfolio } from '../contexts/PortfolioContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -83,6 +84,7 @@ export function useCatalogues() {
   const [catalogues, setCatalogues] = useState<CatalogueRow[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { portfolio } = usePortfolio();
 
   const fetchCatalogues = useCallback(async () => {
     setLoading(true);
@@ -94,6 +96,7 @@ export function useCatalogues() {
         .from('catalogues')
         .select('*')
         .eq('user_id', session.user.id)
+        .eq('portfolio', portfolio)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -103,7 +106,7 @@ export function useCatalogues() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [portfolio, toast]);
 
   useEffect(() => { fetchCatalogues(); }, [fetchCatalogues]);
 
@@ -118,6 +121,7 @@ export function useCatalogues() {
           user_id: session.user.id,
           name: data.name,
           config: data.config,
+          portfolio,
         } as never)
         .select()
         .single();

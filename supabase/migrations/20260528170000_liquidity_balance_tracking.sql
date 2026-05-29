@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS noa_liquidity_actual_balances (
 
 ALTER TABLE noa_liquidity_actual_balances ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admin manages noa_liquidity_actual_balances" ON noa_liquidity_actual_balances;
 CREATE POLICY "Admin manages noa_liquidity_actual_balances"
   ON noa_liquidity_actual_balances FOR ALL TO authenticated
   USING (
