@@ -34,7 +34,7 @@ export function ArtistDetailPage() {
   // ---- Portfolio value timeline from valuations history ---------------------
   // Must be declared before any early returns (Rules of Hooks)
 
-  const [chartData, setChartData] = useState<{ date: string; value: number }[]>([]);
+  const [chartData, setChartData] = useState<{ date: string; estimatedValue: number; purchaseValue: number }[]>([]);
 
   useEffect(() => {
     if (loading || artworks.length === 0) return;
@@ -46,20 +46,35 @@ export function ArtistDetailPage() {
       .select('artwork_id, value, valuation_date')
       .in('artwork_id', artworkIds)
       .order('valuation_date', { ascending: true })
-      .then(({ data }) => {
-        if (!data || data.length === 0) return;
+      .then(({ data: vals }) => {
+        // Collect unique YYYY-MM from valuations + purchase dates
+        const valMonths = vals
+          ? [...new Set(vals.map((v: any) => (v.valuation_date as string).slice(0, 7)))]
+          : [];
+        const purchaseMonths = (artworks as any[])
+          .filter((aw) => aw.purchase_date && aw.purchase_price)
+          .map((aw) => (aw.purchase_date as string).slice(0, 7));
 
-        // Build one entry per unique YYYY-MM that appears in the data
-        const months = [...new Set(data.map((v: any) => (v.valuation_date as string).slice(0, 7)))].sort();
+        const allMonths = [...new Set([...valMonths, ...purchaseMonths])].sort();
+        if (allMonths.length < 2) return;
 
-        const computed = months.map((month) => ({
+        const computed = allMonths.map((month) => ({
           date: month,
-          value: artworkIds.reduce((sum, aid) => {
-            // Most recent valuation for this artwork as of this month
-            const latest = [...data]
-              .filter((v: any) => v.artwork_id === aid && (v.valuation_date as string).slice(0, 7) <= month)
-              .at(-1); // data is already sorted ascending by valuation_date
-            return sum + ((latest?.value as number) ?? 0);
+          // Sum of most-recent valuation per artwork as of this month
+          estimatedValue: vals
+            ? artworkIds.reduce((sum, aid) => {
+                const latest = vals
+                  .filter((v: any) => v.artwork_id === aid && (v.valuation_date as string).slice(0, 7) <= month)
+                  .at(-1);
+                return sum + ((latest?.value as number) ?? 0);
+              }, 0)
+            : 0,
+          // Cumulative purchase price of all artworks bought up to this month
+          purchaseValue: (artworks as any[]).reduce((sum, aw) => {
+            if (aw.purchase_date && aw.purchase_price && (aw.purchase_date as string).slice(0, 7) <= month) {
+              return sum + (aw.purchase_price as number);
+            }
+            return sum;
           }, 0),
         }));
 
@@ -133,13 +148,29 @@ export function ArtistDetailPage() {
       {/* Value trend chart */}
       {chartData.length >= 2 && (
         <div className="bg-white border border-primary-100 p-6">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-primary-400 mb-4">Gesamtportfolio-Wert (CHF)</h2>
-          <ResponsiveContainer width="100%" height={220}>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xs font-medium uppercase tracking-wider text-primary-400">Gesamtportfolio-Wert (CHF)</h2>
+            <div className="flex items-center gap-5 text-[10px] text-primary-400">
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-0.5 w-4 bg-primary-900 rounded" />
+                Schätzwert
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-px w-4 border-t border-dashed border-slate-400" />
+                Ankaufswert
+              </span>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id="artistValueGrad" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="artistEstGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#1a1a2e" stopOpacity={0.15} />
                   <stop offset="95%" stopColor="#1a1a2e" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="artistPurchaseGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.18} />
+                  <stop offset="95%" stopColor="#94a3b8" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -150,16 +181,30 @@ export function ArtistDetailPage() {
                 width={50}
               />
               <Tooltip
-                formatter={(v: number) => formatCurrency(v, 'CHF')}
+                formatter={(v: number, name: string) => [
+                  formatCurrency(v, 'CHF'),
+                  name === 'estimatedValue' ? 'Schätzwert' : 'Ankaufswert',
+                ]}
                 labelStyle={{ fontSize: 12 }}
                 contentStyle={{ fontSize: 12, border: '1px solid #e2e8f0' }}
               />
+              {/* Purchase value — step function, drawn first so estimated sits on top */}
+              <Area
+                type="stepAfter"
+                dataKey="purchaseValue"
+                stroke="#94a3b8"
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                fill="url(#artistPurchaseGrad)"
+                dot={false}
+              />
+              {/* Estimated value — smooth line on top */}
               <Area
                 type="monotone"
-                dataKey="value"
+                dataKey="estimatedValue"
                 stroke="#1a1a2e"
                 strokeWidth={2}
-                fill="url(#artistValueGrad)"
+                fill="url(#artistEstGrad)"
                 dot={false}
               />
             </AreaChart>
