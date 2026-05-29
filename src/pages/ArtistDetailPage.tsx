@@ -31,26 +31,8 @@ export function ArtistDetailPage() {
   const navigate = useNavigate();
   const { artist, artworks, loading } = useArtist(id ?? '');
 
-  if (loading) {
-    return <div className="flex justify-center py-20"><LoadingSpinner size="lg" /></div>;
-  }
-
-  if (!artist) {
-    return (
-      <div className="py-20 text-center">
-        <p className="text-sm text-primary-400">Artist not found.</p>
-        <Button className="mt-4" variant="outline" onClick={() => navigate('/artists')}>Back to Artists</Button>
-      </div>
-    );
-  }
-
-  // ---- Stats ----------------------------------------------------------------
-
-  const totalPurchase = artworks.reduce((s: number, a: any) => s + (a.purchase_price ?? 0), 0);
-  const totalEstimated = artworks.reduce((s: number, a: any) => s + (a.estimated_value ?? 0), 0);
-  const gain = totalPurchase > 0 ? ((totalEstimated - totalPurchase) / totalPurchase) * 100 : null;
-
   // ---- Portfolio value timeline from valuations history ---------------------
+  // Must be declared before any early returns (Rules of Hooks)
 
   const [chartData, setChartData] = useState<{ date: string; value: number }[]>([]);
 
@@ -84,6 +66,27 @@ export function ArtistDetailPage() {
         setChartData(computed);
       });
   }, [loading, artworks]);
+
+  // ---- Early returns --------------------------------------------------------
+
+  if (loading) {
+    return <div className="flex justify-center py-20"><LoadingSpinner size="lg" /></div>;
+  }
+
+  if (!artist) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-sm text-primary-400">Artist not found.</p>
+        <Button className="mt-4" variant="outline" onClick={() => navigate('/artists')}>Back to Artists</Button>
+      </div>
+    );
+  }
+
+  // ---- Stats ----------------------------------------------------------------
+
+  const totalPurchase = artworks.reduce((s: number, a: any) => s + (a.purchase_price ?? 0), 0);
+  const totalEstimated = artworks.reduce((s: number, a: any) => s + (a.estimated_value ?? 0), 0);
+  const gain = totalPurchase > 0 ? ((totalEstimated - totalPurchase) / totalPurchase) * 100 : null;
 
   return (
     <div className="space-y-8">
