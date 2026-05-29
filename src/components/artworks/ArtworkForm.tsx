@@ -216,8 +216,9 @@ export function ArtworkForm({
       if (num !== null && total !== null && !isNaN(num) && !isNaN(total) && num > total) {
         next.editionNumber = 'Edition number cannot exceed edition total';
       }
-      if ((editionNumber.trim() && !editionTotal.trim()) || (!editionNumber.trim() && editionTotal.trim())) {
-        next.editionNumber = next.editionNumber ?? 'Provide both edition number and total, or leave both empty';
+      // edition_number requires edition_total (can't have copy # without knowing total)
+      if (editionNumber.trim() && !editionTotal.trim()) {
+        next.editionTotal = 'Edition total is required when edition number is set';
       }
     }
 
