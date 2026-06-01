@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
@@ -135,8 +135,6 @@ function ItemFormModal({
 }) {
   const [form, setForm] = useState<ItemFormState>(initial);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => { setForm(initial); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function set(key: keyof ItemFormState, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -442,6 +440,7 @@ function BudgetDetail({ budget, onUpdate, onDelete }: {
 
       {/* Item form modal */}
       <ItemFormModal
+        key={itemModal.open ? (itemModal.editId ?? 'new') : 'closed'}
         open={itemModal.open}
         initial={itemModal.initial}
         onClose={() => setItemModal((m) => ({ ...m, open: false }))}
