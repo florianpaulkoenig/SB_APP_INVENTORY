@@ -319,6 +319,9 @@ const IntelligenceChatPage = React.lazy(() =>
 const LiquidityPlanningPage = React.lazy(() =>
   import('./pages/LiquidityPlanningPage').then((m) => ({ default: m.LiquidityPlanningPage })),
 );
+const PublicationBudgetPage = React.lazy(() =>
+  import('./pages/PublicationBudgetPage').then((m) => ({ default: m.PublicationBudgetPage })),
+);
 const AnlageverwaltungPage = React.lazy(() =>
   import('./pages/AnlageverwaltungPage').then((m) => ({ default: m.AnlageverwaltungPage })),
 );
@@ -952,6 +955,18 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <LazyPage><StrategicIntelligencePage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+
+        // Publication Budget (admin only)
+        {
+          path: 'publication-budget',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <RouteErrorBoundary><PublicationBudgetPage />
+              </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
         },

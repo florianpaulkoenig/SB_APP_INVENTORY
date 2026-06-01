@@ -267,6 +267,12 @@ const navSections: NavSection[] = [
     title: 'FINANCE',
     items: [
       { label: 'Liquidity', to: '/liquidity', icon: liquidityIcon, roles: ['admin'] },
+      { label: 'Publication Budget', to: '/publication-budget', icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+          <rect x="3" y="2" width="14" height="16" rx="1.5" />
+          <path strokeLinecap="round" d="M6 6h8M6 9h8M6 12h5" />
+        </svg>
+      ), roles: ['admin'] },
     ],
   },
   {
@@ -354,6 +360,12 @@ const noaNavSections: NavSection[] = [
     title: 'FINANCE',
     items: [
       { label: 'Liquidity', to: '/liquidity', icon: liquidityIcon, roles: ['admin'] },
+      { label: 'Publication Budget', to: '/publication-budget', icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+          <rect x="3" y="2" width="14" height="16" rx="1.5" />
+          <path strokeLinecap="round" d="M6 6h8M6 9h8M6 12h5" />
+        </svg>
+      ), roles: ['admin'] },
     ],
   },
 ];

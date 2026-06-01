@@ -2584,6 +2584,16 @@ export interface Database {
         Insert: AiInsightFeedbackInsert;
         Update: AiInsightFeedbackUpdate;
       };
+      publication_budgets: {
+        Row: PublicationBudgetRow;
+        Insert: PublicationBudgetInsert;
+        Update: PublicationBudgetUpdate;
+      };
+      publication_budget_items: {
+        Row: PublicationBudgetItemRow;
+        Insert: PublicationBudgetItemInsert;
+        Update: PublicationBudgetItemUpdate;
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -2591,3 +2601,61 @@ export interface Database {
     CompositeTypes: Record<string, never>;
   };
 }
+
+// ---------------------------------------------------------------------------
+// Publication Budget types
+// ---------------------------------------------------------------------------
+
+export type PublicationBudgetStatus = 'draft' | 'active' | 'closed';
+export type PublicationBudgetItemType = 'revenue' | 'cost';
+export type PublicationBudgetItemStatus = 'estimated' | 'confirmed' | 'invoiced' | 'paid';
+
+export interface PublicationBudgetRow {
+  id: string;
+  name: string;
+  description: string | null;
+  status: PublicationBudgetStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicationBudgetInsert {
+  id?: string;
+  name: string;
+  description?: string | null;
+  status?: PublicationBudgetStatus;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type PublicationBudgetUpdate = Partial<PublicationBudgetInsert>;
+
+export interface PublicationBudgetItemRow {
+  id: string;
+  budget_id: string;
+  type: PublicationBudgetItemType;
+  category: string;
+  description: string;
+  amount: number;
+  currency: string;
+  status: PublicationBudgetItemStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicationBudgetItemInsert {
+  id?: string;
+  budget_id: string;
+  type: PublicationBudgetItemType;
+  category: string;
+  description: string;
+  amount: number;
+  currency?: string;
+  status?: PublicationBudgetItemStatus;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type PublicationBudgetItemUpdate = Partial<PublicationBudgetItemInsert>;
