@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
@@ -135,8 +135,7 @@ function ItemFormModal({
   const [form, setForm] = useState<ItemFormState>(initial);
   const [saving, setSaving] = useState(false);
 
-  // Reset when modal opens
-  useState(() => { setForm(initial); });
+  useEffect(() => { setForm(initial); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function set(key: keyof ItemFormState, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
