@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { pdf } from '@react-pdf/renderer';
+import { PublicationBudgetPDF } from '../components/pdf/PublicationBudgetPDF';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
@@ -284,6 +286,16 @@ function BudgetDetail({ budget, onUpdate, onDelete }: {
     setItemModal((m) => ({ ...m, open: false }));
   }
 
+  async function handleExportPDF() {
+    const blob = await pdf(<PublicationBudgetPDF budget={budget} items={items} />).toBlob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `NOA_Publication_Budget_${budget.name.replace(/\s+/g, '_')}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function saveBudgetEdit() {
     await onUpdate({ name: budgetName, description: budgetDesc || null, status: budgetStatus });
     setEditingBudget(false);
@@ -353,6 +365,7 @@ function BudgetDetail({ budget, onUpdate, onDelete }: {
         {!editingBudget && (
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" onClick={() => setEditingBudget(true)}>Edit</Button>
+            <Button size="sm" variant="ghost" onClick={handleExportPDF}>Export PDF</Button>
             <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-600" onClick={() => setConfirmDelete(true)}>Delete</Button>
           </div>
         )}
