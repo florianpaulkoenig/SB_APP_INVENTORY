@@ -27,11 +27,13 @@ create table if not exists publication_budget_items (
 alter table publication_budgets enable row level security;
 alter table publication_budget_items enable row level security;
 
+drop policy if exists "admin_all_publication_budgets" on publication_budgets;
 create policy "admin_all_publication_budgets" on publication_budgets
   for all using (
     exists (select 1 from user_profiles where id = auth.uid() and role = 'admin')
   );
 
+drop policy if exists "admin_all_publication_budget_items" on publication_budget_items;
 create policy "admin_all_publication_budget_items" on publication_budget_items
   for all using (
     exists (select 1 from user_profiles where id = auth.uid() and role = 'admin')
