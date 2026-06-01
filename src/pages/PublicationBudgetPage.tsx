@@ -206,7 +206,7 @@ function ItemFormModal({
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} loading={saving} disabled={!form.description || !form.amount}>Save</Button>
+          <Button onClick={handleSave} loading={saving} disabled={!form.description || !form.unit_price}>Save</Button>
         </div>
       </div>
     </Modal>
