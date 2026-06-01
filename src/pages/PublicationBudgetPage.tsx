@@ -111,14 +111,15 @@ interface ItemFormState {
   type: PublicationBudgetItemType;
   category: string;
   description: string;
-  amount: string;
+  quantity: string;
+  unit_price: string;
   currency: string;
   status: PublicationBudgetItemStatus;
   notes: string;
 }
 
 function emptyItemForm(type: PublicationBudgetItemType = 'cost'): ItemFormState {
-  return { type, category: '', description: '', amount: '', currency: 'CHF', status: 'estimated', notes: '' };
+  return { type, category: '', description: '', quantity: '1', unit_price: '', currency: 'CHF', status: 'estimated', notes: '' };
 }
 
 function ItemFormModal({
@@ -143,8 +144,12 @@ function ItemFormModal({
 
   const categories = form.type === 'revenue' ? REVENUE_CATEGORIES : COST_CATEGORIES;
 
+  const qty = parseFloat(form.quantity) || 0;
+  const unitPrice = parseFloat(form.unit_price) || 0;
+  const total = qty * unitPrice;
+
   async function handleSave() {
-    if (!form.description || !form.amount) return;
+    if (!form.description || !form.unit_price) return;
     setSaving(true);
     await onSave(form);
     setSaving(false);
@@ -176,14 +181,22 @@ function ItemFormModal({
           <Input value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="e.g. Offset printing 500 copies" />
         </div>
         <div className="flex gap-3">
+          <div className="w-28">
+            <label className="mb-1 block text-xs font-medium text-primary-500">Quantity</label>
+            <Input type="number" min="0" step="1" value={form.quantity} onChange={(e) => set('quantity', e.target.value)} placeholder="1" />
+          </div>
           <div className="flex-1">
-            <label className="mb-1 block text-xs font-medium text-primary-500">Amount *</label>
-            <Input type="number" min="0" step="0.01" value={form.amount} onChange={(e) => set('amount', e.target.value)} placeholder="0.00" />
+            <label className="mb-1 block text-xs font-medium text-primary-500">Unit Price *</label>
+            <Input type="number" min="0" step="0.01" value={form.unit_price} onChange={(e) => set('unit_price', e.target.value)} placeholder="0.00" />
           </div>
           <div className="w-28">
             <label className="mb-1 block text-xs font-medium text-primary-500">Currency</label>
             <Select options={CURRENCY_OPTIONS} value={form.currency} onChange={(e) => set('currency', e.target.value)} />
           </div>
+        </div>
+        <div className="rounded-lg bg-primary-50 px-4 py-2 text-right">
+          <span className="text-xs text-primary-400">Total: </span>
+          <span className="text-sm font-semibold text-primary-700">{formatCurrency(total, form.currency)}</span>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-primary-500">Status</label>
@@ -242,7 +255,8 @@ function BudgetDetail({ budget, onUpdate, onDelete }: {
         type: item.type,
         category: item.category,
         description: item.description,
-        amount: String(item.amount),
+        quantity: String(item.quantity ?? 1),
+        unit_price: String(item.unit_price ?? item.amount),
         currency: item.currency,
         status: item.status,
         notes: item.notes ?? '',
@@ -251,11 +265,15 @@ function BudgetDetail({ budget, onUpdate, onDelete }: {
   }
 
   async function handleSaveItem(form: ItemFormState) {
+    const qty = parseFloat(form.quantity) || 1;
+    const unitPrice = parseFloat(form.unit_price) || 0;
     const payload = {
       type: form.type,
       category: form.category || (form.type === 'revenue' ? REVENUE_CATEGORIES[0] : COST_CATEGORIES[0]),
       description: form.description,
-      amount: parseFloat(form.amount) || 0,
+      quantity: qty,
+      unit_price: unitPrice,
+      amount: qty * unitPrice,
       currency: form.currency,
       status: form.status,
       notes: form.notes || null,
@@ -280,6 +298,9 @@ function BudgetDetail({ budget, onUpdate, onDelete }: {
           <span className="text-xs text-primary-400">{item.category}</span>
         </td>
         <td className="px-2 py-2 text-sm text-primary-700">{item.description}</td>
+        <td className="px-2 py-2 text-right text-xs text-primary-400">
+          {item.quantity} × {formatCurrency(item.unit_price, item.currency)}
+        </td>
         <td className="px-2 py-2 text-right text-sm font-medium text-primary-800">
           {formatCurrency(item.amount, item.currency)}
         </td>
@@ -374,7 +395,8 @@ function BudgetDetail({ budget, onUpdate, onDelete }: {
                     <tr className="border-b border-primary-100 bg-primary-50/50">
                       <th className="py-2 pl-4 pr-2 text-left text-xs font-medium text-primary-400">Category</th>
                       <th className="px-2 py-2 text-left text-xs font-medium text-primary-400">Description</th>
-                      <th className="px-2 py-2 text-right text-xs font-medium text-primary-400">Amount</th>
+                      <th className="px-2 py-2 text-right text-xs font-medium text-primary-400">Qty × Unit</th>
+                      <th className="px-2 py-2 text-right text-xs font-medium text-primary-400">Total</th>
                       <th className="px-2 py-2 text-left text-xs font-medium text-primary-400">Status</th>
                       <th className="py-2 pr-4" />
                     </tr>
@@ -402,7 +424,8 @@ function BudgetDetail({ budget, onUpdate, onDelete }: {
                     <tr className="border-b border-primary-100 bg-primary-50/50">
                       <th className="py-2 pl-4 pr-2 text-left text-xs font-medium text-primary-400">Category</th>
                       <th className="px-2 py-2 text-left text-xs font-medium text-primary-400">Description</th>
-                      <th className="px-2 py-2 text-right text-xs font-medium text-primary-400">Amount</th>
+                      <th className="px-2 py-2 text-right text-xs font-medium text-primary-400">Qty × Unit</th>
+                      <th className="px-2 py-2 text-right text-xs font-medium text-primary-400">Total</th>
                       <th className="px-2 py-2 text-left text-xs font-medium text-primary-400">Status</th>
                       <th className="py-2 pr-4" />
                     </tr>

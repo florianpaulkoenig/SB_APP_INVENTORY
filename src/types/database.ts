@@ -2636,6 +2636,8 @@ export interface PublicationBudgetItemRow {
   type: PublicationBudgetItemType;
   category: string;
   description: string;
+  quantity: number;
+  unit_price: number;
   amount: number;
   currency: string;
   status: PublicationBudgetItemStatus;
@@ -2650,6 +2652,8 @@ export interface PublicationBudgetItemInsert {
   type: PublicationBudgetItemType;
   category: string;
   description: string;
+  quantity?: number;
+  unit_price?: number;
   amount: number;
   currency?: string;
   status?: PublicationBudgetItemStatus;

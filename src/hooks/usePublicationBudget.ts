@@ -72,7 +72,7 @@ export function usePublicationBudgetItems(budgetId: string) {
     setLoading(true);
     const { data, error } = await supabase
       .from('publication_budget_items')
-      .select('id, budget_id, type, category, description, amount, currency, status, notes, created_at, updated_at')
+      .select('id, budget_id, type, category, description, quantity, unit_price, amount, currency, status, notes, created_at, updated_at')
       .eq('budget_id', budgetId)
       .order('type', { ascending: true })
       .order('created_at', { ascending: true });
@@ -87,7 +87,7 @@ export function usePublicationBudgetItems(budgetId: string) {
     const { data, error } = await supabase
       .from('publication_budget_items')
       .insert(insert as never)
-      .select('id, budget_id, type, category, description, amount, currency, status, notes, created_at, updated_at')
+      .select('id, budget_id, type, category, description, quantity, unit_price, amount, currency, status, notes, created_at, updated_at')
       .single();
     if (error) { toast(error.message, 'error'); return false; }
     setItems((prev) => [...prev, data]);
