@@ -311,65 +311,66 @@ export function ProductionOrdersPage() {
     setDownloadingId(order.id);
 
     try {
-      // Fetch items for this order
+      // Fetch items for this order (include id for image lookup)
       const { data: items } = await supabase
         .from('production_order_items')
-        .select('description, medium, height, width, depth, dimension_unit, quantity, notes, sort_order')
+        .select('id, description, medium, height, width, depth, dimension_unit, quantity, notes, sort_order')
         .eq('production_order_id', order.id)
         .order('sort_order', { ascending: true });
 
-      // Fetch reference images + notes for this order (order-level storage)
       const { data: { session: sess } } = await supabase.auth.getSession();
       const userId = sess?.user?.id;
-      let orderRefImageUrls: string[] = [];
-      let orderRefImageNotes: string[] = [];
-      if (userId) {
-        const prefix = `${userId}/production-orders/${order.id}/`;
-        const { data: storageFiles } = await supabase.storage.from('artwork-images').list(prefix);
-        if (storageFiles && storageFiles.length > 0) {
-          const paths = storageFiles.map((f) => `${prefix}${f.name}`);
-          const { data: noteRows } = await supabase
-            .from('production_order_image_notes')
-            .select('storage_path, note')
-            .eq('production_order_id', order.id);
-          const noteMap: Record<string, string> = {};
-          for (const n of noteRows ?? []) noteMap[n.storage_path] = n.note;
-          for (const path of paths) {
-            try {
-              const { data: blob } = await supabase.storage.from('artwork-images').download(path);
-              if (blob) {
-                const dataUrl = await new Promise<string | null>((resolve) => {
-                  const reader = new FileReader();
-                  reader.onloadend = () => resolve(reader.result as string | null);
-                  reader.onerror = () => resolve(null);
-                  reader.readAsDataURL(blob);
-                });
-                if (dataUrl) {
-                  orderRefImageUrls.push(dataUrl);
-                  orderRefImageNotes.push(noteMap[path] ?? '');
-                }
-              }
-            } catch { /* skip */ }
-          }
+
+      // Fetch all notes for this order once
+      const { data: allNoteRows } = await supabase
+        .from('production_order_image_notes')
+        .select('storage_path, note')
+        .eq('production_order_id', order.id);
+      const noteMap: Record<string, string> = {};
+      for (const n of allNoteRows ?? []) noteMap[n.storage_path] = n.note;
+
+      // Helper: download images from a storage prefix → [dataUrl, note][]
+      async function fetchImagesFromPrefix(prefix: string): Promise<{ url: string; note: string }[]> {
+        if (!userId) return [];
+        const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
+        if (!files || files.length === 0) return [];
+        const result: { url: string; note: string }[] = [];
+        for (const file of files) {
+          if (!file.id) continue;
+          const path = `${prefix}${file.name}`;
+          try {
+            const { data: blob } = await supabase.storage.from('artwork-images').download(path);
+            if (blob) {
+              const dataUrl = await new Promise<string | null>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string | null);
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(blob);
+              });
+              if (dataUrl) result.push({ url: dataUrl, note: noteMap[path] ?? '' });
+            }
+          } catch { /* skip */ }
         }
+        return result;
       }
 
-      const pdfItems = (items ?? []).map((item, idx) => ({
-        description: item.description,
-        medium: item.medium,
-        dimensions: formatDimensions(
-          item.height,
-          item.width,
-          item.depth,
-          item.dimension_unit ?? 'cm',
-        ),
-        quantity: item.quantity,
-        notes: item.notes,
-        // Attach reference images to the first item only (order-level images)
-        ...(idx === 0 && orderRefImageUrls.length > 0 ? {
-          referenceImageUrls: orderRefImageUrls,
-          referenceImageNotes: orderRefImageNotes,
-        } : {}),
+      // Build pdfItems with per-item images + notes
+      const pdfItems = await Promise.all((items ?? []).map(async (item) => {
+        // Item-level images: {userId}/production-orders/{orderId}/items/{itemId}/
+        const itemPrefix = `${userId}/production-orders/${order.id}/items/${item.id}/`;
+        const itemImages = userId ? await fetchImagesFromPrefix(itemPrefix) : [];
+
+        return {
+          description: item.description,
+          medium: item.medium,
+          dimensions: formatDimensions(item.height, item.width, item.depth, item.dimension_unit ?? 'cm'),
+          quantity: item.quantity,
+          notes: item.notes,
+          ...(itemImages.length > 0 ? {
+            referenceImageUrls: itemImages.map((i) => i.url),
+            referenceImageNotes: itemImages.map((i) => i.note),
+          } : {}),
+        };
       }));
 
       // Fetch gallery name if set
