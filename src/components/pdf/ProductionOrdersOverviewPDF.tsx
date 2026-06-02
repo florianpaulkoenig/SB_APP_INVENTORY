@@ -151,6 +151,7 @@ export interface OverviewItem {
   currency: string | null;
   category: string | null;
   referenceImageUrls?: string[];
+  referenceImageNotes?: string[];
 }
 
 export interface OverviewOrder {

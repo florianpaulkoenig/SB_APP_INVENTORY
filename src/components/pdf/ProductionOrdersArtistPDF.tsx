@@ -198,11 +198,17 @@ export function ProductionOrdersArtistPDF({
                       }}
                     >
                       {item.referenceImageUrls.map((url, imgIdx) => (
-                        <Image
-                          key={`ref-${orderIdx}-${itemIdx}-${imgIdx}`}
-                          src={url}
-                          style={{ width: 120, objectFit: 'contain' as const }}
-                        />
+                        <View key={`ref-${orderIdx}-${itemIdx}-${imgIdx}`} style={{ marginRight: 8 }}>
+                          <Image
+                            src={url}
+                            style={{ width: 120, objectFit: 'contain' as const }}
+                          />
+                          {item.referenceImageNotes?.[imgIdx] ? (
+                            <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary700, marginTop: 2, width: 120 }}>
+                              {item.referenceImageNotes[imgIdx]}
+                            </Text>
+                          ) : null}
+                        </View>
                       ))}
                     </View>
                   )}

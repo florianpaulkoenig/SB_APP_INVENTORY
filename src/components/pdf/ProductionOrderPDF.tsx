@@ -134,6 +134,7 @@ export interface ProductionOrderPDFProps {
     quantity: number;
     notes: string | null;
     referenceImageUrls?: string[];
+    referenceImageNotes?: string[];
   }>;
   galleryName?: string | null;
   contactName?: string | null;
@@ -426,6 +427,7 @@ export function ProductionOrderPDF({
                     <View style={artistStyles.refPhotoGrid}>
                       {imgs.map((url, imgIdx) => {
                         const isLastInRow = imgIdx % 2 === 1 || imgIdx === imgs.length - 1;
+                        const imgNote = item.referenceImageNotes?.[imgIdx];
                         return (
                           <View
                             key={`ref-img-${idx}-${imgIdx}`}
@@ -441,6 +443,11 @@ export function ProductionOrderPDF({
                                 src={url}
                               />
                             </View>
+                            {imgNote ? (
+                              <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: PDF_COLORS.primary700, marginTop: 3, lineHeight: 1.4 }}>
+                                {imgNote}
+                              </Text>
+                            ) : null}
                           </View>
                         );
                       })}

@@ -20,14 +20,12 @@ export interface ProductionOrderImagesProps {
 
 const ACCEPTED_MIME = 'image/jpeg,image/png,image/webp';
 const BUCKET = 'artwork-images';
-
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 function isAcceptedFile(file: File): boolean {
   const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-  const validExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext);
-  const validMime = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
-  return validExt && validMime;
+  return ['.jpg', '.jpeg', '.png', '.webp'].includes(ext) &&
+    ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
 }
 
 // ---------------------------------------------------------------------------
@@ -38,47 +36,65 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [images, setImages] = useState<Array<{ path: string; url: string }>>([]);
-  const [loading, setLoading] = useState(true);
+  const [images, setImages]       = useState<Array<{ path: string; url: string }>>([]);
+  const [notes, setNotes]         = useState<Record<string, string>>({});   // path → note
+  const [editingNote, setEditingNote] = useState<string | null>(null);      // path being edited
+  const [noteInput, setNoteInput] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [loading, setLoading]     = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  // ---- Fetch existing images -----------------------------------------------
+  // ---- Fetch images + notes ------------------------------------------------
 
   const fetchImages = useCallback(async () => {
     setLoading(true);
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.user) {
-      setLoading(false);
-      return;
-    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) { setLoading(false); return; }
 
     const prefix = `${session.user.id}/production-orders/${productionOrderId}/`;
     const { data } = await supabase.storage.from(BUCKET).list(prefix);
 
     if (data && data.length > 0) {
-      const paths = data.map((file) => `${prefix}${file.name}`);
+      const paths = data.map((f) => `${prefix}${f.name}`);
       const signedMap = await getSignedUrls(BUCKET, paths);
       const urls = paths
-        .map((path) => {
-          const url = signedMap.get(path);
-          return url ? { path, url } : null;
-        })
-        .filter((item): item is { path: string; url: string } => item !== null);
+        .map((path) => { const url = signedMap.get(path); return url ? { path, url } : null; })
+        .filter((i): i is { path: string; url: string } => i !== null);
       setImages(urls);
     } else {
       setImages([]);
     }
 
+    // Fetch notes for this order
+    const { data: noteRows } = await supabase
+      .from('production_order_image_notes')
+      .select('storage_path, note')
+      .eq('production_order_id', productionOrderId);
+
+    const noteMap: Record<string, string> = {};
+    for (const row of noteRows ?? []) { noteMap[row.storage_path] = row.note; }
+    setNotes(noteMap);
+
     setLoading(false);
   }, [productionOrderId]);
 
-  useEffect(() => {
-    fetchImages();
-  }, [fetchImages]);
+  useEffect(() => { fetchImages(); }, [fetchImages]);
+
+  // ---- Note save -----------------------------------------------------------
+
+  async function handleSaveNote(path: string) {
+    setSavingNote(true);
+    const { error } = await supabase
+      .from('production_order_image_notes')
+      .upsert({ production_order_id: productionOrderId, storage_path: path, note: noteInput, updated_at: new Date().toISOString() } as never,
+        { onConflict: 'production_order_id,storage_path' });
+    if (error) { toast({ title: 'Error saving note', variant: 'error' }); }
+    else { setNotes((prev) => ({ ...prev, [path]: noteInput })); }
+    setSavingNote(false);
+    setEditingNote(null);
+  }
 
   // ---- Upload handler ------------------------------------------------------
 
@@ -88,36 +104,20 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
       toast({ title: 'Invalid file type', description: 'Please use JPG, PNG, or WebP.', variant: 'error' });
       return;
     }
-
-    // Check file size limit
-    const oversizedFiles = validFiles.filter((f) => f.size > MAX_FILE_SIZE);
-    if (oversizedFiles.length > 0) {
+    if (validFiles.some((f) => f.size > MAX_FILE_SIZE)) {
       toast({ title: 'File too large', description: 'Maximum file size is 100MB.', variant: 'error' });
       return;
     }
 
     setUploading(true);
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.user) {
-      toast({ title: 'Error', description: 'You must be logged in', variant: 'error' });
-      setUploading(false);
-      return;
-    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) { toast({ title: 'Error', description: 'You must be logged in', variant: 'error' }); setUploading(false); return; }
 
     for (const file of validFiles) {
       const safeName = sanitizeStoragePath(file.name);
       const storagePath = `${session.user.id}/production-orders/${productionOrderId}/${safeName}`;
-      const { error } = await supabase.storage
-        .from(BUCKET)
-        .upload(storagePath, file, { upsert: true });
-
-      if (error) {
-        toast({ title: 'Upload failed', description: 'An error occurred. Please try again.', variant: 'error' });
-      }
+      const { error } = await supabase.storage.from(BUCKET).upload(storagePath, file, { upsert: true });
+      if (error) { toast({ title: 'Upload failed', description: 'An error occurred. Please try again.', variant: 'error' }); }
     }
 
     toast({ title: 'Upload complete', description: `${validFiles.length} image(s) uploaded.`, variant: 'success' });
@@ -129,68 +129,89 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
 
   async function handleDelete(path: string) {
     const { error } = await supabase.storage.from(BUCKET).remove([path]);
-    if (error) {
-      toast({ title: 'Delete failed', description: 'An error occurred. Please try again.', variant: 'error' });
-    } else {
-      toast({ title: 'Image deleted', variant: 'success' });
-      setImages((prev) => prev.filter((img) => img.path !== path));
-    }
+    if (error) { toast({ title: 'Delete failed', description: 'An error occurred. Please try again.', variant: 'error' }); return; }
+    // Remove note if any
+    await supabase.from('production_order_image_notes').delete()
+      .eq('production_order_id', productionOrderId).eq('storage_path', path);
+    toast({ title: 'Image deleted', variant: 'success' });
+    setImages((prev) => prev.filter((img) => img.path !== path));
+    setNotes((prev) => { const n = { ...prev }; delete n[path]; return n; });
   }
 
   // ---- Drag & drop ---------------------------------------------------------
 
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragging(true);
-  }
-
-  function handleDragLeave(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragging(false);
-  }
-
+  function handleDragOver(e: React.DragEvent) { e.preventDefault(); setIsDragging(true); }
+  function handleDragLeave(e: React.DragEvent) { e.preventDefault(); setIsDragging(false); }
   function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
-    }
+    e.preventDefault(); setIsDragging(false);
+    if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
   }
 
   // ---- Render --------------------------------------------------------------
 
   return (
     <section className="rounded-lg border border-primary-100 bg-white p-4 sm:p-6">
-      <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
-        Reference Images
-      </h2>
+      <h2 className="mb-4 font-display text-base font-semibold text-primary-900">Reference Images</h2>
 
-      {/* Image grid */}
       {loading ? (
-        <div className="flex justify-center py-4">
-          <LoadingSpinner />
-        </div>
+        <div className="flex justify-center py-4"><LoadingSpinner /></div>
       ) : images.length > 0 ? (
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {images.map((img) => (
-            <div key={img.path} className="group relative overflow-hidden rounded-lg border border-primary-100">
-              <img
-                src={img.url}
-                alt="Reference"
-                className="aspect-square w-full object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => handleDelete(img.path)}
-                className="absolute right-1.5 top-1.5 rounded-full bg-red-600 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                title="Delete"
-              >
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          ))}
+        <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {images.map((img) => {
+            const isEditing = editingNote === img.path;
+            const existingNote = notes[img.path] ?? '';
+
+            return (
+              <div key={img.path} className="group flex flex-col gap-1.5 overflow-hidden rounded-lg border border-primary-100">
+                {/* Image */}
+                <div className="relative">
+                  <img src={img.url} alt="Reference" className="aspect-square w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(img.path)}
+                    className="absolute right-1.5 top-1.5 rounded-full bg-red-600 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    title="Delete"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Note */}
+                <div className="px-2 pb-2">
+                  {isEditing ? (
+                    <div className="space-y-1.5">
+                      <textarea
+                        autoFocus
+                        value={noteInput}
+                        onChange={(e) => setNoteInput(e.target.value)}
+                        placeholder="Add a note…"
+                        rows={3}
+                        className="w-full resize-none rounded border border-primary-200 px-2 py-1.5 text-xs text-primary-700 focus:border-accent focus:outline-none"
+                      />
+                      <div className="flex gap-1.5">
+                        <Button size="sm" onClick={() => handleSaveNote(img.path)} loading={savingNote}>Save</Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingNote(null)}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setEditingNote(img.path); setNoteInput(existingNote); }}
+                      className="w-full rounded px-1 py-1 text-left text-xs transition-colors hover:bg-primary-50"
+                    >
+                      {existingNote ? (
+                        <span className="text-primary-600">{existingNote}</span>
+                      ) : (
+                        <span className="text-primary-300 italic">Add note…</span>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : null}
 
@@ -200,42 +221,21 @@ export function ProductionOrderImages({ productionOrderId }: ProductionOrderImag
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`
-          cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors sm:p-6
-          ${isDragging
-            ? 'border-accent bg-accent/5'
-            : 'border-primary-200 hover:border-primary-300'
-          }
-          ${uploading ? 'pointer-events-none opacity-60' : ''}
-        `}
+        className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors sm:p-6
+          ${isDragging ? 'border-accent bg-accent/5' : 'border-primary-200 hover:border-primary-300'}
+          ${uploading ? 'pointer-events-none opacity-60' : ''}`}
       >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPTED_MIME}
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files && e.target.files.length > 0) {
-              handleFiles(e.target.files);
-              e.target.value = '';
-            }
-          }}
+        <input ref={fileInputRef} type="file" accept={ACCEPTED_MIME} multiple className="hidden"
+          onChange={(e) => { if (e.target.files?.length) { handleFiles(e.target.files); e.target.value = ''; } }}
         />
-
         {uploading ? (
-          <div className="flex flex-col items-center gap-2">
-            <LoadingSpinner />
-            <p className="text-sm text-primary-500">Uploading...</p>
-          </div>
+          <div className="flex flex-col items-center gap-2"><LoadingSpinner /><p className="text-sm text-primary-500">Uploading…</p></div>
         ) : (
           <div className="flex flex-col items-center gap-2">
             <svg className="h-8 w-8 text-primary-300" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
             </svg>
-            <p className="text-sm text-primary-500">
-              Drop reference images here or <span className="font-medium text-accent">browse</span>
-            </p>
+            <p className="text-sm text-primary-500">Drop reference images here or <span className="font-medium text-accent">browse</span></p>
             <p className="text-xs text-primary-400">JPG, PNG, WebP</p>
           </div>
         )}

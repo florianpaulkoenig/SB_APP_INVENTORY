@@ -318,7 +318,43 @@ export function ProductionOrdersPage() {
         .eq('production_order_id', order.id)
         .order('sort_order', { ascending: true });
 
-      const pdfItems = (items ?? []).map((item) => ({
+      // Fetch reference images + notes for this order (order-level storage)
+      const { data: { session: sess } } = await supabase.auth.getSession();
+      const userId = sess?.user?.id;
+      let orderRefImageUrls: string[] = [];
+      let orderRefImageNotes: string[] = [];
+      if (userId) {
+        const prefix = `${userId}/production-orders/${order.id}/`;
+        const { data: storageFiles } = await supabase.storage.from('artwork-images').list(prefix);
+        if (storageFiles && storageFiles.length > 0) {
+          const paths = storageFiles.map((f) => `${prefix}${f.name}`);
+          const { data: noteRows } = await supabase
+            .from('production_order_image_notes')
+            .select('storage_path, note')
+            .eq('production_order_id', order.id);
+          const noteMap: Record<string, string> = {};
+          for (const n of noteRows ?? []) noteMap[n.storage_path] = n.note;
+          for (const path of paths) {
+            try {
+              const { data: blob } = await supabase.storage.from('artwork-images').download(path);
+              if (blob) {
+                const dataUrl = await new Promise<string | null>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string | null);
+                  reader.onerror = () => resolve(null);
+                  reader.readAsDataURL(blob);
+                });
+                if (dataUrl) {
+                  orderRefImageUrls.push(dataUrl);
+                  orderRefImageNotes.push(noteMap[path] ?? '');
+                }
+              }
+            } catch { /* skip */ }
+          }
+        }
+      }
+
+      const pdfItems = (items ?? []).map((item, idx) => ({
         description: item.description,
         medium: item.medium,
         dimensions: formatDimensions(
@@ -329,6 +365,11 @@ export function ProductionOrdersPage() {
         ),
         quantity: item.quantity,
         notes: item.notes,
+        // Attach reference images to the first item only (order-level images)
+        ...(idx === 0 && orderRefImageUrls.length > 0 ? {
+          referenceImageUrls: orderRefImageUrls,
+          referenceImageNotes: orderRefImageNotes,
+        } : {}),
       }));
 
       // Fetch gallery name if set
@@ -456,6 +497,47 @@ export function ProductionOrdersPage() {
           }
         }
 
+        // Fetch order-level reference images + notes (uploaded via ProductionOrderImages)
+        const refImageDataUrlsByOrder: Record<string, string[]> = {};
+        const refImageNotesByOrder: Record<string, string[]> = {};
+        if (userId) {
+          for (const order of dateFilteredOrders) {
+            try {
+              const prefix = `${userId}/production-orders/${order.id}/`;
+              const { data: orderFiles } = await supabase.storage.from('artwork-images').list(prefix);
+              if (orderFiles && orderFiles.length > 0) {
+                const { data: noteRows } = await supabase
+                  .from('production_order_image_notes')
+                  .select('storage_path, note')
+                  .eq('production_order_id', order.id);
+                const noteMap: Record<string, string> = {};
+                for (const n of noteRows ?? []) noteMap[n.storage_path] = n.note;
+                const dataUrls: string[] = [];
+                const noteList: string[] = [];
+                for (const file of orderFiles) {
+                  try {
+                    const path = `${prefix}${file.name}`;
+                    const { data: blob } = await supabase.storage.from('artwork-images').download(path);
+                    if (blob) {
+                      const dataUrl = await new Promise<string | null>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string | null);
+                        reader.onerror = () => resolve(null);
+                        reader.readAsDataURL(blob);
+                      });
+                      if (dataUrl) { dataUrls.push(dataUrl); noteList.push(noteMap[path] ?? ''); }
+                    }
+                  } catch { /* skip */ }
+                }
+                if (dataUrls.length > 0) {
+                  refImageDataUrlsByOrder[order.id] = dataUrls;
+                  refImageNotesByOrder[order.id] = noteList;
+                }
+              }
+            } catch { /* skip */ }
+          }
+        }
+
         // Build order title lookup for ZIP naming
         const orderTitleMap: Record<string, string> = {};
         for (const o of dateFilteredOrders) {
@@ -468,6 +550,7 @@ export function ProductionOrdersPage() {
         for (const item of allItems ?? []) {
           const orderId = item.production_order_id;
           if (!itemsByOrder[orderId]) itemsByOrder[orderId] = [];
+          const isFirstItem = itemsByOrder[orderId].length === 0;
           itemsByOrder[orderId].push({
             description: item.description,
             medium: item.medium,
@@ -485,7 +568,15 @@ export function ProductionOrdersPage() {
             price: item.price ?? null,
             currency: item.currency ?? null,
             category: item.category ?? null,
-            referenceImageUrls: refImageDataUrlsByItem[item.id] ?? [],
+            // Item-level images (legacy path) + order-level images on first item
+            referenceImageUrls: [
+              ...(refImageDataUrlsByItem[item.id] ?? []),
+              ...(isFirstItem ? (refImageDataUrlsByOrder[orderId] ?? []) : []),
+            ],
+            referenceImageNotes: [
+              ...((refImageDataUrlsByItem[item.id] ?? []).map(() => '')),
+              ...(isFirstItem ? (refImageNotesByOrder[orderId] ?? []) : []),
+            ],
           });
           itemMeta[item.id] = {
             orderTitle: orderTitleMap[orderId] ?? orderId,
