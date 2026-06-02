@@ -134,8 +134,12 @@ export function ProductionItemEditor({
 
   const { toast } = useToast();
   const refImageInputRef = useRef<HTMLInputElement>(null);
-  const [refImages, setRefImages] = useState<Array<{ path: string; url: string }>>([]);
-  const [refImageLoading, setRefImageLoading] = useState(false);
+  const [refImages, setRefImages]       = useState<Array<{ path: string; url: string }>>([]);
+  const [refImageNotes, setRefImageNotes] = useState<Record<string, string>>({});
+  const [editingRefNote, setEditingRefNote] = useState<string | null>(null);
+  const [refNoteInput, setRefNoteInput]   = useState('');
+  const [savingRefNote, setSavingRefNote] = useState(false);
+  const [refImageLoading, setRefImageLoading]     = useState(false);
   const [refImageUploading, setRefImageUploading] = useState(false);
 
   const BUCKET = 'artwork-images';
@@ -162,8 +166,18 @@ export function ProductionItemEditor({
         })
         .filter((item): item is { path: string; url: string } => item !== null);
       setRefImages(imgs);
+
+      // Fetch notes for these paths
+      const { data: noteRows } = await supabase
+        .from('production_order_image_notes')
+        .select('storage_path, note')
+        .eq('production_order_id', productionOrderId);
+      const noteMap: Record<string, string> = {};
+      for (const row of noteRows ?? []) noteMap[row.storage_path] = row.note;
+      setRefImageNotes(noteMap);
     } else {
       setRefImages([]);
+      setRefImageNotes({});
     }
     setRefImageLoading(false);
   }, [item?.id, productionOrderId]);
@@ -227,9 +241,24 @@ export function ProductionItemEditor({
         .eq('id', item.id);
     }
 
+    await supabase.from('production_order_image_notes').delete()
+      .eq('production_order_id', productionOrderId).eq('storage_path', path);
+    setRefImageNotes((prev) => { const n = { ...prev }; delete n[path]; return n; });
     await loadRefImages();
     setRefImageLoading(false);
     toast({ title: 'Reference photo removed', variant: 'success' });
+  }
+
+  async function handleSaveRefNote(path: string) {
+    setSavingRefNote(true);
+    const { error } = await supabase
+      .from('production_order_image_notes')
+      .upsert({ production_order_id: productionOrderId, storage_path: path, note: refNoteInput, updated_at: new Date().toISOString() } as never,
+        { onConflict: 'production_order_id,storage_path' });
+    if (error) { toast({ title: 'Error saving note', variant: 'error' }); }
+    else { setRefImageNotes((prev) => ({ ...prev, [path]: refNoteInput })); }
+    setSavingRefNote(false);
+    setEditingRefNote(null);
   }
 
   // ---- Validation ---------------------------------------------------------
@@ -695,21 +724,55 @@ export function ProductionItemEditor({
               {/* Image grid */}
               {refImages.length > 0 && (
                 <div className="mb-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
-                  {refImages.map((img) => (
-                    <div key={img.path} className="group relative overflow-hidden rounded-lg border border-primary-100">
-                      <img src={img.url} alt="Reference" className="h-32 w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => handleRefImageRemove(img.path)}
-                        className="absolute right-1.5 top-1.5 rounded-full bg-red-600 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                        title="Remove"
-                      >
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+                  {refImages.map((img) => {
+                    const isEditing = editingRefNote === img.path;
+                    const existingNote = refImageNotes[img.path] ?? '';
+                    return (
+                      <div key={img.path} className="group flex flex-col gap-1 overflow-hidden rounded-lg border border-primary-100">
+                        <div className="relative">
+                          <img src={img.url} alt="Reference" className="h-32 w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleRefImageRemove(img.path)}
+                            className="absolute right-1.5 top-1.5 rounded-full bg-red-600 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                            title="Remove"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="px-2 pb-2">
+                          {isEditing ? (
+                            <div className="space-y-1.5">
+                              <textarea
+                                autoFocus
+                                value={refNoteInput}
+                                onChange={(e) => setRefNoteInput(e.target.value)}
+                                placeholder="Add a note…"
+                                rows={2}
+                                className="w-full resize-none rounded border border-primary-200 px-2 py-1 text-xs text-primary-700 focus:border-accent focus:outline-none"
+                              />
+                              <div className="flex gap-1">
+                                <Button size="sm" onClick={() => handleSaveRefNote(img.path)} loading={savingRefNote}>Save</Button>
+                                <Button size="sm" variant="ghost" onClick={() => setEditingRefNote(null)}>Cancel</Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => { setEditingRefNote(img.path); setRefNoteInput(existingNote); }}
+                              className="w-full rounded px-1 py-0.5 text-left text-xs transition-colors hover:bg-primary-50"
+                            >
+                              {existingNote
+                                ? <span className="text-primary-600">{existingNote}</span>
+                                : <span className="italic text-primary-300">Add note…</span>}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

@@ -456,6 +456,7 @@ export function ProductionOrdersPage() {
 
         // Download per-item reference images from storage folders (multiple per item)
         const refImageDataUrlsByItem: Record<string, string[]> = {};
+        const refImageNotesByItem: Record<string, string[]> = {};
         refImageBlobsByItem = {};
 
         if (userId) {
@@ -466,13 +467,22 @@ export function ProductionOrdersPage() {
               const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
               if (files && files.length > 0) {
                 const dataUrls: string[] = [];
+                const noteList: string[] = [];
                 const blobs: Array<{ blob: Blob; ext: string }> = [];
+                // Fetch notes for this item's images
+                const { data: itemNoteRows } = await supabase
+                  .from('production_order_image_notes')
+                  .select('storage_path, note')
+                  .eq('production_order_id', item.production_order_id);
+                const itemNoteMap: Record<string, string> = {};
+                for (const n of itemNoteRows ?? []) itemNoteMap[n.storage_path] = n.note;
                 for (const file of files) {
                   if (!file.id) continue;
+                  const filePath = `${prefix}/${file.name}`;
                   try {
                     const { data: blob } = await supabase.storage
                       .from('artwork-images')
-                      .download(`${prefix}/${file.name}`);
+                      .download(filePath);
                     if (blob) {
                       const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase() || '.jpg';
                       blobs.push({ blob, ext });
@@ -482,13 +492,14 @@ export function ProductionOrdersPage() {
                         reader.onerror = () => resolve(null);
                         reader.readAsDataURL(blob);
                       });
-                      if (dataUrl) dataUrls.push(dataUrl);
+                      if (dataUrl) { dataUrls.push(dataUrl); noteList.push(itemNoteMap[filePath] ?? ''); }
                     }
                   } catch {
                     // skip files that fail to download
                   }
                 }
                 if (dataUrls.length > 0) refImageDataUrlsByItem[item.id] = dataUrls;
+                if (noteList.length > 0) refImageNotesByItem[item.id] = noteList;
                 if (blobs.length > 0) refImageBlobsByItem[item.id] = blobs;
               }
             } catch {
@@ -568,13 +579,13 @@ export function ProductionOrdersPage() {
             price: item.price ?? null,
             currency: item.currency ?? null,
             category: item.category ?? null,
-            // Item-level images (legacy path) + order-level images on first item
+            // Item-level images + order-level images on first item
             referenceImageUrls: [
               ...(refImageDataUrlsByItem[item.id] ?? []),
               ...(isFirstItem ? (refImageDataUrlsByOrder[orderId] ?? []) : []),
             ],
             referenceImageNotes: [
-              ...((refImageDataUrlsByItem[item.id] ?? []).map(() => '')),
+              ...(refImageNotesByItem[item.id] ?? (refImageDataUrlsByItem[item.id] ?? []).map(() => '')),
               ...(isFirstItem ? (refImageNotesByOrder[orderId] ?? []) : []),
             ],
           });
