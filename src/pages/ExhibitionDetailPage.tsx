@@ -315,10 +315,19 @@ export function ExhibitionDetailPage() {
             .eq('production_order_id', lpo.production_order_id)
             .order('sort_order', { ascending: true });
 
+          // Fetch all notes for this production order once
+          const { data: noteRows } = await supabase
+            .from('production_order_image_notes')
+            .select('storage_path, note')
+            .eq('production_order_id', lpo.production_order_id);
+          const noteMap: Record<string, string> = {};
+          for (const n of noteRows ?? []) noteMap[n.storage_path] = n.note;
+
           const mappedItems = await Promise.all(
             (items ?? []).map(async (item) => {
               // Fetch reference photos from storage
               const refUrls: string[] = [];
+              const refNotes: string[] = [];
               if (dossierUserId) {
                 const prefix = `${dossierUserId}/production-orders/${lpo.production_order_id}/items/${item.id}`;
                 const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
@@ -326,10 +335,14 @@ export function ExhibitionDetailPage() {
                   const { blobToDataUrl } = await import('../lib/pdfToDataUrls');
                   for (const file of files) {
                     if (!file.id) continue;
+                    const filePath = `${prefix}/${file.name}`;
                     const { data: blob } = await supabase.storage
                       .from('artwork-images')
-                      .download(`${prefix}/${file.name}`);
-                    if (blob) refUrls.push(await blobToDataUrl(blob));
+                      .download(filePath);
+                    if (blob) {
+                      refUrls.push(await blobToDataUrl(blob));
+                      refNotes.push(noteMap[filePath] ?? '');
+                    }
                   }
                 }
               }
@@ -343,6 +356,7 @@ export function ExhibitionDetailPage() {
                 ),
                 quantity: item.quantity,
                 referenceImageUrls: refUrls,
+                referenceImageNotes: refNotes,
               };
             }),
           );

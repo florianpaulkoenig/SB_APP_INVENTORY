@@ -31,6 +31,7 @@ export interface DossierProductionOrder {
     dimensions: string;
     quantity: number;
     referenceImageUrls?: string[];
+    referenceImageNotes?: string[];
   }>;
 }
 
@@ -761,6 +762,7 @@ export function ExhibitionDossierPDF({
                         <View style={d.refPhotoGrid}>
                           {imgs.map((url, imgIdx) => {
                             const isLast = imgIdx % 2 === 1 || imgIdx === imgs.length - 1;
+                            const imgNote = item.referenceImageNotes?.[imgIdx];
                             return (
                               <View
                                 key={`rp-img-${rIdx}-${imgIdx}`}
@@ -769,6 +771,11 @@ export function ExhibitionDossierPDF({
                                 <View style={d.refPhotoCellBox}>
                                   <Image style={d.refPhotoCellImage} src={url} />
                                 </View>
+                                {imgNote ? (
+                                  <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: PDF_COLORS.primary700, marginTop: 3, lineHeight: 1.4 }}>
+                                    {imgNote}
+                                  </Text>
+                                ) : null}
                               </View>
                             );
                           })}
