@@ -337,7 +337,7 @@ export function ProductionOrdersPage() {
         const result: { url: string; note: string }[] = [];
         for (const file of files) {
           if (!file.id) continue;
-          const path = `${prefix}${file.name}`;
+          const path = `${prefix}/${file.name}`;
           try {
             const { data: blob } = await supabase.storage.from('artwork-images').download(path);
             if (blob) {
@@ -356,8 +356,8 @@ export function ProductionOrdersPage() {
 
       // Build pdfItems with per-item images + notes
       const pdfItems = await Promise.all((items ?? []).map(async (item) => {
-        // Item-level images: {userId}/production-orders/{orderId}/items/{itemId}/
-        const itemPrefix = `${userId}/production-orders/${order.id}/items/${item.id}/`;
+        // Item-level images: {userId}/production-orders/{orderId}/items/{itemId}
+        const itemPrefix = `${userId}/production-orders/${order.id}/items/${item.id}`;
         const itemImages = userId ? await fetchImagesFromPrefix(itemPrefix) : [];
 
         return {
