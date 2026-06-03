@@ -116,7 +116,7 @@ export function getInitials(name: string): string {
 // interleaved. This code is immutable once assigned.
 // Uses crypto.getRandomValues for secure randomness.
 // ---------------------------------------------------------------------------
-export function generateArtworkRefCode(): string {
+export function generateArtworkRefCode(prefix?: string): string {
   const year = new Date().getFullYear();
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I, O to avoid confusion with 1, 0
   const digits = '23456789'; // no 0, 1 to avoid confusion with O, I
@@ -130,8 +130,9 @@ export function generateArtworkRefCode(): string {
     digits[arr[1] % digits.length] +
     letters[arr[2] % letters.length] +
     digits[arr[3] % digits.length];
+  const resolvedPrefix = prefix ?? ARTWORK_REF_PREFIX;
 
-  return `${ARTWORK_REF_PREFIX}-${year}-${code}`;
+  return `${resolvedPrefix}-${year}-${code}`;
 }
 
 // ---------------------------------------------------------------------------

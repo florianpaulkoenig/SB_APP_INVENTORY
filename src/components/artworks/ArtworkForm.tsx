@@ -74,7 +74,7 @@ export function ArtworkForm({
 }: ArtworkFormProps) {
   const isEdit = Boolean(artwork);
   const { portfolio } = usePortfolio();
-  const isNOA = portfolio === 'noa_collection';
+  const isNOA = portfolio !== 'simon_berger';
 
   // Helper: pick from artwork first, then defaultValues, then fallback
   const v = artwork ?? dv;
@@ -767,7 +767,7 @@ export function ArtworkForm({
               if (!session?.user) return null;
               const { data, error } = await supabase
                 .from('artists')
-                .insert({ name, user_id: session.user.id, portfolio: 'noa_collection' } as never)
+                .insert({ name, user_id: session.user.id, portfolio } as never)
                 .select('id, name')
                 .single();
               if (error || !data) return null;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useArtworks } from '../hooks/useArtworks';
 import { useDocumentNumber } from '../hooks/useDocumentNumber';
 import { useArtworkTemplates } from '../hooks/useArtworkTemplates';
+import { usePortfolio } from '../contexts/PortfolioContext';
 import { ArtworkForm } from '../components/artworks/ArtworkForm';
 import { ArtworkTemplateManager } from '../components/artworks/ArtworkTemplateManager';
 import { Button } from '../components/ui/Button';
@@ -21,6 +22,11 @@ export function ArtworkCreatePage() {
   const { createArtwork } = useArtworks();
   const { generateNumber } = useDocumentNumber();
   const { templates } = useArtworkTemplates();
+  const { portfolio } = usePortfolio();
+
+  // Portfolio-specific prefixes
+  const invPrefix = portfolio === 'noa_curation' ? 'CUR' : DOC_PREFIXES.artwork;
+  const refPrefix = portfolio === 'noa_curation' ? 'NOA-CUR' : undefined; // undefined = default (NOA-SB)
 
   const [loading, setLoading] = useState(false);
   const [inventoryNumber, setInventoryNumber] = useState<string | null>(null);
@@ -37,8 +43,8 @@ export function ArtworkCreatePage() {
 
     async function init() {
       const [invNumber, refCode] = await Promise.all([
-        generateNumber(DOC_PREFIXES.artwork),
-        Promise.resolve(generateArtworkRefCode()),
+        generateNumber(invPrefix),
+        Promise.resolve(generateArtworkRefCode(refPrefix)),
       ]);
 
       if (!cancelled) {
@@ -53,7 +59,7 @@ export function ArtworkCreatePage() {
     return () => {
       cancelled = true;
     };
-  }, [generateNumber]);
+  }, [generateNumber, invPrefix, refPrefix]);
 
   // ---- Submit handler -----------------------------------------------------
 
