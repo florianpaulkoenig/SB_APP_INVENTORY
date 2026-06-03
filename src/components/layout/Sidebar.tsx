@@ -359,7 +359,6 @@ const noaNavSections: NavSection[] = [
   {
     title: 'FINANCE',
     items: [
-      { label: 'Liquidity', to: '/liquidity', icon: liquidityIcon, roles: ['admin'] },
       { label: 'Publication Budget', to: '/publication-budget', icon: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
           <rect x="3" y="2" width="14" height="16" rx="1.5" />
@@ -393,6 +392,16 @@ const noaCurationNavSections: NavSection[] = [
   },
 ];
 
+// NOA Liquidity navigation
+const noaLiquidityNavSections: NavSection[] = [
+  {
+    title: 'FINANCE',
+    items: [
+      { label: 'Liquidity', to: '/liquidity', icon: liquidityIcon, roles: ['admin'] },
+    ],
+  },
+];
+
 const bottomItems: NavItem[] = [
   { label: 'Email Log', to: '/email-log', icon: icons.emailLog, roles: ['admin'] },
   { label: 'Settings', to: '/settings', icon: icons.settings, roles: ['admin'] },
@@ -412,6 +421,7 @@ const PORTFOLIO_LABELS: Record<Portfolio, { name: string; sub: string }> = {
   simon_berger: { name: 'Simon Berger', sub: 'MANAGEMENT' },
   noa_collection: { name: 'NOA Collection', sub: 'MANAGEMENT' },
   noa_curation: { name: 'NOA Curation', sub: 'MANAGEMENT' },
+  noa_liquidity: { name: 'NOA Liquidity', sub: 'PLANNING' },
 };
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
@@ -458,7 +468,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           <>
             <div className="fixed inset-0 z-40" onClick={() => setSwitcherOpen(false)} />
             <div className="absolute left-4 right-4 top-14 z-50 rounded-md border border-primary-100 bg-white shadow-lg">
-              {(['simon_berger', 'noa_collection', 'noa_curation'] as Portfolio[]).map((p) => (
+              {(['simon_berger', 'noa_collection', 'noa_curation', 'noa_liquidity'] as Portfolio[]).map((p) => (
                 <button
                   key={p}
                   onClick={() => { setPortfolio(p); setSwitcherOpen(false); }}
@@ -483,7 +493,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
-        {(portfolio === 'noa_collection' ? noaNavSections : portfolio === 'noa_curation' ? noaCurationNavSections : navSections).map((section) => {
+        {(portfolio === 'noa_collection' ? noaNavSections : portfolio === 'noa_curation' ? noaCurationNavSections : portfolio === 'noa_liquidity' ? noaLiquidityNavSections : navSections).map((section) => {
           const visibleItems = filterByRole(section.items, role);
           if (visibleItems.length === 0) return null;
 

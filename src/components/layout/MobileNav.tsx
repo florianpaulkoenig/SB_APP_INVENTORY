@@ -187,12 +187,6 @@ const navSections: NavSection[] = [
       { label: 'Analytics', to: '/analytics', icon: icons.analytics, roles: ['admin'] },
     ],
   },
-  {
-    title: 'FINANCE',
-    items: [
-      { label: 'Liquidity', to: '/liquidity', icon: icons.liquidity, roles: ['admin'] },
-    ],
-  },
 ];
 
 // NOA Collection navigation
@@ -230,12 +224,6 @@ const noaNavSections: NavSection[] = [
       { label: 'Anlageverwaltung', to: '/anlageverwaltung', icon: icons.anlage, roles: ['admin'] },
     ],
   },
-  {
-    title: 'FINANCE',
-    items: [
-      { label: 'Liquidity', to: '/liquidity', icon: icons.liquidity, roles: ['admin'] },
-    ],
-  },
 ];
 
 const noaCurationNavSections: NavSection[] = [
@@ -256,6 +244,15 @@ const noaCurationNavSections: NavSection[] = [
     title: 'EXHIBITIONS',
     items: [
       { label: 'Exhibitions', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
+    ],
+  },
+];
+
+const noaLiquidityNavSections: NavSection[] = [
+  {
+    title: 'FINANCE',
+    items: [
+      { label: 'Liquidity', to: '/liquidity', icon: icons.liquidity, roles: ['admin'] },
     ],
   },
 ];
@@ -283,6 +280,7 @@ const PORTFOLIO_LABELS: Record<Portfolio, string> = {
   simon_berger: 'Simon Berger',
   noa_collection: 'NOA Collection',
   noa_curation: 'NOA Curation',
+  noa_liquidity: 'NOA Liquidity',
 };
 
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {
@@ -354,7 +352,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
             <>
               <div className="fixed inset-0 z-40" onClick={() => setSwitcherOpen(false)} />
               <div className="absolute left-4 right-4 top-14 z-50 rounded-md border border-primary-100 bg-white shadow-lg">
-                {(['simon_berger', 'noa_collection', 'noa_curation'] as Portfolio[]).map((p) => (
+                {(['simon_berger', 'noa_collection', 'noa_curation', 'noa_liquidity'] as Portfolio[]).map((p) => (
                   <button
                     key={p}
                     onClick={() => { setPortfolio(p); setSwitcherOpen(false); }}
@@ -377,7 +375,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
-          {(portfolio === 'noa_collection' ? noaNavSections : portfolio === 'noa_curation' ? noaCurationNavSections : navSections).map((section) => {
+          {(portfolio === 'noa_collection' ? noaNavSections : portfolio === 'noa_curation' ? noaCurationNavSections : portfolio === 'noa_liquidity' ? noaLiquidityNavSections : navSections).map((section) => {
             const visibleItems = filterByRole(section.items, role);
             if (visibleItems.length === 0) return null;
 
