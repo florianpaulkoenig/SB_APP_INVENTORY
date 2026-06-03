@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 
-export type Portfolio = 'simon_berger' | 'noa_collection';
+export type Portfolio = 'simon_berger' | 'noa_collection' | 'noa_curation';
 
 interface PortfolioContextValue {
   portfolio: Portfolio;
@@ -12,7 +12,7 @@ const STORAGE_KEY = 'noa_active_portfolio';
 function loadPortfolio(): Portfolio {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'simon_berger' || stored === 'noa_collection') return stored;
+    if (stored === 'simon_berger' || stored === 'noa_collection' || stored === 'noa_curation') return stored;
   } catch {}
   return 'simon_berger';
 }

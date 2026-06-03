@@ -370,6 +370,29 @@ const noaNavSections: NavSection[] = [
   },
 ];
 
+// NOA Curation navigation (Artworks, Artists, Catalogues, Exhibitions)
+const noaCurationNavSections: NavSection[] = [
+  {
+    title: 'INVENTORY',
+    items: [
+      { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin'] },
+      { label: 'Artists', to: '/artists', icon: icons.artists, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'DOCUMENTS',
+    items: [
+      { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'EXHIBITIONS',
+    items: [
+      { label: 'Exhibitions', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
+    ],
+  },
+];
+
 const bottomItems: NavItem[] = [
   { label: 'Email Log', to: '/email-log', icon: icons.emailLog, roles: ['admin'] },
   { label: 'Settings', to: '/settings', icon: icons.settings, roles: ['admin'] },
@@ -388,6 +411,7 @@ function filterByRole(items: NavItem[], role: UserRole): NavItem[] {
 const PORTFOLIO_LABELS: Record<Portfolio, { name: string; sub: string }> = {
   simon_berger: { name: 'Simon Berger', sub: 'MANAGEMENT' },
   noa_collection: { name: 'NOA Collection', sub: 'MANAGEMENT' },
+  noa_curation: { name: 'NOA Curation', sub: 'MANAGEMENT' },
 };
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
@@ -434,7 +458,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           <>
             <div className="fixed inset-0 z-40" onClick={() => setSwitcherOpen(false)} />
             <div className="absolute left-4 right-4 top-14 z-50 rounded-md border border-primary-100 bg-white shadow-lg">
-              {(['simon_berger', 'noa_collection'] as Portfolio[]).map((p) => (
+              {(['simon_berger', 'noa_collection', 'noa_curation'] as Portfolio[]).map((p) => (
                 <button
                   key={p}
                   onClick={() => { setPortfolio(p); setSwitcherOpen(false); }}
@@ -459,7 +483,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
-        {(portfolio === 'noa_collection' ? noaNavSections : navSections).map((section) => {
+        {(portfolio === 'noa_collection' ? noaNavSections : portfolio === 'noa_curation' ? noaCurationNavSections : navSections).map((section) => {
           const visibleItems = filterByRole(section.items, role);
           if (visibleItems.length === 0) return null;
 
