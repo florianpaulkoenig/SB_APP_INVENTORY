@@ -5,7 +5,7 @@ import { useToast } from '../components/ui/Toast';
 export type ProvenanceOwnerType = 'artist' | 'gallery' | 'collector' | 'institution' | 'other';
 export type ProvenanceAcquisitionMethod =
   | 'creation' | 'gallery_sale' | 'auction' | 'private_sale'
-  | 'gift' | 'inheritance' | 'other';
+  | 'gift' | 'inheritance' | 'donation' | 'other';
 
 export interface ProvenanceEntry {
   id: string;

@@ -22,6 +22,7 @@ const ACQUISITION_METHOD_LABELS: Record<ProvenanceAcquisitionMethod, string> = {
   private_sale: 'Private Sale',
   gift: 'Gift',
   inheritance: 'Inheritance',
+  donation: 'Donation',
   other: 'Other',
 };
 
@@ -38,6 +39,7 @@ const ACQUISITION_METHOD_OPTIONS: { value: ProvenanceAcquisitionMethod; label: s
   { value: 'private_sale', label: 'Private Sale' },
   { value: 'gift', label: 'Gift' },
   { value: 'inheritance', label: 'Inheritance' },
+  { value: 'donation', label: 'Donation' },
   { value: 'other', label: 'Other' },
 ];
 

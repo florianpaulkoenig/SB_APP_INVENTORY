@@ -137,87 +137,12 @@ const s = StyleSheet.create({
     objectFit: 'contain',
   },
 
-  // Provenance section
-  provenanceTitle: {
+  // Provenance section — reuses infoGrid/infoRow pattern from PDFStyles
+  provenanceCurrentLabel: {
     fontFamily: 'AnzianoPro',
     fontSize: 8,
     fontWeight: 700,
-    color: PDF_COLORS.primary400,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 18,
-    marginBottom: 8,
-  },
-  provenanceRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    marginBottom: 0,
-  },
-  // Left column: dot + vertical line
-  provenanceLineCol: {
-    width: 16,
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  provenanceDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: PDF_COLORS.primary400,
-    flexShrink: 0,
-  },
-  provenanceDotCurrent: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: PDF_COLORS.primary900,
-    flexShrink: 0,
-  },
-  provenanceConnector: {
-    width: 1,
-    flex: 1,
-    backgroundColor: PDF_COLORS.primary200,
-    marginTop: 2,
-    marginBottom: 2,
-  },
-  // Right column: text content
-  provenanceContent: {
-    flex: 1,
-    paddingBottom: 10,
-    paddingTop: 0,
-  },
-  provenanceName: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 9,
     color: PDF_COLORS.primary900,
-  },
-  provenanceNameCurrent: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 9,
-    fontWeight: 700,
-    color: PDF_COLORS.primary900,
-  },
-  provenanceMeta: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 7,
-    color: PDF_COLORS.primary400,
-    marginTop: 1,
-  },
-  provenanceCurrentBadge: {
-    marginTop: 3,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    backgroundColor: PDF_COLORS.backgroundLight,
-    borderRadius: 2,
-    alignSelf: 'flex-start',
-  },
-  provenanceCurrentBadgeText: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 6,
-    fontWeight: 700,
-    color: PDF_COLORS.primary700,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
 
   // Divider line before disclaimer
@@ -444,51 +369,39 @@ export function CertificatePDF({
         {/* ----- Provenance ----------------------------------------------- */}
         {((provenanceEntries && provenanceEntries.length > 0) || currentOwner) && (() => {
           // Build combined list: provenance entries + optional current owner at end
-          const allEntries: Array<{ name: string; date: string | null; method: string | null; isCurrent: boolean }> = [
-            ...(provenanceEntries ?? []).map((e) => ({
-              name: e.owner_name,
-              date: formatAcquisitionDate(e.acquisition_date, language),
-              method: e.acquisition_method?.replace(/_/g, ' ') ?? null,
-              isCurrent: false,
-            })),
+          const allEntries: Array<{ label: string; value: string; isCurrent: boolean }> = [
+            ...(provenanceEntries ?? []).map((e, i) => {
+              const parts = [
+                e.owner_name,
+                formatAcquisitionDate(e.acquisition_date, language),
+                e.acquisition_method?.replace(/_/g, ' '),
+              ].filter(Boolean);
+              return {
+                label: i === 0 ? t.provenance : '',
+                value: parts.join(' · '),
+                isCurrent: false,
+              };
+            }),
             ...(currentOwner ? [{
-              name: currentOwner,
-              date: formatAcquisitionDate(currentOwnerDate, language),
-              method: null,
+              label: (provenanceEntries?.length ?? 0) === 0 ? t.provenance : '',
+              value: [
+                currentOwner,
+                formatAcquisitionDate(currentOwnerDate, language),
+                t.currentOwner,
+              ].filter(Boolean).join(' · '),
               isCurrent: true,
             }] : []),
           ];
           return (
-            <View>
-              <Text style={s.provenanceTitle}>{t.provenance}</Text>
-              {allEntries.map((entry, i) => {
-                const isLast = i === allEntries.length - 1;
-                return (
-                  <View key={i} style={s.provenanceRow}>
-                    {/* Left: dot + connector line */}
-                    <View style={s.provenanceLineCol}>
-                      <View style={entry.isCurrent ? s.provenanceDotCurrent : s.provenanceDot} />
-                      {!isLast && <View style={s.provenanceConnector} />}
-                    </View>
-                    {/* Right: content */}
-                    <View style={s.provenanceContent}>
-                      <Text style={entry.isCurrent ? s.provenanceNameCurrent : s.provenanceName}>
-                        {entry.name}
-                      </Text>
-                      {(entry.date || entry.method) && (
-                        <Text style={s.provenanceMeta}>
-                          {[entry.date, entry.method].filter(Boolean).join(' · ')}
-                        </Text>
-                      )}
-                      {entry.isCurrent && (
-                        <View style={s.provenanceCurrentBadge}>
-                          <Text style={s.provenanceCurrentBadgeText}>{t.currentOwner}</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                );
-              })}
+            <View style={styles.infoGrid}>
+              {allEntries.map((entry, i) => (
+                <View style={styles.infoRow} key={i}>
+                  <Text style={styles.infoLabel}>{entry.label}</Text>
+                  <Text style={entry.isCurrent ? s.provenanceCurrentLabel : styles.infoValue}>
+                    {entry.value}
+                  </Text>
+                </View>
+              ))}
             </View>
           );
         })()}
