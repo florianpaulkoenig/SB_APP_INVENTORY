@@ -170,6 +170,7 @@ export interface CertificateProvenanceEntry {
   owner_type: string;
   acquisition_date: string | null;
   acquisition_method: string | null;
+  notes: string | null;
 }
 
 export interface CertificatePDFProps {
@@ -375,6 +376,7 @@ export function CertificatePDF({
                 e.owner_name,
                 formatAcquisitionDate(e.acquisition_date, language),
                 e.acquisition_method?.replace(/_/g, ' '),
+                e.notes ?? undefined,
               ].filter(Boolean);
               return {
                 label: i === 0 ? t.provenance : '',
