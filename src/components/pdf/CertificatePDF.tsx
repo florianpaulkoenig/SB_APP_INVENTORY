@@ -274,6 +274,7 @@ export interface CertificatePDFProps {
   language: 'en' | 'de' | 'fr';
   provenanceEntries?: CertificateProvenanceEntry[];
   currentOwner?: string | null;
+  currentOwnerDate?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -329,6 +330,18 @@ function formatIssueDateFull(dateStr: string, language: string): string {
   }
 }
 
+// Formats an acquisition date as "Month YYYY" (abstracted, no day)
+function formatAcquisitionDate(dateStr: string | null | undefined, language: string): string | null {
+  if (!dateStr) return null;
+  try {
+    const d = new Date(dateStr);
+    const month = (MONTH_NAMES[language] ?? MONTH_NAMES.en)[d.getMonth()];
+    return `${month} ${d.getFullYear()}`;
+  } catch {
+    return dateStr;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -340,6 +353,7 @@ export function CertificatePDF({
   language,
   provenanceEntries,
   currentOwner,
+  currentOwnerDate,
 }: CertificatePDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
 
@@ -433,11 +447,16 @@ export function CertificatePDF({
           const allEntries: Array<{ name: string; date: string | null; method: string | null; isCurrent: boolean }> = [
             ...(provenanceEntries ?? []).map((e) => ({
               name: e.owner_name,
-              date: e.acquisition_date,
-              method: e.acquisition_method,
+              date: formatAcquisitionDate(e.acquisition_date, language),
+              method: e.acquisition_method?.replace(/_/g, ' ') ?? null,
               isCurrent: false,
             })),
-            ...(currentOwner ? [{ name: currentOwner, date: null, method: null, isCurrent: true }] : []),
+            ...(currentOwner ? [{
+              name: currentOwner,
+              date: formatAcquisitionDate(currentOwnerDate, language),
+              method: null,
+              isCurrent: true,
+            }] : []),
           ];
           return (
             <View>
@@ -458,10 +477,7 @@ export function CertificatePDF({
                       </Text>
                       {(entry.date || entry.method) && (
                         <Text style={s.provenanceMeta}>
-                          {[
-                            entry.date,
-                            entry.method?.replace(/_/g, ' '),
-                          ].filter(Boolean).join(' · ')}
+                          {[entry.date, entry.method].filter(Boolean).join(' · ')}
                         </Text>
                       )}
                       {entry.isCurrent && (

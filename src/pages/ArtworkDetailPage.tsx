@@ -72,6 +72,7 @@ export function ArtworkDetailPage() {
   const [galleryName, setGalleryName] = useState<string | null>(null);
   const [gallerySaleDate, setGallerySaleDate] = useState<string | null>(null);
   const [currentOwner, setCurrentOwner] = useState<string | null>(null);
+  const [currentOwnerDate, setCurrentOwnerDate] = useState<string | null>(null);
   const [imageRefreshKey, setImageRefreshKey] = useState(0);
   const [certificate, setCertificate] = useState<CertificateInfo | null>(null);
   const [language, setLanguage] = useState<Language>('en');
@@ -111,18 +112,16 @@ export function ArtworkDetailPage() {
   useEffect(() => {
     async function fetchCurrentOwner() {
       if (!artwork?.id) return;
-      // Only fetch if artwork is sold
-      if (artwork.status !== 'sold') { setCurrentOwner(null); return; }
 
       const { data } = await supabase
         .from('sales')
-        .select('buyer_name, contacts:contact_id(first_name, last_name)')
+        .select('buyer_name, sale_date, contacts:contact_id(first_name, last_name)')
         .eq('artwork_id', artwork.id)
         .order('sale_date', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (!data) { setCurrentOwner(null); return; }
+      if (!data) { setCurrentOwner(null); setCurrentOwnerDate(null); return; }
 
       // Prefer contact name over free-text buyer_name
       const contact = data.contacts as { first_name: string; last_name: string } | null;
@@ -130,9 +129,10 @@ export function ArtworkDetailPage() {
         ? `${contact.first_name ?? ''} ${contact.last_name ?? ''}`.trim()
         : (data.buyer_name ?? null);
       setCurrentOwner(name || null);
+      setCurrentOwnerDate(data.sale_date ?? null);
     }
     fetchCurrentOwner();
-  }, [artwork?.id, artwork?.status]);
+  }, [artwork?.id]);
 
   // ---- Fetch certificate for this artwork -----------------------------------
 
@@ -223,6 +223,7 @@ export function ArtworkDetailPage() {
           language={language}
           provenanceEntries={provenanceEntries.filter((e) => e.confirmed)}
           currentOwner={currentOwner}
+          currentOwnerDate={currentOwnerDate}
         />,
       ).toBlob();
 
@@ -230,7 +231,7 @@ export function ArtworkDetailPage() {
     } finally {
       setDownloading(false);
     }
-  }, [artwork, certificate, language, provenanceEntries, currentOwner]);
+  }, [artwork, certificate, language, provenanceEntries, currentOwner, currentOwnerDate]);
 
   // ---- Certificate PDF upload -----------------------------------------------
 
@@ -396,6 +397,7 @@ export function ArtworkDetailPage() {
           language={language}
           provenanceEntries={provenanceEntries.filter((e) => e.confirmed)}
           currentOwner={currentOwner}
+          currentOwnerDate={currentOwnerDate}
         />,
       ).toBlob();
 
