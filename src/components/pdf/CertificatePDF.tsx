@@ -372,10 +372,15 @@ export function CertificatePDF({
           // Build combined list: provenance entries + optional current owner at end
           const allEntries: Array<{ label: string; value: string; isCurrent: boolean }> = [
             ...(provenanceEntries ?? []).map((e, i) => {
+              const methodLabel = e.acquisition_method === 'creation'
+                ? (artwork.year ? `Creation in ${artwork.year}` : 'Creation')
+                : e.acquisition_method
+                  ? e.acquisition_method.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+                  : undefined;
               const parts = [
                 e.owner_name,
                 formatAcquisitionDate(e.acquisition_date, language),
-                e.acquisition_method?.replace(/_/g, ' '),
+                methodLabel,
                 e.notes ?? undefined,
               ].filter(Boolean);
               return {
