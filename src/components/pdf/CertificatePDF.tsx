@@ -30,6 +30,8 @@ interface TranslationStrings {
   epreuveArtiste: string;
   of: string;
   provenance: string;
+  currentOwner: string;
+  acquiredBy: string;
 }
 
 const TRANSLATIONS: Record<string, TranslationStrings> = {
@@ -53,6 +55,8 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     epreuveArtiste: "Epreuve d'Artiste",
     of: 'of',
     provenance: 'Provenance',
+    currentOwner: 'Current Owner',
+    acquiredBy: 'Acquired',
   },
   de: {
     certificateTitle: 'Echtheitszertifikat',
@@ -74,6 +78,8 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     epreuveArtiste: "Epreuve d'Artiste",
     of: 'von',
     provenance: 'Provenienz',
+    currentOwner: 'Aktueller Eigentümer',
+    acquiredBy: 'Erworben',
   },
   fr: {
     certificateTitle: "Certificat d'Authenticit\u00e9",
@@ -95,6 +101,8 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     epreuveArtiste: "Epreuve d'Artiste",
     of: 'de',
     provenance: 'Provenance',
+    currentOwner: 'Propriétaire actuel',
+    acquiredBy: 'Acquis',
   },
 };
 
@@ -138,32 +146,78 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginTop: 18,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   provenanceRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 4,
-    gap: 8,
+    alignItems: 'stretch',
+    marginBottom: 0,
+  },
+  // Left column: dot + vertical line
+  provenanceLineCol: {
+    width: 16,
+    alignItems: 'center',
+    flexShrink: 0,
   },
   provenanceDot: {
-    width: 5,
-    height: 5,
+    width: 6,
+    height: 6,
     borderRadius: 3,
     backgroundColor: PDF_COLORS.primary400,
-    marginTop: 2,
     flexShrink: 0,
+  },
+  provenanceDotCurrent: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: PDF_COLORS.primary900,
+    flexShrink: 0,
+  },
+  provenanceConnector: {
+    width: 1,
+    flex: 1,
+    backgroundColor: PDF_COLORS.primary200,
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  // Right column: text content
+  provenanceContent: {
+    flex: 1,
+    paddingBottom: 10,
+    paddingTop: 0,
   },
   provenanceName: {
     fontFamily: 'AnzianoPro',
-    fontSize: 8,
+    fontSize: 9,
     color: PDF_COLORS.primary900,
-    flex: 1,
+  },
+  provenanceNameCurrent: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 9,
+    fontWeight: 700,
+    color: PDF_COLORS.primary900,
   },
   provenanceMeta: {
     fontFamily: 'AnzianoPro',
     fontSize: 7,
     color: PDF_COLORS.primary400,
+    marginTop: 1,
+  },
+  provenanceCurrentBadge: {
+    marginTop: 3,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    backgroundColor: PDF_COLORS.backgroundLight,
+    borderRadius: 2,
+    alignSelf: 'flex-start',
+  },
+  provenanceCurrentBadgeText: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 6,
+    fontWeight: 700,
+    color: PDF_COLORS.primary700,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 
   // Divider line before disclaimer
@@ -219,6 +273,7 @@ export interface CertificatePDFProps {
   signatureUrl?: string | null;
   language: 'en' | 'de' | 'fr';
   provenanceEntries?: CertificateProvenanceEntry[];
+  currentOwner?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -284,6 +339,7 @@ export function CertificatePDF({
   signatureUrl,
   language,
   provenanceEntries,
+  currentOwner,
 }: CertificatePDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
 
@@ -372,26 +428,54 @@ export function CertificatePDF({
         </View>
 
         {/* ----- Provenance ----------------------------------------------- */}
-        {provenanceEntries && provenanceEntries.length > 0 && (
-          <View>
-            <Text style={s.provenanceTitle}>{t.provenance}</Text>
-            {provenanceEntries.map((entry, i) => (
-              <View key={i} style={s.provenanceRow}>
-                <View style={s.provenanceDot} />
-                <View style={{ flex: 1 }}>
-                  <Text style={s.provenanceName}>{entry.owner_name}</Text>
-                  {(entry.acquisition_date || entry.acquisition_method) && (
-                    <Text style={s.provenanceMeta}>
-                      {[entry.acquisition_date, entry.acquisition_method?.replace(/_/g, ' ')]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
+        {((provenanceEntries && provenanceEntries.length > 0) || currentOwner) && (() => {
+          // Build combined list: provenance entries + optional current owner at end
+          const allEntries: Array<{ name: string; date: string | null; method: string | null; isCurrent: boolean }> = [
+            ...(provenanceEntries ?? []).map((e) => ({
+              name: e.owner_name,
+              date: e.acquisition_date,
+              method: e.acquisition_method,
+              isCurrent: false,
+            })),
+            ...(currentOwner ? [{ name: currentOwner, date: null, method: null, isCurrent: true }] : []),
+          ];
+          return (
+            <View>
+              <Text style={s.provenanceTitle}>{t.provenance}</Text>
+              {allEntries.map((entry, i) => {
+                const isLast = i === allEntries.length - 1;
+                return (
+                  <View key={i} style={s.provenanceRow}>
+                    {/* Left: dot + connector line */}
+                    <View style={s.provenanceLineCol}>
+                      <View style={entry.isCurrent ? s.provenanceDotCurrent : s.provenanceDot} />
+                      {!isLast && <View style={s.provenanceConnector} />}
+                    </View>
+                    {/* Right: content */}
+                    <View style={s.provenanceContent}>
+                      <Text style={entry.isCurrent ? s.provenanceNameCurrent : s.provenanceName}>
+                        {entry.name}
+                      </Text>
+                      {(entry.date || entry.method) && (
+                        <Text style={s.provenanceMeta}>
+                          {[
+                            entry.date,
+                            entry.method?.replace(/_/g, ' '),
+                          ].filter(Boolean).join(' · ')}
+                        </Text>
+                      )}
+                      {entry.isCurrent && (
+                        <View style={s.provenanceCurrentBadge}>
+                          <Text style={s.provenanceCurrentBadgeText}>{t.currentOwner}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })()}
 
         {/* ----- Divider -------------------------------------------------- */}
         <View style={s.divider} />
