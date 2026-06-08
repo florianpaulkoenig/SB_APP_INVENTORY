@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePackingList, usePackingListItems, usePackingLists } from '../hooks/usePackingLists';
+import {
+  usePackingList,
+  usePackingListItems,
+  usePackingListCrates,
+  usePackingLists,
+} from '../hooks/usePackingLists';
 import { PackingListDetail } from '../components/packing/PackingListDetail';
 import { PackingListForm } from '../components/packing/PackingListForm';
 import { DeliveryItemPicker } from '../components/deliveries/DeliveryItemPicker';
@@ -18,7 +23,23 @@ export function PackingListDetailPage() {
   const navigate = useNavigate();
 
   const { packingList, loading, refetch: refetchPackingList } = usePackingList(id!);
-  const { items, loading: itemsLoading, addItem, removeItem } = usePackingListItems(id!);
+  const {
+    items,
+    loading: itemsLoading,
+    addItem,
+    removeItem,
+    updateItem,
+    refetch: refetchItems,
+  } = usePackingListItems(id!);
+  const {
+    crates,
+    loading: cratesLoading,
+    addCrate,
+    updateCrate,
+    removeCrate,
+    assignItemToCrate,
+    refetch: refetchCrates,
+  } = usePackingListCrates(id!);
   const { deletePackingList, updatePackingList } = usePackingLists();
 
   // ---- Modal state --------------------------------------------------------
@@ -29,30 +50,25 @@ export function PackingListDetailPage() {
 
   // ---- Handlers -----------------------------------------------------------
 
-
   async function handleRemoveItem(itemId: string) {
-    const success = await removeItem(itemId);
-    if (success) {
-      await refetchPackingList();
-    }
+    await removeItem(itemId);
+  }
+
+  async function handleUpdateItem(itemId: string, data: Parameters<typeof updateItem>[1]) {
+    await updateItem(itemId, data);
   }
 
   async function handleDelete() {
     if (!id) return;
-
     const success = await deletePackingList(id);
-    if (success) {
-      navigate('/packing-lists');
-    }
+    if (success) navigate('/packing-lists');
   }
 
   async function handleEdit(data: PackingListUpdate) {
     if (!id) return;
-
     setEditLoading(true);
     const updated = await updatePackingList(id, data);
     setEditLoading(false);
-
     if (updated) {
       setShowEditModal(false);
       await refetchPackingList();
@@ -69,33 +85,21 @@ export function PackingListDetailPage() {
     );
   }
 
-  // ---- Not found state ----------------------------------------------------
-
   if (!packingList) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <h2 className="font-display text-xl font-semibold text-primary-900">
-          Packing list not found
-        </h2>
+        <h2 className="font-display text-xl font-semibold text-primary-900">Packing list not found</h2>
         <p className="mt-2 text-sm text-primary-500">
           The packing list you are looking for does not exist or has been deleted.
         </p>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/packing-lists')}
-          className="mt-6"
-        >
+        <Button variant="outline" onClick={() => navigate('/packing-lists')} className="mt-6">
           Back to Packing Lists
         </Button>
       </div>
     );
   }
 
-  // ---- Derive display names from joined data ------------------------------
-
   const deliveryNumber = packingList.deliveries?.delivery_number ?? null;
-
-  // ---- Render -------------------------------------------------------------
 
   return (
     <div>
@@ -106,18 +110,8 @@ export function PackingListDetailPage() {
         onClick={() => navigate('/packing-lists')}
         className="mb-6"
       >
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth="2"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
-          />
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
         </svg>
         Back to Packing Lists
       </Button>
@@ -128,10 +122,18 @@ export function PackingListDetailPage() {
         deliveryNumber={deliveryNumber}
         items={items}
         itemsLoading={itemsLoading}
+        crates={crates}
+        cratesLoading={cratesLoading}
         onEdit={() => setShowEditModal(true)}
         onDelete={handleDelete}
         onAddItem={() => setShowAddItem(true)}
         onRemoveItem={handleRemoveItem}
+        onUpdateItem={handleUpdateItem}
+        onAddCrate={addCrate}
+        onUpdateCrate={updateCrate}
+        onRemoveCrate={removeCrate}
+        onAssignItemToCrate={assignItemToCrate}
+        onRefetchItems={refetchItems}
       />
 
       {/* Add Item Modal */}
@@ -155,7 +157,7 @@ export function PackingListDetailPage() {
             }
             if (anyCreated) {
               setShowAddItem(false);
-              await refetchPackingList();
+              await refetchCrates();
             }
           }}
           onCancel={() => setShowAddItem(false)}

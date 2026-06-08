@@ -9,6 +9,9 @@ import type {
   PackingListItemRow,
   PackingListItemInsert,
   PackingListItemUpdate,
+  PackingListCrateRow,
+  PackingListCrateInsert,
+  PackingListCrateUpdate,
 } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -462,5 +465,146 @@ export function usePackingListItems(packingListId: string): UsePackingListItemsR
     addItem,
     updateItem,
     removeItem,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Hook -- crates for a given packing list
+// ---------------------------------------------------------------------------
+
+export interface UsePackingListCratesReturn {
+  crates: PackingListCrateRow[];
+  loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+  addCrate: (data: Omit<PackingListCrateInsert, 'user_id' | 'packing_list_id'>) => Promise<PackingListCrateRow | null>;
+  updateCrate: (id: string, data: PackingListCrateUpdate) => Promise<PackingListCrateRow | null>;
+  removeCrate: (id: string) => Promise<boolean>;
+  assignItemToCrate: (itemId: string, crateId: string | null) => Promise<boolean>;
+}
+
+export function usePackingListCrates(packingListId: string): UsePackingListCratesReturn {
+  const [crates, setCrates] = useState<PackingListCrateRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const { toast } = useToast();
+
+  const fetchCrates = useCallback(async () => {
+    if (!packingListId) {
+      setCrates([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('packing_list_crates')
+        .select('*')
+        .eq('packing_list_id', packingListId)
+        .order('sort_order', { ascending: true });
+      if (fetchError) throw fetchError;
+      setCrates((data as PackingListCrateRow[]) ?? []);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch crates';
+      setError(message);
+      toast({ title: 'Error', description: 'Could not load crates.', variant: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  }, [packingListId, toast]);
+
+  useEffect(() => { fetchCrates(); }, [fetchCrates]);
+
+  const addCrate = useCallback(
+    async (data: Omit<PackingListCrateInsert, 'user_id' | 'packing_list_id'>): Promise<PackingListCrateRow | null> => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) { toast({ title: 'Error', description: 'You must be logged in', variant: 'error' }); return null; }
+        const maxOrder = crates.length > 0 ? Math.max(...crates.map(c => c.sort_order)) + 1 : 0;
+        const { data: created, error: insertError } = await supabase
+          .from('packing_list_crates')
+          .insert({ ...data, user_id: session.user.id, packing_list_id: packingListId, sort_order: data.sort_order ?? maxOrder } as never)
+          .select()
+          .single();
+        if (insertError) throw insertError;
+        toast({ title: 'Crate added', variant: 'success' });
+        await fetchCrates();
+        return created as PackingListCrateRow;
+      } catch {
+        toast({ title: 'Error', description: 'Could not add crate.', variant: 'error' });
+        return null;
+      }
+    },
+    [toast, fetchCrates, packingListId, crates],
+  );
+
+  const updateCrate = useCallback(
+    async (id: string, data: PackingListCrateUpdate): Promise<PackingListCrateRow | null> => {
+      try {
+        const { data: updated, error: updateError } = await supabase
+          .from('packing_list_crates')
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single();
+        if (updateError) throw updateError;
+        toast({ title: 'Crate updated', variant: 'success' });
+        await fetchCrates();
+        return updated as PackingListCrateRow;
+      } catch {
+        toast({ title: 'Error', description: 'Could not update crate.', variant: 'error' });
+        return null;
+      }
+    },
+    [toast, fetchCrates],
+  );
+
+  const removeCrate = useCallback(
+    async (id: string): Promise<boolean> => {
+      try {
+        const { error: deleteError } = await supabase
+          .from('packing_list_crates')
+          .delete()
+          .eq('id', id);
+        if (deleteError) throw deleteError;
+        toast({ title: 'Crate removed', variant: 'success' });
+        await fetchCrates();
+        return true;
+      } catch {
+        toast({ title: 'Error', description: 'Could not remove crate.', variant: 'error' });
+        return false;
+      }
+    },
+    [toast, fetchCrates],
+  );
+
+  const assignItemToCrate = useCallback(
+    async (itemId: string, crateId: string | null): Promise<boolean> => {
+      try {
+        const { error: updateError } = await supabase
+          .from('packing_list_items')
+          .update({ crate_id: crateId } as never)
+          .eq('id', itemId);
+        if (updateError) throw updateError;
+        return true;
+      } catch {
+        toast({ title: 'Error', description: 'Could not assign item to crate.', variant: 'error' });
+        return false;
+      }
+    },
+    [toast],
+  );
+
+  return {
+    crates,
+    loading,
+    error,
+    refetch: fetchCrates,
+    addCrate,
+    updateCrate,
+    removeCrate,
+    assignItemToCrate,
   };
 }

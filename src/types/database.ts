@@ -499,6 +499,42 @@ export interface PackingListInsert {
 
 export type PackingListUpdate = Partial<PackingListInsert>;
 
+// -- packing_list_crates -----------------------------------------------------
+
+export interface PackingListCrateRow {
+  id: string;
+  user_id: string;
+  packing_list_id: string;
+  crate_name: string;
+  width: number | null;
+  height: number | null;
+  depth: number | null;
+  dimension_unit: string;
+  weight: number | null;
+  packaging_type: string | null;
+  notes: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PackingListCrateInsert {
+  id?: string;
+  user_id?: string;
+  packing_list_id: string;
+  crate_name: string;
+  width?: number | null;
+  height?: number | null;
+  depth?: number | null;
+  dimension_unit?: string;
+  weight?: number | null;
+  packaging_type?: string | null;
+  notes?: string | null;
+  sort_order?: number;
+}
+
+export type PackingListCrateUpdate = Partial<PackingListCrateInsert>;
+
 // -- packing_list_items ------------------------------------------------------
 
 export interface PackingListItemRow {
@@ -506,6 +542,7 @@ export interface PackingListItemRow {
   user_id: string;
   packing_list_id: string;
   artwork_id: string;
+  crate_id: string | null;
   crate_number: string | null;
   packaging_type: string | null;
   special_handling: string | null;
@@ -519,6 +556,7 @@ export interface PackingListItemInsert {
   user_id?: string;
   packing_list_id: string;
   artwork_id: string;
+  crate_id?: string | null;
   crate_number?: string | null;
   packaging_type?: string | null;
   special_handling?: string | null;
