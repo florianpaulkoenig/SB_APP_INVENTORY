@@ -1005,6 +1005,19 @@ function MonthSection({
         </button>
       </div>
 
+      {/* Inline one-time expense add form — directly below header */}
+      {showOneTimeForm && (
+        <InlineOneTimeExpenseForm
+          defaultDate={defaultDate}
+          onSave={async (data) => {
+            const ok = await onAddExpense(data);
+            if (ok) setShowOneTimeForm(false);
+            return ok;
+          }}
+          onCancel={() => setShowOneTimeForm(false)}
+        />
+      )}
+
       {/* Entries */}
       {hasAny && (
         <div className="border-t border-primary-50 px-4 pb-1">
@@ -1088,19 +1101,6 @@ function MonthSection({
             </div>
           )}
         </div>
-      )}
-
-      {/* Inline one-time expense add form */}
-      {showOneTimeForm && (
-        <InlineOneTimeExpenseForm
-          defaultDate={defaultDate}
-          onSave={async (data) => {
-            const ok = await onAddExpense(data);
-            if (ok) setShowOneTimeForm(false);
-            return ok;
-          }}
-          onCancel={() => setShowOneTimeForm(false)}
-        />
       )}
 
       {/* Summary footer — Einnahmen / Ausgaben / Netto */}
