@@ -28,6 +28,9 @@ const RECURRENCE_OPTIONS: { value: LiquidityExpenseType; label: string }[] = [
   { value: 'annual',      label: 'Pro Jahr' },
 ];
 
+// Only recurring types — for the global "Neue Ausgabe" form
+const RECURRING_OPTIONS = RECURRENCE_OPTIONS.filter((o) => o.value !== 'one_time');
+
 const RECURRENCE_BADGES: Record<LiquidityExpenseType, { label: string; className: string }> = {
   one_time:    { label: 'Einmalig',     className: 'bg-primary-100 text-primary-500' },
   monthly:     { label: 'Monatlich',    className: 'bg-blue-100 text-blue-700' },
@@ -169,7 +172,7 @@ function AddExpenseForm({
         </div>
         <Input label="Betrag *" type="number" min="0" step="100" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="z. B. 1500" />
         <Select label="Währung" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
-        <Select label="Wiederholung *" options={RECURRENCE_OPTIONS} value={type} onChange={(e) => setType(e.target.value as LiquidityExpenseType)} />
+        <Select label="Wiederholung *" options={RECURRING_OPTIONS} value={type} onChange={(e) => setType(e.target.value as LiquidityExpenseType)} />
         <Input label={type === 'one_time' ? 'Datum *' : 'Ab Datum *'} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
       </div>
       <div className="mt-4 flex items-center gap-3">
@@ -403,12 +406,22 @@ function PaidIncomeRow({
 // ---------------------------------------------------------------------------
 
 function MonthExpenseRow({
-  expense, onMarkPaid,
+  expense, onMarkPaid, onUpdate, onDelete,
 }: {
   expense: NOALiquidityExpenseRow;
   onMarkPaid: (expenseId: string) => void;
+  onUpdate?: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
+  onDelete?: (id: string) => void;
 }) {
+  const [editing, setEditing]       = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const badge = RECURRENCE_BADGES[expense.type];
+  const isOneTime = expense.type === 'one_time';
+
+  if (editing && onUpdate) {
+    return <InlineExpenseEditForm expense={expense} onSave={onUpdate} onCancel={() => setEditing(false)} />;
+  }
+
   return (
     <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0">
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
@@ -426,6 +439,32 @@ function MonthExpenseRow({
         </svg>
         Bezahlt
       </button>
+      {/* Edit/Delete only for one-time expenses */}
+      {isOneTime && onUpdate && (
+        <button
+          onClick={() => setEditing(true)}
+          className="shrink-0 p-1 text-primary-300 hover:text-primary-600 transition-colors"
+          title="Bearbeiten"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+          </svg>
+        </button>
+      )}
+      {isOneTime && onDelete && (
+        confirming ? (
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
+            <button onClick={() => setConfirming(false)} className="text-xs text-primary-400">Nein</button>
+          </div>
+        ) : (
+          <button onClick={() => setConfirming(true)} className="shrink-0 p-1 text-primary-300 hover:text-red-400 transition-colors">
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )
+      )}
     </div>
   );
 }
@@ -578,6 +617,53 @@ function ExpenseManagementRow({
 }
 
 // ---------------------------------------------------------------------------
+// Inline one-time expense add form — used directly inside a MonthSection
+// ---------------------------------------------------------------------------
+
+function InlineOneTimeExpenseForm({
+  defaultDate,
+  onSave,
+  onCancel,
+}: {
+  defaultDate: string; // YYYY-MM-DD, first day of the month
+  onSave: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
+  onCancel: () => void;
+}) {
+  const [description, setDescription] = useState('');
+  const [amount, setAmount]           = useState('');
+  const [currency, setCurrency]       = useState('CHF');
+  const [dueDate, setDueDate]         = useState(defaultDate);
+  const [saving, setSaving]           = useState(false);
+
+  async function handleSubmit() {
+    const n = parseFloat(amount);
+    if (!description.trim() || isNaN(n) || n <= 0 || !dueDate) return;
+    setSaving(true);
+    const ok = await onSave({ description: description.trim(), amount: n, currency, type: 'one_time', due_date: dueDate });
+    setSaving(false);
+    if (ok) onCancel();
+  }
+
+  return (
+    <div className="border-t border-red-50 bg-red-50/20 px-4 py-3">
+      <p className="mb-2 text-xs font-semibold text-red-700">Einmalige Ausgabe</p>
+      <div className="grid gap-2 sm:grid-cols-2 mb-2">
+        <div className="sm:col-span-2">
+          <Input label="" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Beschreibung *" />
+        </div>
+        <Input label="" type="number" min="0" step="100" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Betrag *" />
+        <Select label="" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
+        <Input label="" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+      </div>
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={handleSubmit} loading={saving} disabled={!description.trim() || !amount || !dueDate}>Speichern</Button>
+        <Button size="sm" variant="ghost" onClick={onCancel}>Abbrechen</Button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Expense management card (with sort controls)
 // ---------------------------------------------------------------------------
 
@@ -652,7 +738,7 @@ function ExpenseManagementCard({
     <div className="mb-6 rounded-lg border border-primary-100 bg-white">
       <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
         <span className="text-sm font-semibold text-primary-700">
-          Ausgaben verwalten
+          Wiederkehrende Ausgaben
           <span className="ml-2 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500">{expenses.length}</span>
         </span>
         <svg className={`h-4 w-4 text-primary-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -853,6 +939,9 @@ function MonthSection({
   onMarkIncomeUnpaid,
   onMarkExpensePaid,
   onMarkExpenseUnpaid,
+  onUpdateExpense,
+  onDeleteExpense,
+  onAddExpense,
   onUpsertActualBalance,
   onDeleteActualBalance,
 }: {
@@ -865,11 +954,18 @@ function MonthSection({
   onMarkIncomeUnpaid: (id: string) => void;
   onMarkExpensePaid: (expenseId: string, year: number, month: number) => void;
   onMarkExpenseUnpaid: (paymentId: string) => void;
+  onUpdateExpense: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
+  onDeleteExpense: (id: string) => void;
+  onAddExpense: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
   onUpsertActualBalance: (year: number, month: number, balance: number, currency: string) => Promise<boolean>;
   onDeleteActualBalance: (id: string) => Promise<boolean>;
 }) {
-  const [showPaidIncome,   setShowPaidIncome]   = useState(false);
-  const [showPaidExpenses, setShowPaidExpenses] = useState(false);
+  const [showPaidIncome,        setShowPaidIncome]        = useState(false);
+  const [showPaidExpenses,      setShowPaidExpenses]      = useState(false);
+  const [showOneTimeForm,       setShowOneTimeForm]       = useState(false);
+
+  // Default date = first day of this month
+  const defaultDate = `${bucket.year}-${String(bucket.month + 1).padStart(2, '0')}-01`;
 
   const unpaidExpenses = bucket.expenses.filter((e) => !bucket.paidExpenseMap[e.id]);
   const paidExpenses   = bucket.expenses.filter((e) =>  bucket.paidExpenseMap[e.id]);
@@ -886,7 +982,7 @@ function MonthSection({
     <div className={`rounded-lg border overflow-hidden ${
       isCurrentMonth ? 'border-primary-300 bg-white' : hasAny ? 'border-primary-100 bg-white' : 'border-primary-50 bg-primary-50/40'
     }`}>
-      {/* Month header — name + late badge only */}
+      {/* Month header */}
       <div className="flex items-center gap-3 px-4 py-3">
         {isCurrentMonth && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />}
         <span className={`text-sm font-semibold ${hasAny ? 'text-primary-900' : 'text-primary-400'}`}>
@@ -897,6 +993,16 @@ function MonthSection({
             {bucket.lateEntries.length} überfällig
           </span>
         )}
+        <button
+          onClick={() => setShowOneTimeForm((v) => !v)}
+          className="ml-auto flex items-center gap-1 rounded px-2 py-1 text-xs text-primary-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+          title="Einmalige Ausgabe hinzufügen"
+        >
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Einmalige Ausgabe
+        </button>
       </div>
 
       {/* Entries */}
@@ -933,6 +1039,8 @@ function MonthSection({
                 <MonthExpenseRow
                   key={e.id} expense={e}
                   onMarkPaid={(id) => onMarkExpensePaid(id, bucket.year, bucket.month + 1)}
+                  onUpdate={onUpdateExpense}
+                  onDelete={onDeleteExpense}
                 />
               ))}
             </div>
@@ -980,6 +1088,19 @@ function MonthSection({
             </div>
           )}
         </div>
+      )}
+
+      {/* Inline one-time expense add form */}
+      {showOneTimeForm && (
+        <InlineOneTimeExpenseForm
+          defaultDate={defaultDate}
+          onSave={async (data) => {
+            const ok = await onAddExpense(data);
+            if (ok) setShowOneTimeForm(false);
+            return ok;
+          }}
+          onCancel={() => setShowOneTimeForm(false)}
+        />
       )}
 
       {/* Summary footer — Einnahmen / Ausgaben / Netto */}
@@ -1062,7 +1183,12 @@ export function LiquidityPlanningPage() {
       {!showingAForm && (
         <>
           <StartsaldoCard startsaldo={startsaldo} currency={startsaldoCurrency} onSave={upsertStartsaldo} />
-          <ExpenseManagementCard expenses={expenses} onUpdate={updateExpense} onDelete={deleteExpense} onToggleActive={toggleExpenseActive} />
+          <ExpenseManagementCard
+            expenses={expenses.filter((e) => e.type !== 'one_time')}
+            onUpdate={updateExpense}
+            onDelete={deleteExpense}
+            onToggleActive={toggleExpenseActive}
+          />
         </>
       )}
 
@@ -1089,6 +1215,9 @@ export function LiquidityPlanningPage() {
                 onMarkIncomeUnpaid={markIncomeUnpaid}
                 onMarkExpensePaid={markExpensePaid}
                 onMarkExpenseUnpaid={markExpenseUnpaid}
+                onUpdateExpense={updateExpense}
+                onDeleteExpense={deleteExpense}
+                onAddExpense={addExpense}
                 onUpsertActualBalance={upsertActualBalance}
                 onDeleteActualBalance={deleteActualBalance}
               />
