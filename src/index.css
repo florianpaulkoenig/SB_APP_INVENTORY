@@ -104,7 +104,7 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   color: var(--color-primary-900);
-  background-color: #f2ede6;
+  background-color: #e8e8e8;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: 0.02em;
