@@ -137,6 +137,15 @@ serve(async (req: Request) => {
       );
     }
 
+    // ---- Validate role (TypeScript types are compile-time only) -------------
+    const VALID_ROLES = ['admin', 'gallery', 'collector'];
+    if (!VALID_ROLES.includes(payload.role)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid role. Must be admin, gallery, or collector.' }),
+        { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
+    }
+
     // ---- Validate email format ----------------------------------------------
     const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!EMAIL_REGEX.test(payload.email)) {
