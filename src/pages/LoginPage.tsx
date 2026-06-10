@@ -110,19 +110,19 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-primary-50 px-4">
-      <div className="w-full max-w-xs">
+      <div className="w-full max-w-sm flex flex-col items-center">
         {/* Brand */}
-        <h1 className="mb-12 text-center font-display text-2xl font-bold tracking-tight text-primary-900">
+        <h1 className="mb-16 text-center font-display text-2xl font-bold tracking-tight text-primary-900">
           {COMPANY_NAME}
         </h1>
 
         {showMfaChallenge ? (
-          <div className="space-y-5">
+          <div className="w-full space-y-5 flex flex-col items-center">
             <p className="text-center text-sm text-primary-400">
               Enter the 6-digit code from your authenticator app.
             </p>
 
-            <form onSubmit={handleMfaVerify} className="space-y-5">
+            <form onSubmit={handleMfaVerify} className="w-full space-y-5 flex flex-col items-center">
               <Input
                 value={mfaCode}
                 onChange={(e) => {
@@ -136,7 +136,7 @@ export function LoginPage() {
                 autoComplete="one-time-code"
                 autoFocus
                 required
-                className="text-center text-lg tracking-[0.5em] py-3"
+                className="w-full text-center text-lg tracking-[0.5em] py-3"
               />
 
               {mfaError && (
@@ -149,7 +149,7 @@ export function LoginPage() {
                 size="lg"
                 loading={loading}
                 disabled={mfaCode.length !== 6}
-                className="w-full"
+                className="w-3/5"
               >
                 Verify
               </Button>
@@ -162,14 +162,14 @@ export function LoginPage() {
                   setMfaError('');
                   supabase.auth.signOut();
                 }}
-                className="block w-full text-center text-xs text-primary-400 hover:text-primary-600 transition-colors"
+                className="text-center text-xs text-primary-400 hover:text-primary-600 transition-colors"
               >
                 Back
               </button>
             </form>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="w-full space-y-4 flex flex-col items-center">
             <Input
               type="email"
               placeholder="Email"
@@ -177,7 +177,7 @@ export function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="py-2.5"
+              className="w-full py-3"
             />
 
             <Input
@@ -187,22 +187,24 @@ export function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="py-2.5"
+              className="w-full py-3"
             />
 
             {error && (
               <p className="text-center text-xs text-danger">{error}</p>
             )}
 
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              loading={loading}
-              className="w-full"
-            >
-              Sign In
-            </Button>
+            <div className="pt-2 w-full flex justify-center">
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                loading={loading}
+                className="w-3/5"
+              >
+                Sign In
+              </Button>
+            </div>
           </form>
         )}
       </div>
