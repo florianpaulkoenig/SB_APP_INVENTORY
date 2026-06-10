@@ -169,42 +169,42 @@ export function LoginPage() {
             </form>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="w-full space-y-4 flex flex-col items-center">
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="w-full py-3"
-            />
+          <form onSubmit={handleSubmit} className="w-full flex flex-col items-center gap-8">
+            <div className="w-full flex flex-col gap-6">
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                className="py-3 text-center placeholder:text-center"
+              />
 
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="w-full py-3"
-            />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                className="py-3 text-center placeholder:text-center"
+              />
+            </div>
 
             {error && (
               <p className="text-center text-xs text-danger">{error}</p>
             )}
 
-            <div className="pt-2 w-full flex justify-center">
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                loading={loading}
-                className="w-3/5"
-              >
-                Sign In
-              </Button>
-            </div>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={loading}
+              className="w-3/5"
+            >
+              Sign In
+            </Button>
           </form>
         )}
       </div>
