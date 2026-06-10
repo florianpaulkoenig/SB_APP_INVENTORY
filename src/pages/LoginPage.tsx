@@ -112,7 +112,7 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-primary-50 px-4">
       <div className="w-full max-w-sm flex flex-col items-center">
         {/* Brand */}
-        <h1 className="mb-16 text-center font-display text-2xl font-bold tracking-tight text-primary-900">
+        <h1 className="mb-16 text-center font-display text-base font-normal tracking-widest text-primary-900 lowercase">
           {COMPANY_NAME}
         </h1>
 
