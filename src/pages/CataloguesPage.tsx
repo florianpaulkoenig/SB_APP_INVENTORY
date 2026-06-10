@@ -91,6 +91,9 @@ export function CataloguesPage() {
         <CatalogueBuilder
           initialConfig={editCatalogue?.config}
           catalogueId={editCatalogue?.id}
+          initialGalleryId={editCatalogue?.gallery_id}
+          initialContactId={editCatalogue?.contact_id}
+          initialExhibitionId={editCatalogue?.exhibition_id}
           onGenerated={() => setShowBuilder(false)}
         />
       </div>

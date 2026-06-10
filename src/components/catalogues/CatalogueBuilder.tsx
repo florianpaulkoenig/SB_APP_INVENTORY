@@ -20,6 +20,9 @@ import { useCatalogues } from '../../hooks/useCatalogues';
 import type { CatalogueConfig } from '../../hooks/useCatalogues';
 import { useExhibitionImages } from '../../hooks/useExhibitionImages';
 import type { ExhibitionImageRow } from '../../hooks/useExhibitionImages';
+import { useGalleries } from '../../hooks/useGalleries';
+import { useContacts } from '../../hooks/useContacts';
+import { useExhibitions } from '../../hooks/useExhibitions';
 import { Modal } from '../ui/Modal';
 import { SearchInput } from '../ui/SearchInput';
 
@@ -30,6 +33,9 @@ import { SearchInput } from '../ui/SearchInput';
 export interface CatalogueBuilderProps {
   initialConfig?: CatalogueConfig;
   catalogueId?: string;
+  initialGalleryId?: string | null;
+  initialContactId?: string | null;
+  initialExhibitionId?: string | null;
   onGenerated?: () => void;
 }
 
@@ -563,11 +569,133 @@ function AppendixImagesManager({
 }
 
 // ---------------------------------------------------------------------------
+// DraggableArtworkList — reorder selected artworks + sort presets
+// ---------------------------------------------------------------------------
+
+interface ArtworkMeta { id: string; title: string; artistName: string | null; year: number | null; series: string | null; }
+
+function DraggableArtworkList({
+  ids,
+  onChange,
+}: {
+  ids: string[];
+  onChange: (newIds: string[]) => void;
+}) {
+  const [artworks, setArtworks] = useState<ArtworkMeta[]>([]);
+  const dragIndex = useRef<number | null>(null);
+
+  // Fetch minimal metadata for selected artworks
+  useEffect(() => {
+    if (ids.length === 0) { setArtworks([]); return; }
+    let cancelled = false;
+    supabase
+      .from('artworks')
+      .select('id, title, artist_name, year, series')
+      .in('id', ids)
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const map = new Map(data.map((a) => [a.id, a]));
+        setArtworks(ids.map((id) => {
+          const a = map.get(id);
+          return a
+            ? { id: a.id, title: a.title, artistName: a.artist_name, year: a.year, series: a.series }
+            : { id, title: id, artistName: null, year: null, series: null };
+        }));
+      });
+    return () => { cancelled = true; };
+  }, [ids.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function applySort(by: 'artist' | 'year' | 'title' | 'series') {
+    const sorted = [...artworks].sort((a, b) => {
+      if (by === 'artist') return (a.artistName ?? '').localeCompare(b.artistName ?? '');
+      if (by === 'year') return (a.year ?? 9999) - (b.year ?? 9999);
+      if (by === 'title') return a.title.localeCompare(b.title);
+      if (by === 'series') return (a.series ?? '').localeCompare(b.series ?? '');
+      return 0;
+    });
+    setArtworks(sorted);
+    onChange(sorted.map((a) => a.id));
+  }
+
+  function handleDragStart(index: number) { dragIndex.current = index; }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault();
+    if (dragIndex.current === null || dragIndex.current === index) return;
+    const next = [...artworks];
+    const [moved] = next.splice(dragIndex.current, 1);
+    next.splice(index, 0, moved);
+    dragIndex.current = index;
+    setArtworks(next);
+    onChange(next.map((a) => a.id));
+  }
+
+  if (ids.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      {/* Sort presets */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-primary-400 uppercase tracking-wider">Sort by:</span>
+        {(['artist', 'year', 'title', 'series'] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => applySort(key)}
+            className="rounded border border-primary-200 px-2 py-0.5 text-xs text-primary-600 hover:border-primary-400 hover:text-primary-900 transition-colors"
+          >
+            {key.charAt(0).toUpperCase() + key.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Draggable list */}
+      <div className="rounded-lg border border-primary-200 bg-white divide-y divide-primary-100 max-h-[50vh] overflow-y-auto">
+        {artworks.map((aw, i) => (
+          <div
+            key={aw.id}
+            draggable
+            onDragStart={() => handleDragStart(i)}
+            onDragOver={(e) => handleDragOver(e, i)}
+            className="flex items-center gap-3 px-3 py-2 cursor-grab active:cursor-grabbing hover:bg-primary-50 select-none"
+          >
+            {/* Drag handle */}
+            <svg className="h-4 w-4 shrink-0 text-primary-300" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="5" cy="4" r="1.2" /><circle cx="5" cy="8" r="1.2" /><circle cx="5" cy="12" r="1.2" />
+              <circle cx="11" cy="4" r="1.2" /><circle cx="11" cy="8" r="1.2" /><circle cx="11" cy="12" r="1.2" />
+            </svg>
+            <span className="text-xs text-primary-400 w-5 shrink-0 text-right">{i + 1}</span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-primary-900 truncate">{aw.title}</p>
+              {(aw.artistName || aw.year) && (
+                <p className="text-xs text-primary-400 truncate">
+                  {[aw.artistName, aw.year?.toString()].filter(Boolean).join(' · ')}
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: CatalogueBuilderProps) {
+export function CatalogueBuilder({
+  initialConfig,
+  catalogueId,
+  initialGalleryId,
+  initialContactId,
+  initialExhibitionId,
+  onGenerated,
+}: CatalogueBuilderProps) {
   const { saveCatalogue, updateCatalogue } = useCatalogues();
+  const { galleries } = useGalleries();
+  const { contacts } = useContacts();
+  const { exhibitions } = useExhibitions();
   const [step, setStep] = useState('settings');
   const [saving, setSaving] = useState(false);
 
@@ -604,6 +732,9 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
       sortOrder: img.sortOrder ?? i,
     })),
   );
+  const [galleryId, setGalleryId] = useState<string>(initialGalleryId ?? '');
+  const [contactId, setContactId] = useState<string>(initialContactId ?? '');
+  const [exhibitionId, setExhibitionId] = useState<string>(initialExhibitionId ?? '');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -685,7 +816,7 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
       // List layout: plain signed URL fetched + resized client-side via canvas → JPEG data URL.
       //   Supabase transform URLs (/render/image/sign/) don't load reliably in react-pdf.
       const artworkTransform = (!isListLayout && useOptimized)
-        ? { transform: { width: 1200, quality: 70, format: 'origin' as const } }
+        ? { transform: { width: 1200, quality: 70, format: 'origin' as const, resize: 'contain' as const } }
         : undefined;
 
       if (images && images.length > 0) {
@@ -1126,6 +1257,42 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
             </div>
           </section>
 
+          {/* ---- Links Section ---- */}
+          <section>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-primary-400">
+              Links (optional)
+            </h3>
+            <div className="space-y-4 rounded-lg border border-primary-200 bg-white p-5">
+              <Select
+                label="Gallery"
+                options={[
+                  { value: '', label: '— None —' },
+                  ...galleries.map((g) => ({ value: g.id, label: g.name })),
+                ]}
+                value={galleryId}
+                onChange={(e) => setGalleryId(e.target.value)}
+              />
+              <Select
+                label="Contact"
+                options={[
+                  { value: '', label: '— None —' },
+                  ...contacts.map((c) => ({ value: c.id, label: [c.first_name, c.last_name].filter(Boolean).join(' ') || c.email || c.id })),
+                ]}
+                value={contactId}
+                onChange={(e) => setContactId(e.target.value)}
+              />
+              <Select
+                label="Exhibition"
+                options={[
+                  { value: '', label: '— None —' },
+                  ...exhibitions.map((ex) => ({ value: ex.id, label: ex.title })),
+                ]}
+                value={exhibitionId}
+                onChange={(e) => setExhibitionId(e.target.value)}
+              />
+            </div>
+          </section>
+
           {/* Next */}
           <div className="flex justify-end pt-2">
             <Button
@@ -1147,6 +1314,15 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
           />
+
+          {selectedIds.length > 1 && (
+            <section>
+              <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-primary-400">
+                Order &amp; Sort
+              </h3>
+              <DraggableArtworkList ids={selectedIds} onChange={setSelectedIds} />
+            </section>
+          )}
 
           <div className="flex items-center justify-between pt-2">
             <Button variant="outline" onClick={() => setStep('settings')}>
@@ -1281,10 +1457,15 @@ export function CatalogueBuilder({ initialConfig, catalogueId, onGenerated }: Ca
                 onClick={async () => {
                   setSaving(true);
                   const config = buildConfig();
+                  const links = {
+                    gallery_id: galleryId || null,
+                    contact_id: contactId || null,
+                    exhibition_id: exhibitionId || null,
+                  };
                   if (catalogueId) {
-                    await updateCatalogue(catalogueId, { name: settings.title, config });
+                    await updateCatalogue(catalogueId, { name: settings.title, config, ...links });
                   } else {
-                    await saveCatalogue({ name: settings.title, config });
+                    await saveCatalogue({ name: settings.title, config, ...links });
                   }
                   setSaving(false);
                 }}

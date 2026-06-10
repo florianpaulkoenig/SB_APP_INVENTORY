@@ -67,6 +67,9 @@ export interface CatalogueRow {
   user_id: string;
   name: string;
   config: CatalogueConfig;
+  gallery_id: string | null;
+  contact_id: string | null;
+  exhibition_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -74,6 +77,9 @@ export interface CatalogueRow {
 export interface CatalogueInsert {
   name: string;
   config: CatalogueConfig;
+  gallery_id?: string | null;
+  contact_id?: string | null;
+  exhibition_id?: string | null;
 }
 
 // ---------------------------------------------------------------------------
