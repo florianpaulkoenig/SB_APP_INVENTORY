@@ -117,57 +117,55 @@ export function LoginPage() {
         </h1>
 
         {showMfaChallenge ? (
-          <div className="w-full space-y-5 flex flex-col items-center">
+          <form onSubmit={handleMfaVerify} className="w-full flex flex-col items-center gap-8">
             <p className="text-center text-sm text-primary-400">
               Enter the 6-digit code from your authenticator app.
             </p>
 
-            <form onSubmit={handleMfaVerify} className="w-full space-y-5 flex flex-col items-center">
-              <Input
-                value={mfaCode}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                  setMfaCode(val);
-                }}
-                placeholder="000000"
-                maxLength={6}
-                pattern="[0-9]{6}"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                autoFocus
-                required
-                className="w-full text-center text-lg tracking-[0.5em] py-3"
-              />
+            <Input
+              value={mfaCode}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                setMfaCode(val);
+              }}
+              placeholder="000000"
+              maxLength={6}
+              pattern="[0-9]{6}"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              required
+              className="text-center text-lg tracking-[0.5em] py-3 placeholder:text-center"
+            />
 
-              {mfaError && (
-                <p className="text-center text-xs text-danger">{mfaError}</p>
-              )}
+            {mfaError && (
+              <p className="text-center text-xs text-danger">{mfaError}</p>
+            )}
 
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                loading={loading}
-                disabled={mfaCode.length !== 6}
-                className="w-3/5"
-              >
-                Verify
-              </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={loading}
+              disabled={mfaCode.length !== 6}
+              className="w-3/5"
+            >
+              Verify
+            </Button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMfaChallenge(false);
-                  setMfaCode('');
-                  setMfaError('');
-                  supabase.auth.signOut();
-                }}
-                className="text-center text-xs text-primary-400 hover:text-primary-600 transition-colors"
-              >
-                Back
-              </button>
-            </form>
-          </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowMfaChallenge(false);
+                setMfaCode('');
+                setMfaError('');
+                supabase.auth.signOut();
+              }}
+              className="text-xs text-primary-400 hover:text-primary-600 transition-colors"
+            >
+              Back
+            </button>
+          </form>
         ) : (
           <form onSubmit={handleSubmit} className="w-full flex flex-col items-center gap-8">
             <div className="w-full flex flex-col gap-6">
