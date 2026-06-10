@@ -98,9 +98,10 @@ export function LoginPage() {
       });
       if (verifyError) throw verifyError;
 
-      // onAuthStateChange fires MFA_CHALLENGE_VERIFIED → AuthContext sets
-      // the AAL2 session → useEffect above navigates to '/'. No reload needed.
-      setLoading(false);
+      // Navigate to the app. window.location.replace ensures a clean page
+      // load so AuthContext re-reads the AAL2 session via getSession() and
+      // ProtectedRoute lets the user in without an additional manual refresh.
+      window.location.replace('/');
     } catch {
       setMfaError('Invalid verification code. Please try again.');
       setLoading(false);
