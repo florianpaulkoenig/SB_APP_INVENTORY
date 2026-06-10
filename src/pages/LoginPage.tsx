@@ -23,14 +23,14 @@ export function LoginPage() {
   const [mfaCode, setMfaCode] = useState('');
   const [mfaError, setMfaError] = useState('');
 
-  // Auto-redirect when session becomes available (normal login path only).
-  // The MFA path navigates explicitly via window.location.replace to avoid
-  // race conditions between setMfaVerified and the onAuthStateChange session update.
+  // Auto-redirect whenever the session is set — covers both normal login and
+  // post-MFA-verify (onAuthStateChange fires MFA_CHALLENGE_VERIFIED which
+  // updates session in AuthContext, triggering this effect).
   useEffect(() => {
-    if (session && !showMfaChallenge) {
+    if (session) {
       navigate('/', { replace: true });
     }
-  }, [session, navigate, showMfaChallenge]);
+  }, [session, navigate]);
 
   // On mount: if Supabase already has an AAL1 session (e.g. after hard
   // refresh) skip the password form and go straight to the MFA step.
@@ -51,22 +51,25 @@ export function LoginPage() {
 
     try {
       await signIn(email, password);
+    } catch {
+      setError('Invalid email or password. Please try again.');
+      setLoading(false);
+      return;
+    }
 
-      // Check if MFA is required
+    // Check if MFA is required — separate try/catch so a check failure
+    // doesn't show "invalid password". Default to showing MFA if uncertain.
+    try {
       const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
         setShowMfaChallenge(true);
         setLoading(false);
-        return; // Don't navigate yet — useAuth blocks session until MFA done
+        return;
       }
-
-      // Non-MFA login: keep spinner active while AuthContext processes the
-      // SIGNED_IN event and sets session. The useEffect above watching
-      // `session` will navigate and unmount this component. If something goes
-      // wrong and navigation never happens the user can refresh manually, but
-      // at least they don't see a blank "nothing happened" state.
+      // Non-MFA: session will be set via onAuthStateChange → useEffect navigates.
     } catch {
-      setError('Invalid email or password. Please try again.');
+      // MFA check failed — show the MFA form to be safe rather than skipping it.
+      setShowMfaChallenge(true);
       setLoading(false);
     }
   }
@@ -95,10 +98,9 @@ export function LoginPage() {
       });
       if (verifyError) throw verifyError;
 
-      // AAL2 session is now in localStorage. Reload the page so AuthContext
-      // reads it fresh via getSession() — more reliable than waiting for
-      // onAuthStateChange in the current render cycle.
-      window.location.reload();
+      // onAuthStateChange fires MFA_CHALLENGE_VERIFIED → AuthContext sets
+      // the AAL2 session → useEffect above navigates to '/'. No reload needed.
+      setLoading(false);
     } catch {
       setMfaError('Invalid verification code. Please try again.');
       setLoading(false);

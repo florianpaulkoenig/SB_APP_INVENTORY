@@ -52,10 +52,23 @@ async function fetchProfile(userId: string): Promise<UserProfileRow | null> {
 async function isMfaPending(): Promise<boolean> {
   try {
     const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    return aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2';
+    return (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') ?? false;
   } catch {
     return false;
   }
+}
+
+// Synchronous check using the session's AMR claims — no extra API round-trip.
+function isMfaPendingFromSession(session: import('@supabase/supabase-js').Session): boolean {
+  const aal = (session as { aal?: string }).aal;
+  if (aal === 'aal2') return false;
+  // Check if any TOTP factor exists that isn't verified in the AMR list
+  const amr: Array<{ method: string }> = (session as { amr?: Array<{ method: string }> }).amr ?? [];
+  const hasVerifiedTotp = amr.some((e) => e.method === 'totp');
+  // If user has MFA enrolled but not yet verified in this session, it's pending.
+  // We detect enrollment by checking the user's factors via the session user object.
+  const totpFactors = session.user?.factors?.filter((f) => f.factor_type === 'totp') ?? [];
+  return totpFactors.length > 0 && !hasVerifiedTotp;
 }
 
 // ---------------------------------------------------------------------------
@@ -90,7 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted.current) return;
 
         if (currentSession?.user) {
-          const mfaNeeded = await isMfaPending();
+          // Use synchronous session-based check first; fall back to async API call.
+          const mfaNeeded = isMfaPendingFromSession(currentSession) || await isMfaPending();
           if (mfaNeeded) {
             setSession(null);
             setUser(null);
@@ -140,7 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'INITIAL_SESSION') return;
 
       if (newSession?.user) {
-        const mfaNeeded = await isMfaPending();
+        // Synchronous check first — avoids an async round-trip on every
+        // TOKEN_REFRESHED event and eliminates the brief session=null window.
+        const mfaNeeded = isMfaPendingFromSession(newSession) || await isMfaPending();
         if (mfaNeeded) {
           setSession(null);
           setUser(null);
