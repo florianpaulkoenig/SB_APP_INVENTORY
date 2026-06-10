@@ -40,16 +40,22 @@ export const ArtworkCard = React.memo(function ArtworkCard({ artwork, imageUrl, 
   const galleryName = (artwork as ArtworkCardProps['artwork']).galleries?.name;
   const detailLine = [artwork.year?.toString(), dimensions].filter(Boolean).join(' · ');
 
+  // Derive aspect ratio from physical dimensions; fall back to 3:4 (portrait)
+  const aspectRatio =
+    artwork.width && artwork.height && artwork.width > 0 && artwork.height > 0
+      ? artwork.width / artwork.height
+      : 0.75;
+
   return (
     <Card hoverable onClick={onClick} className="group relative overflow-hidden border-0">
-      {/* Image */}
-      <div className="aspect-square bg-primary-100">
+      {/* Image — natural aspect ratio */}
+      <div className="relative w-full bg-primary-100" style={{ aspectRatio }}>
         {imageUrl && !imgError ? (
           <img
             src={imageUrl}
             alt={artwork.title}
             loading="lazy"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
             onError={() => setImgError(true)}
           />
         ) : (
