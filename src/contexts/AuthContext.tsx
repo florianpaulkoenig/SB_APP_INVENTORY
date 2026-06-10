@@ -49,26 +49,18 @@ async function fetchProfile(userId: string): Promise<UserProfileRow | null> {
   }
 }
 
-async function isMfaPending(): Promise<boolean> {
+// Decode the AAL claim directly from the JWT access token — synchronous,
+// no API call, never blocks other Supabase auth operations.
+function isMfaPendingFromSession(session: Session): boolean {
   try {
-    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    return (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') ?? false;
+    const payload = JSON.parse(atob(session.access_token.split('.')[1]));
+    const aal = payload.aal as string | undefined;
+    if (aal === 'aal2') return false;
+    // AAL1 (or missing): pending if the user has any verified TOTP factor enrolled.
+    return (session.user?.factors ?? []).some((f) => f.factor_type === 'totp');
   } catch {
     return false;
   }
-}
-
-// Synchronous check using the session's AMR claims — no extra API round-trip.
-function isMfaPendingFromSession(session: import('@supabase/supabase-js').Session): boolean {
-  const aal = (session as { aal?: string }).aal;
-  if (aal === 'aal2') return false;
-  // Check if any TOTP factor exists that isn't verified in the AMR list
-  const amr: Array<{ method: string }> = (session as { amr?: Array<{ method: string }> }).amr ?? [];
-  const hasVerifiedTotp = amr.some((e) => e.method === 'totp');
-  // If user has MFA enrolled but not yet verified in this session, it's pending.
-  // We detect enrollment by checking the user's factors via the session user object.
-  const totpFactors = session.user?.factors?.filter((f) => f.factor_type === 'totp') ?? [];
-  return totpFactors.length > 0 && !hasVerifiedTotp;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted.current) return;
 
         if (currentSession?.user) {
-          const mfaNeeded = await isMfaPending();
+          const mfaNeeded = isMfaPendingFromSession(currentSession);
           if (mfaNeeded) {
             setSession(null);
             setUser(null);
@@ -153,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'INITIAL_SESSION') return;
 
       if (newSession?.user) {
-        const mfaNeeded = await isMfaPending();
+        const mfaNeeded = isMfaPendingFromSession(newSession);
         if (mfaNeeded) {
           setSession(null);
           setUser(null);
