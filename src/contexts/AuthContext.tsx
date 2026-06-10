@@ -103,8 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted.current) return;
 
         if (currentSession?.user) {
-          // Use synchronous session-based check first; fall back to async API call.
-          const mfaNeeded = isMfaPendingFromSession(currentSession) || await isMfaPending();
+          const mfaNeeded = await isMfaPending();
           if (mfaNeeded) {
             setSession(null);
             setUser(null);
@@ -154,9 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'INITIAL_SESSION') return;
 
       if (newSession?.user) {
-        // Synchronous check first — avoids an async round-trip on every
-        // TOKEN_REFRESHED event and eliminates the brief session=null window.
-        const mfaNeeded = isMfaPendingFromSession(newSession) || await isMfaPending();
+        const mfaNeeded = await isMfaPending();
         if (mfaNeeded) {
           setSession(null);
           setUser(null);
