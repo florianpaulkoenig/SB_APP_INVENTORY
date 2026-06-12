@@ -15,6 +15,7 @@ import { useExhibitionFloorPlans } from '../hooks/useExhibitionFloorPlans';
 import { EXHIBITION_TYPES } from '../lib/constants';
 import { ExhibitionDossierPDF } from '../components/pdf/ExhibitionDossierPDF';
 import type { DossierProductionOrder } from '../components/pdf/ExhibitionDossierPDF';
+import type { DossierLanguage } from '../lib/dossierI18n';
 
 // Lazy-load MapView to avoid pulling 1.7MB mapbox-gl into this chunk
 const MapView = React.lazy(() =>
@@ -144,6 +145,7 @@ export function ExhibitionDetailPage() {
   const [dossierCreatedBy, setDossierCreatedBy] = useState(
     'Florian Paul Koenig, +41 76 511 92 94, florian.koenig@noacontemporary.com',
   );
+  const [dossierLanguage, setDossierLanguage] = useState<DossierLanguage>('en');
 
   const [linkedPOs, setLinkedPOs] = useState<LinkedProductionOrder[]>([]);
   const [poModalOpen, setPOModalOpen] = useState(false);
@@ -405,6 +407,7 @@ export function ExhibitionDetailPage() {
           exhibitionPhotos={exhibitionPhotos}
           productionOrders={ordersWithItems}
           createdBy={dossierCreatedBy}
+          language={dossierLanguage}
         />
       ).toBlob();
 
@@ -617,6 +620,21 @@ export function ExhibitionDetailPage() {
               className="w-64 rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-700 focus:border-gray-400 focus:outline-none"
               placeholder="Name, phone, email…"
             />
+          </div>
+          <div className="flex items-center gap-1">
+            {(['en', 'de', 'fr'] as DossierLanguage[]).map((lang) => (
+              <button
+                key={lang}
+                onClick={() => setDossierLanguage(lang)}
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                  dossierLanguage === lang
+                    ? 'bg-black text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {lang.toUpperCase()}
+              </button>
+            ))}
           </div>
         </div>
       </div>

@@ -15,6 +15,8 @@ import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 import { formatDate } from '../../lib/utils';
 import { parseRichText, superscript } from '../../lib/richText';
 import type { RichToken } from '../../lib/richText';
+import { DOSSIER_STRINGS } from '../../lib/dossierI18n';
+import type { DossierLanguage } from '../../lib/dossierI18n';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -56,6 +58,7 @@ export interface ExhibitionDossierPDFProps {
   productionOrders: DossierProductionOrder[];
   /** Shown on the cover page under "Created by" */
   createdBy?: string;
+  language?: DossierLanguage;
 }
 
 // ---------------------------------------------------------------------------
@@ -477,7 +480,9 @@ export function ExhibitionDossierPDF({
   exhibitionPhotos = [],
   productionOrders,
   createdBy,
+  language = 'en',
 }: ExhibitionDossierPDFProps) {
+  const t = DOSSIER_STRINGS[language];
   const location = [exhibition.city, exhibition.country].filter(Boolean).join(', ');
   const dateStr = [
     exhibition.start_date ? formatDate(exhibition.start_date) : null,
@@ -511,7 +516,7 @@ export function ExhibitionDossierPDF({
 
           {exhibition.type && (
             <View style={d.titleMetaRow}>
-              <Text style={d.titleMetaLabel}>Category</Text>
+              <Text style={d.titleMetaLabel}>{t.labelCategory}</Text>
               <Text style={d.titleMetaValue}>
                 {exhibition.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
               </Text>
@@ -519,19 +524,19 @@ export function ExhibitionDossierPDF({
           )}
           {exhibition.venue && (
             <View style={d.titleMetaRow}>
-              <Text style={d.titleMetaLabel}>Venue</Text>
+              <Text style={d.titleMetaLabel}>{t.labelVenue}</Text>
               <Text style={d.titleMetaValue}>{exhibition.venue}</Text>
             </View>
           )}
           {location && (
             <View style={d.titleMetaRow}>
-              <Text style={d.titleMetaLabel}>Location</Text>
+              <Text style={d.titleMetaLabel}>{t.labelLocation}</Text>
               <Text style={d.titleMetaValue}>{location}</Text>
             </View>
           )}
           {dateStr && (
             <View style={d.titleMetaRow}>
-              <Text style={d.titleMetaLabel}>Dates</Text>
+              <Text style={d.titleMetaLabel}>{t.labelDates}</Text>
               <Text style={d.titleMetaValue}>{dateStr}</Text>
             </View>
           )}
@@ -545,7 +550,7 @@ export function ExhibitionDossierPDF({
           )}
           {createdBy?.trim() && (
             <View style={[d.titleMetaRow, { marginTop: 14 }]}>
-              <Text style={d.titleMetaLabel}>Created by</Text>
+              <Text style={d.titleMetaLabel}>{t.labelCreatedBy}</Text>
               <Text style={[d.titleMetaValue, { fontSize: 9, lineHeight: 1.5 }]}>
                 {createdBy}
               </Text>
@@ -567,7 +572,7 @@ export function ExhibitionDossierPDF({
           </View>
 
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
-            Exhibition Text
+            {t.sectionExhibitionText}
           </Text>
 
           {/* Rich-text paragraphs (bold / italic / footnote refs) */}
@@ -617,7 +622,7 @@ export function ExhibitionDossierPDF({
             </View>
 
             <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
-              {`Floor Plans / 3D Model${total > 1 ? ` (${group.map(f => f.origIdx + 1).join(', ')}/${total})` : ''}${group.length === 1 && group[0].description?.trim() ? ` — ${group[0].description}` : ''}`}
+              {`${t.sectionFloorPlans}${total > 1 ? ` (${group.map(f => f.origIdx + 1).join(', ')}/${total})` : ''}${group.length === 1 && group[0].description?.trim() ? ` — ${group[0].description}` : ''}`}
             </Text>
 
             <View style={{ flex: 1, flexDirection: 'column' }} wrap={false}>
@@ -659,7 +664,7 @@ export function ExhibitionDossierPDF({
             <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
             <Text style={d.pageHeaderText}>{exhibition.title}</Text>
           </View>
-          <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>Venue Photos</Text>
+          <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>{t.sectionVenuePhotos}</Text>
           <View style={d.photoGrid}>
             {venuePhotos.map((photo, idx) => {
               const isRight = idx % 2 === 1;
@@ -691,7 +696,7 @@ export function ExhibitionDossierPDF({
           </View>
 
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
-            Exhibition Photos
+            {t.sectionExhibitionPhotos}
           </Text>
 
           {/* 2-column grid */}
@@ -731,7 +736,7 @@ export function ExhibitionDossierPDF({
           </View>
 
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
-            Production Orders
+            {t.sectionProductionOrders}
           </Text>
 
           {productionOrders.map((po) => {
@@ -750,10 +755,10 @@ export function ExhibitionDossierPDF({
               {/* Column header */}
               {po.items.length > 0 && (
                 <View style={d.poHeaderRow}>
-                  <Text style={[d.poHeaderCell, { flex: 1 }]}>Description</Text>
-                  <Text style={[d.poHeaderCell, { width: '25%' }]}>Medium</Text>
-                  <Text style={[d.poHeaderCell, { width: '22%' }]}>Dimensions</Text>
-                  <Text style={[d.poHeaderCell, { width: '8%', textAlign: 'right' as const }]}>Qty</Text>
+                  <Text style={[d.poHeaderCell, { flex: 1 }]}>{t.colDescription}</Text>
+                  <Text style={[d.poHeaderCell, { width: '25%' }]}>{t.colMedium}</Text>
+                  <Text style={[d.poHeaderCell, { width: '22%' }]}>{t.colDimensions}</Text>
+                  <Text style={[d.poHeaderCell, { width: '8%', textAlign: 'right' as const }]}>{t.colQty}</Text>
                 </View>
               )}
 
@@ -773,7 +778,7 @@ export function ExhibitionDossierPDF({
               {po.items.length === 0 && (
                 <View style={d.poItemRow}>
                   <Text style={[d.poItemMeta, { color: PDF_COLORS.primary400 }]}>
-                    No items
+                    {t.noItems}
                   </Text>
                 </View>
               )}
@@ -781,7 +786,7 @@ export function ExhibitionDossierPDF({
               {/* Reference photos — one grid per item that has images */}
               {itemsWithPhotos.length > 0 && (
                 <View style={d.refSection}>
-                  <Text style={d.refSectionLabel}>Reference Photos</Text>
+                  <Text style={d.refSectionLabel}>{t.referencePhotos}</Text>
                   {itemsWithPhotos.map((item, rIdx) => {
                     const imgs = item.referenceImageUrls!;
                     // 2-column grid — equal 8pt gap in both directions
