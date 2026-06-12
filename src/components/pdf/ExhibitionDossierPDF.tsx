@@ -233,8 +233,10 @@ const d = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   floorPlanImage: {
+    flex: 1,
     width: '100%',
     objectFit: 'contain' as const,
+    objectPosition: 'left center' as const,
   },
 
   // ---------- Production orders page ---------------------------------------
@@ -639,15 +641,9 @@ export function ExhibitionDossierPDF({
 
             <View style={{ flex: 1, flexDirection: 'column' }} wrap={false}>
               {group.map((fp, fi) => (
-                <View key={fi} style={group.length > 1
-                  ? { height: 320, marginBottom: fi < group.length - 1 ? 10 : 0 }
-                  : { flex: 1 }
-                }>
-                  <Image src={fp.dataUrl} style={group.length > 1
-                    ? { width: '100%', height: 310, objectFit: 'contain' as const }
-                    : d.floorPlanImage
-                  } />
-                  {group.length > 1 && fp.description?.trim() && (
+                <View key={fi} style={{ flex: 1, flexDirection: 'column', marginBottom: fi < group.length - 1 ? 10 : 0 }}>
+                  <Image src={fp.dataUrl} style={d.floorPlanImage} />
+                  {fp.description?.trim() && (
                     <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 3, letterSpacing: 0.5 }}>
                       {fp.description}
                     </Text>
@@ -719,8 +715,8 @@ export function ExhibitionDossierPDF({
 
             <View style={{ flex: 1, flexDirection: 'column' }} wrap={false}>
               {pair.map((photo, fi) => (
-                <View key={fi} style={{ height: 320, marginBottom: fi < pair.length - 1 ? 10 : 0 }}>
-                  <Image src={photo.dataUrl} style={{ width: '100%', height: 310, objectFit: 'contain' as const }} />
+                <View key={fi} style={{ flex: 1, flexDirection: 'column', marginBottom: fi < pair.length - 1 ? 10 : 0 }}>
+                  <Image src={photo.dataUrl} style={d.floorPlanImage} />
                   {photo.caption?.trim() && (
                     <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 3, letterSpacing: 0.5 }}>
                       {photo.caption}
