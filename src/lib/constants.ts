@@ -340,6 +340,9 @@ export const EXHIBITION_TYPES = [
   { value: 'art_fair', label: 'Art Fair', color: 'bg-purple-100 text-purple-800' },
   { value: 'solo_show', label: 'Solo Show', color: 'bg-emerald-100 text-emerald-800' },
   { value: 'group_show', label: 'Group Show', color: 'bg-amber-100 text-amber-800' },
+  { value: 'project', label: 'Project', color: 'bg-sky-100 text-sky-800' },
+  { value: 'public_project', label: 'Public Project', color: 'bg-teal-100 text-teal-800' },
+  { value: 'mural', label: 'Mural', color: 'bg-rose-100 text-rose-800' },
 ] as const;
 
 // ---------------------------------------------------------------------------
