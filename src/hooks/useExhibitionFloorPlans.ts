@@ -128,6 +128,22 @@ export function useExhibitionFloorPlans(exhibitionId: string | undefined) {
     }
   }, [toast]);
 
+  // ---- Reorder floor plans --------------------------------------------------
+
+  const reorderFloorPlans = useCallback(async (reordered: ExhibitionFloorPlanRow[]): Promise<void> => {
+    setFloorPlans(reordered);
+    try {
+      await Promise.all(
+        reordered.map((fp, i) =>
+          supabase.from('exhibition_floor_plans').update({ sort_order: i } as never).eq('id', fp.id),
+        ),
+      );
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save new order.', variant: 'error' });
+      await fetchFloorPlans();
+    }
+  }, [fetchFloorPlans, toast]);
+
   // ---- Delete ---------------------------------------------------------------
 
   const deleteFloorPlan = useCallback(async (id: string, storagePath: string): Promise<boolean> => {
@@ -147,5 +163,5 @@ export function useExhibitionFloorPlans(exhibitionId: string | undefined) {
     }
   }, [fetchFloorPlans, toast]);
 
-  return { floorPlans, loading, uploadFloorPlan, deleteFloorPlan, updateDescription, refetch: fetchFloorPlans };
+  return { floorPlans, loading, uploadFloorPlan, deleteFloorPlan, updateDescription, reorderFloorPlans, refetch: fetchFloorPlans };
 }

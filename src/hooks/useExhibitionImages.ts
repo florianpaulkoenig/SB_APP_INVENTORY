@@ -180,6 +180,22 @@ export function useExhibitionImages(exhibitionId: string | undefined) {
     }
   }, [toast]);
 
+  // ---- Reorder images -------------------------------------------------------
+
+  const reorderImages = useCallback(async (reordered: ExhibitionImageRow[]): Promise<void> => {
+    setImages(reordered);
+    try {
+      await Promise.all(
+        reordered.map((img, i) =>
+          supabase.from('exhibition_images').update({ sort_order: i } as never).eq('id', img.id),
+        ),
+      );
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save new order.', variant: 'error' });
+      await fetchImages();
+    }
+  }, [fetchImages, toast]);
+
   // ---- Update photo type ----------------------------------------------------
 
   const updatePhotoType = useCallback(async (imageId: string, photoType: ExhibitionPhotoType): Promise<boolean> => {
@@ -240,6 +256,7 @@ export function useExhibitionImages(exhibitionId: string | undefined) {
     deleteImage,
     updateCaption,
     updatePhotoType,
+    reorderImages,
     fetchAllExhibitionImages,
     refetch: fetchImages,
   };

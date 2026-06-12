@@ -97,7 +97,7 @@ export function ExhibitionDetailPage() {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
 
   const { galleries, loading: galleriesLoading, linkGallery, unlinkGallery } = useExhibitionGalleries(id!);
-  const { floorPlans, loading: floorPlansLoading, uploadFloorPlan, deleteFloorPlan, updateDescription: updateFloorPlanDesc } = useExhibitionFloorPlans(id);
+  const { floorPlans, loading: floorPlansLoading, uploadFloorPlan, deleteFloorPlan, updateDescription: updateFloorPlanDesc, reorderFloorPlans } = useExhibitionFloorPlans(id);
 
   const [addGalleryOpen, setAddGalleryOpen] = useState(false);
   const [selectedGalleryId, setSelectedGalleryId] = useState('');
@@ -116,12 +116,15 @@ export function ExhibitionDetailPage() {
     deleteImage: deleteExhibitionImage,
     updateCaption: updateImageCaption,
     updatePhotoType: updateImagePhotoType,
+    reorderImages,
   } = useExhibitionImages(id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
   const [editingCaptionText, setEditingCaptionText] = useState('');
+  const photoDragIndex = useRef<number | null>(null);
+  const floorPlanDragIndex = useRef<number | null>(null);
 
   // ---- Exhibition text (dossier statement) --------------------------------
   const [descText, setDescText] = useState('');
@@ -815,8 +818,22 @@ export function ExhibitionDetailPage() {
           <LoadingSpinner />
         ) : exhibitionImages.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
-            {exhibitionImages.map((img) => (
-              <div key={img.id} className="group relative rounded-lg overflow-hidden border border-gray-200">
+            {exhibitionImages.map((img, i) => (
+              <div
+                key={img.id}
+                draggable
+                onDragStart={() => { photoDragIndex.current = i; }}
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDrop={() => {
+                  if (photoDragIndex.current === null || photoDragIndex.current === i) return;
+                  const next = [...exhibitionImages];
+                  const [moved] = next.splice(photoDragIndex.current, 1);
+                  next.splice(i, 0, moved);
+                  photoDragIndex.current = i;
+                  reorderImages(next);
+                }}
+                onDragEnd={() => { photoDragIndex.current = null; }}
+                className="group relative rounded-lg overflow-hidden border border-gray-200 cursor-grab active:cursor-grabbing">
                 {img.signedUrl ? (
                   <img src={img.signedUrl} alt={img.caption || img.file_name} className="w-full aspect-square object-cover" />
                 ) : (
@@ -917,8 +934,25 @@ export function ExhibitionDetailPage() {
         ) : floorPlans.length > 0 ? (
           <ul className="mb-4 divide-y divide-gray-100">
             {floorPlans.map((fp, idx) => (
-              <li key={fp.id} className="py-3">
+              <li
+                key={fp.id}
+                draggable
+                onDragStart={() => { floorPlanDragIndex.current = idx; }}
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDrop={() => {
+                  if (floorPlanDragIndex.current === null || floorPlanDragIndex.current === idx) return;
+                  const next = [...floorPlans];
+                  const [moved] = next.splice(floorPlanDragIndex.current, 1);
+                  next.splice(idx, 0, moved);
+                  floorPlanDragIndex.current = idx;
+                  reorderFloorPlans(next);
+                }}
+                onDragEnd={() => { floorPlanDragIndex.current = null; }}
+                className="py-3 cursor-grab active:cursor-grabbing"
+              >
                 <div className="flex items-center gap-3">
+                  {/* Drag handle */}
+                  <span className="text-gray-300 select-none">⠿</span>
                   {/* Icon: PDF or image */}
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-gray-100 text-[10px] font-bold text-gray-500 uppercase">
                     {fp.file_name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'IMG'}
