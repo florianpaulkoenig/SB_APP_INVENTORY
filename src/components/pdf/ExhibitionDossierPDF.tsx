@@ -620,10 +620,16 @@ export function ExhibitionDossierPDF({
               {`Floor Plans / 3D Model${total > 1 ? ` (${group.map(f => f.origIdx + 1).join(', ')}/${total})` : ''}${group.length === 1 && group[0].description?.trim() ? ` — ${group[0].description}` : ''}`}
             </Text>
 
-            <View style={{ flex: 1, flexDirection: 'column', gap: group.length > 1 ? 10 : 0 }}>
+            <View style={{ flex: 1, flexDirection: 'column' }} wrap={false}>
               {group.map((fp, fi) => (
-                <View key={fi} style={{ flex: 1 }}>
-                  <Image src={fp.dataUrl} style={d.floorPlanImage} />
+                <View key={fi} style={group.length > 1
+                  ? { height: 320, marginBottom: fi < group.length - 1 ? 10 : 0 }
+                  : { flex: 1 }
+                }>
+                  <Image src={fp.dataUrl} style={group.length > 1
+                    ? { width: '100%', height: 310, objectFit: 'contain' as const }
+                    : d.floorPlanImage
+                  } />
                   {group.length > 1 && fp.description?.trim() && (
                     <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 3, letterSpacing: 0.5 }}>
                       {fp.description}
