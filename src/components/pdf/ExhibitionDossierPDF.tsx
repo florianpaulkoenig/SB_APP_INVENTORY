@@ -59,6 +59,8 @@ export interface ExhibitionDossierPDFProps {
   /** Shown on the cover page under "Created by" */
   createdBy?: string;
   language?: DossierLanguage;
+  /** Custom title for the exhibition text section (overrides the i18n default) */
+  exhibitionTextTitle?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -481,6 +483,7 @@ export function ExhibitionDossierPDF({
   productionOrders,
   createdBy,
   language = 'en',
+  exhibitionTextTitle,
 }: ExhibitionDossierPDFProps) {
   const t = DOSSIER_STRINGS[language];
   // German labels are longer ("AUSSTELLUNGSORT") — widen the column
@@ -574,7 +577,7 @@ export function ExhibitionDossierPDF({
           </View>
 
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
-            {t.sectionExhibitionText}
+            {exhibitionTextTitle?.trim() || t.sectionExhibitionText}
           </Text>
 
           {/* Rich-text paragraphs (bold / italic / footnote refs) */}

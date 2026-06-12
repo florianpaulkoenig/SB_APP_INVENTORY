@@ -130,6 +130,7 @@ export function ExhibitionDetailPage() {
 
   // ---- Exhibition text (dossier statement) --------------------------------
   const [descText, setDescText] = useState('');
+  const [descTextTitle, setDescTextTitle] = useState('');
   const [descSaving, setDescSaving] = useState(false);
   const [descSaved, setDescSaved] = useState(false);
   const descSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -408,6 +409,7 @@ export function ExhibitionDetailPage() {
           productionOrders={ordersWithItems}
           createdBy={dossierCreatedBy}
           language={dossierLanguage}
+          exhibitionTextTitle={descTextTitle}
         />
       ).toBlob();
 
@@ -672,7 +674,16 @@ export function ExhibitionDetailPage() {
       {/* Exhibition Text (dossier statement) */}
       <Card>
         <div className="mb-3">
-          <h2 className="text-lg font-semibold">Exhibition Text</h2>
+          <div className="flex items-center justify-between gap-4 mb-1">
+            <h2 className="text-lg font-semibold">Exhibition Text</h2>
+            <input
+              type="text"
+              value={descTextTitle}
+              onChange={(e) => setDescTextTitle(e.target.value)}
+              placeholder="Titel im PDF (z.B. Pressetext, Künstlerstatement…)"
+              className="flex-1 max-w-xs rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:border-gray-400 focus:outline-none"
+            />
+          </div>
           <p className="text-xs text-gray-400 mt-0.5">
             Erscheint im Dossier PDF. Leerzeile = neuer Absatz.
             Toolbar: <strong>B</strong> fett · <em>I</em> kursiv · Fn¹ Fussnote
