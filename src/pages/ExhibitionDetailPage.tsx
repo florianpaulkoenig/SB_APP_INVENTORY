@@ -8,7 +8,7 @@ import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { formatCurrency, formatDate, formatDimensions, downloadBlob } from '../lib/utils';
+import { formatCurrency, formatDate, formatDimensions, downloadBlob, buildNOAFilename } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
 import { useExhibitionGalleries } from '../hooks/useExhibitionGalleries';
 import { useExhibitionFloorPlans } from '../hooks/useExhibitionFloorPlans';
@@ -308,6 +308,42 @@ export function ExhibitionDetailPage() {
       await uploadFloorPlan(file);
     }
     setUploadingFloorPlan(false);
+  }
+
+  // ---- File download helpers -----------------------------------------------
+
+  function exhibitionYear(): string {
+    return exhibition?.start_date ? exhibition.start_date.substring(0, 4) : '';
+  }
+
+  async function downloadFileFromUrl(url: string, filename: string) {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      downloadBlob(blob, filename);
+    } catch {
+      window.open(url, '_blank');
+    }
+  }
+
+  async function handleDownloadPhoto(index: number, storagePath: string, signedUrl: string | null) {
+    if (!exhibition) return;
+    const ext = '.' + (storagePath.split('.').pop() ?? 'jpg');
+    const filename = buildNOAFilename(exhibition.title, exhibitionYear(), index, ext);
+    if (signedUrl) {
+      await downloadFileFromUrl(signedUrl, filename);
+    } else {
+      const { data } = await supabase.storage.from('media-files').createSignedUrl(storagePath, 300);
+      if (data?.signedUrl) await downloadFileFromUrl(data.signedUrl, filename);
+    }
+  }
+
+  async function handleDownloadFloorPlan(index: number, storagePath: string, fileName: string) {
+    if (!exhibition) return;
+    const ext = '.' + (fileName.split('.').pop() ?? 'pdf');
+    const filename = buildNOAFilename(exhibition.title, exhibitionYear(), index, ext);
+    const { data } = await supabase.storage.from('media-files').createSignedUrl(storagePath, 300);
+    if (data?.signedUrl) await downloadFileFromUrl(data.signedUrl, filename);
   }
 
   // ---- Dossier PDF download -----------------------------------------------
@@ -1034,6 +1070,16 @@ export function ExhibitionDetailPage() {
                 >
                   {img.photo_type === 'venue' ? 'Venue' : 'Exhibition'}
                 </button>
+                {/* Download button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDownloadPhoto(i, img.storage_path, img.signedUrl ?? null); }}
+                  className="absolute top-1 right-8 opacity-0 group-hover:opacity-100 bg-white/80 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center transition-opacity hover:bg-white"
+                  title="Download image"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  </svg>
+                </button>
                 {/* Delete button */}
                 <button
                   onClick={() => deleteExhibitionImage(img.id, img.storage_path)}
@@ -1118,6 +1164,15 @@ export function ExhibitionDetailPage() {
                   </span>
                   <span className="flex-1 truncate text-sm text-gray-800">{fp.file_name}</span>
                   <span className="text-xs text-gray-400 shrink-0">#{idx + 1}</span>
+                  <button
+                    onClick={() => handleDownloadFloorPlan(idx, fp.storage_path, fp.file_name)}
+                    className="shrink-0 text-gray-400 hover:text-gray-700 transition-colors"
+                    title="Download"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                  </button>
                   <button
                     onClick={() => deleteFloorPlan(fp.id, fp.storage_path)}
                     className="shrink-0 text-gray-300 hover:text-red-400 transition-colors"

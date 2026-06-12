@@ -202,6 +202,23 @@ export function downloadBlob(blob: Blob, filename: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// Smart download filename builder
+// Format: NOA_SB_<Projektname>_<Jahr>[_<index>].<ext>
+// ---------------------------------------------------------------------------
+export function buildNOAFilename(projectTitle: string, year: string | number | null | undefined, index?: number, ext?: string): string {
+  const safeTitle = projectTitle
+    .replace(/[^a-zA-Z0-9äöüÄÖÜß\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '_');
+  const yearStr = year ? String(year) : '';
+  const parts = ['NOA', 'SB', safeTitle, yearStr].filter(Boolean);
+  let name = parts.join('_');
+  if (index !== undefined) name += `_${String(index + 1).padStart(2, '0')}`;
+  if (ext) name += ext.startsWith('.') ? ext : `.${ext}`;
+  return name;
+}
+
+// ---------------------------------------------------------------------------
 // Safe URL href — prevents javascript:, data:, and other dangerous protocols
 // ---------------------------------------------------------------------------
 export function safeHref(url: string): string {

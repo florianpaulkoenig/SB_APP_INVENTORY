@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { getSignedUrls } from '../../lib/signedUrlCache';
+import { buildNOAFilename } from '../../lib/utils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Tabs } from '../ui/Tabs';
 import { IMAGE_TYPES } from '../../lib/constants';
@@ -17,6 +18,10 @@ export interface ArtworkImageGalleryProps {
   onSetPrimaryImage?: (imageId: string) => Promise<boolean>;
   /** Incremented by the parent after an upload to trigger a refetch. */
   refreshKey?: number;
+  /** Artwork title used in smart download filename (NOA_SB_<title>_<year>). */
+  artworkTitle?: string;
+  /** Artwork year used in smart download filename. */
+  artworkYear?: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,6 +55,8 @@ export function ArtworkImageGallery({
   onDeleteImage,
   onSetPrimaryImage,
   refreshKey,
+  artworkTitle,
+  artworkYear,
 }: ArtworkImageGalleryProps) {
   const [images, setImages] = useState<ImageWithUrl[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,23 +158,25 @@ export function ArtworkImageGallery({
   );
 
   // -- Download handler -----------------------------------------------------
-  const handleDownload = useCallback(async (img: ImageWithUrl) => {
+  const handleDownload = useCallback(async (img: ImageWithUrl, index: number) => {
     try {
       const response = await fetch(img.signedUrl);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = img.file_name;
+      const ext = '.' + (img.file_name.split('.').pop() ?? 'jpg');
+      a.download = artworkTitle
+        ? buildNOAFilename(artworkTitle, artworkYear, index, ext)
+        : img.file_name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      // Fallback: open in new tab
       window.open(img.signedUrl, '_blank');
     }
-  }, []);
+  }, [artworkTitle, artworkYear]);
 
   // -- Filter images by active tab ------------------------------------------
   const filteredImages = images.filter(
@@ -225,7 +234,7 @@ export function ArtworkImageGallery({
       {/* Grid */}
       {filteredImages.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {filteredImages.map((img) => (
+          {filteredImages.map((img, imgIdx) => (
             <div key={img.id} className="group relative">
               <button
                 type="button"
@@ -251,7 +260,7 @@ export function ArtworkImageGallery({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDownload(img);
+                      handleDownload(img, imgIdx);
                     }}
                     className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-primary-600 shadow-sm transition-colors hover:bg-accent hover:text-white"
                     title="Download image"
@@ -403,7 +412,7 @@ export function ArtworkImageGallery({
                 {/* Download button */}
                 <button
                   type="button"
-                  onClick={() => handleDownload(selectedImage)}
+                  onClick={() => handleDownload(selectedImage, filteredImages.findIndex(i => i.id === selectedImage.id))}
                   className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-primary-700 shadow transition-colors hover:bg-accent hover:text-white"
                 >
                   <svg

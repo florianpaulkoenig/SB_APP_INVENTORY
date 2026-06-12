@@ -805,6 +805,8 @@ export function ArtworkDetailPage() {
           onDeleteImage={handleDeleteImage}
           onSetPrimaryImage={handleSetPrimaryImage}
           refreshKey={imageRefreshKey}
+          artworkTitle={artwork?.title}
+          artworkYear={artwork?.year}
         />
         <ArtworkImageUpload onUpload={handleImageUpload} />
       </div>
