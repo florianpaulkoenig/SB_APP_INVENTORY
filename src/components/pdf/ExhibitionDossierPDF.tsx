@@ -12,10 +12,9 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import styles, { PDF_COLORS } from './PDFStyles';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
-import { formatDate } from '../../lib/utils';
 import { parseRichText, superscript } from '../../lib/richText';
 import type { RichToken } from '../../lib/richText';
-import { DOSSIER_STRINGS } from '../../lib/dossierI18n';
+import { DOSSIER_STRINGS, formatDateLocalized } from '../../lib/dossierI18n';
 import type { DossierLanguage } from '../../lib/dossierI18n';
 
 // ---------------------------------------------------------------------------
@@ -490,8 +489,8 @@ export function ExhibitionDossierPDF({
   const labelWidth = language === 'de' ? 100 : 70;
   const location = [exhibition.city, exhibition.country].filter(Boolean).join(', ');
   const dateStr = [
-    exhibition.start_date ? formatDate(exhibition.start_date) : null,
-    exhibition.end_date   ? formatDate(exhibition.end_date)   : null,
+    exhibition.start_date ? formatDateLocalized(exhibition.start_date, language) : null,
+    exhibition.end_date   ? formatDateLocalized(exhibition.end_date,   language) : null,
   ].filter(Boolean).join(' — ');
 
   const hasText   = !!exhibition.description_text?.trim();
@@ -523,7 +522,7 @@ export function ExhibitionDossierPDF({
             <View style={d.titleMetaRow}>
               <Text style={[d.titleMetaLabel, { width: labelWidth }]}>{t.labelCategory}</Text>
               <Text style={d.titleMetaValue}>
-                {exhibition.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                {t.exhibitionTypes[exhibition.type] ?? exhibition.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
               </Text>
             </View>
           )}

@@ -1,3 +1,6 @@
+import { format } from 'date-fns';
+import { de, fr, enUS } from 'date-fns/locale';
+
 export type DossierLanguage = 'en' | 'de' | 'fr';
 
 export interface DossierStrings {
@@ -9,7 +12,7 @@ export interface DossierStrings {
   labelCreatedBy: string;
   sectionExhibitionText: string;
   sectionFloorPlans: string;
-  sectionFloorPlansShort: string; // used in "(1/3)" style title
+  sectionFloorPlansShort: string;
   sectionVenuePhotos: string;
   sectionExhibitionPhotos: string;
   sectionProductionOrders: string;
@@ -19,6 +22,7 @@ export interface DossierStrings {
   colQty: string;
   noItems: string;
   referencePhotos: string;
+  exhibitionTypes: Record<string, string>;
 }
 
 const EN: DossierStrings = {
@@ -40,6 +44,15 @@ const EN: DossierStrings = {
   colQty: 'Qty',
   noItems: 'No items',
   referencePhotos: 'Reference Photos',
+  exhibitionTypes: {
+    exhibition: 'Exhibition',
+    art_fair: 'Art Fair',
+    solo_show: 'Solo Show',
+    group_show: 'Group Show',
+    project: 'Project',
+    public_project: 'Public Project',
+    mural: 'Mural',
+  },
 };
 
 const DE: DossierStrings = {
@@ -61,6 +74,15 @@ const DE: DossierStrings = {
   colQty: 'Anz.',
   noItems: 'Keine Positionen',
   referencePhotos: 'Referenzfotos',
+  exhibitionTypes: {
+    exhibition: 'Ausstellung',
+    art_fair: 'Kunstmesse',
+    solo_show: 'Einzelausstellung',
+    group_show: 'Gruppenausstellung',
+    project: 'Projekt',
+    public_project: 'Öffentliches Projekt',
+    mural: 'Wandmalerei',
+  },
 };
 
 const FR: DossierStrings = {
@@ -82,6 +104,26 @@ const FR: DossierStrings = {
   colQty: 'Qté',
   noItems: 'Aucun élément',
   referencePhotos: 'Photos de référence',
+  exhibitionTypes: {
+    exhibition: 'Exposition',
+    art_fair: 'Foire d\'art',
+    solo_show: 'Exposition individuelle',
+    group_show: 'Exposition collective',
+    project: 'Projet',
+    public_project: 'Projet public',
+    mural: 'Fresque murale',
+  },
 };
 
 export const DOSSIER_STRINGS: Record<DossierLanguage, DossierStrings> = { en: EN, de: DE, fr: FR };
+
+const DATE_LOCALES: Record<DossierLanguage, Locale> = { en: enUS, de, fr };
+
+export function formatDateLocalized(dateStr: string, language: DossierLanguage): string {
+  try {
+    const d = new Date(dateStr);
+    return format(d, 'd MMM yyyy', { locale: DATE_LOCALES[language] });
+  } catch {
+    return dateStr;
+  }
+}
