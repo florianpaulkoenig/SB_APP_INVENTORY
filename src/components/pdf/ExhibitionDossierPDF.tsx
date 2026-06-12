@@ -483,6 +483,8 @@ export function ExhibitionDossierPDF({
   language = 'en',
 }: ExhibitionDossierPDFProps) {
   const t = DOSSIER_STRINGS[language];
+  // German labels are longer ("AUSSTELLUNGSORT") — widen the column
+  const labelWidth = language === 'de' ? 100 : 70;
   const location = [exhibition.city, exhibition.country].filter(Boolean).join(', ');
   const dateStr = [
     exhibition.start_date ? formatDate(exhibition.start_date) : null,
@@ -516,7 +518,7 @@ export function ExhibitionDossierPDF({
 
           {exhibition.type && (
             <View style={d.titleMetaRow}>
-              <Text style={d.titleMetaLabel}>{t.labelCategory}</Text>
+              <Text style={[d.titleMetaLabel, { width: labelWidth }]}>{t.labelCategory}</Text>
               <Text style={d.titleMetaValue}>
                 {exhibition.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
               </Text>
@@ -524,25 +526,25 @@ export function ExhibitionDossierPDF({
           )}
           {exhibition.venue && (
             <View style={d.titleMetaRow}>
-              <Text style={d.titleMetaLabel}>{t.labelVenue}</Text>
+              <Text style={[d.titleMetaLabel, { width: labelWidth }]}>{t.labelVenue}</Text>
               <Text style={d.titleMetaValue}>{exhibition.venue}</Text>
             </View>
           )}
           {location && (
             <View style={d.titleMetaRow}>
-              <Text style={d.titleMetaLabel}>{t.labelLocation}</Text>
+              <Text style={[d.titleMetaLabel, { width: labelWidth }]}>{t.labelLocation}</Text>
               <Text style={d.titleMetaValue}>{location}</Text>
             </View>
           )}
           {dateStr && (
             <View style={d.titleMetaRow}>
-              <Text style={d.titleMetaLabel}>{t.labelDates}</Text>
+              <Text style={[d.titleMetaLabel, { width: labelWidth }]}>{t.labelDates}</Text>
               <Text style={d.titleMetaValue}>{dateStr}</Text>
             </View>
           )}
           {exhibition.notes?.trim() && (
             <View style={[d.titleMetaRow, { marginTop: 14 }]}>
-              <Text style={d.titleMetaLabel}>Notes</Text>
+              <Text style={[d.titleMetaLabel, { width: labelWidth }]}>Notes</Text>
               <Text style={[d.titleMetaValue, { fontSize: 9, lineHeight: 1.5 }]}>
                 {exhibition.notes}
               </Text>
@@ -550,7 +552,7 @@ export function ExhibitionDossierPDF({
           )}
           {createdBy?.trim() && (
             <View style={[d.titleMetaRow, { marginTop: 14 }]}>
-              <Text style={d.titleMetaLabel}>{t.labelCreatedBy}</Text>
+              <Text style={[d.titleMetaLabel, { width: labelWidth }]}>{t.labelCreatedBy}</Text>
               <Text style={[d.titleMetaValue, { fontSize: 9, lineHeight: 1.5 }]}>
                 {createdBy}
               </Text>
