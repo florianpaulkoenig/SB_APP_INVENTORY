@@ -698,44 +698,45 @@ export function ExhibitionDossierPDF({
       )}
 
       {/* ================================================================ */}
-      {/* EXHIBITION PHOTOS                                                 */}
+      {/* EXHIBITION PHOTOS — 2 per page                                   */}
       {/* ================================================================ */}
-      {hasPhotos && (
-        <Page size="A4" style={d.contentPage}>
-          <View style={d.pageHeader} fixed>
-            <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
-            <Text style={d.pageHeaderText}>{exhibition.title}</Text>
-          </View>
+      {hasPhotos && (() => {
+        const pairs: Array<typeof exhibitionPhotos> = [];
+        for (let pi = 0; pi < exhibitionPhotos.length; pi += 2) {
+          pairs.push(exhibitionPhotos.slice(pi, pi + 2));
+        }
+        const sectionTitle = exhibitionPhotosTitle?.trim() || t.sectionExhibitionPhotos;
+        return pairs.map((pair, pIdx) => (
+          <Page key={`ep-${pIdx}`} size="A4" style={d.floorPlanPage}>
+            <View style={d.pageHeader} fixed>
+              <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
+              <Text style={d.pageHeaderText}>{exhibition.title}</Text>
+            </View>
 
-          <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
-            {exhibitionPhotosTitle?.trim() || t.sectionExhibitionPhotos}
-          </Text>
+            <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
+              {`${sectionTitle}${exhibitionPhotos.length > 2 ? ` (${pIdx * 2 + 1}${pair.length > 1 ? `–${pIdx * 2 + 2}` : ''}/${exhibitionPhotos.length})` : ''}`}
+            </Text>
 
-          {/* 2-column grid */}
-          <View style={d.photoGrid}>
-            {exhibitionPhotos.map((photo, idx) => {
-              const isRight = idx % 2 === 1;
-              return (
-                <View key={`photo-${idx}`} style={isRight ? d.photoCellRight : d.photoCell}>
-                  <Image src={photo.dataUrl} style={d.photoCellImage} />
+            <View style={{ flex: 1, flexDirection: 'column' }} wrap={false}>
+              {pair.map((photo, fi) => (
+                <View key={fi} style={{ height: 320, marginBottom: fi < pair.length - 1 ? 10 : 0 }}>
+                  <Image src={photo.dataUrl} style={{ width: '100%', height: 310, objectFit: 'contain' as const }} />
                   {photo.caption?.trim() && (
-                    <Text style={d.photoCellCaption}>{photo.caption}</Text>
+                    <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 3, letterSpacing: 0.5 }}>
+                      {photo.caption}
+                    </Text>
                   )}
                 </View>
-              );
-            })}
-          </View>
+              ))}
+            </View>
 
-          {/* Footer */}
-          <View style={styles.footer} fixed>
-            <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
-            <Text
-              style={styles.pageNumber}
-              render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
-            />
-          </View>
-        </Page>
-      )}
+            <View style={styles.footer} fixed>
+              <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
+              <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+            </View>
+          </Page>
+        ));
+      })()}
 
       {/* ================================================================ */}
       {/* PRODUCTION ORDERS                                                */}
