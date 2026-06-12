@@ -480,8 +480,8 @@ function FootnotesSection({ footnotes }: { footnotes: string[] }) {
 // ---------------------------------------------------------------------------
 // Available content height after padding: 841.89 - 64 - 60 = 717.89
 // Section title (fontSize 11 * ~1.3 + marginBottom 8) ≈ 22pt
-// Available for images: ~696pt
-const IMG_AREA_H = 696;
+// Available for images: ~696pt, use 660 to leave enough slack for react-pdf rounding
+const IMG_AREA_H = 660;
 const IMG_GAP    = 10;
 const IMG_CAPTION_H = 10; // 7pt font + 3pt marginTop
 // Single image: full area minus caption reserve
