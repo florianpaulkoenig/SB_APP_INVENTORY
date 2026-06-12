@@ -353,9 +353,36 @@ export function ExhibitionDetailPage() {
       }
 
       // 2. Convert exhibition photos to JPEG data URLs, split by photo_type
-      // blobToJpegDataUrl normalises WebP/HEIC/AVIF → JPEG which react-pdf supports
+      // Crop to PDF-optimal ratios: landscape → 1.571:1 (2/page), portrait → 0.762:1 (1/page)
+      const cropToRatio = (dataUrl: string, targetRatio: number): Promise<string> =>
+        new Promise((resolve) => {
+          const img = new window.Image();
+          img.onload = () => {
+            const srcRatio = img.naturalWidth / img.naturalHeight;
+            let sx = 0, sy = 0;
+            let sw = img.naturalWidth, sh = img.naturalHeight;
+            if (srcRatio > targetRatio) {
+              sw = img.naturalHeight * targetRatio;
+              sx = (img.naturalWidth - sw) / 2;
+            } else {
+              sh = img.naturalWidth / targetRatio;
+              sy = (img.naturalHeight - sh) / 2;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(sw);
+            canvas.height = Math.round(sh);
+            canvas.getContext('2d')!.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.92));
+          };
+          img.onerror = () => resolve(dataUrl);
+          img.src = dataUrl;
+        });
+
+      const RATIO_LANDSCAPE = 495 / 315; // 2 photos per page
+      const RATIO_PORTRAIT  = 495 / 650; // 1 photo per page
+
       const { blobToJpegDataUrl } = await import('../lib/pdfToDataUrls');
-      const exhibitionPhotos: Array<{ dataUrl: string; caption?: string }> = [];
+      const exhibitionPhotos: Array<{ dataUrl: string; caption?: string; isLandscape?: boolean }> = [];
       const venuePhotos:      Array<{ dataUrl: string; caption?: string }> = [];
       for (const img of exhibitionImages) {
         const { data: imgBlob } = await supabase.storage
@@ -363,10 +390,12 @@ export function ExhibitionDetailPage() {
           .download(img.storage_path);
         if (!imgBlob) continue;
         try {
-          const dataUrl = await blobToJpegDataUrl(imgBlob);
+          const rawDataUrl = await blobToJpegDataUrl(imgBlob);
+          const isLandscape = await getImageOrientation(rawDataUrl);
+          const dataUrl = await cropToRatio(rawDataUrl, isLandscape ? RATIO_LANDSCAPE : RATIO_PORTRAIT);
           const entry = { dataUrl, caption: img.caption || undefined };
           if (img.photo_type === 'venue') venuePhotos.push(entry);
-          else exhibitionPhotos.push(entry);
+          else exhibitionPhotos.push({ ...entry, isLandscape });
         } catch {
           // skip images that fail to convert
         }

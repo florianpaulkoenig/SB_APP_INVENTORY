@@ -53,7 +53,7 @@ export interface ExhibitionDossierPDFProps {
   /** Venue photos — space shots without artwork, shown before exhibition photos */
   venuePhotos?: Array<{ dataUrl: string; caption?: string }>;
   /** Exhibition photos — installation views / artwork in situ */
-  exhibitionPhotos?: Array<{ dataUrl: string; caption?: string }>;
+  exhibitionPhotos?: Array<{ dataUrl: string; caption?: string; isLandscape?: boolean }>;
   productionOrders: DossierProductionOrder[];
   /** Shown on the cover page under "Created by" */
   createdBy?: string;
@@ -714,28 +714,41 @@ export function ExhibitionDossierPDF({
       {/* EXHIBITION PHOTOS — 2 per page                                   */}
       {/* ================================================================ */}
       {hasPhotos && (() => {
-        const pairs: Array<typeof exhibitionPhotos> = [];
-        for (let pi = 0; pi < exhibitionPhotos.length; pi += 2) {
-          pairs.push(exhibitionPhotos.slice(pi, pi + 2));
+        // Group: two consecutive landscape photos share a page; portrait → own page
+        type EPItem = typeof exhibitionPhotos[0] & { origIdx: number };
+        const groups: EPItem[][] = [];
+        let ei = 0;
+        while (ei < exhibitionPhotos.length) {
+          const curr = { ...exhibitionPhotos[ei], origIdx: ei };
+          const next = exhibitionPhotos[ei + 1];
+          if (curr.isLandscape && next?.isLandscape) {
+            groups.push([curr, { ...next, origIdx: ei + 1 }]);
+            ei += 2;
+          } else {
+            groups.push([curr]);
+            ei += 1;
+          }
         }
+        const total = exhibitionPhotos.length;
         const sectionTitle = exhibitionPhotosTitle?.trim() || t.sectionExhibitionPhotos;
-        return pairs.map((pair, pIdx) => (
-          <Page key={`ep-${pIdx}`} size="A4" style={d.floorPlanPage}>
-            <View style={d.pageHeader} fixed>
-              <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
-              <Text style={d.pageHeaderText}>{exhibition.title}</Text>
-            </View>
+        return groups.map((group, gIdx) => {
+          const isPair = group.length > 1;
+          const imgH = isPair ? IMG_H_PAIR : IMG_H_SINGLE;
+          const nums = group.map(p => p.origIdx + 1);
+          return (
+            <Page key={`ep-${gIdx}`} size="A4" style={d.floorPlanPage}>
+              <View style={d.pageHeader} fixed>
+                <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
+                <Text style={d.pageHeaderText}>{exhibition.title}</Text>
+              </View>
 
-            <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
-              {`${sectionTitle}${exhibitionPhotos.length > 2 ? ` (${pIdx * 2 + 1}${pair.length > 1 ? `–${pIdx * 2 + 2}` : ''}/${exhibitionPhotos.length})` : ''}`}
-            </Text>
+              <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
+                {`${sectionTitle}${total > 1 ? ` (${nums.join('–')}/${total})` : ''}`}
+              </Text>
 
-            <View style={{ flexDirection: 'column' }} wrap={false}>
-              {pair.map((photo, fi) => {
-                const isPair = pair.length > 1;
-                const imgH = isPair ? IMG_H_PAIR : IMG_H_SINGLE;
-                return (
-                  <View key={fi} style={{ marginBottom: fi < pair.length - 1 ? IMG_GAP : 0 }}>
+              <View style={{ flexDirection: 'column' }} wrap={false}>
+                {group.map((photo, fi) => (
+                  <View key={fi} style={{ marginBottom: fi < group.length - 1 ? IMG_GAP : 0 }}>
                     <Image src={photo.dataUrl} style={[d.floorPlanImage, { height: imgH }]} />
                     {photo.caption?.trim() && (
                       <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 3, letterSpacing: 0.5 }}>
@@ -743,16 +756,16 @@ export function ExhibitionDossierPDF({
                       </Text>
                     )}
                   </View>
-                );
-              })}
-            </View>
+                ))}
+              </View>
 
-            <View style={styles.footer} fixed>
-              <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
-              <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
-            </View>
-          </Page>
-        ));
+              <View style={styles.footer} fixed>
+                <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
+                <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+              </View>
+            </Page>
+          );
+        });
       })()}
 
       {/* ================================================================ */}
