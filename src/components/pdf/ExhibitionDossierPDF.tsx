@@ -48,7 +48,7 @@ export interface ExhibitionDossierPDFProps {
     notes?: string | null;
   };
   /** One entry per rendered floor plan page */
-  floorPlanImages: Array<{ dataUrl: string; description?: string | null }>;
+  floorPlanImages: Array<{ dataUrl: string; description?: string | null; isLandscape?: boolean }>;
   /** Venue photos — space shots without artwork, shown before exhibition photos */
   venuePhotos?: Array<{ dataUrl: string; caption?: string }>;
   /** Exhibition photos — installation views / artwork in situ */
@@ -590,22 +590,47 @@ export function ExhibitionDossierPDF({
       )}
 
       {/* ================================================================ */}
-      {/* FLOOR PLAN PAGES — one per image                                 */}
+      {/* FLOOR PLAN PAGES — landscape pairs share a page                  */}
       {/* ================================================================ */}
-      {hasFloors &&
-        floorPlanImages.map(({ dataUrl, description }, idx) => (
-          <Page key={`fp-${idx}`} size="A4" style={d.floorPlanPage}>
+      {hasFloors && (() => {
+        // Group: two consecutive landscape images → one page; otherwise one per page
+        type FPItem = { dataUrl: string; description?: string | null; isLandscape?: boolean; origIdx: number };
+        const groups: FPItem[][] = [];
+        let gi = 0;
+        while (gi < floorPlanImages.length) {
+          const curr = { ...floorPlanImages[gi], origIdx: gi };
+          const next = floorPlanImages[gi + 1];
+          if (curr.isLandscape && next?.isLandscape) {
+            groups.push([curr, { ...next, origIdx: gi + 1 }]);
+            gi += 2;
+          } else {
+            groups.push([curr]);
+            gi += 1;
+          }
+        }
+        const total = floorPlanImages.length;
+        return groups.map((group, gIdx) => (
+          <Page key={`fp-${gIdx}`} size="A4" style={d.floorPlanPage}>
             <View style={d.pageHeader} fixed>
               <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
               <Text style={d.pageHeaderText}>{exhibition.title}</Text>
             </View>
 
             <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
-              {`Floor Plans / 3D Model${floorPlanImages.length > 1 ? ` (${idx + 1}/${floorPlanImages.length})` : ''}${description?.trim() ? ` — ${description}` : ''}`}
+              {`Floor Plans / 3D Model${total > 1 ? ` (${group.map(f => f.origIdx + 1).join(', ')}/${total})` : ''}${group.length === 1 && group[0].description?.trim() ? ` — ${group[0].description}` : ''}`}
             </Text>
 
-            <View style={d.floorPlanImageWrap}>
-              <Image src={dataUrl} style={d.floorPlanImage} />
+            <View style={{ flex: 1, flexDirection: 'column', gap: group.length > 1 ? 10 : 0 }}>
+              {group.map((fp, fi) => (
+                <View key={fi} style={{ flex: 1 }}>
+                  <Image src={fp.dataUrl} style={d.floorPlanImage} />
+                  {group.length > 1 && fp.description?.trim() && (
+                    <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 3, letterSpacing: 0.5 }}>
+                      {fp.description}
+                    </Text>
+                  )}
+                </View>
+              ))}
             </View>
 
             <View style={styles.footer} fixed>
@@ -616,7 +641,8 @@ export function ExhibitionDossierPDF({
               />
             </View>
           </Page>
-        ))}
+        ));
+      })()}
 
       {/* ================================================================ */}
       {/* VENUE PHOTOS                                                      */}

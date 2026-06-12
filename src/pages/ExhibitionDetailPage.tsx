@@ -264,7 +264,15 @@ export function ExhibitionDetailPage() {
 
     try {
       // 1. Convert floor plans to image data URLs (preserve descriptions)
-      const floorPlanImages: Array<{ dataUrl: string; description?: string | null }> = [];
+      const getImageOrientation = (dataUrl: string): Promise<boolean> =>
+        new Promise((resolve) => {
+          const img = new window.Image();
+          img.onload = () => resolve(img.naturalWidth > img.naturalHeight);
+          img.onerror = () => resolve(false);
+          img.src = dataUrl;
+        });
+
+      const floorPlanImages: Array<{ dataUrl: string; description?: string | null; isLandscape?: boolean }> = [];
       for (const fp of floorPlans) {
         const { data: blob } = await supabase.storage
           .from('media-files')
@@ -275,15 +283,18 @@ export function ExhibitionDetailPage() {
         if (lowerName.endsWith('.pdf')) {
           const { pdfBlobToDataUrls } = await import('../lib/pdfToDataUrls');
           const pages = await pdfBlobToDataUrls(blob, 2.0);
-          pages.forEach((dataUrl, pageIdx) => {
+          for (const [pageIdx, dataUrl] of pages.entries()) {
             const desc = fp.description
               ? (pages.length > 1 ? `${fp.description} (${pageIdx + 1}/${pages.length})` : fp.description)
               : null;
-            floorPlanImages.push({ dataUrl, description: desc });
-          });
+            const isLandscape = await getImageOrientation(dataUrl);
+            floorPlanImages.push({ dataUrl, description: desc, isLandscape });
+          }
         } else {
           const { blobToDataUrl } = await import('../lib/pdfToDataUrls');
-          floorPlanImages.push({ dataUrl: await blobToDataUrl(blob), description: fp.description ?? null });
+          const dataUrl = await blobToDataUrl(blob);
+          const isLandscape = await getImageOrientation(dataUrl);
+          floorPlanImages.push({ dataUrl, description: fp.description ?? null, isLandscape });
         }
       }
 
