@@ -124,6 +124,7 @@ export function ExhibitionDetailPage() {
   const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
   const [editingCaptionText, setEditingCaptionText] = useState('');
   const photoDragIndex = useRef<number | null>(null);
+  const [photoDragOverIndex, setPhotoDragOverIndex] = useState<number | null>(null);
   const floorPlanDragIndex = useRef<number | null>(null);
 
   // ---- Exhibition text (dossier statement) --------------------------------
@@ -822,20 +823,35 @@ export function ExhibitionDetailPage() {
               <div
                 key={img.id}
                 draggable
-                onDragStart={() => { photoDragIndex.current = i; }}
-                onDragOver={(e) => { e.preventDefault(); }}
-                onDrop={() => {
+                onDragStart={(e) => {
+                  photoDragIndex.current = i;
+                  e.dataTransfer.setData('application/x-photo-reorder', '1');
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.dataTransfer.dropEffect = 'move';
+                  setPhotoDragOverIndex(i);
+                }}
+                onDragLeave={() => { setPhotoDragOverIndex(null); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPhotoDragOverIndex(null);
                   if (photoDragIndex.current === null || photoDragIndex.current === i) return;
                   const next = [...exhibitionImages];
                   const [moved] = next.splice(photoDragIndex.current, 1);
                   next.splice(i, 0, moved);
-                  photoDragIndex.current = i;
+                  photoDragIndex.current = null;
                   reorderImages(next);
                 }}
-                onDragEnd={() => { photoDragIndex.current = null; }}
-                className="group relative rounded-lg overflow-hidden border border-gray-200 cursor-grab active:cursor-grabbing">
+                onDragEnd={() => { photoDragIndex.current = null; setPhotoDragOverIndex(null); }}
+                className={`group relative rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all ${
+                  photoDragOverIndex === i ? 'border-black scale-105 shadow-lg' : 'border-gray-200'
+                }`}>
                 {img.signedUrl ? (
-                  <img src={img.signedUrl} alt={img.caption || img.file_name} className="w-full aspect-square object-cover" />
+                  <img draggable={false} src={img.signedUrl} alt={img.caption || img.file_name} className="w-full aspect-square object-cover" />
                 ) : (
                   <div className="w-full aspect-square bg-gray-100 flex items-center justify-center text-xs text-gray-400">No preview</div>
                 )}
@@ -892,9 +908,9 @@ export function ExhibitionDetailPage() {
 
         {/* Upload zone */}
         <div
-          onDragOver={(e) => { e.preventDefault(); setIsDraggingPhoto(true); }}
+          onDragOver={(e) => { if (e.dataTransfer.types.includes('application/x-photo-reorder')) return; e.preventDefault(); setIsDraggingPhoto(true); }}
           onDragLeave={() => setIsDraggingPhoto(false)}
-          onDrop={(e) => { e.preventDefault(); setIsDraggingPhoto(false); handlePhotoFiles(e.dataTransfer.files); }}
+          onDrop={(e) => { if (e.dataTransfer.types.includes('application/x-photo-reorder')) return; e.preventDefault(); setIsDraggingPhoto(false); handlePhotoFiles(e.dataTransfer.files); }}
           onClick={() => fileInputRef.current?.click()}
           className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 transition-colors ${
             isDraggingPhoto ? 'border-black bg-gray-50' : 'border-gray-300 hover:border-gray-400'
