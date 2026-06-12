@@ -147,6 +147,11 @@ export function ExhibitionDetailPage() {
     'Florian Paul Koenig, +41 76 511 92 94, florian.koenig@noacontemporary.com',
   );
   const [dossierLanguage, setDossierLanguage] = useState<DossierLanguage>('en');
+  const [pdfTitlesOpen, setPdfTitlesOpen] = useState(false);
+  const [pdfTitleFloorPlans, setPdfTitleFloorPlans] = useState('');
+  const [pdfTitleVenuePhotos, setPdfTitleVenuePhotos] = useState('');
+  const [pdfTitleExhibitionPhotos, setPdfTitleExhibitionPhotos] = useState('');
+  const [pdfTitleProductionOrders, setPdfTitleProductionOrders] = useState('');
 
   const [linkedPOs, setLinkedPOs] = useState<LinkedProductionOrder[]>([]);
   const [poModalOpen, setPOModalOpen] = useState(false);
@@ -410,6 +415,10 @@ export function ExhibitionDetailPage() {
           createdBy={dossierCreatedBy}
           language={dossierLanguage}
           exhibitionTextTitle={descTextTitle}
+          floorPlansTitle={pdfTitleFloorPlans}
+          venuePhotosTitle={pdfTitleVenuePhotos}
+          exhibitionPhotosTitle={pdfTitleExhibitionPhotos}
+          productionOrdersTitle={pdfTitleProductionOrders}
         />
       ).toBlob();
 
@@ -638,6 +647,34 @@ export function ExhibitionDetailPage() {
               </button>
             ))}
           </div>
+          <button
+            onClick={() => setPdfTitlesOpen((v) => !v)}
+            className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors"
+          >
+            {pdfTitlesOpen ? '▲ Abschnittstitel' : '▼ Abschnittstitel anpassen'}
+          </button>
+          {pdfTitlesOpen && (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 w-full">
+              {([
+                ['Ausstellungstext', descTextTitle, setDescTextTitle],
+                ['Grundrisse', pdfTitleFloorPlans, setPdfTitleFloorPlans],
+                ['Location-Fotos', pdfTitleVenuePhotos, setPdfTitleVenuePhotos],
+                ['Ausstellungsfotos', pdfTitleExhibitionPhotos, setPdfTitleExhibitionPhotos],
+                ['Produktionsaufträge', pdfTitleProductionOrders, setPdfTitleProductionOrders],
+              ] as [string, string, React.Dispatch<React.SetStateAction<string>>][]).map(([label, val, set]) => (
+                <div key={label} className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-400 whitespace-nowrap w-28 shrink-0">{label}</span>
+                  <input
+                    type="text"
+                    value={val}
+                    onChange={(e) => set(e.target.value)}
+                    placeholder="Standard"
+                    className="flex-1 rounded border border-gray-200 px-2 py-0.5 text-[11px] text-gray-700 focus:border-gray-400 focus:outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -674,16 +711,7 @@ export function ExhibitionDetailPage() {
       {/* Exhibition Text (dossier statement) */}
       <Card>
         <div className="mb-3">
-          <div className="flex items-center justify-between gap-4 mb-1">
-            <h2 className="text-lg font-semibold">Exhibition Text</h2>
-            <input
-              type="text"
-              value={descTextTitle}
-              onChange={(e) => setDescTextTitle(e.target.value)}
-              placeholder="Titel im PDF (z.B. Pressetext, Künstlerstatement…)"
-              className="flex-1 max-w-xs rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:border-gray-400 focus:outline-none"
-            />
-          </div>
+          <h2 className="text-lg font-semibold mb-1">Exhibition Text</h2>
           <p className="text-xs text-gray-400 mt-0.5">
             Erscheint im Dossier PDF. Leerzeile = neuer Absatz.
             Toolbar: <strong>B</strong> fett · <em>I</em> kursiv · Fn¹ Fussnote

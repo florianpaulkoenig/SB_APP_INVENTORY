@@ -58,8 +58,12 @@ export interface ExhibitionDossierPDFProps {
   /** Shown on the cover page under "Created by" */
   createdBy?: string;
   language?: DossierLanguage;
-  /** Custom title for the exhibition text section (overrides the i18n default) */
+  /** Custom section titles (each overrides the i18n default when non-empty) */
   exhibitionTextTitle?: string;
+  floorPlansTitle?: string;
+  venuePhotosTitle?: string;
+  exhibitionPhotosTitle?: string;
+  productionOrdersTitle?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -483,6 +487,10 @@ export function ExhibitionDossierPDF({
   createdBy,
   language = 'en',
   exhibitionTextTitle,
+  floorPlansTitle,
+  venuePhotosTitle,
+  exhibitionPhotosTitle,
+  productionOrdersTitle,
 }: ExhibitionDossierPDFProps) {
   const t = DOSSIER_STRINGS[language];
   // German labels are longer ("AUSSTELLUNGSORT") — widen the column
@@ -626,7 +634,7 @@ export function ExhibitionDossierPDF({
             </View>
 
             <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
-              {`${t.sectionFloorPlans}${total > 1 ? ` (${group.map(f => f.origIdx + 1).join(', ')}/${total})` : ''}${group.length === 1 && group[0].description?.trim() ? ` — ${group[0].description}` : ''}`}
+              {`${floorPlansTitle?.trim() || t.sectionFloorPlans}${total > 1 ? ` (${group.map(f => f.origIdx + 1).join(', ')}/${total})` : ''}${group.length === 1 && group[0].description?.trim() ? ` — ${group[0].description}` : ''}`}
             </Text>
 
             <View style={{ flex: 1, flexDirection: 'column' }} wrap={false}>
@@ -668,7 +676,7 @@ export function ExhibitionDossierPDF({
             <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
             <Text style={d.pageHeaderText}>{exhibition.title}</Text>
           </View>
-          <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>{t.sectionVenuePhotos}</Text>
+          <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>{venuePhotosTitle?.trim() || t.sectionVenuePhotos}</Text>
           <View style={d.photoGrid}>
             {venuePhotos.map((photo, idx) => {
               const isRight = idx % 2 === 1;
@@ -700,7 +708,7 @@ export function ExhibitionDossierPDF({
           </View>
 
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
-            {t.sectionExhibitionPhotos}
+            {exhibitionPhotosTitle?.trim() || t.sectionExhibitionPhotos}
           </Text>
 
           {/* 2-column grid */}
@@ -740,7 +748,7 @@ export function ExhibitionDossierPDF({
           </View>
 
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
-            {t.sectionProductionOrders}
+            {productionOrdersTitle?.trim() || t.sectionProductionOrders}
           </Text>
 
           {productionOrders.map((po) => {
