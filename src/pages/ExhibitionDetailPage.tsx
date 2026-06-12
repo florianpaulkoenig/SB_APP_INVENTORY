@@ -146,7 +146,7 @@ export function ExhibitionDetailPage() {
   const [descSaved, setDescSaved] = useState(false);
   const descSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pdfSettingsSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pdfSettingsReady = useRef(false);
+  const [pdfSettingsReady, setPdfSettingsReady] = useState(false);
 
   // ---- Floor plan upload + description editing ----------------------------
   const floorPlanInputRef = useRef<HTMLInputElement>(null);
@@ -199,7 +199,7 @@ export function ExhibitionDetailPage() {
       if (ps.titleVenuePhotos !== undefined) setPdfTitleVenuePhotos(ps.titleVenuePhotos);
       if (ps.titleExhibitionPhotos !== undefined) setPdfTitleExhibitionPhotos(ps.titleExhibitionPhotos);
       if (ps.titleProductionOrders !== undefined) setPdfTitleProductionOrders(ps.titleProductionOrders);
-      pdfSettingsReady.current = true;
+      setPdfSettingsReady(true);
     } catch {
       toast({ title: 'Failed to load exhibition', variant: 'error' });
     } finally {
@@ -259,7 +259,7 @@ export function ExhibitionDetailPage() {
   // ---- Debounced pdf_settings save (runs after every state change) --------
 
   useEffect(() => {
-    if (!id || !pdfSettingsReady.current) return;
+    if (!id || !pdfSettingsReady) return;
     if (pdfSettingsSaveTimer.current) clearTimeout(pdfSettingsSaveTimer.current);
     const settings: PdfSettings = {
       language: dossierLanguage,
@@ -277,7 +277,7 @@ export function ExhibitionDetailPage() {
         .eq('id', id);
     }, 800);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, dossierLanguage, dossierCreatedBy, descTextTitle, pdfTitleFloorPlans, pdfTitleVenuePhotos, pdfTitleExhibitionPhotos, pdfTitleProductionOrders]);
+  }, [id, pdfSettingsReady, dossierLanguage, dossierCreatedBy, descTextTitle, pdfTitleFloorPlans, pdfTitleVenuePhotos, pdfTitleExhibitionPhotos, pdfTitleProductionOrders]);
 
   // ---- Debounced description_text save ------------------------------------
 
