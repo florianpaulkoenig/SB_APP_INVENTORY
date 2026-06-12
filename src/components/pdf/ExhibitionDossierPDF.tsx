@@ -733,7 +733,8 @@ export function ExhibitionDossierPDF({
         const sectionTitle = exhibitionPhotosTitle?.trim() || t.sectionExhibitionPhotos;
         return groups.map((group, gIdx) => {
           const isPair = group.length > 1;
-          const imgH = isPair ? IMG_H_PAIR : IMG_H_SINGLE;
+          // Solo landscape: use pair height (matches 1.571:1 crop); solo portrait: full height
+          const imgH = isPair ? IMG_H_PAIR : (group[0].isLandscape ? IMG_H_PAIR : IMG_H_SINGLE);
           const nums = group.map(p => p.origIdx + 1);
           return (
             <Page key={`ep-${gIdx}`} size="A4" style={d.floorPlanPage}>
