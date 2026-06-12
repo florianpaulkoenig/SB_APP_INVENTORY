@@ -233,7 +233,6 @@ const d = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   floorPlanImage: {
-    flex: 1,
     width: '100%',
     objectFit: 'contain' as const,
     objectPosition: 'left center' as const,
@@ -477,6 +476,20 @@ function FootnotesSection({ footnotes }: { footnotes: string[] }) {
 }
 
 // ---------------------------------------------------------------------------
+// Layout constants (A4 = 841.89pt, floorPlanPage padding top 64 + bottom 60)
+// ---------------------------------------------------------------------------
+// Available content height after padding: 841.89 - 64 - 60 = 717.89
+// Section title (fontSize 11 * ~1.3 + marginBottom 8) ≈ 22pt
+// Available for images: ~696pt
+const IMG_AREA_H = 696;
+const IMG_GAP    = 10;
+const IMG_CAPTION_H = 10; // 7pt font + 3pt marginTop
+// Single image: full area minus caption reserve
+const IMG_H_SINGLE = IMG_AREA_H - IMG_CAPTION_H;
+// Paired images: split area minus gap, each minus caption reserve
+const IMG_H_PAIR = (IMG_AREA_H - IMG_GAP) / 2 - IMG_CAPTION_H;
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -639,17 +652,21 @@ export function ExhibitionDossierPDF({
               {`${floorPlansTitle?.trim() || t.sectionFloorPlans}${total > 1 ? ` (${group.map(f => f.origIdx + 1).join(', ')}/${total})` : ''}${group.length === 1 && group[0].description?.trim() ? ` — ${group[0].description}` : ''}`}
             </Text>
 
-            <View style={{ flex: 1, flexDirection: 'column' }} wrap={false}>
-              {group.map((fp, fi) => (
-                <View key={fi} style={{ flex: 1, flexDirection: 'column', marginBottom: fi < group.length - 1 ? 10 : 0 }}>
-                  <Image src={fp.dataUrl} style={d.floorPlanImage} />
-                  {fp.description?.trim() && (
-                    <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 3, letterSpacing: 0.5 }}>
-                      {fp.description}
-                    </Text>
-                  )}
-                </View>
-              ))}
+            <View style={{ flexDirection: 'column' }} wrap={false}>
+              {group.map((fp, fi) => {
+                const isPair = group.length > 1;
+                const imgH = isPair ? IMG_H_PAIR : IMG_H_SINGLE;
+                return (
+                  <View key={fi} style={{ marginBottom: fi < group.length - 1 ? IMG_GAP : 0 }}>
+                    <Image src={fp.dataUrl} style={[d.floorPlanImage, { height: imgH }]} />
+                    {fp.description?.trim() && (
+                      <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 3, letterSpacing: 0.5 }}>
+                        {fp.description}
+                      </Text>
+                    )}
+                  </View>
+                );
+              })}
             </View>
 
             <View style={styles.footer} fixed>
@@ -713,17 +730,21 @@ export function ExhibitionDossierPDF({
               {`${sectionTitle}${exhibitionPhotos.length > 2 ? ` (${pIdx * 2 + 1}${pair.length > 1 ? `–${pIdx * 2 + 2}` : ''}/${exhibitionPhotos.length})` : ''}`}
             </Text>
 
-            <View style={{ flex: 1, flexDirection: 'column' }} wrap={false}>
-              {pair.map((photo, fi) => (
-                <View key={fi} style={{ flex: 1, flexDirection: 'column', marginBottom: fi < pair.length - 1 ? 10 : 0 }}>
-                  <Image src={photo.dataUrl} style={d.floorPlanImage} />
-                  {photo.caption?.trim() && (
-                    <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 3, letterSpacing: 0.5 }}>
-                      {photo.caption}
-                    </Text>
-                  )}
-                </View>
-              ))}
+            <View style={{ flexDirection: 'column' }} wrap={false}>
+              {pair.map((photo, fi) => {
+                const isPair = pair.length > 1;
+                const imgH = isPair ? IMG_H_PAIR : IMG_H_SINGLE;
+                return (
+                  <View key={fi} style={{ marginBottom: fi < pair.length - 1 ? IMG_GAP : 0 }}>
+                    <Image src={photo.dataUrl} style={[d.floorPlanImage, { height: imgH }]} />
+                    {photo.caption?.trim() && (
+                      <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary400, marginTop: 3, letterSpacing: 0.5 }}>
+                        {photo.caption}
+                      </Text>
+                    )}
+                  </View>
+                );
+              })}
             </View>
 
             <View style={styles.footer} fixed>
