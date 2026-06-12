@@ -513,7 +513,7 @@ export function ExhibitionDossierPDF({
             <View style={d.titleMetaRow}>
               <Text style={d.titleMetaLabel}>Category</Text>
               <Text style={d.titleMetaValue}>
-                {exhibition.type.charAt(0).toUpperCase() + exhibition.type.slice(1)}
+                {exhibition.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
               </Text>
             </View>
           )}
