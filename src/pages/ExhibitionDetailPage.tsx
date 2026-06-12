@@ -42,8 +42,19 @@ interface Exhibition {
   catalogue_reference: string | null;
   notes: string | null;
   description_text: string | null;
+  pdf_settings: PdfSettings | null;
   created_at: string;
   updated_at: string;
+}
+
+interface PdfSettings {
+  language?: string;
+  createdBy?: string;
+  titleExhibitionText?: string;
+  titleFloorPlans?: string;
+  titleVenuePhotos?: string;
+  titleExhibitionPhotos?: string;
+  titleProductionOrders?: string;
 }
 
 interface ExhibitionArtwork {
@@ -134,6 +145,8 @@ export function ExhibitionDetailPage() {
   const [descSaving, setDescSaving] = useState(false);
   const [descSaved, setDescSaved] = useState(false);
   const descSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pdfSettingsSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pdfSettingsReady = useRef(false);
 
   // ---- Floor plan upload + description editing ----------------------------
   const floorPlanInputRef = useRef<HTMLInputElement>(null);
@@ -177,6 +190,16 @@ export function ExhibitionDetailPage() {
       }
       // Sync description text from DB
       setDescText(data.description_text ?? '');
+      // Sync PDF settings from DB
+      const ps: PdfSettings = data.pdf_settings ?? {};
+      if (ps.language) setDossierLanguage(ps.language as DossierLanguage);
+      if (ps.createdBy !== undefined) setDossierCreatedBy(ps.createdBy);
+      if (ps.titleExhibitionText !== undefined) setDescTextTitle(ps.titleExhibitionText);
+      if (ps.titleFloorPlans !== undefined) setPdfTitleFloorPlans(ps.titleFloorPlans);
+      if (ps.titleVenuePhotos !== undefined) setPdfTitleVenuePhotos(ps.titleVenuePhotos);
+      if (ps.titleExhibitionPhotos !== undefined) setPdfTitleExhibitionPhotos(ps.titleExhibitionPhotos);
+      if (ps.titleProductionOrders !== undefined) setPdfTitleProductionOrders(ps.titleProductionOrders);
+      pdfSettingsReady.current = true;
     } catch {
       toast({ title: 'Failed to load exhibition', variant: 'error' });
     } finally {
@@ -232,6 +255,29 @@ export function ExhibitionDetailPage() {
     fetchLinkedPOs();
     fetchGalleryOptions();
   }, [fetchExhibition, fetchArtworks, fetchLinkedPOs, fetchGalleryOptions]);
+
+  // ---- Debounced pdf_settings save (runs after every state change) --------
+
+  useEffect(() => {
+    if (!id || !pdfSettingsReady.current) return;
+    if (pdfSettingsSaveTimer.current) clearTimeout(pdfSettingsSaveTimer.current);
+    const settings: PdfSettings = {
+      language: dossierLanguage,
+      createdBy: dossierCreatedBy,
+      titleExhibitionText: descTextTitle,
+      titleFloorPlans: pdfTitleFloorPlans,
+      titleVenuePhotos: pdfTitleVenuePhotos,
+      titleExhibitionPhotos: pdfTitleExhibitionPhotos,
+      titleProductionOrders: pdfTitleProductionOrders,
+    };
+    pdfSettingsSaveTimer.current = setTimeout(async () => {
+      await supabase
+        .from('exhibitions')
+        .update({ pdf_settings: settings } as never)
+        .eq('id', id);
+    }, 800);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, dossierLanguage, dossierCreatedBy, descTextTitle, pdfTitleFloorPlans, pdfTitleVenuePhotos, pdfTitleExhibitionPhotos, pdfTitleProductionOrders]);
 
   // ---- Debounced description_text save ------------------------------------
 
