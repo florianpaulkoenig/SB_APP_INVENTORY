@@ -146,18 +146,18 @@ export interface PackingListPDFProps {
 const s = StyleSheet.create({
   crateHeader: {
     flexDirection: 'column',
-    backgroundColor: PDF_COLORS.primary100,
-    paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: 7,
     marginTop: 12,
     borderRadius: 3,
+    overflow: 'hidden',
     borderLeftWidth: 3,
     borderLeftColor: PDF_COLORS.primary900,
   },
   crateHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: PDF_COLORS.border,   // #cccccc — clear grey title band
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
   crateTitle: {
     fontFamily: 'AnzianoPro',
@@ -169,14 +169,16 @@ const s = StyleSheet.create({
   cratePackaging: {
     fontFamily: 'AnzianoPro',
     fontSize: 8,
-    color: PDF_COLORS.primary500,
+    color: PDF_COLORS.primary700,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
   crateDimRow: {
     flexDirection: 'row',
-    marginTop: 3,
-    gap: 12,
+    backgroundColor: PDF_COLORS.backgroundLight,  // #f7f7f7 — subtle contrast
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    gap: 10,
   },
   crateDimItem: {
     flexDirection: 'row',
@@ -199,13 +201,13 @@ const s = StyleSheet.create({
   crateSeparator: {
     fontFamily: 'AnzianoPro',
     fontSize: 8,
-    color: PDF_COLORS.primary300,
+    color: PDF_COLORS.primary400,
     marginHorizontal: 2,
   },
   crateMeta: {
     fontFamily: 'AnzianoPro',
     fontSize: 8,
-    color: PDF_COLORS.primary500,
+    color: PDF_COLORS.primary400,
   },
   unassignedHeader: {
     flexDirection: 'row',
@@ -220,7 +222,7 @@ const s = StyleSheet.create({
     fontFamily: 'AnzianoPro',
     fontSize: 9,
     fontWeight: 700,
-    color: PDF_COLORS.primary500,
+    color: PDF_COLORS.primary400,
     fontStyle: 'italic',
   },
 });
@@ -379,17 +381,17 @@ export function PackingListPDF({
                         {hasLWH && (
                           <>
                             <View style={s.crateDimItem}>
-                              <Text style={s.crateDimLabel}>L</Text>
+                              <Text style={s.crateDimLabel}>Length</Text>
                               <Text style={s.crateDimValue}> {dimParts[0]} cm</Text>
                             </View>
                             <Text style={s.crateSeparator}>·</Text>
                             <View style={s.crateDimItem}>
-                              <Text style={s.crateDimLabel}>W</Text>
+                              <Text style={s.crateDimLabel}>Width</Text>
                               <Text style={s.crateDimValue}> {dimParts[1]} cm</Text>
                             </View>
                             <Text style={s.crateSeparator}>·</Text>
                             <View style={s.crateDimItem}>
-                              <Text style={s.crateDimLabel}>H</Text>
+                              <Text style={s.crateDimLabel}>Height</Text>
                               <Text style={s.crateDimValue}> {dimParts[2]} cm</Text>
                             </View>
                           </>
