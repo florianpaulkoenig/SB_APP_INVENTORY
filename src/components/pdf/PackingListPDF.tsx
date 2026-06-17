@@ -3,6 +3,7 @@
 // Grouped by crate: each crate has a header row, then its artworks.
 // ---------------------------------------------------------------------------
 
+import React from 'react';
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 import styles, { PDF_COLORS, pdfFont } from './PDFStyles';
 import { PDFHeader } from './PDFHeader';
@@ -144,20 +145,62 @@ export interface PackingListPDFProps {
 
 const s = StyleSheet.create({
   crateHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: 'column',
     backgroundColor: PDF_COLORS.primary100,
     paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingTop: 6,
+    paddingBottom: 7,
     marginTop: 12,
     borderRadius: 3,
+    borderLeftWidth: 3,
+    borderLeftColor: PDF_COLORS.primary900,
+  },
+  crateHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   crateTitle: {
     fontFamily: 'AnzianoPro',
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: 700,
     color: PDF_COLORS.primary900,
     flex: 1,
+  },
+  cratePackaging: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 8,
+    color: PDF_COLORS.primary500,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  crateDimRow: {
+    flexDirection: 'row',
+    marginTop: 3,
+    gap: 12,
+  },
+  crateDimItem: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+  },
+  crateDimLabel: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 7,
+    fontWeight: 700,
+    color: PDF_COLORS.primary900,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  crateDimValue: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 8,
+    color: PDF_COLORS.primary700,
+  },
+  crateSeparator: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 8,
+    color: PDF_COLORS.primary300,
+    marginHorizontal: 2,
   },
   crateMeta: {
     fontFamily: 'AnzianoPro',
@@ -186,11 +229,11 @@ const s = StyleSheet.create({
 // Table column widths
 // ---------------------------------------------------------------------------
 const COL_NUM = '5%';
-const COL_REF = '13%';
-const COL_TITLE = '25%';
-const COL_DIM = '18%';
-const COL_WEIGHT = '10%';
-const COL_HANDLING = '29%';
+const COL_REF = '19%';
+const COL_TITLE = '23%';
+const COL_DIM = '17%';
+const COL_WEIGHT = '9%';
+const COL_HANDLING = '27%';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -200,6 +243,7 @@ function formatWeight(weight: number | null): string {
   if (weight == null) return '—';
   return `${weight} kg`;
 }
+
 
 function TableHeader({ t }: { t: TranslationStrings }) {
   return (
@@ -214,17 +258,25 @@ function TableHeader({ t }: { t: TranslationStrings }) {
   );
 }
 
+function Cell({ width, children, style }: { width: string; children: React.ReactNode; style?: object }) {
+  return (
+    <View style={{ width, overflow: 'hidden' }}>
+      <Text style={[styles.tableCell, style ?? {}]}>{children}</Text>
+    </View>
+  );
+}
+
 function ItemRow({ item, index }: { item: PDFPackingItem; index: number }) {
   return (
     <View style={index % 2 === 1 ? styles.tableBodyRowAlt : styles.tableBodyRow} key={index}>
-      <Text style={[styles.tableCell, { width: COL_NUM }]}>{index + 1}</Text>
-      <Text style={[styles.tableCell, { width: COL_REF }]}>{item.artwork_reference_code}</Text>
-      <Text style={[styles.tableCell, { width: COL_TITLE, fontFamily: pdfFont(item.artwork_title) }]}>
+      <Cell width={COL_NUM}>{index + 1}</Cell>
+      <Cell width={COL_REF}>{item.artwork_reference_code}</Cell>
+      <Cell width={COL_TITLE} style={{ fontFamily: pdfFont(item.artwork_title) }}>
         {item.artwork_title}
-      </Text>
-      <Text style={[styles.tableCell, { width: COL_DIM }]}>{item.artwork_dimensions || '—'}</Text>
-      <Text style={[styles.tableCell, { width: COL_WEIGHT }]}>{formatWeight(item.artwork_weight)}</Text>
-      <Text style={[styles.tableCell, { width: COL_HANDLING }]}>{item.special_handling ?? '—'}</Text>
+      </Cell>
+      <Cell width={COL_DIM}>{item.artwork_dimensions || '—'}</Cell>
+      <Cell width={COL_WEIGHT}>{formatWeight(item.artwork_weight)}</Cell>
+      <Cell width={COL_HANDLING}>{item.special_handling ?? '—'}</Cell>
     </View>
   );
 }
@@ -306,19 +358,61 @@ export function PackingListPDF({
             <TableHeader t={t} />
 
             {(crates ?? []).map((crate, ci) => {
-              const metaParts: string[] = [];
-              if (crate.dimensions) metaParts.push(crate.dimensions);
-              if (crate.weight != null) metaParts.push(`${crate.weight} kg`);
-              if (crate.packaging_type) metaParts.push(crate.packaging_type.replace(/_/g, ' '));
-              if (crate.notes) metaParts.push(crate.notes);
+              // Parse dimensions into L/W/H parts for explicit labeling
+              const dimStr = crate.dimensions?.replace(/\s*cm\s*$/i, '').trim() ?? '';
+              const dimParts = dimStr ? dimStr.split(/\s*[×x]\s*/) : [];
+              const hasLWH = dimParts.length === 3;
 
               return (
                 <View key={ci}>
-                  {/* Crate header row */}
+                  {/* Crate header */}
                   <View style={s.crateHeader}>
-                    <Text style={s.crateTitle}>{crate.crate_name}</Text>
-                    {metaParts.length > 0 && (
-                      <Text style={s.crateMeta}>{metaParts.join(' · ')}</Text>
+                    <View style={s.crateHeaderRow}>
+                      <Text style={s.crateTitle}>{crate.crate_name}</Text>
+                      {crate.packaging_type && (
+                        <Text style={s.cratePackaging}>{crate.packaging_type.replace(/_/g, ' ')}</Text>
+                      )}
+                    </View>
+                    {/* Explicit dimension + weight row */}
+                    {(hasLWH || crate.weight != null || crate.notes) && (
+                      <View style={s.crateDimRow}>
+                        {hasLWH && (
+                          <>
+                            <View style={s.crateDimItem}>
+                              <Text style={s.crateDimLabel}>L</Text>
+                              <Text style={s.crateDimValue}> {dimParts[0]} cm</Text>
+                            </View>
+                            <Text style={s.crateSeparator}>·</Text>
+                            <View style={s.crateDimItem}>
+                              <Text style={s.crateDimLabel}>W</Text>
+                              <Text style={s.crateDimValue}> {dimParts[1]} cm</Text>
+                            </View>
+                            <Text style={s.crateSeparator}>·</Text>
+                            <View style={s.crateDimItem}>
+                              <Text style={s.crateDimLabel}>H</Text>
+                              <Text style={s.crateDimValue}> {dimParts[2]} cm</Text>
+                            </View>
+                          </>
+                        )}
+                        {!hasLWH && crate.dimensions && (
+                          <Text style={s.crateDimValue}>{crate.dimensions}</Text>
+                        )}
+                        {crate.weight != null && (
+                          <>
+                            {hasLWH && <Text style={s.crateSeparator}>·</Text>}
+                            <View style={s.crateDimItem}>
+                              <Text style={s.crateDimLabel}>Weight</Text>
+                              <Text style={s.crateDimValue}> {crate.weight} kg</Text>
+                            </View>
+                          </>
+                        )}
+                        {crate.notes && (
+                          <>
+                            <Text style={s.crateSeparator}>·</Text>
+                            <Text style={s.crateMeta}>{crate.notes}</Text>
+                          </>
+                        )}
+                      </View>
                     )}
                   </View>
                   {/* Artwork rows */}
