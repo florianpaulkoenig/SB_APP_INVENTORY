@@ -25,8 +25,14 @@ export function ArtworkCreatePage() {
   const { portfolio } = usePortfolio();
 
   // Portfolio-specific prefixes
-  const invPrefix = portfolio === 'noa_curation' ? 'CUR' : DOC_PREFIXES.artwork;
-  const refPrefix = portfolio === 'noa_curation' ? 'NOA-CUR' : undefined; // undefined = default (NOA-SB)
+  const invPrefix =
+    portfolio === 'noa_curation'   ? 'CUR' :
+    portfolio === 'noa_collection' ? 'NC'  :
+    DOC_PREFIXES.artwork;
+  const refPrefix =
+    portfolio === 'noa_curation'   ? 'NOA-CUR' :
+    portfolio === 'noa_collection' ? 'NOA-NC'  :
+    undefined; // undefined = default (NOA-SB)
 
   const [loading, setLoading] = useState(false);
   const [inventoryNumber, setInventoryNumber] = useState<string | null>(null);
