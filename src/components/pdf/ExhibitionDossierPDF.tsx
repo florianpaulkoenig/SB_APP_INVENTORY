@@ -17,7 +17,7 @@ import { parseRichText, superscript } from '../../lib/richText';
 import type { RichToken } from '../../lib/richText';
 import { DOSSIER_STRINGS, formatDateLocalized } from '../../lib/dossierI18n';
 import type { DossierLanguage } from '../../lib/dossierI18n';
-import { prepareForPDF, containsArabic } from '../../lib/arabicTextForPDF';
+import { prepareForPDF, containsArabic, splitForPDF } from '../../lib/arabicTextForPDF';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -431,7 +431,9 @@ function latinFamily(isItalic: boolean): 'AnzianoPro' | 'AnzianoProItalic' {
 }
 
 /** Renders a single paragraph. Arabic text is pre-processed with arabic-reshaper
- *  + bidi-js so react-pdf's layout engine never sees raw RTL characters. */
+ *  + bidi-js so react-pdf never sees raw RTL characters. Mixed tokens are split
+ *  into typed runs so Latin segments keep AnzianoPro and Arabic segments use
+ *  NotoSansArabic — all as flat siblings inside one parent Text. */
 function RichPara({ tokens }: { tokens: RichToken[] }) {
   const spans: React.ReactElement[] = [];
   let key = 0;
@@ -452,14 +454,15 @@ function RichPara({ tokens }: { tokens: RichToken[] }) {
     const isBold   = tok.type === 'bold'   || tok.type === 'bold-italic';
     const isItalic = tok.type === 'italic' || tok.type === 'bold-italic';
     const fw       = isBold ? ('bold' as const) : ('normal' as const);
-    const hasAr    = containsArabic(tok.text);
-    const family   = hasAr ? 'NotoSansArabic' : latinFamily(isItalic);
-    const display  = hasAr ? prepareForPDF(tok.text) : (tok.text ?? '');
-    spans.push(
-      <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: family, fontWeight: fw }}>
-        {display}
-      </Text>,
-    );
+
+    for (const run of splitForPDF(tok.text)) {
+      const family = run.arabic ? 'NotoSansArabic' : latinFamily(isItalic);
+      spans.push(
+        <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: family, fontWeight: fw }}>
+          {run.text}
+        </Text>,
+      );
+    }
   }
 
   return <Text style={{ ...BASE_TEXT_STYLE, marginBottom: 14 }}>{spans}</Text>;
