@@ -452,51 +452,41 @@ function latinFamily(isItalic: boolean): 'AnzianoPro' | 'AnzianoProItalic' {
 }
 
 /** Renders a single paragraph with inline bold / italic / footnote-ref tokens.
- *  Mixed Arabic+Latin tokens are split into per-run <Text> spans so each
- *  segment uses the correct font. */
+ *  Each token is expanded into per-run inline spans so Arabic segments get
+ *  NotoSansArabic and Latin segments keep AnzianoPro. All spans are flat
+ *  siblings inside one parent <Text> to avoid unstyled wrapper elements. */
 function RichPara({ tokens }: { tokens: RichToken[] }) {
-  return (
-    <Text style={{ ...BASE_TEXT_STYLE, marginBottom: 14 }}>
-      {tokens.map((tok, i) => {
-        if (tok.type === 'linebreak') {
-          return <Text key={i}>{'\n'}</Text>;
-        }
-        if (tok.type === 'fn-ref') {
-          return (
-            <Text key={i} style={{ ...BASE_TEXT_STYLE, fontSize: 7, lineHeight: 1 }}>
-              {superscript(tok.num)}
-            </Text>
-          );
-        }
-        const isBold   = tok.type === 'bold'   || tok.type === 'bold-italic';
-        const isItalic = tok.type === 'italic' || tok.type === 'bold-italic';
-        const fw = isBold ? ('bold' as const) : ('normal' as const);
-        const runs = splitRuns(tok.text ?? '');
-        // Single run — no need to nest extra <Text>
-        if (runs.length <= 1) {
-          const family = runs[0]?.arabic ? 'NotoSansArabic' : latinFamily(isItalic);
-          return (
-            <Text key={i} style={{ ...BASE_TEXT_STYLE, fontFamily: family, fontWeight: fw }}>
-              {tok.text}
-            </Text>
-          );
-        }
-        // Mixed — one <Text> per run
-        return (
-          <Text key={i}>
-            {runs.map((run, ri) => {
-              const family = run.arabic ? 'NotoSansArabic' : latinFamily(isItalic);
-              return (
-                <Text key={ri} style={{ ...BASE_TEXT_STYLE, fontFamily: family, fontWeight: fw }}>
-                  {run.text}
-                </Text>
-              );
-            })}
-          </Text>
-        );
-      })}
-    </Text>
-  );
+  // Flatten all tokens into a single array of inline spans
+  const spans: React.ReactElement[] = [];
+  let key = 0;
+
+  for (const tok of tokens) {
+    if (tok.type === 'linebreak') {
+      spans.push(<Text key={key++}>{'\n'}</Text>);
+      continue;
+    }
+    if (tok.type === 'fn-ref') {
+      spans.push(
+        <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontSize: 7, lineHeight: 1 }}>
+          {superscript(tok.num)}
+        </Text>,
+      );
+      continue;
+    }
+    const isBold   = tok.type === 'bold'   || tok.type === 'bold-italic';
+    const isItalic = tok.type === 'italic' || tok.type === 'bold-italic';
+    const fw = isBold ? ('bold' as const) : ('normal' as const);
+    for (const run of splitRuns(tok.text ?? '')) {
+      const family = run.arabic ? 'NotoSansArabic' : latinFamily(isItalic);
+      spans.push(
+        <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: family, fontWeight: fw }}>
+          {run.text}
+        </Text>,
+      );
+    }
+  }
+
+  return <Text style={{ ...BASE_TEXT_STYLE, marginBottom: 14 }}>{spans}</Text>;
 }
 
 /** Renders footnotes section below the exhibition text. */
