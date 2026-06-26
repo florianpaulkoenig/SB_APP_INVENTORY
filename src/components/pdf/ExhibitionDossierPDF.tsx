@@ -11,12 +11,13 @@
 
 import React from 'react';
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import styles, { PDF_COLORS, pdfFont, hasArabic } from './PDFStyles';
+import styles, { PDF_COLORS } from './PDFStyles';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 import { parseRichText, superscript } from '../../lib/richText';
 import type { RichToken } from '../../lib/richText';
 import { DOSSIER_STRINGS, formatDateLocalized } from '../../lib/dossierI18n';
 import type { DossierLanguage } from '../../lib/dossierI18n';
+import { prepareForPDF, containsArabic } from '../../lib/arabicTextForPDF';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -425,39 +426,13 @@ const FOOTNOTE_STYLE = {
   marginBottom: 3,
 } as const;
 
-// Split a string into runs of Arabic vs. non-Arabic characters so each run
-// can be rendered with the correct font.
-type TextRun = { text: string; arabic: boolean };
-const ARABIC_CHAR = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
-function splitRuns(text: string): TextRun[] {
-  if (!text) return [];
-  const runs: TextRun[] = [];
-  let cur = '';
-  let curArabic = ARABIC_CHAR.test(text[0]);
-  for (const ch of text) {
-    const isAr = ARABIC_CHAR.test(ch);
-    if (isAr !== curArabic) {
-      if (cur) runs.push({ text: cur, arabic: curArabic });
-      cur = ch;
-      curArabic = isAr;
-    } else {
-      cur += ch;
-    }
-  }
-  if (cur) runs.push({ text: cur, arabic: curArabic });
-  return runs;
-}
-
 function latinFamily(isItalic: boolean): 'AnzianoPro' | 'AnzianoProItalic' {
   return isItalic ? 'AnzianoProItalic' : 'AnzianoPro';
 }
 
-/** Renders a single paragraph with inline bold / italic / footnote-ref tokens.
- *  Each token is expanded into per-run inline spans so Arabic segments get
- *  NotoSansArabic and Latin segments keep AnzianoPro. All spans are flat
- *  siblings inside one parent <Text> to avoid unstyled wrapper elements. */
+/** Renders a single paragraph. Arabic text is pre-processed with arabic-reshaper
+ *  + bidi-js so react-pdf's layout engine never sees raw RTL characters. */
 function RichPara({ tokens }: { tokens: RichToken[] }) {
-  // Flatten all tokens into a single array of inline spans
   const spans: React.ReactElement[] = [];
   let key = 0;
 
@@ -476,15 +451,15 @@ function RichPara({ tokens }: { tokens: RichToken[] }) {
     }
     const isBold   = tok.type === 'bold'   || tok.type === 'bold-italic';
     const isItalic = tok.type === 'italic' || tok.type === 'bold-italic';
-    const fw = isBold ? ('bold' as const) : ('normal' as const);
-    for (const run of splitRuns(tok.text ?? '')) {
-      const family = run.arabic ? 'NotoSansArabic' : latinFamily(isItalic);
-      spans.push(
-        <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: family, fontWeight: fw }}>
-          {run.text}
-        </Text>,
-      );
-    }
+    const fw       = isBold ? ('bold' as const) : ('normal' as const);
+    const hasAr    = containsArabic(tok.text);
+    const family   = hasAr ? 'NotoSansArabic' : latinFamily(isItalic);
+    const display  = hasAr ? prepareForPDF(tok.text) : (tok.text ?? '');
+    spans.push(
+      <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: family, fontWeight: fw }}>
+        {display}
+      </Text>,
+    );
   }
 
   return <Text style={{ ...BASE_TEXT_STYLE, marginBottom: 14 }}>{spans}</Text>;
@@ -567,7 +542,9 @@ export function ExhibitionDossierPDF({
         {/* Main title block */}
         <View style={d.titleCenter}>
           <Text style={d.artistNameTitle}>{ARTIST_NAME}</Text>
-          <Text style={[d.exhibitionTitleLarge, { fontFamily: pdfFont(exhibition.title) }]}>{exhibition.title}</Text>
+          <Text style={[d.exhibitionTitleLarge, containsArabic(exhibition.title) ? { fontFamily: 'NotoSansArabic' } : {}]}>
+            {prepareForPDF(exhibition.title)}
+          </Text>
           <View style={d.titleDivider} />
 
           {exhibition.type && (
@@ -581,13 +558,17 @@ export function ExhibitionDossierPDF({
           {exhibition.venue && (
             <View style={d.titleMetaRow}>
               <Text style={[d.titleMetaLabel, { width: labelWidth }]}>{t.labelVenue}</Text>
-              <Text style={[d.titleMetaValue, { fontFamily: pdfFont(exhibition.venue) }]}>{exhibition.venue}</Text>
+              <Text style={[d.titleMetaValue, containsArabic(exhibition.venue) ? { fontFamily: 'NotoSansArabic' } : {}]}>
+                {prepareForPDF(exhibition.venue)}
+              </Text>
             </View>
           )}
           {location && (
             <View style={d.titleMetaRow}>
               <Text style={[d.titleMetaLabel, { width: labelWidth }]}>{t.labelLocation}</Text>
-              <Text style={[d.titleMetaValue, { fontFamily: pdfFont(location) }]}>{location}</Text>
+              <Text style={[d.titleMetaValue, containsArabic(location) ? { fontFamily: 'NotoSansArabic' } : {}]}>
+                {prepareForPDF(location)}
+              </Text>
             </View>
           )}
           {dateStr && (
@@ -599,8 +580,8 @@ export function ExhibitionDossierPDF({
           {exhibition.notes?.trim() && (
             <View style={[d.titleMetaRow, { marginTop: 14 }]}>
               <Text style={[d.titleMetaLabel, { width: labelWidth }]}>Notes</Text>
-              <Text style={[d.titleMetaValue, { fontSize: 9, lineHeight: 1.5, fontFamily: pdfFont(exhibition.notes) }]}>
-                {exhibition.notes}
+              <Text style={[d.titleMetaValue, { fontSize: 9, lineHeight: 1.5 }, containsArabic(exhibition.notes) ? { fontFamily: 'NotoSansArabic' } : {}]}>
+                {prepareForPDF(exhibition.notes)}
               </Text>
             </View>
           )}
@@ -841,7 +822,9 @@ export function ExhibitionDossierPDF({
                   key={iIdx}
                   style={iIdx % 2 === 1 ? d.poItemRowAlt : d.poItemRow}
                 >
-                  <Text style={[d.poItemDesc, { fontFamily: pdfFont(item.description) }]}>{item.description}</Text>
+                  <Text style={[d.poItemDesc, containsArabic(item.description) ? { fontFamily: 'NotoSansArabic' } : {}]}>
+                    {prepareForPDF(item.description)}
+                  </Text>
                   <Text style={d.poItemMeta}>{item.medium || '—'}</Text>
                   <Text style={d.poItemDims}>{item.dimensions || '—'}</Text>
                   <Text style={d.poItemQty}>{item.quantity}</Text>
