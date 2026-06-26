@@ -456,12 +456,27 @@ function RichPara({ tokens }: { tokens: RichToken[] }) {
     const fw       = isBold ? ('bold' as const) : ('normal' as const);
 
     for (const run of splitForPDF(tok.text)) {
-      const family = run.arabic ? 'NotoSansArabic' : latinFamily(isItalic);
-      spans.push(
-        <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: family, fontWeight: fw }}>
-          {run.text}
-        </Text>,
-      );
+      if (run.arabic) {
+        // LRO in AnzianoPro (no glyph → invisible) forces LTR on what follows,
+        // preventing textkit's BiDi from crashing on the Arabic presentation forms.
+        spans.push(
+          <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: 'AnzianoPro' }}>{'‭'}</Text>,
+        );
+        spans.push(
+          <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: 'NotoSansArabic', fontWeight: 'bold', fontSize: 10, lineHeight: 2.0 }}>
+            {run.text}
+          </Text>,
+        );
+        spans.push(
+          <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: 'AnzianoPro' }}>{'‬'}</Text>,
+        );
+      } else {
+        spans.push(
+          <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: latinFamily(isItalic), fontWeight: fw }}>
+            {run.text}
+          </Text>,
+        );
+      }
     }
   }
 

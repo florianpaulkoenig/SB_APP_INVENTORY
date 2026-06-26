@@ -58,7 +58,10 @@ export function splitForPDF(text: string | null | undefined): PDFTextRun[] {
     const levels   = bidi.getEmbeddingLevels(reshaped);
     const reordered = bidi.getReorderedString(reshaped, levels);
 
-    // 3. Split into arabic / non-arabic runs
+    // 3. Split into arabic / non-arabic runs.
+    // LRO/PDC are NOT embedded in the arabic run text — they are rendered in
+    // a surrounding AnzianoPro span (which has no glyph for them → invisible)
+    // so NotoSansArabic cannot draw them as visible lines.
     const runs: PDFTextRun[] = [];
     let cur = '';
     let curAr = ARABIC_PRES_RE.test(reordered[0] ?? '');
@@ -66,14 +69,14 @@ export function splitForPDF(text: string | null | undefined): PDFTextRun[] {
     for (const ch of reordered) {
       const isAr = ARABIC_PRES_RE.test(ch);
       if (isAr !== curAr) {
-        if (cur) runs.push({ text: curAr ? LRO + cur + PDC : cur, arabic: curAr });
+        if (cur) runs.push({ text: cur, arabic: curAr });
         cur = ch;
         curAr = isAr;
       } else {
         cur += ch;
       }
     }
-    if (cur) runs.push({ text: curAr ? LRO + cur + PDC : cur, arabic: curAr });
+    if (cur) runs.push({ text: cur, arabic: curAr });
 
     return runs.length ? runs : [{ text, arabic: false }];
   } catch {
