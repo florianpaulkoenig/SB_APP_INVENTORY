@@ -10,7 +10,7 @@
 // ---------------------------------------------------------------------------
 
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import styles, { PDF_COLORS } from './PDFStyles';
+import styles, { PDF_COLORS, pdfFont, hasArabic } from './PDFStyles';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 import { parseRichText, superscript } from '../../lib/richText';
 import type { RichToken } from '../../lib/richText';
@@ -427,11 +427,12 @@ const FOOTNOTE_STYLE = {
 function tokenStyle(token: RichToken) {
   const isBold   = token.type === 'bold'   || token.type === 'bold-italic';
   const isItalic = token.type === 'italic' || token.type === 'bold-italic';
+  // Arabic text uses Noto Sans Arabic; Latin uses Anziano (italic variant if needed)
+  const arabic   = hasArabic(token.text ?? '');
+  const family   = arabic ? 'NotoSansArabic' : (isItalic ? 'AnzianoProItalic' : 'AnzianoPro');
   return {
     ...BASE_TEXT_STYLE,
-    // Use the dedicated italic family (EB Garamond) when available; otherwise
-    // stay on AnzianoPro Regular — the export always works either way.
-    fontFamily: isItalic ? ('AnzianoProItalic' as const) : ('AnzianoPro' as const),
+    fontFamily: family as 'AnzianoPro' | 'AnzianoProItalic' | 'NotoSansArabic',
     fontWeight: isBold ? ('bold' as const) : ('normal' as const),
   };
 }
@@ -538,7 +539,7 @@ export function ExhibitionDossierPDF({
         {/* Main title block */}
         <View style={d.titleCenter}>
           <Text style={d.artistNameTitle}>{ARTIST_NAME}</Text>
-          <Text style={d.exhibitionTitleLarge}>{exhibition.title}</Text>
+          <Text style={[d.exhibitionTitleLarge, { fontFamily: pdfFont(exhibition.title) }]}>{exhibition.title}</Text>
           <View style={d.titleDivider} />
 
           {exhibition.type && (
@@ -552,13 +553,13 @@ export function ExhibitionDossierPDF({
           {exhibition.venue && (
             <View style={d.titleMetaRow}>
               <Text style={[d.titleMetaLabel, { width: labelWidth }]}>{t.labelVenue}</Text>
-              <Text style={d.titleMetaValue}>{exhibition.venue}</Text>
+              <Text style={[d.titleMetaValue, { fontFamily: pdfFont(exhibition.venue) }]}>{exhibition.venue}</Text>
             </View>
           )}
           {location && (
             <View style={d.titleMetaRow}>
               <Text style={[d.titleMetaLabel, { width: labelWidth }]}>{t.labelLocation}</Text>
-              <Text style={d.titleMetaValue}>{location}</Text>
+              <Text style={[d.titleMetaValue, { fontFamily: pdfFont(location) }]}>{location}</Text>
             </View>
           )}
           {dateStr && (
@@ -570,7 +571,7 @@ export function ExhibitionDossierPDF({
           {exhibition.notes?.trim() && (
             <View style={[d.titleMetaRow, { marginTop: 14 }]}>
               <Text style={[d.titleMetaLabel, { width: labelWidth }]}>Notes</Text>
-              <Text style={[d.titleMetaValue, { fontSize: 9, lineHeight: 1.5 }]}>
+              <Text style={[d.titleMetaValue, { fontSize: 9, lineHeight: 1.5, fontFamily: pdfFont(exhibition.notes) }]}>
                 {exhibition.notes}
               </Text>
             </View>
@@ -812,7 +813,7 @@ export function ExhibitionDossierPDF({
                   key={iIdx}
                   style={iIdx % 2 === 1 ? d.poItemRowAlt : d.poItemRow}
                 >
-                  <Text style={d.poItemDesc}>{item.description}</Text>
+                  <Text style={[d.poItemDesc, { fontFamily: pdfFont(item.description) }]}>{item.description}</Text>
                   <Text style={d.poItemMeta}>{item.medium || '—'}</Text>
                   <Text style={d.poItemDims}>{item.dimensions || '—'}</Text>
                   <Text style={d.poItemQty}>{item.quantity}</Text>

@@ -41,36 +41,48 @@ try {
 
 // ---------------------------------------------------------------------------
 // Register Noto Sans SC for CJK (Chinese/Japanese/Korean) character support
-// Loaded from Google Fonts CDN — no local file needed
 // ---------------------------------------------------------------------------
 Font.register({
   family: 'NotoSansSC',
   src: 'https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYw.ttf',
 });
 
-// Disable hyphenation for CJK text (CJK doesn't use hyphenation)
+// Register Noto Sans Arabic for Arabic/RTL character support
+Font.register({
+  family: 'NotoSansArabic',
+  src: 'https://fonts.gstatic.com/s/notosansarabic/v18/nwpxtLGrOAZMl5nJ_wfgRg3DrWFZWsnVBJ_sS6tlqHHFlhQ5l3sQWIHPqzCfyG2vu3CBFQLaig.ttf',
+});
+
+// Disable hyphenation for CJK/Arabic text
 Font.registerHyphenationCallback((word) => {
-  // If the word contains CJK characters, don't hyphenate — break per character
-  if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(word)) {
+  if (/[一-鿿㐀-䶿]/.test(word)) {
     return word.split('');
   }
-  // Default: treat as single word (let @react-pdf handle Latin hyphenation)
   return [word];
 });
 
 // ---------------------------------------------------------------------------
-// CJK detection helpers — pick font based on text content
+// Script detection helpers — pick font based on text content
 // ---------------------------------------------------------------------------
-const CJK_REGEX = /[\u4e00-\u9fff\u3400-\u4dbf\u3000-\u303f\uff00-\uffef\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/;
+const CJK_REGEX    = /[一-鿿㐀-䶿　-〿＀-￯぀-ゟ゠-ヿ가-힯]/;
+const ARABIC_REGEX = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
 
 /** Returns true if text contains CJK characters */
 export function hasCJK(text: string): boolean {
   return CJK_REGEX.test(text);
 }
 
+/** Returns true if text contains Arabic/RTL characters */
+export function hasArabic(text: string): boolean {
+  return ARABIC_REGEX.test(text);
+}
+
 /** Pick the right font family for the given text */
 export function pdfFont(text?: string | null): string {
-  return text && hasCJK(text) ? 'NotoSansSC' : 'AnzianoPro';
+  if (!text) return 'AnzianoPro';
+  if (hasCJK(text))    return 'NotoSansSC';
+  if (hasArabic(text)) return 'NotoSansArabic';
+  return 'AnzianoPro';
 }
 
 // ---------------------------------------------------------------------------
