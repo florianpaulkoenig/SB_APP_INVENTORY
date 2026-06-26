@@ -424,20 +424,36 @@ const FOOTNOTE_STYLE = {
   marginBottom: 3,
 } as const;
 
-function tokenStyle(token: RichToken) {
-  const isBold   = token.type === 'bold'   || token.type === 'bold-italic';
-  const isItalic = token.type === 'italic' || token.type === 'bold-italic';
-  // Arabic text uses Noto Sans Arabic; Latin uses Anziano (italic variant if needed)
-  const arabic   = hasArabic(token.text ?? '');
-  const family   = arabic ? 'NotoSansArabic' : (isItalic ? 'AnzianoProItalic' : 'AnzianoPro');
-  return {
-    ...BASE_TEXT_STYLE,
-    fontFamily: family as 'AnzianoPro' | 'AnzianoProItalic' | 'NotoSansArabic',
-    fontWeight: isBold ? ('bold' as const) : ('normal' as const),
-  };
+// Split a string into runs of Arabic vs. non-Arabic characters so each run
+// can be rendered with the correct font.
+type TextRun = { text: string; arabic: boolean };
+const ARABIC_CHAR = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
+function splitRuns(text: string): TextRun[] {
+  if (!text) return [];
+  const runs: TextRun[] = [];
+  let cur = '';
+  let curArabic = ARABIC_CHAR.test(text[0]);
+  for (const ch of text) {
+    const isAr = ARABIC_CHAR.test(ch);
+    if (isAr !== curArabic) {
+      if (cur) runs.push({ text: cur, arabic: curArabic });
+      cur = ch;
+      curArabic = isAr;
+    } else {
+      cur += ch;
+    }
+  }
+  if (cur) runs.push({ text: cur, arabic: curArabic });
+  return runs;
 }
 
-/** Renders a single paragraph with inline bold / italic / footnote-ref tokens. */
+function latinFamily(isItalic: boolean): 'AnzianoPro' | 'AnzianoProItalic' {
+  return isItalic ? 'AnzianoProItalic' : 'AnzianoPro';
+}
+
+/** Renders a single paragraph with inline bold / italic / footnote-ref tokens.
+ *  Mixed Arabic+Latin tokens are split into per-run <Text> spans so each
+ *  segment uses the correct font. */
 function RichPara({ tokens }: { tokens: RichToken[] }) {
   return (
     <Text style={{ ...BASE_TEXT_STYLE, marginBottom: 14 }}>
@@ -452,9 +468,30 @@ function RichPara({ tokens }: { tokens: RichToken[] }) {
             </Text>
           );
         }
+        const isBold   = tok.type === 'bold'   || tok.type === 'bold-italic';
+        const isItalic = tok.type === 'italic' || tok.type === 'bold-italic';
+        const fw = isBold ? ('bold' as const) : ('normal' as const);
+        const runs = splitRuns(tok.text ?? '');
+        // Single run — no need to nest extra <Text>
+        if (runs.length <= 1) {
+          const family = runs[0]?.arabic ? 'NotoSansArabic' : latinFamily(isItalic);
+          return (
+            <Text key={i} style={{ ...BASE_TEXT_STYLE, fontFamily: family, fontWeight: fw }}>
+              {tok.text}
+            </Text>
+          );
+        }
+        // Mixed — one <Text> per run
         return (
-          <Text key={i} style={tokenStyle(tok)}>
-            {tok.text}
+          <Text key={i}>
+            {runs.map((run, ri) => {
+              const family = run.arabic ? 'NotoSansArabic' : latinFamily(isItalic);
+              return (
+                <Text key={ri} style={{ ...BASE_TEXT_STYLE, fontFamily: family, fontWeight: fw }}>
+                  {run.text}
+                </Text>
+              );
+            })}
           </Text>
         );
       })}
