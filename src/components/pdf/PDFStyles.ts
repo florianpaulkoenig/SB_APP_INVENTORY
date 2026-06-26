@@ -47,10 +47,10 @@ Font.register({
   src: 'https://fonts.gstatic.com/s/notosanssc/v40/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYw.ttf',
 });
 
-// Register Noto Sans Arabic for Arabic/RTL character support
+// Register Noto Sans Arabic for Arabic/RTL character support (served locally)
 Font.register({
   family: 'NotoSansArabic',
-  src: 'https://fonts.gstatic.com/s/notosansarabic/v18/nwpxtLGrOAZMl5nJ_wfgRg3DrWFZWsnVBJ_sS6tlqHHFlhQ5l3sQWIHPqzCfyG2vu3CBFQLaig.ttf',
+  src: `${import.meta.env.BASE_URL}fonts/NotoSansArabic-Regular.ttf`,
 });
 
 // Disable hyphenation for CJK/Arabic text
