@@ -9,6 +9,7 @@
 //   Last    — Linked production orders
 // ---------------------------------------------------------------------------
 
+import React from 'react';
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import styles, { PDF_COLORS, pdfFont, hasArabic } from './PDFStyles';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
