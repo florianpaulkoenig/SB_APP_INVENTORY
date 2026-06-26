@@ -534,6 +534,9 @@ export function ExhibitionDetailPage() {
       ).toBlob();
 
       downloadBlob(blob, `${exhibition.title.replace(/\s+/g, '_')}_Dossier.pdf`);
+    } catch (err) {
+      console.error('Dossier PDF generation failed:', err);
+      toast({ title: 'PDF export failed', description: String(err), variant: 'error' });
     } finally {
       setDownloadingDossier(false);
     }
