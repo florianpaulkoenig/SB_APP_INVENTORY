@@ -33,6 +33,8 @@ export interface ArtworkFiltersProps {
   shouldFocusSearch?: boolean;
   noPhotoFilter?: boolean;
   onNoPhotoChange?: (value: boolean) => void;
+  withPhotoFilter?: boolean;
+  onWithPhotoChange?: (value: boolean) => void;
   viewMode?: string;
   onViewModeChange?: (mode: string) => void;
   sortValue?: string;
@@ -44,6 +46,7 @@ export function ArtworkFilters({
   filters, onChange, onClear,
   search, onSearchChange, shouldFocusSearch,
   noPhotoFilter, onNoPhotoChange,
+  withPhotoFilter, onWithPhotoChange,
   viewMode, onViewModeChange,
   sortValue, onSortChange, sortOptions,
   showArtistFilter,
@@ -56,6 +59,7 @@ export function ArtworkFilters({
     filters.minHeight != null || filters.maxHeight != null ||
     filters.minWidth != null || filters.maxWidth != null ||
     noPhotoFilter,
+    withPhotoFilter,
   );
   const hasActiveFilters = Boolean(filters.status || filters.gallery_id) || secondaryActive;
 
@@ -238,6 +242,17 @@ export function ArtworkFilters({
             <input type="number" placeholder="W max" value={filters.maxWidth ?? ''} onChange={(e) => updateNum('maxWidth', e.target.value)} className={inputCls} />
           </div>
 
+          {onWithPhotoChange && (
+            <label className="flex items-center gap-2 text-xs text-primary-500 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={withPhotoFilter ?? false}
+                onChange={(e) => onWithPhotoChange(e.target.checked)}
+                className="h-3.5 w-3.5 rounded-none border-primary-300 text-primary-900 focus:ring-0"
+              />
+              With photo
+            </label>
+          )}
           {onNoPhotoChange && (
             <label className="flex items-center gap-2 text-xs text-primary-500 cursor-pointer">
               <input

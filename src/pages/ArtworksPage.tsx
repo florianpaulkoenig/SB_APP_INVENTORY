@@ -94,7 +94,8 @@ export function ArtworksPage() {
   const viewMode    = (searchParams.get('view') as ViewMode) ?? 'grid';
   const sortBy      = searchParams.get('sb') ?? 'created_at';
   const sortOrder   = (searchParams.get('so') as 'asc' | 'desc') ?? 'desc';
-  const noPhotoFilter = searchParams.get('np') === '1';
+  const noPhotoFilter  = searchParams.get('np') === '1';
+  const withPhotoFilter = searchParams.get('wp') === '1';
   const filters: ArtworkFiltersType = {
     status:     (searchParams.get('st') as ArtworkFiltersType['status'])   || undefined,
     category:   (searchParams.get('cat') as ArtworkFiltersType['category']) || undefined,
@@ -469,9 +470,10 @@ export function ArtworksPage() {
   // ---- Filtered artworks (no photo filter) ---------------------------------
 
   const displayedArtworks = useMemo(() => {
-    if (!noPhotoFilter) return artworks;
-    return artworks.filter((a) => !imageUrls[a.id]);
-  }, [artworks, imageUrls, noPhotoFilter]);
+    if (withPhotoFilter) return artworks.filter((a) => !!imageUrls[a.id]);
+    if (noPhotoFilter)   return artworks.filter((a) => !imageUrls[a.id]);
+    return artworks;
+  }, [artworks, imageUrls, noPhotoFilter, withPhotoFilter]);
 
   // ---- CSV Export -----------------------------------------------------------
 
@@ -501,8 +503,8 @@ export function ArtworksPage() {
 
       let rows = allArtworks as (typeof allArtworks[number] & { galleries?: { name: string } | null })[];
 
-      // If noPhotoFilter, find artworks without images
-      if (noPhotoFilter) {
+      // If noPhotoFilter or withPhotoFilter, cross-reference artwork_images
+      if (noPhotoFilter || withPhotoFilter) {
         const ids = rows.map((a) => a.id);
         const { data: imagesData } = await supabase
           .from('artwork_images')
@@ -511,7 +513,8 @@ export function ArtworksPage() {
           .eq('is_primary', true);
 
         const idsWithImages = new Set((imagesData ?? []).map((i) => i.artwork_id));
-        rows = rows.filter((a) => !idsWithImages.has(a.id));
+        if (noPhotoFilter)   rows = rows.filter((a) => !idsWithImages.has(a.id));
+        if (withPhotoFilter) rows = rows.filter((a) =>  idsWithImages.has(a.id));
       }
 
       // Build CSV
@@ -589,6 +592,8 @@ export function ArtworksPage() {
           search={search}
           onSearchChange={handleSearchChange}
           shouldFocusSearch={shouldFocusSearch}
+          withPhotoFilter={withPhotoFilter}
+          onWithPhotoChange={(v) => updateParams(p => { if (v) p.set('wp','1'); else p.delete('wp'); p.delete('pg'); })}
           noPhotoFilter={noPhotoFilter}
           onNoPhotoChange={(v) => updateParams(p => { if (v) p.set('np','1'); else p.delete('np'); p.delete('pg'); })}
           viewMode={viewMode}
