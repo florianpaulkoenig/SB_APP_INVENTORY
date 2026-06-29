@@ -308,6 +308,18 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
   const deleteArtwork = useCallback(
     async (id: string): Promise<boolean> => {
       try {
+        // Delete storage files before removing DB record (CASCADE removes artwork_images rows,
+        // but the actual files in the bucket must be deleted explicitly).
+        const { data: images } = await supabase
+          .from('artwork_images')
+          .select('storage_path')
+          .eq('artwork_id', id);
+
+        if (images && images.length > 0) {
+          const paths = images.map((img: { storage_path: string }) => img.storage_path);
+          await supabase.storage.from('artwork-images').remove(paths);
+        }
+
         const { error: deleteError } = await supabase
           .from('artworks')
           .delete()
@@ -335,6 +347,17 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
     async (ids: string[]): Promise<boolean> => {
       if (ids.length === 0) return true;
       try {
+        // Delete storage files for all artworks before removing DB records
+        const { data: images } = await supabase
+          .from('artwork_images')
+          .select('storage_path')
+          .in('artwork_id', ids);
+
+        if (images && images.length > 0) {
+          const paths = images.map((img: { storage_path: string }) => img.storage_path);
+          await supabase.storage.from('artwork-images').remove(paths);
+        }
+
         const { error: deleteError } = await supabase
           .from('artworks')
           .delete()
