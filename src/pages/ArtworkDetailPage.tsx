@@ -28,6 +28,7 @@ import { generateArtworkRefCode, downloadBlob, buildCertificateFilename } from '
 import { DOC_PREFIXES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
+import { Input } from '../components/ui/Input';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 // ---------------------------------------------------------------------------
@@ -76,6 +77,7 @@ export function ArtworkDetailPage() {
   const [imageRefreshKey, setImageRefreshKey] = useState(0);
   const [certificate, setCertificate] = useState<CertificateInfo | null>(null);
   const [language, setLanguage] = useState<Language>('en');
+  const [placeOfCreation, setPlaceOfCreation] = useState('Switzerland');
   const [downloading, setDownloading] = useState(false);
   const [generating, setGenerating] = useState(false);
 
@@ -202,6 +204,7 @@ export function ArtworkDetailPage() {
             reference_code: artwork.reference_code,
             medium: artwork.medium,
             year: artwork.year,
+            placeOfCreation,
             height: artwork.height,
             width: artwork.width,
             depth: artwork.depth,
@@ -231,7 +234,7 @@ export function ArtworkDetailPage() {
     } finally {
       setDownloading(false);
     }
-  }, [artwork, certificate, language, provenanceEntries, currentOwner, currentOwnerDate]);
+  }, [artwork, certificate, language, placeOfCreation, provenanceEntries, currentOwner, currentOwnerDate]);
 
   // ---- Certificate PDF upload -----------------------------------------------
 
@@ -376,6 +379,7 @@ export function ArtworkDetailPage() {
             reference_code: artwork.reference_code,
             medium: artwork.medium,
             year: artwork.year,
+            placeOfCreation,
             height: artwork.height,
             width: artwork.width,
             depth: artwork.depth,
@@ -684,6 +688,13 @@ export function ArtworkDetailPage() {
                   onChange={(e) => setLanguage(e.target.value as Language)}
                 />
               </div>
+              <div className="w-full sm:w-48">
+                <Input
+                  label="Place of Creation"
+                  value={placeOfCreation}
+                  onChange={(e) => setPlaceOfCreation(e.target.value)}
+                />
+              </div>
               <Button onClick={handleDownloadCertificate} loading={downloading}>
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -738,6 +749,13 @@ export function ArtworkDetailPage() {
                   options={[...LANGUAGE_OPTIONS]}
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as Language)}
+                />
+              </div>
+              <div className="w-full sm:w-48">
+                <Input
+                  label="Place of Creation"
+                  value={placeOfCreation}
+                  onChange={(e) => setPlaceOfCreation(e.target.value)}
                 />
               </div>
               <Button onClick={handleGenerateCertificate} loading={generating}>

@@ -18,6 +18,7 @@ interface TranslationStrings {
   referenceCode: string;
   medium: string;
   year: string;
+  placeOfCreation: string;
   dimensions: string;
   framedDimensions: string;
   edition: string;
@@ -42,6 +43,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     referenceCode: 'Reference Code',
     medium: 'Medium',
     year: 'Year',
+    placeOfCreation: 'Place of Creation',
     dimensions: 'Dimensions',
     framedDimensions: 'Framed Dimensions',
     edition: 'Edition',
@@ -65,6 +67,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     referenceCode: 'Referenzcode',
     medium: 'Technik',
     year: 'Jahr',
+    placeOfCreation: 'Entstehungsort',
     dimensions: 'Ma\u00dfe',
     framedDimensions: 'Gerahmte Ma\u00dfe',
     edition: 'Auflage',
@@ -88,6 +91,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     referenceCode: 'Code de r\u00e9f\u00e9rence',
     medium: 'Technique',
     year: 'Ann\u00e9e',
+    placeOfCreation: 'Lieu de cr\u00e9ation',
     dimensions: 'Dimensions',
     framedDimensions: 'Dimensions encadr\u00e9',
     edition: '\u00c9dition',
@@ -179,6 +183,7 @@ export interface CertificatePDFProps {
     reference_code: string;
     medium: string | null;
     year: number | null;
+    placeOfCreation?: string | null;
     height: number | null;
     width: number | null;
     depth: number | null;
@@ -319,6 +324,8 @@ export function CertificatePDF({
   if (artwork.year != null) {
     detailRows.push({ label: t.year, value: String(artwork.year) });
   }
+  const placeOfCreation = artwork.placeOfCreation ?? 'Switzerland';
+  detailRows.push({ label: t.placeOfCreation, value: placeOfCreation });
   if (unframedDimensions) {
     detailRows.push({ label: t.dimensions, value: unframedDimensions });
   }
