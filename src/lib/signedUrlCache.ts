@@ -18,6 +18,24 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>();
 
+// ---------------------------------------------------------------------------
+// Image transform options — Supabase renders a resized/re-encoded variant
+// server-side, drastically reducing bytes for thumbnails and list views.
+// ---------------------------------------------------------------------------
+export interface ImageTransform {
+  width?: number;
+  height?: number;
+  quality?: number;
+  resize?: 'cover' | 'contain' | 'fill';
+}
+
+/** Shared thumbnail preset for grids, pickers and list rows. */
+export const THUMBNAIL_TRANSFORM: ImageTransform = {
+  width: 300,
+  quality: 60,
+  resize: 'contain',
+};
+
 // Periodic cleanup every 2 minutes to avoid unbounded growth
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -36,8 +54,13 @@ function ensureCleanup() {
   }, 2 * 60 * 1000);
 }
 
-function cacheKey(bucket: string, path: string): string {
-  return `${bucket}:${path}`;
+function transformSuffix(transform?: ImageTransform): string {
+  if (!transform) return '';
+  return `@${transform.width ?? ''}x${transform.height ?? ''}q${transform.quality ?? ''}${transform.resize ?? ''}`;
+}
+
+function cacheKey(bucket: string, path: string, transform?: ImageTransform): string {
+  return `${bucket}:${path}${transformSuffix(transform)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,8 +80,9 @@ export async function getSignedUrl(
   bucket: string,
   path: string,
   expiresIn = DEFAULT_EXPIRY_SECONDS,
+  transform?: ImageTransform,
 ): Promise<string | null> {
-  const key = cacheKey(bucket, path);
+  const key = cacheKey(bucket, path, transform);
   const now = Date.now();
 
   // Return cached URL if still valid
@@ -70,7 +94,7 @@ export async function getSignedUrl(
   // Generate new signed URL
   const { data, error } = await supabase.storage
     .from(bucket)
-    .createSignedUrl(path, expiresIn);
+    .createSignedUrl(path, expiresIn, transform ? { transform } : undefined);
 
   if (error || !data?.signedUrl) {
     return null;
@@ -97,6 +121,7 @@ export async function getSignedUrls(
   bucket: string,
   paths: string[],
   expiresIn = DEFAULT_EXPIRY_SECONDS,
+  transform?: ImageTransform,
 ): Promise<Map<string, string>> {
   const now = Date.now();
   const result = new Map<string, string>();
@@ -104,7 +129,7 @@ export async function getSignedUrls(
 
   // Check cache first
   for (const path of paths) {
-    const key = cacheKey(bucket, path);
+    const key = cacheKey(bucket, path, transform);
     const cached = cache.get(key);
     if (cached && cached.expiresAt > now) {
       result.set(path, cached.url);
@@ -117,7 +142,7 @@ export async function getSignedUrls(
   if (uncachedPaths.length > 0) {
     const responses = await Promise.all(
       uncachedPaths.map((p) =>
-        supabase.storage.from(bucket).createSignedUrl(p, expiresIn),
+        supabase.storage.from(bucket).createSignedUrl(p, expiresIn, transform ? { transform } : undefined),
       ),
     );
 
@@ -127,7 +152,7 @@ export async function getSignedUrls(
       if (url) {
         const path = uncachedPaths[i];
         result.set(path, url);
-        cache.set(cacheKey(bucket, path), { url, expiresAt: now + ttl });
+        cache.set(cacheKey(bucket, path, transform), { url, expiresAt: now + ttl });
       }
     }
 
@@ -141,12 +166,17 @@ export async function getSignedUrls(
  * Invalidate cached URL(s). Useful after uploading/deleting images.
  */
 export function invalidateSignedUrl(bucket: string, path: string): void {
-  cache.delete(cacheKey(bucket, path));
+  // Delete the base key plus every transform variant (keys are prefixed
+  // with "bucket:path" and optionally suffixed with "@…").
+  const prefix = `${bucket}:${path}`;
+  for (const key of cache.keys()) {
+    if (key === prefix || key.startsWith(`${prefix}@`)) cache.delete(key);
+  }
 }
 
 export function invalidateSignedUrls(bucket: string, paths: string[]): void {
   for (const path of paths) {
-    cache.delete(cacheKey(bucket, path));
+    invalidateSignedUrl(bucket, path);
   }
 }
 

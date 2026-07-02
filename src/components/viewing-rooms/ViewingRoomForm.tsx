@@ -138,7 +138,9 @@ export function ViewingRoomForm({
           const urlPromises = images.map(async (img) => {
             const { data: urlData } = await supabase.storage
               .from('artwork-images')
-              .createSignedUrl(img.storage_path, 600);
+              .createSignedUrl(img.storage_path, 600, {
+                transform: { width: 300, quality: 60, resize: 'cover' },
+              });
             return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
           });
           const urls = await Promise.all(urlPromises);
@@ -243,7 +245,9 @@ export function ViewingRoomForm({
           const urlPromises = images.map(async (img) => {
             const { data: urlData } = await supabase.storage
               .from('artwork-images')
-              .createSignedUrl(img.storage_path, 600);
+              .createSignedUrl(img.storage_path, 600, {
+                transform: { width: 300, quality: 60, resize: 'cover' },
+              });
             return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
           });
           const urls = await Promise.all(urlPromises);
