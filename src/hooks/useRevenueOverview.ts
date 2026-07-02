@@ -147,11 +147,13 @@ export function useRevenueOverview() {
       const [salesResult, artworksResult, prodOrdersResult, galleryOverridesResult] = await Promise.all([
         supabase
           .from('sales')
-          .select('id, gallery_id, sale_date, sale_price, currency, galleries(name)')
+          .select('id, gallery_id, sale_date, sale_price, currency, galleries(name), artworks!inner(portfolio)')
+          .eq('artworks.portfolio', 'simon_berger')
           .order('sale_date', { ascending: true }),
         supabase
           .from('artworks')
           .select('id, status, price, currency, gallery_id')
+          .eq('portfolio', 'simon_berger')
           .not('status', 'in', '("sold","archived","destroyed")')
           .gt('price', 0),
         supabase

@@ -134,14 +134,16 @@ export function useAnalytics(): UseAnalyticsReturn {
       // 1. Artworks: id, status, category, series, created_at
       const artworksQuery = supabase
         .from('artworks')
-        .select('id, status, category, series, created_at');
+        .select('id, status, category, series, created_at')
+        .eq('portfolio', 'simon_berger');
 
       // 2. Sales: with joins + reporting fields
       let salesQuery = supabase
         .from('sales')
         .select(
-          'id, artwork_id, gallery_id, contact_id, sale_date, sale_price, currency, buyer_name, reporting_status, payment_status, artworks(title, created_at, series), galleries(name, country), contacts(first_name, last_name)',
+          'id, artwork_id, gallery_id, contact_id, sale_date, sale_price, currency, buyer_name, reporting_status, payment_status, artworks!inner(title, created_at, series, portfolio), galleries(name, country), contacts(first_name, last_name)',
         )
+        .eq('artworks.portfolio', 'simon_berger')
         .order('sale_date', { ascending: false });
 
       // Apply date range filter to sales

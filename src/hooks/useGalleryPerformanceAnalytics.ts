@@ -67,8 +67,8 @@ export function useGalleryPerformanceAnalytics() {
 
       const [galleriesRes, artworksRes, salesRes] = await Promise.all([
         supabase.from('galleries').select('id, name, country, type'),
-        supabase.from('artworks').select('id, gallery_id, status, consigned_since, created_at'),
-        supabase.from('sales').select('id, gallery_id, sale_price, currency, sale_date, reporting_status, artwork_id, artworks(consigned_since)'),
+        supabase.from('artworks').select('id, gallery_id, status, consigned_since, created_at').eq('portfolio', 'simon_berger'),
+        supabase.from('sales').select('id, gallery_id, sale_price, currency, sale_date, reporting_status, artwork_id, artworks!inner(consigned_since, portfolio)').eq('artworks.portfolio', 'simon_berger'),
       ]);
 
       if (galleriesRes.error) throw galleriesRes.error;

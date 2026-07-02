@@ -48,10 +48,12 @@ export function useInventoryAnalytics() {
       const [artworksRes, salesRes] = await Promise.all([
         supabase
           .from('artworks')
-          .select('id, status, category, series, size_category, height, width, created_at, released_at, consigned_since'),
+          .select('id, status, category, series, size_category, height, width, created_at, released_at, consigned_since')
+          .eq('portfolio', 'simon_berger'),
         supabase
           .from('sales')
-          .select('id, artwork_id, sale_date'),
+          .select('id, artwork_id, sale_date, artworks!inner(portfolio)')
+          .eq('artworks.portfolio', 'simon_berger'),
       ]);
 
       if (artworksRes.error) throw artworksRes.error;

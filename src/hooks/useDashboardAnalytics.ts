@@ -209,11 +209,11 @@ export function useDashboardAnalytics(
       { data: vrViews },
       { data: galleries },
     ] = await Promise.all([
-      supabase.from('sales').select('id, artwork_id, sale_price, currency, sale_date, contact_id, gallery_id, sale_city, sale_country, sale_type, source_exhibition_id, artworks(title, price, currency, category)'),
+      supabase.from('sales').select('id, artwork_id, sale_price, currency, sale_date, contact_id, gallery_id, sale_city, sale_country, sale_type, source_exhibition_id, artworks!inner(title, price, currency, category, portfolio)').eq('artworks.portfolio', 'simon_berger'),
       supabase.from('expenses').select('id, artwork_id, exhibition_id, amount, currency, expense_date, category'),
       supabase.from('deals').select('id, contact_id, artwork_id, stage, value, currency, stage_changed_at, lost_reason, created_at, updated_at'),
       supabase.from('contacts').select('id, first_name, last_name, city, country'),
-      supabase.from('artworks').select('id, title, status, consigned_since, price, currency, gallery_id'),
+      supabase.from('artworks').select('id, title, status, consigned_since, price, currency, gallery_id').eq('portfolio', 'simon_berger'),
       supabase.from('invoices').select('id, total, currency, paid_date').eq('status', 'paid'),
       supabase.from('exhibitions').select('id, title, venue, start_date, end_date, budget, budget_currency, exhibition_artworks(artwork_id)'),
       supabase.from('viewing_rooms').select('id, title, visibility, artwork_ids'),

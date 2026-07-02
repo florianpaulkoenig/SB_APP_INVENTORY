@@ -35,8 +35,8 @@ export function useSeriesPerformance() {
       if (!session?.user) { setLoading(false); return; }
 
       const [artworksRes, salesRes] = await Promise.all([
-        supabase.from('artworks').select('id, series, status, released_at, consigned_since, created_at'),
-        supabase.from('sales').select('id, artwork_id, sale_price, sale_date, artworks(series, released_at, consigned_since)'),
+        supabase.from('artworks').select('id, series, status, released_at, consigned_since, created_at').eq('portfolio', 'simon_berger'),
+        supabase.from('sales').select('id, artwork_id, sale_price, sale_date, artworks!inner(series, released_at, consigned_since, portfolio)').eq('artworks.portfolio', 'simon_berger'),
       ]);
 
       if (artworksRes.error) throw artworksRes.error;

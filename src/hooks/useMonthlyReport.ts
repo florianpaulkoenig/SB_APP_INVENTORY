@@ -84,7 +84,8 @@ export function useMonthlyReport(year: number, month: number) {
           // 1. Sales in date range
           supabase
             .from('sales')
-            .select('id, sale_date, sale_price, currency, artworks(title, reference_code), galleries(name)')
+            .select('id, sale_date, sale_price, currency, artworks!inner(title, reference_code, portfolio), galleries(name)')
+            .eq('artworks.portfolio', 'simon_berger')
             .gte('sale_date', from)
             .lte('sale_date', to)
             .order('sale_date', { ascending: false }),
