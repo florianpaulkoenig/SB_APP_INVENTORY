@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
@@ -16,7 +16,12 @@ export function useEnquiries(options?: UseEnquiriesOptions) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Monotonic fetch generation — lets stale responses be discarded when
+  // filters change faster than the network answers
+  const fetchGenRef = useRef(0);
+
   const fetch = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     let query = supabase
       .from('enquiries')
@@ -36,6 +41,10 @@ export function useEnquiries(options?: UseEnquiriesOptions) {
     }
 
     const { data, error } = await query;
+
+    // Stale response — a newer fetch superseded this one
+    if (gen !== fetchGenRef.current) return;
+
     if (error) {
       toast({ title: 'Failed to load enquiries', variant: 'error' });
     }
