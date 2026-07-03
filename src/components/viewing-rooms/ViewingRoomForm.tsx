@@ -137,10 +137,11 @@ export function ViewingRoomForm({
         const imageMap = new Map<string, string>();
         if (images) {
           const urlPromises = images.map(async (img) => {
+            // 'contain', not 'cover' — cover with width-only crops a strip
             const url = await getSignedUrl('artwork-images', img.storage_path, 600, {
               width: 300,
               quality: 60,
-              resize: 'cover',
+              resize: 'contain',
             });
             return { artworkId: img.artwork_id, url };
           });
@@ -244,10 +245,11 @@ export function ViewingRoomForm({
         const imageMap = new Map<string, string>();
         if (images) {
           const urlPromises = images.map(async (img) => {
+            // 'contain', not 'cover' — cover with width-only crops a strip
             const url = await getSignedUrl('artwork-images', img.storage_path, 600, {
               width: 300,
               quality: 60,
-              resize: 'cover',
+              resize: 'contain',
             });
             return { artworkId: img.artwork_id, url };
           });
