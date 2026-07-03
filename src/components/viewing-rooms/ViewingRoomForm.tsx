@@ -10,6 +10,7 @@ import { Select } from '../ui/Select';
 import { Modal } from '../ui/Modal';
 import { CatalogueArtworkPicker } from '../catalogues/CatalogueArtworkPicker';
 import { supabase } from '../../lib/supabase';
+import { getSignedUrl } from '../../lib/signedUrlCache';
 import { hashPassword } from '../../lib/crypto';
 import { generateSlug } from '../../hooks/useViewingRooms';
 import type {
@@ -136,12 +137,12 @@ export function ViewingRoomForm({
         const imageMap = new Map<string, string>();
         if (images) {
           const urlPromises = images.map(async (img) => {
-            const { data: urlData } = await supabase.storage
-              .from('artwork-images')
-              .createSignedUrl(img.storage_path, 600, {
-                transform: { width: 300, quality: 60, resize: 'cover' },
-              });
-            return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
+            const url = await getSignedUrl('artwork-images', img.storage_path, 600, {
+              width: 300,
+              quality: 60,
+              resize: 'cover',
+            });
+            return { artworkId: img.artwork_id, url };
           });
           const urls = await Promise.all(urlPromises);
           for (const { artworkId, url } of urls) {
@@ -243,12 +244,12 @@ export function ViewingRoomForm({
         const imageMap = new Map<string, string>();
         if (images) {
           const urlPromises = images.map(async (img) => {
-            const { data: urlData } = await supabase.storage
-              .from('artwork-images')
-              .createSignedUrl(img.storage_path, 600, {
-                transform: { width: 300, quality: 60, resize: 'cover' },
-              });
-            return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
+            const url = await getSignedUrl('artwork-images', img.storage_path, 600, {
+              width: 300,
+              quality: 60,
+              resize: 'cover',
+            });
+            return { artworkId: img.artwork_id, url };
           });
           const urls = await Promise.all(urlPromises);
           for (const { artworkId, url } of urls) {

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { THUMB_PREFIX, thumbnailPath, createThumbnailBlob } from './imageThumbnails';
 
 // ---------------------------------------------------------------------------
 // Signed URL cache — avoids redundant Supabase storage calls when navigating
@@ -51,9 +52,10 @@ export const THUMBNAIL_TRANSFORM: ImageTransform = {
 
 const failedTransformPaths = new Set<string>();
 
-const THUMB_PREFIX = 'thumbs/';
-const THUMB_WIDTH = 1200;
-const THUMB_JPEG_QUALITY = 0.8;
+// Paths probed for a persisted thumbnail that turned out not to have one —
+// avoids re-probing on every grid render. Cleared by invalidateSignedUrl
+// (e.g. after upload-time thumbnail generation).
+const missingThumbPaths = new Set<string>();
 
 const RENDER_URL_RE = /\/storage\/v1\/render\/image\/sign\/([^/]+)\/([^?]+)/;
 
@@ -72,7 +74,7 @@ function enqueueFallback<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 async function generateAndPersistThumb(bucket: string, path: string): Promise<string | null> {
-  const thumbPath = THUMB_PREFIX + path;
+  const thumbPath = thumbnailPath(path);
 
   // A previous session (or another device) may already have persisted it
   const persisted = await getSignedUrl(bucket, thumbPath);
@@ -86,27 +88,7 @@ async function generateAndPersistThumb(bucket: string, path: string): Promise<st
     if (!resp.ok) return null;
     const blob = await resp.blob();
 
-    const bitmap = await createImageBitmap(blob, {
-      resizeWidth: THUMB_WIDTH,
-      resizeQuality: 'high',
-    });
-    const canvas = document.createElement('canvas');
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      bitmap.close();
-      return originalUrl;
-    }
-    // JPEG has no alpha — flatten transparency onto white, not black
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(bitmap, 0, 0);
-    bitmap.close();
-
-    const thumbBlob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/jpeg', THUMB_JPEG_QUALITY),
-    );
+    const thumbBlob = await createThumbnailBlob(blob);
     if (!thumbBlob) return originalUrl;
 
     // Persist for all future sessions — best effort (gallery users lack
@@ -122,6 +104,7 @@ async function generateAndPersistThumb(bucket: string, path: string): Promise<st
     // getSignedUrl reuses it until the uploaded object takes over
     const objectUrl = URL.createObjectURL(thumbBlob);
     cache.set(cacheKey(bucket, thumbPath), { url: objectUrl, expiresAt: Date.now() + CACHE_TTL_MS });
+    missingThumbPaths.delete(`${bucket}:${path}`);
     return objectUrl;
   } catch {
     // Decode/downscale failed — the full original is the last resort
@@ -225,12 +208,23 @@ export async function getSignedUrl(
   expiresIn = DEFAULT_EXPIRY_SECONDS,
   transform?: ImageTransform,
 ): Promise<string | null> {
-  // For source images the renderer can't transform, serve the persisted
-  // downscaled thumbnail instead; only if none exists yet, sign the original.
-  if (transform && failedTransformPaths.has(`${bucket}:${path}`)) {
-    const thumbUrl = await getSignedUrl(bucket, THUMB_PREFIX + path, expiresIn);
-    if (thumbUrl) return thumbUrl;
-    transform = undefined;
+  // Thumbnail requests prefer the persisted downscaled copy (thumbs/<path>)
+  // over transforming the original: the renderer rejects very large originals,
+  // while a ≤1200px thumbnail is always transformable.
+  if (transform && !path.startsWith(THUMB_PREFIX)) {
+    const pathKey = `${bucket}:${path}`;
+    if (failedTransformPaths.has(pathKey)) {
+      // Renderer already failed on the original — serve the persisted (or
+      // locally generated) thumbnail as-is; only if none exists yet, sign
+      // the untransformed original.
+      const thumbUrl = await getSignedUrl(bucket, thumbnailPath(path), expiresIn);
+      if (thumbUrl) return thumbUrl;
+      transform = undefined;
+    } else if (!missingThumbPaths.has(pathKey)) {
+      const thumbUrl = await getSignedUrl(bucket, thumbnailPath(path), expiresIn, transform);
+      if (thumbUrl) return thumbUrl;
+      missingThumbPaths.add(pathKey);
+    }
   }
 
   const key = cacheKey(bucket, path, transform);
@@ -294,9 +288,10 @@ export async function getSignedUrls(
 export function invalidateSignedUrl(bucket: string, path: string): void {
   // Delete the base key plus every transform variant (keys are prefixed
   // with "bucket:path" and optionally suffixed with "@…"), the persisted
-  // thumbnail, and the failed-transform mark.
+  // thumbnail, and the failed-transform / missing-thumbnail marks.
   failedTransformPaths.delete(`${bucket}:${path}`);
-  const prefixes = [`${bucket}:${path}`, `${bucket}:${THUMB_PREFIX}${path}`];
+  missingThumbPaths.delete(`${bucket}:${path}`);
+  const prefixes = [`${bucket}:${path}`, `${bucket}:${thumbnailPath(path)}`];
   for (const key of cache.keys()) {
     for (const prefix of prefixes) {
       if (key === prefix || key.startsWith(`${prefix}@`)) cache.delete(key);

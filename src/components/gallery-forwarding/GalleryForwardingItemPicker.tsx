@@ -16,6 +16,7 @@ import {
   ARTWORK_SERIES,
 } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
+import { getSignedUrl } from '../../lib/signedUrlCache';
 import { sanitizeFilterTerm } from '../../lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -140,12 +141,12 @@ export function GalleryForwardingItemPicker({
       if (images && images.length > 0) {
         const urls = await Promise.all(
           images.map(async (img) => {
-            const { data: urlData } = await supabase.storage
-              .from('artwork-images')
-              .createSignedUrl(img.storage_path, 600, {
-                transform: { width: 200, quality: 60, resize: 'cover' },
-              });
-            return { artworkId: img.artwork_id, url: urlData?.signedUrl ?? null };
+            const url = await getSignedUrl('artwork-images', img.storage_path, 600, {
+              width: 200,
+              quality: 60,
+              resize: 'cover',
+            });
+            return { artworkId: img.artwork_id, url };
           }),
         );
         imageMap = urls.reduce(

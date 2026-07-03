@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { sanitizeStoragePath } from '../lib/utils';
 import { supabase } from '../lib/supabase';
+import { generateAndUploadThumbnail, thumbnailPath } from '../lib/imageThumbnails';
+import { invalidateSignedUrl } from '../lib/signedUrlCache';
 import { useToast } from '../components/ui/Toast';
 import type { ArtworkImageRow, ImageType } from '../types/database';
 
@@ -116,6 +118,12 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
           throw uploadError;
         }
 
+        // Persist a downscaled copy under thumbs/<path> so grids and pickers
+        // never load the multi-MB original (best effort — falls back to
+        // on-the-fly transforms if it fails).
+        await generateAndUploadThumbnail('artwork-images', storagePath, file);
+        invalidateSignedUrl('artwork-images', storagePath);
+
         // Determine sort_order from DB to avoid race conditions with rapid uploads
         const { data: maxRow } = await supabase
           .from('artwork_images')
@@ -169,12 +177,14 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
   const deleteImage = useCallback(
     async (imageId: string, storagePath: string): Promise<boolean> => {
       try {
-        // Remove from Supabase Storage
+        // Remove from Supabase Storage (incl. the persisted thumbnail)
         const { error: storageError } = await supabase.storage
           .from('artwork-images')
-          .remove([storagePath]);
+          .remove([storagePath, thumbnailPath(storagePath)]);
 
         if (storageError) throw storageError;
+
+        invalidateSignedUrl('artwork-images', storagePath);
 
         // Check if the deleted image was primary before removing it
         const wasPrimary = images.find((img) => img.id === imageId)?.is_primary ?? false;
