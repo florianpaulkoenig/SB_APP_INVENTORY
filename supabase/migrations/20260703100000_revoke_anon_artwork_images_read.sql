@@ -1,0 +1,26 @@
+-- ---------------------------------------------------------------------------
+-- Security audit round 5 (2026-07-03): revoke anonymous read on artwork-images.
+--
+-- Finding: the "Anon can read artwork images" policy (20260315100000) granted
+-- role `anon` SELECT on every object in the artwork-images bucket. Combined
+-- with storage's LIST capability this let ANY unauthenticated caller:
+--   1. enumerate the whole folder tree (user_id / artwork_id / filename), and
+--   2. download all ~510 original artwork images directly via the storage API,
+-- bypassing the app entirely. Verified live during the audit.
+--
+-- The policy was added "for share link / public viewing room downloads", but
+-- that justification no longer holds:
+--   * every in-app image URL is a signed URL (createSignedUrl), which is
+--     validated by storage's signature check, NOT by this RLS policy, so
+--     signed-URL delivery keeps working without anon bucket access;
+--   * the public viewing room / share download flows read the `artworks` and
+--     `artwork_images` TABLES, which are already RLS-restricted to admins —
+--     so those flows return no data to anon regardless. This policy therefore
+--     grants no working functionality, only the direct-enumeration exposure.
+--
+-- Admin access is unaffected ("Authenticated can read artwork images" remains).
+-- If public viewing rooms are reactivated later, generate signed image URLs
+-- server-side (RPC / edge function) instead of re-opening anon bucket reads.
+-- ---------------------------------------------------------------------------
+
+DROP POLICY IF EXISTS "Anon can read artwork images" ON storage.objects;
