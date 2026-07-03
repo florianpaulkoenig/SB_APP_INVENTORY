@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.3.2",
+    "@sentry/react": "^10.63.0",
     "@supabase/supabase-js": "^2.98.0",
     "arabic-reshaper": "^1.1.0",
     "clsx": "^2.1.1",

@@ -1,4 +1,5 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { reportError } from '../../lib/monitoring';
 import { useNavigate } from 'react-router-dom';
 
 // ---------------------------------------------------------------------------
@@ -30,6 +31,7 @@ class RouteErrorBoundaryInner extends Component<
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Route error:', error, info.componentStack);
+    reportError(error, { componentStack: info.componentStack, boundary: 'route' });
   }
 
   render() {

@@ -23,10 +23,20 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
+
+      # Quality gate — a push that fails typecheck, lint, or tests never deploys
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npx eslint src --max-warnings 100
+
+      - name: Test
+        run: npm test
 
       - run: npm run build
         env:
@@ -34,6 +44,7 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_BASE_PATH: ${{ secrets.VITE_BASE_PATH }}
           VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
 
       - name: Copy index.html to 404.html for SPA routing
         run: cp dist/index.html dist/404.html
