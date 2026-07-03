@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import type { AuctionResult } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
@@ -21,7 +22,7 @@ export function useAuctionAlerts(options?: UseAuctionAlertsOptions) {
       .select('*')
       .order('sale_date', { ascending: false, nullsFirst: false });
 
-    if (options?.result) query = query.eq('result', options.result);
+    if (options?.result) query = query.eq('result', options.result as AuctionResult);
     if (options?.auctionHouse) query = query.eq('auction_house', options.auctionHouse);
 
     const { data, error } = await query;

@@ -19,7 +19,7 @@ export function DeliveryDetailPage() {
   const navigate = useNavigate();
 
   const { delivery, loading, refetch: refetchDelivery } = useDelivery(id!);
-  const { items, loading: itemsLoading, addItem, removeItem, refetch: refetchItems } = useDeliveryItems(id!);
+  const { items, addItem, removeItem, refetch: refetchItems } = useDeliveryItems(id!);
   const { deleteDelivery, updateDelivery } = useDeliveries();
 
   // ---- Modal state --------------------------------------------------------
@@ -171,7 +171,6 @@ export function DeliveryDetailPage() {
         delivery={delivery}
         galleryName={galleryName}
         items={items}
-        itemsLoading={itemsLoading}
         onEdit={() => setShowEditModal(true)}
         onDelete={handleDelete}
         onAddItem={() => setShowAddItem(true)}

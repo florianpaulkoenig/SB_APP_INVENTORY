@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import type { ExhibitionRow } from '../../types/database';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Select } from '../ui/Select';
@@ -82,7 +83,7 @@ export function ExhibitionHistory({ artworkId }: ExhibitionHistoryProps) {
   const displayExhibitions = useMemo(
     () =>
       exhibitions.map((ea: Record<string, unknown>) => ({
-        ...(ea.exhibitions as Record<string, unknown> ?? {}),
+        ...((ea.exhibitions ?? {}) as Partial<ExhibitionRow>),
         _linkId: ea.id as string, // exhibition_artwork ID for unlinking
       })),
     [exhibitions],

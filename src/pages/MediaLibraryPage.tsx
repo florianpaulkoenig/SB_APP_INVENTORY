@@ -172,6 +172,15 @@ export function MediaLibraryPage() {
     }
   }, []);
 
+  function resetTextForm() {
+    setTextTitle('');
+    setTextContent('');
+    setTextCredit('');
+    setTextSourceUrl('');
+    setTextCategory('press');
+    setTextDescription('');
+  }
+
   const handleUpload = useCallback(async () => {
     if (!uploadFile || !uploadTitle || !uploadCategory) return;
     setUploading(true);
@@ -203,15 +212,6 @@ export function MediaLibraryPage() {
       resetTextForm();
     }
   }, [textTitle, textContent, textCategory, textCredit, textSourceUrl, textDescription, createTextEntry]);
-
-  function resetTextForm() {
-    setTextTitle('');
-    setTextContent('');
-    setTextCredit('');
-    setTextSourceUrl('');
-    setTextCategory('press');
-    setTextDescription('');
-  }
 
   function resetFileForm() {
     setUploadFile(null);
@@ -375,10 +375,10 @@ export function MediaLibraryPage() {
                   {MEDIA_CATEGORIES.find((c) => c.value === file.category)?.label || file.category}
                 </Badge>
                 {file.content_type === 'text' && (
-                  <Badge variant="secondary">Text</Badge>
+                  <Badge variant="default">Text</Badge>
                 )}
                 {file.status === 'rejected' && (
-                  <Badge variant="destructive">Rejected</Badge>
+                  <Badge variant="danger">Rejected</Badge>
                 )}
                 {file.content_type !== 'text' && file.file_size && (
                   <span className="text-xs text-gray-400">{formatFileSize(file.file_size)}</span>
@@ -461,7 +461,7 @@ export function MediaLibraryPage() {
         <div className="space-y-4 mt-8">
           <h2 className="text-lg font-semibold text-gray-900">
             Pending Gallery Submissions
-            <Badge variant="secondary" className="ml-2">
+            <Badge variant="default" className="ml-2">
               {pendingFiles.length}
             </Badge>
           </h2>

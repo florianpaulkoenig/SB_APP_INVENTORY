@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import type { ArtworkStatus, ArtworkCategory, ArtworkSeries } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { ArtworkRow } from '../types/database';
@@ -34,10 +35,10 @@ export function useBulkPriceUpdate() {
       const statuses = filters.statuses?.length
         ? filters.statuses
         : ['available', 'on_consignment', 'reserved'];
-      query = query.in('status', statuses);
+      query = query.in('status', statuses as ArtworkStatus[]);
 
-      if (filters.category) query = query.eq('category', filters.category);
-      if (filters.series) query = query.eq('series', filters.series);
+      if (filters.category) query = query.eq('category', filters.category as ArtworkCategory);
+      if (filters.series) query = query.eq('series', filters.series as ArtworkSeries);
 
       const { data, error } = await query;
       if (error || !data) return [];

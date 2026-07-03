@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
@@ -71,7 +71,12 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
 
   // ---- Fetch invoices -----------------------------------------------------
 
+  // Monotonic fetch generation — lets stale responses be discarded when
+  // filters change faster than the network answers
+  const fetchGenRef = useRef(0);
+
   const fetchInvoices = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     setError(null);
 
@@ -118,17 +123,22 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
 
       const { data, error: fetchError, count } = await query;
 
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
+
       if (fetchError) throw fetchError;
 
       setInvoices((data as InvoiceWithJoins[]) ?? []);
       setTotalCount(count ?? 0);
     } catch (err: unknown) {
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
       const message =
         err instanceof Error ? err.message : 'Failed to fetch invoices';
       setError(message);
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
-      setLoading(false);
+      if (gen === fetchGenRef.current) setLoading(false);
     }
   }, [filters.status, filters.contactId, filters.galleryId, filters.search, filters.sortBy, filters.sortOrder, page, pageSize, toast]);
 
@@ -164,8 +174,6 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
 
         return created as InvoiceRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create invoice';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -192,8 +200,6 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
 
         return updated as InvoiceRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update invoice';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -218,8 +224,6 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
 
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete invoice';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
@@ -394,8 +398,6 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
 
         if (updateError) throw updateError;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update invoice total';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       }
     },
@@ -480,8 +482,6 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
 
         return created as InvoiceItemRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to add invoice item';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -520,8 +520,6 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
 
         return updated as InvoiceItemRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update invoice item';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -558,8 +556,6 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
 
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to remove invoice item';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

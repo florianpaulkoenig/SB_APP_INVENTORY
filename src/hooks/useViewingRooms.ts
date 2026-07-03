@@ -105,7 +105,6 @@ export function useViewingRooms() {
 
       return created as ViewingRoomRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create viewing room';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -127,7 +126,6 @@ export function useViewingRooms() {
 
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update viewing room';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
@@ -149,7 +147,6 @@ export function useViewingRooms() {
 
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete viewing room';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
@@ -218,7 +215,6 @@ export function useViewingRoom(id: string) {
 
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update viewing room';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
@@ -248,7 +244,6 @@ export function useViewingRoom(id: string) {
 
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to toggle published status';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
@@ -325,7 +320,7 @@ export function usePublicViewingRoom(slug: string) {
         }
 
         // Build PublicArtwork list preserving artwork_ids order
-        const artworkMap = new Map<string, any>();
+        const artworkMap = new Map<string, Record<string, unknown>>();
         for (const aw of artworkData ?? []) {
           artworkMap.set(aw.id, aw);
         }

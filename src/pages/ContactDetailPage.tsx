@@ -15,7 +15,7 @@ import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { formatDate, formatCurrency } from '../lib/utils';
-import type { ProductionOrderRow } from '../types/database';
+import type { ProductionOrderRow, DealStage } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Journey event type badge colors
@@ -206,7 +206,7 @@ export function ContactDetailPage() {
                     await deleteDeal(deal.id);
                   }}
                   onStageChange={async (newStage) => {
-                    await updateDeal(deal.id, { stage: newStage as any });
+                    await updateDeal(deal.id, { stage: newStage as DealStage });
                   }}
                 />
               ))}

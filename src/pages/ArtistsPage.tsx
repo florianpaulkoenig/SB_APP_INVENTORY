@@ -89,9 +89,9 @@ export function ArtistsPage() {
     filters: { search, sortBy },
   });
 
-  async function handleCreate(data: ArtistInsert) {
+  async function handleCreate(data: ArtistInsert | ArtistUpdate) {
     setSubmitting(true);
-    await createArtist(data);
+    await createArtist(data as ArtistInsert);
     setSubmitting(false);
     setCreateOpen(false);
   }

@@ -39,7 +39,7 @@ export function ArtistDetailPage() {
   useEffect(() => {
     if (loading || artworks.length === 0) return;
 
-    const artworkIds: string[] = artworks.map((aw: any) => aw.id);
+    const artworkIds: string[] = artworks.map((aw) => aw.id);
 
     supabase
       .from('valuations')
@@ -49,9 +49,9 @@ export function ArtistDetailPage() {
       .then(({ data: vals }) => {
         // Collect unique YYYY-MM from valuations + purchase dates
         const valMonths = vals
-          ? [...new Set(vals.map((v: any) => (v.valuation_date as string).slice(0, 7)))]
+          ? [...new Set(vals.map((v) => v.valuation_date.slice(0, 7)))]
           : [];
-        const purchaseMonths = (artworks as any[])
+        const purchaseMonths = artworks
           .filter((aw) => aw.purchase_date && aw.purchase_price)
           .map((aw) => (aw.purchase_date as string).slice(0, 7));
 
@@ -64,19 +64,19 @@ export function ArtistDetailPage() {
           // Fallback: if the artwork was already purchased but has no valuation yet,
           // use its purchase price as the starting estimate (= Ankaufswert).
           estimatedValue: artworkIds.reduce((sum, aid) => {
-            const aw = (artworks as any[]).find((a) => a.id === aid);
+            const aw = artworks.find((a) => a.id === aid);
             // Skip artworks not yet purchased by this month
             if (!aw?.purchase_date || (aw.purchase_date as string).slice(0, 7) > month) return sum;
             const latest = vals
               ? vals
-                  .filter((v: any) => v.artwork_id === aid && (v.valuation_date as string).slice(0, 7) <= month)
+                  .filter((v) => v.artwork_id === aid && v.valuation_date.slice(0, 7) <= month)
                   .at(-1)
               : null;
             const value = latest ? (latest.value as number) : ((aw.purchase_price as number) ?? 0);
             return sum + value;
           }, 0),
           // Cumulative purchase price of all artworks bought up to this month
-          purchaseValue: (artworks as any[]).reduce((sum, aw) => {
+          purchaseValue: artworks.reduce((sum, aw) => {
             if (aw.purchase_date && aw.purchase_price && (aw.purchase_date as string).slice(0, 7) <= month) {
               return sum + (aw.purchase_price as number);
             }
@@ -105,8 +105,8 @@ export function ArtistDetailPage() {
 
   // ---- Stats ----------------------------------------------------------------
 
-  const totalPurchase = artworks.reduce((s: number, a: any) => s + (a.purchase_price ?? 0), 0);
-  const totalEstimated = artworks.reduce((s: number, a: any) => s + (a.estimated_value ?? 0), 0);
+  const totalPurchase = artworks.reduce((s: number, a) => s + (a.purchase_price ?? 0), 0);
+  const totalEstimated = artworks.reduce((s: number, a) => s + (a.estimated_value ?? 0), 0);
   const gain = totalPurchase > 0 ? ((totalEstimated - totalPurchase) / totalPurchase) * 100 : null;
 
   return (
@@ -187,7 +187,7 @@ export function ArtistDetailPage() {
                 width={50}
               />
               <Tooltip
-                formatter={(v: number, name: string) => [
+                formatter={(v: number = 0, name: string = '') => [
                   formatCurrency(v, 'CHF'),
                   name === 'estimatedValue' ? 'Schätzwert' : 'Ankaufswert',
                 ]}
@@ -237,7 +237,7 @@ export function ArtistDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {artworks.map((aw: any) => (
+                {artworks.map((aw) => (
                   <tr
                     key={aw.id}
                     onClick={() => navigate(`/artworks/${aw.id}`)}

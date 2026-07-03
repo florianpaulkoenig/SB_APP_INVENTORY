@@ -70,7 +70,7 @@ export function useArtists(options: UseArtistsOptions = {}) {
 
       // Fetch artwork stats per artist in one query
       const ids = rows.map((a) => a.id);
-      let statsMap = new Map<string, { count: number; purchase: number; estimated: number }>();
+      const statsMap = new Map<string, { count: number; purchase: number; estimated: number }>();
 
       if (ids.length > 0) {
         const { data: artworks } = await supabase
@@ -79,6 +79,7 @@ export function useArtists(options: UseArtistsOptions = {}) {
           .in('artist_id', ids);
 
         for (const aw of artworks ?? []) {
+          if (!aw.artist_id) continue;
           const s = statsMap.get(aw.artist_id) ?? { count: 0, purchase: 0, estimated: 0 };
           s.count += 1;
           s.purchase += aw.purchase_price ?? 0;
@@ -154,9 +155,24 @@ export function useArtists(options: UseArtistsOptions = {}) {
 // useArtist — single artist by id with full artwork list
 // ---------------------------------------------------------------------------
 
+export interface ArtistArtworkRow {
+  id: string;
+  title: string;
+  year: number | null;
+  category: string | null;
+  medium: string | null;
+  purchase_price: number | null;
+  purchase_currency: string | null;
+  purchase_date: string | null;
+  estimated_value: number | null;
+  estimated_value_date: string | null;
+  status: string;
+  inventory_number: string;
+}
+
 export function useArtist(id: string) {
   const [artist, setArtist] = useState<ArtistRow | null>(null);
-  const [artworks, setArtworks] = useState<any[]>([]);
+  const [artworks, setArtworks] = useState<ArtistArtworkRow[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -164,7 +180,7 @@ export function useArtist(id: string) {
     if (!id) { setLoading(false); return; }
     setLoading(true);
     try {
-      const [{ data: artistData, error: e1 }, { data: awData, error: e2 }] = await Promise.all([
+      const [{ data: artistData, error: e1 }, { data: awData }] = await Promise.all([
         supabase.from('artists').select('*').eq('id', id).single(),
         supabase.from('artworks')
           .select('id, title, year, category, medium, purchase_price, purchase_currency, purchase_date, estimated_value, estimated_value_date, status, inventory_number')

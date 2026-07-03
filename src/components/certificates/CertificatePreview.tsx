@@ -66,11 +66,12 @@ export default function CertificatePreview({
   // ---- Download the certificate PDF ---------------------------------------
 
   async function handleDownload() {
+    if (!certificate.artworks) return;
     setDownloading(true);
 
     try {
       const blob = await pdf(
-        <CertificatePDF certificate={certificate} language={language} />,
+        <CertificatePDF certificate={certificate} artwork={certificate.artworks} language={language} />,
       ).toBlob();
 
       downloadBlob(blob, certificate.artworks

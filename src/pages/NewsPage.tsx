@@ -213,7 +213,7 @@ export function NewsPage() {
 
       {/* Create / Edit Modal */}
       <Modal
-        open={showCreateModal}
+        isOpen={showCreateModal}
         onClose={closeModal}
         title={editingPost ? 'Edit Post' : 'Create Post'}
       >

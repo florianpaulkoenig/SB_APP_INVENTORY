@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, createElement, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getSignedUrl } from '../lib/signedUrlCache';
-import { downloadBlob, buildCertificateFilename, formatDimensions, formatCurrency } from '../lib/utils';
+import { downloadBlob, buildCertificateFilename, formatDimensions } from '../lib/utils';
 import { useArtworks } from '../hooks/useArtworks';
 import type { ArtworkFilters as ArtworkFiltersType } from '../hooks/useArtworks';
+import type { ArtworkColor } from '../types/database';
 import { ArtworkCard } from '../components/artworks/ArtworkCard';
 import { ArtworkTable } from '../components/artworks/ArtworkTable';
 import { ArtworkFilters } from '../components/artworks/ArtworkFilters';
@@ -12,14 +13,11 @@ import { ExcelImporter } from '../components/artworks/ExcelImporter';
 import { ArtworkBulkEditModal } from '../components/artworks/ArtworkBulkEditModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Button } from '../components/ui/Button';
-import { Select } from '../components/ui/Select';
-import { SearchInput } from '../components/ui/SearchInput';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Pagination } from '../components/ui/Pagination';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toast';
-import { formatDate } from '../lib/utils';
 import { usePortfolio } from '../contexts/PortfolioContext';
 
 // ---------------------------------------------------------------------------
@@ -431,7 +429,7 @@ export function ArtworksPage() {
     });
   }
 
-  function handleFiltersChange(newFilters: ArtworkFiltersType) {
+  function handleFiltersChange(newFilters: { status?: string; category?: string; motif?: string; series?: string; gallery_id?: string; color?: string; medium?: string; artist?: string; minHeight?: number; maxHeight?: number; minWidth?: number; maxWidth?: number }) {
     updateParams(p => {
       FILTER_PARAM_KEYS.forEach(k => p.delete(k));
       if (newFilters.status)     p.set('st',     newFilters.status);
@@ -499,7 +497,7 @@ export function ArtworksPage() {
       if (filters.motif) query = query.eq('motif', filters.motif);
       if (filters.series) query = query.eq('series', filters.series);
       if (filters.gallery_id) query = query.eq('gallery_id', filters.gallery_id);
-      if (filters.color) query = query.eq('color', filters.color);
+      if (filters.color) query = query.eq('color', filters.color as ArtworkColor);
       if (search) {
         const term = `%${search}%`;
         query = query.or(`title.ilike.${term},reference_code.ilike.${term},medium.ilike.${term}`);

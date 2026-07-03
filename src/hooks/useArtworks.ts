@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { ArtworkColor } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
@@ -53,6 +54,7 @@ export interface UseArtworksReturn {
   updateArtwork: (id: string, data: ArtworkUpdate) => Promise<ArtworkRow | null>;
   deleteArtwork: (id: string) => Promise<boolean>;
   bulkDeleteArtworks: (ids: string[]) => Promise<boolean>;
+  bulkUpdateArtworks: (ids: string[], update: ArtworkUpdate) => Promise<boolean>;
 }
 
 // ---------------------------------------------------------------------------
@@ -130,7 +132,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
 
       // Color filter
       if (filters.color) {
-        query = query.eq('color', filters.color);
+        query = query.eq('color', filters.color as ArtworkColor);
       }
 
       // Medium filter (partial match)
@@ -178,7 +180,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
 
       if (fetchError) throw fetchError;
 
-      setArtworks((data as ArtworkRow[]) ?? []);
+      setArtworks((data as unknown as ArtworkRow[]) ?? []);
       setTotalCount(count ?? 0);
     } catch (err: unknown) {
       if (gen !== fetchGenRef.current) return;
@@ -266,8 +268,6 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         await fetchArtworks();
         return created as ArtworkRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create artwork';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -294,8 +294,6 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         await fetchArtworks();
         return updated as ArtworkRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update artwork';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -332,8 +330,6 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         await fetchArtworks();
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete artwork';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

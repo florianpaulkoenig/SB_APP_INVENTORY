@@ -71,7 +71,7 @@ export function DemandVelocityPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis type="number" tick={{ fontSize: 12 }} unit="d" />
                 <YAxis dataKey="series" type="category" tick={{ fontSize: 11 }} width={100} />
-                <Tooltip formatter={(v: number) => `${v} days`} />
+                <Tooltip formatter={(v: number = 0) => `${v} days`} />
                 <Bar dataKey="avgDays" name="Avg Days" fill="#3b82f6" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -86,7 +86,7 @@ export function DemandVelocityPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis type="number" tick={{ fontSize: 12 }} unit="d" />
                 <YAxis dataKey="gallery" type="category" tick={{ fontSize: 11 }} width={100} />
-                <Tooltip formatter={(v: number) => `${v} days`} />
+                <Tooltip formatter={(v: number = 0) => `${v} days`} />
                 <Bar dataKey="avgDays" name="Avg Days" fill="#1a1a2e" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>

@@ -49,7 +49,6 @@ export function usePriceHistory(artworkId: string) {
       await fetch();
       return created as PriceHistoryRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to add price history entry';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -63,7 +62,6 @@ export function usePriceHistory(artworkId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete price history entry';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

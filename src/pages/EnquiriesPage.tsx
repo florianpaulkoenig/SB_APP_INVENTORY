@@ -63,48 +63,55 @@ export function EnquiriesPage() {
         ...formData,
         estimated_value: formData.estimated_value ? Number(formData.estimated_value) : null,
       } as never);
-      toast({ title: 'Enquiry created successfully', type: 'success' });
+      toast({ title: 'Enquiry created successfully', variant: 'success' });
       setShowModal(false);
       resetForm();
     } catch {
-      toast({ title: 'Failed to create enquiry', type: 'error' });
+      toast({ title: 'Failed to create enquiry', variant: 'error' });
     }
   }, [formData, createEnquiry, toast, resetForm]);
 
   const handleConvert = useCallback(async (id: string) => {
     try {
       await convertToLead(id);
-      toast({ title: 'Enquiry converted to lead', type: 'success' });
+      toast({ title: 'Enquiry converted to lead', variant: 'success' });
     } catch {
-      toast({ title: 'Failed to convert enquiry', type: 'error' });
+      toast({ title: 'Failed to convert enquiry', variant: 'error' });
     }
   }, [convertToLead, toast]);
 
   const handleArchive = useCallback(async (id: string) => {
     try {
       await updateEnquiry(id, { status: 'archived' } as never);
-      toast({ title: 'Enquiry archived', type: 'success' });
+      toast({ title: 'Enquiry archived', variant: 'success' });
     } catch {
-      toast({ title: 'Failed to archive enquiry', type: 'error' });
+      toast({ title: 'Failed to archive enquiry', variant: 'error' });
     }
   }, [updateEnquiry, toast]);
 
   const getSourceBadge = (source: string) => {
     const entry = ENQUIRY_SOURCES.find((s) => s.value === source);
-    return <Badge variant="default" style={{ backgroundColor: entry?.color }}>{entry?.label || source}</Badge>;
+    return <Badge variant="default" className={entry?.color}>{entry?.label || source}</Badge>;
   };
 
   const getPriorityBadge = (priority: string) => {
     const entry = ENQUIRY_PRIORITIES.find((p) => p.value === priority);
-    return <Badge variant="default" style={{ backgroundColor: entry?.color }}>{entry?.label || priority}</Badge>;
+    return <Badge variant="default" className={entry?.color}>{entry?.label || priority}</Badge>;
   };
 
   const getStatusBadge = (status: string) => {
     const entry = ENQUIRY_STATUSES.find((s) => s.value === status);
-    return <Badge variant="default" style={{ backgroundColor: entry?.color }}>{entry?.label || status}</Badge>;
+    return (
+      <span
+        className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
+        style={{ backgroundColor: entry?.color }}
+      >
+        {entry?.label || status}
+      </span>
+    );
   };
 
-  const formatLocation = (city?: string, country?: string) => {
+  const formatLocation = (city?: string | null, country?: string | null) => {
     if (city && country) return `${city}, ${country}`;
     return country || city || '—';
   };

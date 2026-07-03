@@ -229,7 +229,7 @@ export function AnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="series" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
-                  <Tooltip formatter={(value: number) => formatCurrency(value, 'CHF')} />
+                  <Tooltip formatter={(value: number = 0) => formatCurrency(value, 'CHF')} />
                   <Bar dataKey="revenue" fill="#1a1a2e" radius={[4, 4, 0, 0]}>
                     {data.revenueBySeries.map((_, i) => (
                       <Cell key={i} fill={SERIES_COLORS[i % SERIES_COLORS.length]} />
@@ -258,7 +258,7 @@ export function AnalyticsPage() {
                       cx="50%"
                       cy="50%"
                       outerRadius={90}
-                      label={({ label, count }) => `${label}: ${count}`}
+                      label={(e) => { const d = e as { label?: string; count?: number }; return `${d.label}: ${d.count}`; }}
                     >
                       {data.reportingBreakdown.map((entry) => (
                         <Cell key={entry.status} fill={REPORTING_COLORS[entry.status] || '#94a3b8'} />
@@ -286,7 +286,7 @@ export function AnalyticsPage() {
                       cx="50%"
                       cy="50%"
                       outerRadius={90}
-                      label={({ label, count }) => `${label}: ${count}`}
+                      label={(e) => { const d = e as { label?: string; count?: number }; return `${d.label}: ${d.count}`; }}
                     >
                       {data.paymentBreakdown.map((entry) => (
                         <Cell key={entry.status} fill={PAYMENT_COLORS[entry.status] || '#94a3b8'} />

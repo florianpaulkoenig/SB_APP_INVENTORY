@@ -47,8 +47,8 @@ export function ConsignmentAgingChart({ data }: { data: InventoryAgingData }) {
           <XAxis dataKey="label" tick={{ fill: '#737373', fontSize: 11 }} />
           <YAxis allowDecimals={false} tick={{ fill: '#737373', fontSize: 12 }} />
           <Tooltip
-            formatter={(value: number, name: string, props: { payload: { totalValue: number } }) => [
-              name === 'count' ? `${value} artworks (${chfFmt.format(props.payload.totalValue)})` : chfFmt.format(value),
+            formatter={(value: number = 0, name: string = '', props?: { payload?: { totalValue?: number } }) => [
+              name === 'count' ? `${value} artworks (${chfFmt.format(props?.payload?.totalValue ?? 0)})` : chfFmt.format(value),
               name === 'count' ? 'Artworks' : 'Value',
             ]}
             contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 13 }}

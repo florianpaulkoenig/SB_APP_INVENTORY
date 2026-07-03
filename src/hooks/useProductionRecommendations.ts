@@ -75,7 +75,7 @@ export function useProductionRecommendations() {
         // 4. Wish list items
         supabase.from('wish_list_items').select('id, artwork_id'),
         // 5. Active production orders
-        supabase.from('production_orders').select('id, status').in('status', ['draft', 'pending', 'in_production']),
+        supabase.from('production_orders').select('id, status').in('status', ['draft', 'ordered', 'in_production']),
         // 6. Production order items (all -- we filter by order ids below)
         supabase.from('production_order_items').select('id, production_order_id, series, quantity'),
         // 7. Galleries

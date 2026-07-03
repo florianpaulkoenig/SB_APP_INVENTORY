@@ -6,7 +6,6 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { GalleryForwardingPDF } from '../pdf/GalleryForwardingPDF';
 import { formatDate, formatDimensions, formatCurrency, downloadBlob } from '../../lib/utils';
-import { FORWARDING_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
 import { resizeToDataUrl } from '../../lib/pdfImageUtils';
 import type {
@@ -302,7 +301,7 @@ export function GalleryForwardingDetail({
                 Insurance Value
               </dt>
               <dd className="mt-1 text-sm font-semibold text-primary-800">
-                {formatCurrency(order.insurance_value, order.currency)}
+                {formatCurrency(order.insurance_value, order.currency ?? 'EUR')}
               </dd>
             </div>
           )}

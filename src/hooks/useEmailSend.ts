@@ -88,8 +88,6 @@ export function useEmailSend(): UseEmailSendReturn {
         toast({ title: 'Email sent', description: `Email sent to ${params.to}`, variant: 'success' });
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to send email';
         toast({ title: 'Email failed', description: 'An error occurred. Please try again.', variant: 'error' });
 
         // Attempt to log the failure

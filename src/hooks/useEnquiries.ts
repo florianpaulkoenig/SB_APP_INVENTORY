@@ -1,9 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from './useAuth';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
-import type { EnquiryRow, EnquiryInsert, EnquiryUpdate } from '../types/database';
+import type { EnquiryRow, EnquiryInsert, EnquiryUpdate, EnquiryStatus, EnquirySource, EnquiryPriority } from '../types/database';
 
 interface UseEnquiriesOptions {
   status?: string;
@@ -17,16 +16,21 @@ export function useEnquiries(options?: UseEnquiriesOptions) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Monotonic fetch generation — lets stale responses be discarded when
+  // filters change faster than the network answers
+  const fetchGenRef = useRef(0);
+
   const fetch = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     let query = supabase
       .from('enquiries')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (options?.status) query = query.eq('status', options.status);
-    if (options?.source) query = query.eq('source', options.source);
-    if (options?.priority) query = query.eq('priority', options.priority);
+    if (options?.status) query = query.eq('status', options.status as EnquiryStatus);
+    if (options?.source) query = query.eq('source', options.source as EnquirySource);
+    if (options?.priority) query = query.eq('priority', options.priority as EnquiryPriority);
     if (options?.search) {
       const term = sanitizeFilterTerm(options.search);
       if (term) {
@@ -37,6 +41,10 @@ export function useEnquiries(options?: UseEnquiriesOptions) {
     }
 
     const { data, error } = await query;
+
+    // Stale response — a newer fetch superseded this one
+    if (gen !== fetchGenRef.current) return;
+
     if (error) {
       toast({ title: 'Failed to load enquiries', variant: 'error' });
     }

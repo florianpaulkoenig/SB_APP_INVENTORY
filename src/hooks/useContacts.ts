@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
-import type { ContactRow, ContactInsert, ContactUpdate } from '../types/database';
+import type { ContactRow, ContactInsert, ContactUpdate, ContactType } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Filter / pagination types
@@ -49,7 +49,12 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
 
   // ---- Fetch contacts -----------------------------------------------------
 
+  // Monotonic fetch generation — lets stale responses be discarded when
+  // filters change faster than the network answers
+  const fetchGenRef = useRef(0);
+
   const fetchContacts = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     setError(null);
 
@@ -68,7 +73,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
 
       // Type filter
       if (filters.type) {
-        query = query.eq('type', filters.type);
+        query = query.eq('type', filters.type as ContactType);
       }
 
       // Country filter
@@ -90,17 +95,22 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
 
       const { data, error: fetchError, count } = await query;
 
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
+
       if (fetchError) throw fetchError;
 
       setContacts((data as ContactRow[]) ?? []);
       setTotalCount(count ?? 0);
     } catch (err: unknown) {
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
       const message =
         err instanceof Error ? err.message : 'Failed to fetch contacts';
       setError(message);
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
-      setLoading(false);
+      if (gen === fetchGenRef.current) setLoading(false);
     }
   }, [filters.search, filters.type, filters.country, filters.sortBy, filters.sortOrder, page, pageSize, toast]);
 
@@ -136,8 +146,6 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         await fetchContacts();
         return created as ContactRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create contact';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -164,8 +172,6 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         await fetchContacts();
         return updated as ContactRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update contact';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -190,8 +196,6 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         await fetchContacts();
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete contact';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

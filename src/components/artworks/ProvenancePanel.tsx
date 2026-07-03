@@ -158,7 +158,7 @@ interface EntryRowProps {
   onDelete: (id: string) => void;
 }
 
-function EntryRow({ entry, index, isFirst, isLast, onConfirm, onEdit, onDelete }: EntryRowProps) {
+function EntryRow({ entry, index, isLast, onConfirm, onEdit, onDelete }: EntryRowProps) {
   const isArtist = entry.owner_type === 'artist';
 
   return (

@@ -89,7 +89,7 @@ export function PriceLadderPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
                 <YAxis dataKey="series" type="category" tick={{ fontSize: 11 }} width={100} />
-                <Tooltip formatter={(v: number) => formatCurrency(v, 'CHF')} />
+                <Tooltip formatter={(v: number = 0) => formatCurrency(v, 'CHF')} />
                 <Bar dataKey="avgPrice" name="Avg Price" fill="#1a1a2e" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -104,7 +104,7 @@ export function PriceLadderPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="size" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
-                <Tooltip formatter={(v: number) => formatCurrency(v, 'CHF')} />
+                <Tooltip formatter={(v: number = 0) => formatCurrency(v, 'CHF')} />
                 <Bar dataKey="avgPrice" name="Avg Price" fill="#f59e0b" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

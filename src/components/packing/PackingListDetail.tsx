@@ -47,7 +47,7 @@ export interface PackingListDetailItem extends PackingListItemRow {
     height: number | null;
     width: number | null;
     depth: number | null;
-    dimension_unit: string;
+    dimension_unit: string | null;
     weight: number | null;
   } | null;
 }
@@ -234,7 +234,7 @@ function ArtworkRow({ item, crateOptions, currentCrateId, onAssign, onUpdateItem
         <div className="mt-0.5 text-xs text-primary-400">
           {art ? (
             <>
-              {formatDimensions(art.height, art.width, art.depth, art.dimension_unit) || '—'}
+              {formatDimensions(art.height, art.width, art.depth, art.dimension_unit ?? 'cm') || '—'}
               {art.weight != null && <span> · {art.weight} kg</span>}
             </>
           ) : '—'}
@@ -286,7 +286,6 @@ export function PackingListDetail({
   packingList,
   deliveryNumber,
   items,
-  itemsLoading,
   crates,
   onEdit,
   onDelete,
@@ -394,7 +393,7 @@ export function PackingListDetail({
             artwork_title: item.artworks?.title ?? 'Untitled',
             artwork_reference_code: item.artworks?.reference_code ?? '',
             artwork_dimensions: item.artworks
-              ? formatDimensions(item.artworks.height, item.artworks.width, item.artworks.depth, item.artworks.dimension_unit)
+              ? formatDimensions(item.artworks.height, item.artworks.width, item.artworks.depth, item.artworks.dimension_unit ?? 'cm')
               : '',
             artwork_weight: item.artworks?.weight ?? null,
             special_handling: item.special_handling,
@@ -407,7 +406,7 @@ export function PackingListDetail({
         artwork_title: item.artworks?.title ?? 'Untitled',
         artwork_reference_code: item.artworks?.reference_code ?? '',
         artwork_dimensions: item.artworks
-          ? formatDimensions(item.artworks.height, item.artworks.width, item.artworks.depth, item.artworks.dimension_unit)
+          ? formatDimensions(item.artworks.height, item.artworks.width, item.artworks.depth, item.artworks.dimension_unit ?? 'cm')
           : '',
         artwork_weight: item.artworks?.weight ?? null,
         special_handling: item.special_handling,

@@ -169,10 +169,10 @@ export function CataloguesPage() {
               {/* Meta */}
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-600">
-                  {TYPE_LABELS[cat.config.catalogueType] || cat.config.catalogueType}
+                  {TYPE_LABELS[cat.config.catalogueType ?? ''] || cat.config.catalogueType}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-600">
-                  {LAYOUT_LABELS[cat.config.layout] || cat.config.layout}
+                  {LAYOUT_LABELS[cat.config.layout ?? ''] || cat.config.layout}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-600">
                   {cat.config.artworkIds.length} artworks

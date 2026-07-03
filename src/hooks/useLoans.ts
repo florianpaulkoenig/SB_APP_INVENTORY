@@ -49,7 +49,6 @@ export function useLoans(artworkId: string) {
       await fetch();
       return created as LoanRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create loan';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -68,7 +67,6 @@ export function useLoans(artworkId: string) {
       await fetch();
       return updated as LoanRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update loan';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -82,7 +80,6 @@ export function useLoans(artworkId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete loan';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

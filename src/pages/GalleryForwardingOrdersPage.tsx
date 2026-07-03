@@ -70,6 +70,9 @@ export function GalleryForwardingOrdersPage() {
         reference_code: (aw?.reference_code as string) ?? '',
         title: (aw?.title as string) ?? '',
         medium: (aw?.medium as string) ?? null,
+        weight: (aw?.weight as string) ?? null,
+        year: (aw?.year as number) ?? null,
+        image_url: null,
         dimensions: formatDimensions(
           (aw?.height as number) ?? null,
           (aw?.width as number) ?? null,

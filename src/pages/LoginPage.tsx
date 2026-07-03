@@ -4,7 +4,6 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { COMPANY_NAME } from '../lib/constants';
 
 // ---------------------------------------------------------------------------
 // LoginPage

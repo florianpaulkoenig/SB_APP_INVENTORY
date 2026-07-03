@@ -244,7 +244,7 @@ export function GalleryPerformancePage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={120} />
-                <Tooltip formatter={(value: number) => formatCurrency(value, 'CHF')} />
+                <Tooltip formatter={(value: number = 0) => formatCurrency(value, 'CHF')} />
                 <Bar dataKey="totalRevenue" name="Revenue" fill="#1a1a2e" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -259,7 +259,7 @@ export function GalleryPerformancePage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis type="number" tick={{ fontSize: 12 }} domain={[0, 100]} unit="%" />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={120} />
-                <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
+                <Tooltip formatter={(value: number = 0) => `${value.toFixed(1)}%`} />
                 <Bar dataKey="sellThrough" name="Sell-Through" radius={[0, 4, 4, 0]}>
                   {sellThroughChart.map((g) => (
                     <Cell key={g.id} fill={scoreColor(g.sellThrough)} />

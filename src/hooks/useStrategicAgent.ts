@@ -86,7 +86,7 @@ export function useStrategicAgent() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast('Not authenticated. Please log in again.', 'error');
+        toast({ title: 'Not authenticated. Please log in again.', variant: 'error' });
         return;
       }
 
@@ -99,22 +99,22 @@ export function useStrategicAgent() {
         const msg = typeof response.error === 'object' && 'message' in response.error
           ? (response.error as { message: string }).message
           : 'Analysis failed';
-        toast(msg, 'error');
+        toast({ title: msg, variant: 'error' });
         return;
       }
 
       const data = response.data;
       if (data?.cooldown) {
-        toast('Analysis was run recently. Please wait before running again.', 'info');
+        toast({ title: 'Analysis was run recently. Please wait before running again.', variant: 'info' });
         return;
       }
 
-      toast(`Generated ${data?.count || 0} new insights`, 'success');
+      toast({ title: `Generated ${data?.count || 0} new insights`, variant: 'success' });
       await fetchInsights();
     } catch (err) {
       console.error('refreshInsights error:', err);
       const message = err instanceof Error ? err.message : 'Analysis failed';
-      toast(message, 'error');
+      toast({ title: message, variant: 'error' });
     } finally {
       setAnalyzing(false);
     }
@@ -127,7 +127,7 @@ export function useStrategicAgent() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          toast('Not authenticated. Please log in again.', 'error');
+          toast({ title: 'Not authenticated. Please log in again.', variant: 'error' });
           return null;
         }
 
@@ -163,7 +163,7 @@ export function useStrategicAgent() {
       } catch (err) {
         console.error('ask error:', err);
         const message = err instanceof Error ? err.message : 'Question failed';
-        toast(message, 'error');
+        toast({ title: message, variant: 'error' });
         return null;
       } finally {
         setAsking(false);
@@ -234,7 +234,7 @@ export function useStrategicAgent() {
 
         if (error) {
           console.error('Failed to delete conversation:', error.message);
-          toast('Failed to delete conversation', 'error');
+          toast({ title: 'Failed to delete conversation', variant: 'error' });
           return;
         }
         setConversations((prev) => prev.filter((c) => c.id !== id));

@@ -73,12 +73,13 @@ export function MonthlyReportPage() {
       ]);
 
       const blob = await pdfRenderer(
+        // @react-pdf's pdf() wants ReactElement<DocumentProps>
         createElement(MonthlyReportPDF, {
           year,
           month,
           monthLabel,
           data,
-        }),
+        }) as React.ReactElement<import('@react-pdf/renderer').DocumentProps>,
       ).toBlob();
 
       downloadBlob(blob, `NOA_Monthly_Report_${year}_${String(month).padStart(2, '0')}.pdf`);

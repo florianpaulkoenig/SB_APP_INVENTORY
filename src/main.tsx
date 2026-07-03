@@ -2,6 +2,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { initMonitoring, reportError } from './lib/monitoring';
+
+initMonitoring();
+
+window.addEventListener('unhandledrejection', (event) => {
+  reportError(event.reason, { source: 'unhandledrejection' });
+});
 
 // ---------------------------------------------------------------------------
 // Stale-deploy recovery: after each deploy the hashed chunk filenames change

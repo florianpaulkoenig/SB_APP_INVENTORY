@@ -60,7 +60,7 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
       toast({
         title: 'Error',
         description: 'Failed to load sale requests.',
-        variant: 'destructive',
+        variant: 'error',
       });
     } finally {
       setLoading(false);
@@ -81,7 +81,7 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
           toast({
             title: 'Error',
             description: 'You must be logged in to create a sale request.',
-            variant: 'destructive',
+            variant: 'error',
           });
           return null;
         }
@@ -90,7 +90,7 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
           toast({
             title: 'Error',
             description: 'No gallery associated with your profile.',
-            variant: 'destructive',
+            variant: 'error',
           });
           return null;
         }
@@ -136,6 +136,8 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
           .update({ status: 'pending_sale' } as never)
           .eq('id', data.artwork_id);
 
+        if (artworkError) throw artworkError;
+
         // Send email notification to admin
         try {
           await supabase.functions.invoke('send-email', {
@@ -160,7 +162,7 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
         toast({
           title: 'Error',
           description: 'Failed to create sale request.',
-          variant: 'destructive',
+          variant: 'error',
         });
         return null;
       }
@@ -182,7 +184,7 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
           toast({
             title: 'Error',
             description: 'Sale request not found.',
-            variant: 'destructive',
+            variant: 'error',
           });
           return false;
         }
@@ -212,11 +214,15 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
             buyer_name: request.buyer_name,
           } as never);
 
+        if (saleError) throw saleError;
+
         // Update artwork status to sold
         const { error: artworkError } = await supabase
           .from('artworks')
           .update({ status: 'sold' } as never)
           .eq('id', request.artwork_id);
+
+        if (artworkError) throw artworkError;
 
         toast({
           title: 'Request Approved',
@@ -229,7 +235,7 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
         toast({
           title: 'Error',
           description: 'Failed to approve sale request.',
-          variant: 'destructive',
+          variant: 'error',
         });
         return false;
       }
@@ -251,7 +257,7 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
           toast({
             title: 'Error',
             description: 'Sale request not found.',
-            variant: 'destructive',
+            variant: 'error',
           });
           return false;
         }
@@ -275,6 +281,8 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
           .update({ status: 'on_consignment' } as never)
           .eq('id', request.artwork_id);
 
+        if (artworkError) throw artworkError;
+
         toast({
           title: 'Request Rejected',
           description: 'The sale request has been rejected.',
@@ -286,7 +294,7 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
         toast({
           title: 'Error',
           description: 'Failed to reject sale request.',
-          variant: 'destructive',
+          variant: 'error',
         });
         return false;
       }

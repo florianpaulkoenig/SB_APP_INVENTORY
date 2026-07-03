@@ -25,7 +25,6 @@ export function PackingListDetailPage() {
   const { packingList, loading, refetch: refetchPackingList } = usePackingList(id!);
   const {
     items,
-    loading: itemsLoading,
     addItem,
     removeItem,
     updateItem,
@@ -121,7 +120,6 @@ export function PackingListDetailPage() {
         packingList={packingList}
         deliveryNumber={deliveryNumber}
         items={items}
-        itemsLoading={itemsLoading}
         crates={crates}
         cratesLoading={cratesLoading}
         onEdit={() => setShowEditModal(true)}
@@ -172,10 +170,8 @@ export function PackingListDetailPage() {
         size="lg"
       >
         <PackingListForm
-          packingNumber={packingList.packing_number}
-          initialData={packingList}
+          packingList={packingList}
           onSubmit={handleEdit}
-          onCancel={() => setShowEditModal(false)}
           loading={editLoading}
         />
       </Modal>

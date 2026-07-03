@@ -728,7 +728,7 @@ export function PriceManagementPage() {
                           <XAxis dataKey="monthName" tick={{ fontSize: 11 }} />
                           <YAxis tick={{ fontSize: 11 }} />
                           <Tooltip
-                            formatter={(value: number) => formatCurrency(value, 'CHF')}
+                            formatter={(value: number = 0) => formatCurrency(value, 'CHF')}
                           />
                           <Bar dataKey="avgPriceCHF" name="Avg Revenue (CHF)" fill="#2563eb" radius={[4, 4, 0, 0]} />
                         </BarChart>
@@ -887,7 +887,7 @@ export function PriceManagementPage() {
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
                           <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} />
-                          <Tooltip formatter={(value: number) => formatCurrency(value, 'CHF')} />
+                          <Tooltip formatter={(value: number = 0) => formatCurrency(value, 'CHF')} />
                           <Legend />
                           <Line
                             type="monotone"

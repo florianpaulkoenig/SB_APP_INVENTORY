@@ -114,7 +114,7 @@ export function CategoryBreakdownChart({ data }: CategoryBreakdownChartProps) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number, name: string) => [
+              formatter={(value: number = 0, name: string = '') => [
                 `${value} (${total > 0 ? ((value / total) * 100).toFixed(1) : 0}%)`,
                 name,
               ]}

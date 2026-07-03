@@ -47,7 +47,7 @@ export function PriceIntelligenceCard({ data }: { data: PriceIntelligenceData })
               <XAxis type="number" domain={[0, 'auto']} tickFormatter={(v: number) => `${v.toFixed(0)}%`} tick={{ fill: '#737373', fontSize: 12 }} />
               <YAxis type="category" dataKey="galleryName" width={100} tick={{ fill: '#737373', fontSize: 11 }} />
               <Tooltip
-                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Avg Discount']}
+                formatter={(value: number = 0) => [`${value.toFixed(1)}%`, 'Avg Discount']}
                 contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 13 }}
               />
               <Bar dataKey="avgDiscount" radius={[0, 4, 4, 0]} barSize={20}>

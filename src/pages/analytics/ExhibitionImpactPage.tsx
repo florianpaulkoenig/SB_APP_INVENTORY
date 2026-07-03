@@ -59,7 +59,7 @@ export function ExhibitionImpactPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
                 <YAxis dataKey="title" type="category" tick={{ fontSize: 11 }} width={140} />
-                <Tooltip formatter={(v: number) => formatCurrency(v, 'CHF')} />
+                <Tooltip formatter={(v: number = 0) => formatCurrency(v, 'CHF')} />
                 <Bar dataKey="totalRevenue" name="Revenue" fill="#1a1a2e" radius={[0, 4, 4, 0]}>
                   {top10.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Bar>
@@ -72,7 +72,7 @@ export function ExhibitionImpactPage() {
             <h3 className="font-display text-lg font-semibold text-primary-900 mb-4">Exhibitions by Type</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
-                <Pie data={data.byType} dataKey="count" nameKey="type" cx="50%" cy="50%" outerRadius={100} label={(e) => `${e.type} (${e.count})`}>
+                <Pie data={data.byType} dataKey="count" nameKey="type" cx="50%" cy="50%" outerRadius={100} label={(e) => { const d = e as { type?: string; count?: number }; return `${d.type} (${d.count})`; }}>
                   {data.byType.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip />
@@ -90,7 +90,7 @@ export function ExhibitionImpactPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="year" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v: number) => formatCurrency(v, 'CHF')} />
+                <Tooltip formatter={(v: number = 0) => formatCurrency(v, 'CHF')} />
                 <Line type="monotone" dataKey="revenue" stroke="#1a1a2e" strokeWidth={2} dot={{ fill: '#1a1a2e' }} />
               </LineChart>
             </ResponsiveContainer>

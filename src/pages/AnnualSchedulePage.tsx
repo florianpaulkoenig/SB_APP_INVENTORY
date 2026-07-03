@@ -127,7 +127,7 @@ const TYPE_LABELS: Record<ScheduleEventType, string> = {
   project: 'Project',
 };
 
-async function exportExcel(events: ScheduleEvent[], weekGroups: WeekGroup[], year: number) {
+async function exportExcel(_events: ScheduleEvent[], weekGroups: WeekGroup[], year: number) {
   const rows = weekGroups.flatMap((group) => {
     if (group.events.length === 0) {
       return [{ KW: group.weekNumber, Monday: fmtDate(group.monday), Dates: '', Type: '', Partner: '', Venue: '', Title: '', City: '', Country: '', Notes: '' }];

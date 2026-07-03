@@ -28,7 +28,6 @@ interface Artwork {
   reference_code: string | null;
   price: number | null;
   currency: string | null;
-  description: string | null;
 }
 
 interface ArtworkImage {
@@ -134,7 +133,7 @@ export function GalleryMarketingPortalPage() {
       // Consigned artworks
       const { data: artworksData } = await supabase
         .from('artworks')
-        .select('id, title, series, category, year, reference_code, price, currency, description')
+        .select('id, title, series, category, year, reference_code, price, currency')
         .eq('gallery_id', galleryId)
         .in('status', ['on_consignment', 'available'])
         .order('title', { ascending: true });

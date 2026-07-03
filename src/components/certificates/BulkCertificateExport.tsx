@@ -102,9 +102,10 @@ export default function BulkCertificateExport({
       for (let i = 0; i < selected.length; i++) {
         const cert = selected[i];
         setProgress({ current: i + 1, total: selected.length });
+        if (!cert.artworks) continue;
 
         const blob = await pdf(
-          <CertificatePDF certificate={cert} language={language} />,
+          <CertificatePDF certificate={cert} artwork={cert.artworks} language={language} />,
         ).toBlob();
 
         const fileName = `${cert.certificate_number}${

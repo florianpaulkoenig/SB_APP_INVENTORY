@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { de, fr, enUS } from 'date-fns/locale';
+import type { Locale as DateFnsLocale } from 'date-fns';
 
 export type DossierLanguage = 'en' | 'de' | 'fr';
 
@@ -117,7 +118,7 @@ const FR: DossierStrings = {
 
 export const DOSSIER_STRINGS: Record<DossierLanguage, DossierStrings> = { en: EN, de: DE, fr: FR };
 
-const DATE_LOCALES: Record<DossierLanguage, Locale> = { en: enUS, de, fr };
+const DATE_LOCALES: Record<DossierLanguage, DateFnsLocale> = { en: enUS, de, fr };
 
 export function formatDateLocalized(dateStr: string, language: DossierLanguage): string {
   try {

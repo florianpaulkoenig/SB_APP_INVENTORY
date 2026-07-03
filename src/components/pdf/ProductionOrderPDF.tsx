@@ -276,7 +276,7 @@ const artistStyles = StyleSheet.create({
 /** Translate a production status value. */
 function translateStatus(status: string, language: string): string {
   const statusMap = STATUS_TRANSLATIONS[language] ?? STATUS_TRANSLATIONS.en;
-  return (statusMap as Record<string, string>)[status] ?? status;
+  return (statusMap as unknown as Record<string, string>)[status] ?? status;
 }
 
 // ---------------------------------------------------------------------------

@@ -260,10 +260,10 @@ function TableHeader({ t }: { t: TranslationStrings }) {
   );
 }
 
-function Cell({ width, children, style }: { width: string; children: React.ReactNode; style?: object }) {
+function Cell({ width, children, style }: { width: string; children: React.ReactNode; style?: import('@react-pdf/types').Style }) {
   return (
     <View style={{ width, overflow: 'hidden' }}>
-      <Text style={[styles.tableCell, style ?? {}]}>{children}</Text>
+      <Text style={style ? [styles.tableCell, style] : styles.tableCell}>{children}</Text>
     </View>
   );
 }

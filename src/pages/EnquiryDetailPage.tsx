@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import type { EnquiryRow } from '../types/database';
 import { useToast } from '../components/ui/Toast';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -9,26 +10,7 @@ import { Button } from '../components/ui/Button';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { ENQUIRY_SOURCES, ENQUIRY_STATUSES, ENQUIRY_PRIORITIES } from '../lib/constants';
 
-interface Enquiry {
-  id: string;
-  source: string;
-  sender_name: string | null;
-  sender_email: string | null;
-  sender_phone: string | null;
-  subject: string | null;
-  body: string | null;
-  interest_description: string | null;
-  location_city: string | null;
-  location_country: string | null;
-  estimated_value: number | null;
-  currency: string | null;
-  priority: string;
-  status: string;
-  contact_id: string | null;
-  deal_id: string | null;
-  created_at: string;
-  user_id: string;
-}
+type Enquiry = EnquiryRow;
 
 export function EnquiryDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -47,7 +29,7 @@ export function EnquiryDetailPage() {
       .eq('id', id)
       .single();
     if (error) {
-      toast({ title: 'Failed to load enquiry', type: 'error' });
+      toast({ title: 'Failed to load enquiry', variant: 'error' });
     } else {
       setEnquiry(data as Enquiry);
     }
@@ -84,7 +66,7 @@ export function EnquiryDetailPage() {
         .from('deals')
         .insert({
           title: enquiry.subject || `Deal from ${enquiry.sender_name}`,
-          contact_id: contact.id,
+          converted_contact_id: contact.id,
           value: enquiry.estimated_value,
           currency: enquiry.currency || 'EUR',
           stage: 'enquiry',
@@ -98,16 +80,16 @@ export function EnquiryDetailPage() {
         .from('enquiries')
         .update({
           status: 'converted',
-          contact_id: contact.id,
-          deal_id: deal.id,
+          converted_contact_id: contact.id,
+          converted_deal_id: deal.id,
         } as never)
         .eq('id', enquiry.id);
       if (updateErr) throw updateErr;
 
-      toast({ title: 'Enquiry converted to lead', type: 'success' });
+      toast({ title: 'Enquiry converted to lead', variant: 'success' });
       fetchEnquiry();
     } catch {
-      toast({ title: 'Failed to convert enquiry', type: 'error' });
+      toast({ title: 'Failed to convert enquiry', variant: 'error' });
     }
   }, [enquiry, toast, fetchEnquiry]);
 
@@ -118,9 +100,9 @@ export function EnquiryDetailPage() {
       .update({ status: 'archived' } as never)
       .eq('id', enquiry.id);
     if (error) {
-      toast({ title: 'Failed to archive enquiry', type: 'error' });
+      toast({ title: 'Failed to archive enquiry', variant: 'error' });
     } else {
-      toast({ title: 'Enquiry archived', type: 'success' });
+      toast({ title: 'Enquiry archived', variant: 'success' });
       fetchEnquiry();
     }
   }, [enquiry, toast, fetchEnquiry]);
@@ -133,26 +115,33 @@ export function EnquiryDetailPage() {
       .delete()
       .eq('id', enquiry.id);
     if (error) {
-      toast({ title: 'Failed to delete enquiry', type: 'error' });
+      toast({ title: 'Failed to delete enquiry', variant: 'error' });
     } else {
-      toast({ title: 'Enquiry deleted', type: 'success' });
+      toast({ title: 'Enquiry deleted', variant: 'success' });
       navigate('/enquiries');
     }
   }, [enquiry, toast, navigate]);
 
   const getSourceBadge = (source: string) => {
     const entry = ENQUIRY_SOURCES.find((s) => s.value === source);
-    return <Badge variant="default" style={{ backgroundColor: entry?.color }}>{entry?.label || source}</Badge>;
+    return <Badge variant="default" className={entry?.color}>{entry?.label || source}</Badge>;
   };
 
   const getPriorityBadge = (priority: string) => {
     const entry = ENQUIRY_PRIORITIES.find((p) => p.value === priority);
-    return <Badge variant="default" style={{ backgroundColor: entry?.color }}>{entry?.label || priority}</Badge>;
+    return <Badge variant="default" className={entry?.color}>{entry?.label || priority}</Badge>;
   };
 
   const getStatusBadge = (status: string) => {
     const entry = ENQUIRY_STATUSES.find((s) => s.value === status);
-    return <Badge variant="default" style={{ backgroundColor: entry?.color }}>{entry?.label || status}</Badge>;
+    return (
+      <span
+        className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
+        style={{ backgroundColor: entry?.color }}
+      >
+        {entry?.label || status}
+      </span>
+    );
   };
 
   if (loading) return <LoadingSpinner />;
@@ -202,7 +191,7 @@ export function EnquiryDetailPage() {
               <p className="text-sm font-medium text-gray-500">Estimated Value</p>
               <p className="mt-1 text-sm text-gray-900">
                 {enquiry.estimated_value
-                  ? formatCurrency(enquiry.estimated_value, enquiry.currency)
+                  ? formatCurrency(enquiry.estimated_value, enquiry.currency ?? 'EUR')
                   : '—'}
               </p>
             </div>
@@ -241,18 +230,18 @@ export function EnquiryDetailPage() {
         </Card>
       )}
 
-      {enquiry.status === 'converted' && (enquiry.contact_id || enquiry.deal_id) && (
+      {enquiry.status === 'converted' && (enquiry.converted_contact_id || enquiry.converted_deal_id) && (
         <Card>
           <div className="p-6">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Converted Lead</h2>
             <div className="flex gap-4">
-              {enquiry.contact_id && (
-                <Button variant="secondary" onClick={() => navigate(`/contacts/${enquiry.contact_id}`)}>
+              {enquiry.converted_contact_id && (
+                <Button variant="secondary" onClick={() => navigate(`/contacts/${enquiry.converted_contact_id}`)}>
                   View Contact
                 </Button>
               )}
-              {enquiry.deal_id && (
-                <Button variant="secondary" onClick={() => navigate(`/deals/${enquiry.deal_id}`)}>
+              {enquiry.converted_deal_id && (
+                <Button variant="secondary" onClick={() => navigate(`/deals/${enquiry.converted_deal_id}`)}>
                   View Deal
                 </Button>
               )}

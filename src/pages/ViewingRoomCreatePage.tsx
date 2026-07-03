@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useViewingRooms } from '../hooks/useViewingRooms';
 import { ViewingRoomForm } from '../components/viewing-rooms/ViewingRoomForm';
 import { Button } from '../components/ui/Button';
-import type { ViewingRoomInsert } from '../types/database';
+import type { ViewingRoomInsert, ViewingRoomUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Page
@@ -21,9 +21,9 @@ export function ViewingRoomCreatePage() {
 
   // ---- Handlers -----------------------------------------------------------
 
-  async function handleSubmit(data: ViewingRoomInsert) {
+  async function handleSubmit(data: ViewingRoomInsert | ViewingRoomUpdate) {
     setLoading(true);
-    const newRoom = await createRoom(data);
+    const newRoom = await createRoom(data as ViewingRoomInsert);
     setLoading(false);
 
     if (newRoom) {

@@ -4,7 +4,7 @@ import { usePackingLists } from '../hooks/usePackingLists';
 import { useDocumentNumber } from '../hooks/useDocumentNumber';
 import { PackingListForm } from '../components/packing/PackingListForm';
 import { Button } from '../components/ui/Button';
-import type { PackingListInsert } from '../types/database';
+import type { PackingListInsert, PackingListUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Page
@@ -33,13 +33,13 @@ export function PackingListCreatePage() {
 
   // ---- Submit handler -----------------------------------------------------
 
-  async function handleSubmit(data: PackingListInsert) {
+  async function handleSubmit(data: PackingListInsert | PackingListUpdate) {
     setLoading(true);
 
     const created = await createPackingList({
       ...data,
       packing_number: packingNumber || data.packing_number,
-    });
+    } as PackingListInsert);
 
     setLoading(false);
 
@@ -87,9 +87,7 @@ export function PackingListCreatePage() {
       {/* Form */}
       <div className="mx-auto max-w-2xl rounded-lg border border-primary-100 bg-white p-6">
         <PackingListForm
-          packingNumber={packingNumber}
           onSubmit={handleSubmit}
-          onCancel={() => navigate('/packing-lists')}
           loading={loading}
         />
       </div>

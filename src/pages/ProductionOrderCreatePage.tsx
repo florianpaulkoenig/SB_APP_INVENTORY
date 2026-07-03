@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProductionOrders } from '../hooks/useProductionOrders';
 import { ProductionOrderForm } from '../components/production/ProductionOrderForm';
 import { Button } from '../components/ui/Button';
-import type { ProductionOrderInsert } from '../types/database';
+import type { ProductionOrderInsert, ProductionOrderUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Page
@@ -17,10 +17,10 @@ export function ProductionOrderCreatePage() {
 
   // ---- Submit handler -----------------------------------------------------
 
-  async function handleSubmit(data: ProductionOrderInsert) {
+  async function handleSubmit(data: ProductionOrderInsert | ProductionOrderUpdate) {
     setLoading(true);
 
-    const created = await createProductionOrder(data);
+    const created = await createProductionOrder(data as ProductionOrderInsert);
 
     setLoading(false);
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
@@ -7,8 +7,6 @@ import type {
   GalleryForwardingOrderInsert,
   GalleryForwardingOrderUpdate,
   GalleryForwardingItemRow,
-  GalleryForwardingItemInsert,
-  GalleryForwardingItemUpdate,
   ForwardingStatus,
 } from '../types/database';
 
@@ -78,7 +76,12 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
 
   const { toast } = useToast();
 
+  // Monotonic fetch generation — lets stale responses be discarded when
+  // filters change faster than the network answers
+  const fetchGenRef = useRef(0);
+
   const fetchForwardings = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     setError(null);
 
@@ -104,16 +107,21 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
 
       const { data, error: fetchError, count } = await query;
 
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
+
       if (fetchError) throw fetchError;
 
       setForwardings((data as GalleryForwardingOrderRow[]) ?? []);
       setTotalCount(count ?? 0);
     } catch (err: unknown) {
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
       const message = err instanceof Error ? err.message : 'Failed to fetch forwarding orders';
       setError(message);
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
-      setLoading(false);
+      if (gen === fetchGenRef.current) setLoading(false);
     }
   }, [filters.status, filters.search, page, pageSize, toast]);
 
@@ -148,7 +156,6 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
 
         return created as GalleryForwardingOrderRow;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to create forwarding order';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -175,7 +182,6 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
 
         return updated as GalleryForwardingOrderRow;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to update forwarding order';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -200,7 +206,6 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
 
         return true;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to delete forwarding order';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
@@ -363,7 +368,6 @@ export function useGalleryForwardingItems(forwardingOrderId: string): UseGallery
 
         return created as GalleryForwardingItemRow;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to add artwork';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -388,7 +392,6 @@ export function useGalleryForwardingItems(forwardingOrderId: string): UseGallery
 
         return true;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to remove artwork';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

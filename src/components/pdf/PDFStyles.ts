@@ -67,8 +67,10 @@ Font.registerHyphenationCallback((word) => {
 // ---------------------------------------------------------------------------
 // Script detection helpers — pick font based on text content
 // ---------------------------------------------------------------------------
+/* eslint-disable no-irregular-whitespace -- intentional Unicode script-detection ranges */
 const CJK_REGEX    = /[一-鿿㐀-䶿　-〿＀-￯぀-ゟ゠-ヿ가-힯]/;
 const ARABIC_REGEX = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
+/* eslint-enable no-irregular-whitespace */
 
 /** Returns true if text contains CJK characters */
 export function hasCJK(text: string): boolean {

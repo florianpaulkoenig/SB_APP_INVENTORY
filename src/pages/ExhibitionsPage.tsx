@@ -231,7 +231,7 @@ export function ExhibitionsPage() {
                       {ex.end_date ? ` — ${formatDate(ex.end_date)}` : ''}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {ex.budget ? formatCurrency(ex.budget, ex.budget_currency) : '—'}
+                      {ex.budget ? formatCurrency(ex.budget, ex.budget_currency ?? 'EUR') : '—'}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex gap-2">

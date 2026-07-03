@@ -61,7 +61,7 @@ export function GalleryCertificatesPage() {
         .not('certificates', 'is', null);
 
       if (error) {
-        toast({ title: 'Error', description: 'Failed to load certificates.', variant: 'destructive' });
+        toast({ title: 'Error', description: 'Failed to load certificates.', variant: 'error' });
       } else {
         setArtworks((data as unknown as ArtworkWithCertificate[]) ?? []);
       }
@@ -82,7 +82,7 @@ export function GalleryCertificatesPage() {
   }, [artworks, search]);
 
   const handleDownload = useCallback(
-    async (artworkId: string, certNumber: string) => {
+    async (artworkId: string, _certNumber: string) => {
       setDownloadingId(artworkId);
       try {
         // Fetch full artwork data
@@ -163,7 +163,7 @@ export function GalleryCertificatesPage() {
         toast({
           title: 'Error',
           description: 'Failed to generate certificate. Please try again.',
-          variant: 'destructive',
+          variant: 'error',
         });
       } finally {
         setDownloadingId(null);

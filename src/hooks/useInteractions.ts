@@ -91,8 +91,6 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
         await fetchInteractions();
         return created as InteractionRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create interaction';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -117,8 +115,6 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
         await fetchInteractions();
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete interaction';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

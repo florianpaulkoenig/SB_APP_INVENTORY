@@ -49,7 +49,6 @@ export function useGalleryTeamMembers(galleryId: string) {
       await fetch();
       return created as GalleryTeamMemberRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to add team member';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -68,7 +67,6 @@ export function useGalleryTeamMembers(galleryId: string) {
       await fetch();
       return updated as GalleryTeamMemberRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update team member';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -82,7 +80,6 @@ export function useGalleryTeamMembers(galleryId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to remove team member';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

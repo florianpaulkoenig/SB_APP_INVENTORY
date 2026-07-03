@@ -49,6 +49,7 @@ const FN_MARKER = '\x00FN';
 function tokeniseLine(line: string): RichToken[] {
   const tokens: RichToken[] = [];
   // bold-italic first, then bold, then italic, then fn-ref marker, then plain text
+  // eslint-disable-next-line no-control-regex -- \x00 is our own footnote marker
   const RE = /\*\*\*([^*]+)\*\*\*|\*\*([^*]+)\*\*|_([^_\n]+)_|\x00FN(\d+)\x00|([^\x00*_]+)/g;
   let m: RegExpExecArray | null;
   while ((m = RE.exec(line)) !== null) {

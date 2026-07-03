@@ -149,7 +149,7 @@ export function usePriceTrajectory() {
           .select('id'),
         supabase
           .from('auction_alerts')
-          .select('id, price_realized, currency'),
+          .select('id, hammer_price, currency'),
         supabase
           .from('sales')
           .select('id, sale_price, sale_date'),
@@ -198,7 +198,7 @@ export function usePriceTrajectory() {
       let auctionTrendRate: number | null = null;
       if (auctions.length >= 2) {
         const auctionPrices = auctions
-          .map((a) => Number(a.price_realized) || 0)
+          .map((a) => Number(a.hammer_price) || 0)
           .filter((p) => p > 0);
         if (auctionPrices.length >= 2) {
           const aStart = auctionPrices[0];

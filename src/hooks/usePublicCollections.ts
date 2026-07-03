@@ -53,7 +53,6 @@ export function usePublicCollections() {
       await fetch();
       return created as PublicCollectionRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create collection';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -72,7 +71,6 @@ export function usePublicCollections() {
       await fetch();
       return updated as PublicCollectionRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update collection';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -86,7 +84,6 @@ export function usePublicCollections() {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete collection';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

@@ -12,7 +12,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { formatCurrency } from '../../lib/utils';
 import {
   ComposedChart, Bar, Line, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, BarChart, Cell, ReferenceLine,
+  ResponsiveContainer, BarChart, Cell,
 } from 'recharts';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -634,7 +634,7 @@ export function RevenueOverviewPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
-              <Tooltip formatter={(value: number) => [formatCurrency(value, 'CHF'), 'Revenue']} />
+              <Tooltip formatter={(value: number = 0) => [formatCurrency(value, 'CHF'), 'Revenue']} />
               <Bar dataKey="revenue" name="Revenue" radius={[3, 3, 0, 0]}>
                 {data.prognosis.monthlyBreakdown.map((m, i) => (
                   <Cell
@@ -676,7 +676,7 @@ export function RevenueOverviewPage() {
                 label={{ value: 'Sales', angle: 90, position: 'insideRight', fontSize: 11 }}
               />
               <Tooltip
-                formatter={(value: number, name: string) => {
+                formatter={(value: number = 0, name: string = '') => {
                   if (name === 'revenue') return [formatCurrency(value, 'CHF'), 'Revenue'];
                   if (name === 'projected') return [formatCurrency(value, 'CHF'), 'Projected (remaining)'];
                   if (name === 'count') return [value, 'Sales'];
@@ -764,11 +764,11 @@ export function RevenueOverviewPage() {
               <XAxis dataKey="year" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
               <Tooltip
-                formatter={(value: number, name: string) => [formatCurrency(value, 'CHF'), name]}
+                formatter={(value: number = 0, name: string = '') => [formatCurrency(value, 'CHF'), name]}
                 labelFormatter={(label) => `Year ${label}`}
               />
               <Legend />
-              {activeGalleryNames.map((name, i) => {
+              {activeGalleryNames.map((name) => {
                 const gIdx = sortedGalleries.findIndex(([, val]) => val.name === name);
                 return (
                   <Line
@@ -823,8 +823,9 @@ export function RevenueOverviewPage() {
                 data={top10}
                 layout="vertical"
                 onClick={(state) => {
-                  if (state?.activePayload?.[0]) {
-                    const row = state.activePayload[0].payload as GalleryYearRow;
+                  const s = state as { activePayload?: { payload: unknown }[] } | undefined;
+                  if (s?.activePayload?.[0]) {
+                    const row = s.activePayload[0].payload as GalleryYearRow;
                     setExpandedGalleryId((prev) => prev === row.galleryId ? null : row.galleryId);
                   }
                 }}
@@ -832,7 +833,7 @@ export function RevenueOverviewPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
                 <YAxis dataKey="galleryName" type="category" tick={{ fontSize: 11 }} width={160} />
-                <Tooltip formatter={(value: number) => formatCurrency(value, 'CHF')} />
+                <Tooltip formatter={(value: number = 0) => formatCurrency(value, 'CHF')} />
                 <Bar dataKey="revenue" name="Revenue" radius={[0, 4, 4, 0]} className="cursor-pointer">
                   {top10.map((g, i) => (
                     <Cell

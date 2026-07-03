@@ -297,7 +297,7 @@ function BudgetDetail({ budget, onUpdate, onDelete }: {
   }
 
   async function saveBudgetEdit() {
-    await onUpdate({ name: budgetName, description: budgetDesc || null, status: budgetStatus });
+    await onUpdate({ name: budgetName, description: budgetDesc || undefined, status: budgetStatus });
     setEditingBudget(false);
   }
 

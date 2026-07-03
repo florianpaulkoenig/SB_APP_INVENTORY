@@ -74,9 +74,9 @@ function useGeographicDemand() {
         const country = e.location_country || 'Unknown';
         const row = countryMap.get(country) ?? { enquiries: 0, qualified: 0, leads: 0, sales: 0 };
         row.enquiries++;
-        if (e.status === 'qualified') row.qualified++;
-        if (e.status === 'lead') row.leads++;
-        if (e.status === 'sold') row.sales++;
+        if (e.status === 'reviewing') row.qualified++;
+        if (e.status === 'new') row.leads++;
+        if (e.status === 'converted') row.sales++;
         countryMap.set(country, row);
       }
 

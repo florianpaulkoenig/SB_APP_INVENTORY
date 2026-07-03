@@ -4,7 +4,7 @@ import { useInvoices } from '../hooks/useInvoices';
 import { useDocumentNumber } from '../hooks/useDocumentNumber';
 import { InvoiceForm } from '../components/invoices/InvoiceForm';
 import { Button } from '../components/ui/Button';
-import type { InvoiceInsert } from '../types/database';
+import type { InvoiceInsert, InvoiceUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Page
@@ -33,13 +33,13 @@ export function InvoiceCreatePage() {
 
   // ---- Submit handler -----------------------------------------------------
 
-  async function handleSubmit(data: InvoiceInsert) {
+  async function handleSubmit(data: InvoiceInsert | InvoiceUpdate) {
     setLoading(true);
 
     const created = await createInvoice({
       ...data,
       invoice_number: invoiceNumber || data.invoice_number,
-    });
+    } as InvoiceInsert);
 
     setLoading(false);
 
@@ -87,9 +87,7 @@ export function InvoiceCreatePage() {
       {/* Form */}
       <div className="mx-auto max-w-2xl rounded-lg border border-primary-100 bg-white p-6">
         <InvoiceForm
-          invoiceNumber={invoiceNumber}
           onSubmit={handleSubmit}
-          onCancel={() => navigate('/invoices')}
           loading={loading}
         />
       </div>

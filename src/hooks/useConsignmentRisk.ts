@@ -132,8 +132,8 @@ export function useConsignmentRisk(): {
           // 5. Partner score snapshots (latest per gallery)
           supabase
             .from('partner_score_snapshots')
-            .select('gallery_id, score, snapshot_date')
-            .order('snapshot_date', { ascending: false }),
+            .select('gallery_id, score, calculated_at')
+            .order('calculated_at', { ascending: false }),
         ]);
 
       if (consignedRes.error) throw consignedRes.error;

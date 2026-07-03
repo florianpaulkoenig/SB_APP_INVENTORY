@@ -58,7 +58,7 @@ export function ArtworkFilters({
     filters.color || filters.medium || filters.artist ||
     filters.minHeight != null || filters.maxHeight != null ||
     filters.minWidth != null || filters.maxWidth != null ||
-    noPhotoFilter,
+    noPhotoFilter ||
     withPhotoFilter,
   );
   const hasActiveFilters = Boolean(filters.status || filters.gallery_id) || secondaryActive;

@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
-import type { DealRow, DealInsert, DealUpdate } from '../types/database';
+import type { DealRow, DealInsert, DealUpdate, DealStage } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Filter / pagination types
@@ -47,7 +47,12 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
 
   // ---- Fetch deals --------------------------------------------------------
 
+  // Monotonic fetch generation — lets stale responses be discarded when
+  // filters change faster than the network answers
+  const fetchGenRef = useRef(0);
+
   const fetchDeals = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     setError(null);
 
@@ -58,7 +63,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
 
       // Stage filter
       if (filters.stage) {
-        query = query.eq('stage', filters.stage);
+        query = query.eq('stage', filters.stage as DealStage);
       }
 
       // Contact filter
@@ -81,17 +86,22 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
 
       const { data, error: fetchError, count } = await query;
 
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
+
       if (fetchError) throw fetchError;
 
       setDeals((data as DealRow[]) ?? []);
       setTotalCount(count ?? 0);
     } catch (err: unknown) {
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
       const message =
         err instanceof Error ? err.message : 'Failed to fetch deals';
       setError(message);
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
-      setLoading(false);
+      if (gen === fetchGenRef.current) setLoading(false);
     }
   }, [filters.stage, filters.contact_id, filters.sortBy, filters.sortOrder, page, pageSize, toast]);
 

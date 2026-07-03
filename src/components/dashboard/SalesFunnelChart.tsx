@@ -44,8 +44,8 @@ export function SalesFunnelChart({ data }: { data: SalesFunnelData }) {
           <XAxis type="number" allowDecimals={false} tick={{ fill: '#737373', fontSize: 12 }} />
           <YAxis type="category" dataKey="label" width={90} tick={{ fill: '#737373', fontSize: 12 }} />
           <Tooltip
-            formatter={(value: number, _name: string, props: { payload: { totalValue: number } }) => [
-              `${value} deals (${formatCurrency(props.payload.totalValue, 'CHF')})`,
+            formatter={(value: number = 0, _name: string = '', props?: { payload?: { totalValue?: number } }) => [
+              `${value} deals (${formatCurrency(props?.payload?.totalValue ?? 0, 'CHF')})`,
               'Count',
             ]}
             contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 13 }}

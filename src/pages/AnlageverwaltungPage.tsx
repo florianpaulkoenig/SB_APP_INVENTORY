@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { usePortfolio } from '../contexts/PortfolioContext';
@@ -101,7 +101,7 @@ export function AnlageverwaltungPage() {
 
       // Fetch primary images
       const ids = rows.map((r) => r.id);
-      let imageMap = new Map<string, string>();
+      const imageMap = new Map<string, string>();
 
       if (ids.length > 0) {
         const { data: imgData } = await supabase

@@ -98,7 +98,6 @@ export function useReminders(filters: ReminderFilters = {}) {
 
         return created as ReminderRow;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to create reminder';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -125,7 +124,6 @@ export function useReminders(filters: ReminderFilters = {}) {
 
         return updated as ReminderRow;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to update reminder';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -150,7 +148,6 @@ export function useReminders(filters: ReminderFilters = {}) {
 
         return true;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to delete reminder';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
@@ -177,7 +174,6 @@ export function useReminders(filters: ReminderFilters = {}) {
 
         return updated as ReminderRow;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to mark reminder as sent';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }

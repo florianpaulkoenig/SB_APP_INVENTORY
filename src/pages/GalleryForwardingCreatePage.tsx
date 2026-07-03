@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGalleryForwardings } from '../hooks/useGalleryForwarding';
 import { GalleryForwardingForm } from '../components/gallery-forwarding/GalleryForwardingForm';
 import { Button } from '../components/ui/Button';
-import type { GalleryForwardingOrderInsert } from '../types/database';
+import type { GalleryForwardingOrderInsert, GalleryForwardingOrderUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Page
@@ -17,10 +17,10 @@ export function GalleryForwardingCreatePage() {
 
   // ---- Submit handler -----------------------------------------------------
 
-  async function handleSubmit(data: GalleryForwardingOrderInsert) {
+  async function handleSubmit(data: GalleryForwardingOrderInsert | GalleryForwardingOrderUpdate) {
     setLoading(true);
 
-    const created = await createForwarding(data);
+    const created = await createForwarding(data as GalleryForwardingOrderInsert);
 
     setLoading(false);
 
@@ -69,7 +69,6 @@ export function GalleryForwardingCreatePage() {
       <div className="mx-auto max-w-2xl rounded-lg border border-primary-100 bg-white p-6">
         <GalleryForwardingForm
           onSubmit={handleSubmit}
-          onCancel={() => navigate('/forwarding')}
           loading={loading}
         />
       </div>

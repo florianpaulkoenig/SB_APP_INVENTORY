@@ -7,7 +7,6 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { ProductionOrderPDF } from '../pdf/ProductionOrderPDF';
 import { formatDate, formatDimensions, formatCurrency, downloadBlob } from '../../lib/utils';
-import { PRODUCTION_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
 import { getSignedUrls } from '../../lib/signedUrlCache';
 import type {
@@ -39,7 +38,7 @@ export interface ProductionOrderDetailProps {
       artworks?: {
         title: string;
         reference_code: string;
-        status: string;
+        status: string | null;
       } | null;
     }
   >;

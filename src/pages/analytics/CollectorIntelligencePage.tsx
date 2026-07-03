@@ -53,7 +53,7 @@ export function CollectorIntelligencePage() {
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie data={tierData} dataKey="count" nameKey="label" cx="50%" cy="50%" outerRadius={90}
-                  label={({ label, count }) => `${label}: ${count}`}>
+                  label={(e) => { const d = e as { label?: string; count?: number }; return `${d.label}: ${d.count}`; }}>
                   {tierData.map((_, i) => (
                     <Cell key={i} fill={TIER_COLORS[i % TIER_COLORS.length]} />
                   ))}

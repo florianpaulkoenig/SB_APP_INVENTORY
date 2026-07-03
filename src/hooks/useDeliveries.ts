@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
@@ -19,6 +19,7 @@ import type {
 
 export interface DeliveryWithJoins extends DeliveryRow {
   galleries?: { name: string } | null;
+  delivery_items?: { count: number }[];
 }
 
 export interface DeliveryItemWithJoins extends DeliveryItemRow {
@@ -70,7 +71,7 @@ export interface UseDeliveriesReturn {
 // Joined select string
 // ---------------------------------------------------------------------------
 
-const DELIVERY_SELECT = `*, galleries(name)`;
+const DELIVERY_SELECT = `*, galleries(name), delivery_items(count)`;
 
 const DELIVERY_ITEM_SELECT = `*, artworks(title, reference_code, medium, category, year, height, width, depth, dimension_unit, weight, status)`;
 
@@ -91,7 +92,12 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
 
   // ---- Fetch deliveries -----------------------------------------------------
 
+  // Monotonic fetch generation — lets stale responses be discarded when
+  // filters change faster than the network answers
+  const fetchGenRef = useRef(0);
+
   const fetchDeliveries = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     setError(null);
 
@@ -140,17 +146,22 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
 
       const { data, error: fetchError, count } = await query;
 
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
+
       if (fetchError) throw fetchError;
 
       setDeliveries((data as DeliveryWithJoins[]) ?? []);
       setTotalCount(count ?? 0);
     } catch (err: unknown) {
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
       const message =
         err instanceof Error ? err.message : 'Failed to fetch deliveries';
       setError(message);
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
-      setLoading(false);
+      if (gen === fetchGenRef.current) setLoading(false);
     }
   }, [filters.status, filters.galleryId, filters.search, filters.sortBy, filters.sortOrder, page, pageSize, portfolio, toast]);
 
@@ -186,8 +197,6 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
 
         return created as DeliveryRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create delivery';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -214,8 +223,6 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
 
         return updated as DeliveryRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update delivery';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -240,8 +247,6 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
 
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete delivery';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
@@ -410,8 +415,6 @@ export function useDeliveryItems(deliveryId: string): UseDeliveryItemsReturn {
 
         return created as DeliveryItemRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to add delivery item';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -438,8 +441,6 @@ export function useDeliveryItems(deliveryId: string): UseDeliveryItemsReturn {
 
         return updated as DeliveryItemRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update delivery item';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -464,8 +465,6 @@ export function useDeliveryItems(deliveryId: string): UseDeliveryItemsReturn {
 
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to remove delivery item';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

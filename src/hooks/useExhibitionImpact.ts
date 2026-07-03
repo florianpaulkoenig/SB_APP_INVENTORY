@@ -84,7 +84,6 @@ export function useExhibitionImpact() {
       }
 
       // Track known collectors before each exhibition to find "new"
-      const allCollectorIds = new Set<string>();
       // Sort sales by date for chronological collector tracking
       const sortedSales = [...sales].sort((a, b) => (a.sale_date ?? '').localeCompare(b.sale_date ?? ''));
 

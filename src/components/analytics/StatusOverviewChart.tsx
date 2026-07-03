@@ -102,7 +102,7 @@ export function StatusOverviewChart({ data }: StatusOverviewChartProps) {
               tickLine={false}
             />
             <Tooltip
-              formatter={(value: number) => [value, 'Count']}
+              formatter={(value: number = 0) => [value, 'Count']}
               contentStyle={{
                 backgroundColor: '#fff',
                 border: '1px solid #e5e5e5',

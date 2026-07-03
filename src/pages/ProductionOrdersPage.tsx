@@ -228,7 +228,7 @@ export function ProductionOrdersPage() {
     categories: Record<string, number>;
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const galleryStats = useMemo<GalleryStat[]>(() => {
     const map: Record<string, GalleryStat> = {};
     for (const o of activeOrders) {
@@ -433,7 +433,7 @@ export function ProductionOrdersPage() {
         );
       }
       if (dateFilteredOrders.length === 0) {
-        toast({ title: 'No Orders', description: 'No orders match the selected date range.', variant: 'destructive' });
+        toast({ title: 'No Orders', description: 'No orders match the selected date range.', variant: 'error' });
         setDownloadingArtist(false);
         return;
       }

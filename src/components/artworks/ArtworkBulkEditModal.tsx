@@ -19,14 +19,8 @@ import {
 import type {
   ArtworkUpdate,
   ArtworkStatus,
-  ArtworkCategory,
-  ArtworkMotif,
-  ArtworkSeries,
-  ArtworkColor,
   DimensionUnit,
-  Currency,
   EditionType,
-  SizeCategory,
 } from '../../types/database';
 
 // ---------------------------------------------------------------------------

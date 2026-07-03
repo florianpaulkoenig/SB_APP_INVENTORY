@@ -475,7 +475,7 @@ export function GalleryMediaPage() {
         <div className="space-y-4 mt-8">
           <h2 className="text-lg font-semibold text-gray-900">
             My Pending Submissions
-            <Badge variant="secondary" className="ml-2">
+            <Badge variant="default" className="ml-2">
               {pendingFiles.length}
             </Badge>
           </h2>
@@ -493,7 +493,7 @@ export function GalleryMediaPage() {
                     <p className="text-xs text-gray-500 truncate">{file.file_name}</p>
                   </div>
                 </div>
-                <Badge variant="secondary" className="self-start">
+                <Badge variant="default" className="self-start">
                   Pending Review
                 </Badge>
                 <p className="text-xs text-gray-400">{formatDate(file.created_at)}</p>

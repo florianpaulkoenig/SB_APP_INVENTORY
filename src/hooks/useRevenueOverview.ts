@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect, useCallback } from 'react';
+import { deriveCommissionRates, splitByCommission as splitCommissionAmount } from '../lib/finance';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { useExchangeRates } from './useExchangeRates';
@@ -184,29 +185,14 @@ export function useRevenueOverview() {
         const cn = g.commission_noa as number | null;
         const ca = g.commission_artist as number | null;
         const cr = g.commission_rate as number | null;
-        if (cg != null && cn != null && ca != null) {
-          // Explicit 3-way split defined
-          galleryCommissions.set(g.id, { gallery: cg, noa: cn, artist: ca });
-        } else if (cr != null) {
-          // Legacy commission_rate: gallery gets cr%, rest split 50/50 between NOA and artist
-          galleryCommissions.set(g.id, { gallery: cr, noa: (100 - cr) / 2, artist: (100 - cr) / 2 });
-        }
+        const derived = deriveCommissionRates({ commission_gallery: cg, commission_noa: cn, commission_artist: ca, commission_rate: cr });
+        if (derived) galleryCommissions.set(g.id, derived);
         // else: no commission data → will use default 50/25/25
       }
 
       // Helper: split a CHF amount by gallery commission rates
       function splitByCommission(amountCHF: number, galleryId: string | null): CommissionSplit {
-        const rates = galleryId ? galleryCommissions.get(galleryId) : undefined;
-        const g = rates?.gallery ?? 50;
-        const n = rates?.noa ?? 25;
-        const a = rates?.artist ?? 25;
-        const total = g + n + a;
-        return {
-          gallery: amountCHF * (g / total),
-          noa: amountCHF * (n / total),
-          artist: amountCHF * (a / total),
-          total: amountCHF,
-        };
+        return splitCommissionAmount(amountCHF, galleryId ? galleryCommissions.get(galleryId) : undefined);
       }
 
       function addSplits(a: CommissionSplit, b: CommissionSplit): CommissionSplit {

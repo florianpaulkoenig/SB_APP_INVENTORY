@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
@@ -77,7 +77,12 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
   // ---- Fetch certificates ---------------------------------------------------
 
+  // Monotonic fetch generation — lets stale responses be discarded when
+  // filters change faster than the network answers
+  const fetchGenRef = useRef(0);
+
   const fetchCertificates = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     setError(null);
 
@@ -114,17 +119,22 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
       const { data, error: fetchError, count } = await query;
 
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
+
       if (fetchError) throw fetchError;
 
       setCertificates((data as CertificateWithJoins[]) ?? []);
       setTotalCount(count ?? 0);
     } catch (err: unknown) {
+      // Stale response — a newer fetch superseded this one
+      if (gen !== fetchGenRef.current) return;
       const message =
         err instanceof Error ? err.message : 'Failed to fetch certificates';
       setError(message);
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
-      setLoading(false);
+      if (gen === fetchGenRef.current) setLoading(false);
     }
   }, [filters.artworkId, filters.search, filters.sortBy, filters.sortOrder, page, pageSize, toast]);
 
@@ -160,8 +170,6 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
         return created as CertificateRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create certificate';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -188,8 +196,6 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
         return updated as CertificateRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update certificate';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -214,8 +220,6 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete certificate';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

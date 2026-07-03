@@ -49,7 +49,6 @@ export function useConditionReports(artworkId: string) {
       await fetch();
       return created as ConditionReportRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create condition report';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -68,7 +67,6 @@ export function useConditionReports(artworkId: string) {
       await fetch();
       return updated as ConditionReportRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update condition report';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -82,7 +80,6 @@ export function useConditionReports(artworkId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete condition report';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

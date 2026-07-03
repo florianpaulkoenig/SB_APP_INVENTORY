@@ -7,6 +7,7 @@ import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { RoleGuard } from './components/auth/RoleGuard';
 import { RouteErrorBoundary } from './components/ui/RouteErrorBoundary';
+import { reportError } from './lib/monitoring';
 import { AppLayout } from './components/layout/AppLayout';
 
 // ---------------------------------------------------------------------------
@@ -27,6 +28,7 @@ class ChunkErrorBoundary extends Component<
 
   componentDidCatch(error: Error, _info: ErrorInfo) {
     console.error('Chunk load error:', error);
+    reportError(error, { boundary: 'chunk' });
     // Stale-deploy chunk 404: auto-reload once to fetch the fresh index.html.
     // Guarded so a genuine network outage doesn't cause a reload loop.
     const isChunkError = /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed/i.test(error.message);
@@ -282,9 +284,6 @@ const AuctionTrackingPage = React.lazy(() =>
 );
 const GalleryAvailableWorksPage = React.lazy(() =>
   import('./pages/GalleryAvailableWorksPage').then((m) => ({ default: m.GalleryAvailableWorksPage })),
-);
-const GalleryMarketingPortalPage = React.lazy(() =>
-  import('./pages/gallery/GalleryMarketingPortalPage').then((m) => ({ default: m.GalleryMarketingPortalPage })),
 );
 const InventoryHealthPage = React.lazy(() =>
   import('./pages/analytics/InventoryHealthPage').then((m) => ({ default: m.InventoryHealthPage })),

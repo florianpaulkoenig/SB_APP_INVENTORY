@@ -141,13 +141,13 @@ export function ArtworkForm({
   const [galleryId, setGalleryId] = useState<string | null>(v?.gallery_id ?? null);
 
   // Commission split
-  const [commissionGallery, setCommissionGallery] = useState(
+  const [commissionGallery] = useState(
     artwork?.commission_gallery != null ? String(artwork.commission_gallery) : '',
   );
-  const [commissionNoa, setCommissionNoa] = useState(
+  const [commissionNoa] = useState(
     artwork?.commission_noa != null ? String(artwork.commission_noa) : '',
   );
-  const [commissionArtist, setCommissionArtist] = useState(
+  const [commissionArtist] = useState(
     artwork?.commission_artist != null ? String(artwork.commission_artist) : '',
   );
 
@@ -391,7 +391,7 @@ export function ArtworkForm({
             label="Color"
             options={[...ARTWORK_COLORS.map((c) => ({ value: c.value, label: c.label }))]}
             value={color}
-            onChange={(e) => setColor(e.target.value)}
+            onChange={(e) => setColor(e.target.value as 'other' | 'green' | 'red' | 'white' | 'silver' | 'dark_grey')}
           />
         </div>
       </section>
