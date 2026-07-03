@@ -806,7 +806,7 @@ export function ExhibitionDetailPage() {
           <div>
             <p className="text-xs text-gray-500 uppercase">Budget</p>
             <p className="text-sm font-medium">
-              {exhibition.budget ? formatCurrency(exhibition.budget, exhibition.budget_currency) : '—'}
+              {exhibition.budget ? formatCurrency(exhibition.budget, exhibition.budget_currency ?? 'EUR') : '—'}
             </p>
           </div>
           <div>
@@ -976,7 +976,7 @@ export function ExhibitionDetailPage() {
                     <td className="px-4 py-3 text-sm text-gray-600">{ea.artworks.medium || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{ea.artworks.year || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {ea.artworks.price ? formatCurrency(ea.artworks.price, ea.artworks.currency) : '—'}
+                      {ea.artworks.price ? formatCurrency(ea.artworks.price, ea.artworks.currency ?? 'EUR') : '—'}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       {ea.artworks.status ? <Badge variant="default">{ea.artworks.status}</Badge> : '—'}
@@ -1298,7 +1298,7 @@ export function ExhibitionDetailPage() {
           <h2 className="text-lg font-semibold mb-3">Location</h2>
           <Suspense fallback={<div className="flex items-center justify-center h-[200px]"><LoadingSpinner size="sm" /></div>}>
             <MapView
-              markers={[{ lat: coordinates.lat, lng: coordinates.lng, label: exhibition.venue || location }]}
+              markers={[{ id: exhibition.id, type: 'exhibition', color: '#8b5cf6', lat: coordinates.lat, lng: coordinates.lng, label: exhibition.venue || location }]}
               height="200px"
             />
           </Suspense>

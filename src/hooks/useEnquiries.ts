@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
-import type { EnquiryRow, EnquiryInsert, EnquiryUpdate } from '../types/database';
+import type { EnquiryRow, EnquiryInsert, EnquiryUpdate, EnquiryStatus, EnquirySource, EnquiryPriority } from '../types/database';
 
 interface UseEnquiriesOptions {
   status?: string;
@@ -23,9 +23,9 @@ export function useEnquiries(options?: UseEnquiriesOptions) {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (options?.status) query = query.eq('status', options.status);
-    if (options?.source) query = query.eq('source', options.source);
-    if (options?.priority) query = query.eq('priority', options.priority);
+    if (options?.status) query = query.eq('status', options.status as EnquiryStatus);
+    if (options?.source) query = query.eq('source', options.source as EnquirySource);
+    if (options?.priority) query = query.eq('priority', options.priority as EnquiryPriority);
     if (options?.search) {
       const term = sanitizeFilterTerm(options.search);
       if (term) {

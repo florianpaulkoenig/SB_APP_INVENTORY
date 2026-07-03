@@ -5,6 +5,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useCallback } from 'react';
+import type { ArtworkSeries, ArtworkStatus } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 
@@ -109,10 +110,10 @@ export function useBulkOperations(): UseBulkOperationsReturn {
           query = query.eq('gallery_id', filters.galleryId);
         }
         if (filters.series) {
-          query = query.eq('series', filters.series);
+          query = query.eq('series', filters.series as ArtworkSeries);
         }
         if (filters.status) {
-          query = query.eq('status', filters.status);
+          query = query.eq('status', filters.status as ArtworkStatus);
         }
         if (exhibitionArtworkIds) {
           query = query.in('id', exhibitionArtworkIds);

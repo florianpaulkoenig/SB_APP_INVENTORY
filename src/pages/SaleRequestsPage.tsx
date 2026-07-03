@@ -174,7 +174,7 @@ export function SaleRequestsPage() {
                               </Button>
                               <Button
                                 size="sm"
-                                variant="destructive"
+                                variant="danger"
                                 onClick={() => handleReject(request.id)}
                                 disabled={
                                   actionLoading === request.id || !rejectReason.trim()
@@ -195,7 +195,7 @@ export function SaleRequestsPage() {
                               </Button>
                               <Button
                                 size="sm"
-                                variant="destructive"
+                                variant="danger"
                                 onClick={() => setRejectingId(request.id)}
                                 disabled={actionLoading === request.id}
                               >

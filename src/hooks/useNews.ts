@@ -164,7 +164,7 @@ export function useNews(options?: UseNewsOptions) {
         .eq('role', 'gallery');
 
       if (galleryUsers && galleryUsers.length > 0) {
-        const emailPromises = galleryUsers.map((gu: Record<string, unknown>) => {
+        const emailPromises = (galleryUsers as unknown as Record<string, unknown>[]).map((gu) => {
           const usersData = gu.users as { email: string } | null;
           const email = usersData?.email;
           if (!email) return Promise.resolve();

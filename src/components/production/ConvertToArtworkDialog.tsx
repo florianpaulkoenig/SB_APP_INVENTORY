@@ -392,7 +392,7 @@ export function ConvertToArtworkDialog({
             label="Currency"
             options={CURRENCIES.map((c) => ({ value: c.value, label: c.label }))}
             value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
+            onChange={(e) => setCurrency(e.target.value as 'EUR' | 'USD' | 'CHF' | 'GBP')}
           />
         </div>
 

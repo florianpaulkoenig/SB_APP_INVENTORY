@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { getSignedUrls as getCachedSignedUrls } from '../lib/signedUrlCache';
 import { useToast } from '../components/ui/Toast';
 import { usePortfolio } from '../contexts/PortfolioContext';
-import type { ShareLinkRow, ShareLinkInsert } from '../types/database';
+import type { ShareLinkRow, ShareLinkInsert, ImageType } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Helper – generate a random share token
@@ -200,7 +201,7 @@ export function useShareLink(token: string) {
         .in('artwork_id', artwork_ids);
 
       if (image_types.length > 0) {
-        query = query.in('image_type', image_types);
+        query = query.in('image_type', image_types as ImageType[]);
       }
 
       const { data: images, error: imagesError } = await query;
@@ -222,7 +223,7 @@ export function useShareLink(token: string) {
       }
 
       // Generate signed URLs for each image (cached)
-      const signedMap = await getSignedUrls(
+      const signedMap = await getCachedSignedUrls(
         'artwork-images',
         images.map((img) => img.storage_path),
       );

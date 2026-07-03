@@ -110,10 +110,10 @@ export function GalleryDeliveryDetailPage() {
                   {items.map((item) => (
                     <tr key={item.id}>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                        {item.artwork?.title ?? '—'}
+                        {item.artworks?.title ?? '—'}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {item.artwork?.reference_code ?? '—'}
+                        {item.artworks?.reference_code ?? '—'}
                       </td>
                     </tr>
                   ))}

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
-import type { ContactRow, ContactInsert, ContactUpdate } from '../types/database';
+import type { ContactRow, ContactInsert, ContactUpdate, ContactType } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Filter / pagination types
@@ -68,7 +68,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
 
       // Type filter
       if (filters.type) {
-        query = query.eq('type', filters.type);
+        query = query.eq('type', filters.type as ContactType);
       }
 
       // Country filter

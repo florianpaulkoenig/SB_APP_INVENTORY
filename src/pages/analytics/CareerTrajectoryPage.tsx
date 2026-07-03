@@ -113,7 +113,7 @@ export function CareerTrajectoryPage() {
                 <XAxis dataKey="year" tick={{ fontSize: 12 }} />
                 <YAxis yAxisId="revenue" tick={{ fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                 <YAxis yAxisId="count" orientation="right" tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(v: number, name: string) =>
+                <Tooltip formatter={(v: number = 0, name: string = '') =>
                   name.includes('Revenue') ? formatCurrency(v, 'CHF') : v
                 } />
                 <Legend />
@@ -149,11 +149,11 @@ export function CareerTrajectoryPage() {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie data={data.milestonesByType} dataKey="count" nameKey="type" cx="50%" cy="50%" outerRadius={100}
-                    label={(e) => `${TYPE_LABELS[e.type] || e.type} (${e.count})`}>
+                    label={(e) => { const d = e as { type?: string; count?: number }; return `${TYPE_LABELS[d.type ?? ''] || d.type} (${d.count})`; }}>
                     {data.milestonesByType.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number, _: string, props: { payload: { type: string } }) =>
-                    [v, TYPE_LABELS[props.payload.type] || props.payload.type]
+                  <Tooltip formatter={(v: number = 0, _: string = '', props?: { payload?: { type?: string } }) =>
+                    [v, TYPE_LABELS[props?.payload?.type ?? ''] || props?.payload?.type || '']
                   } />
                 </PieChart>
               </ResponsiveContainer>

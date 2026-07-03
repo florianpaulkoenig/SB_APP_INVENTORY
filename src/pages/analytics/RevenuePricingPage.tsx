@@ -636,7 +636,7 @@ function RevenueTrendsTab() {
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
-              <Tooltip formatter={(value: number) => [formatCurrency(value, 'CHF'), 'Revenue']} />
+              <Tooltip formatter={(value: number = 0) => [formatCurrency(value, 'CHF'), 'Revenue']} />
               <Bar dataKey="revenue" name="Revenue" radius={[3, 3, 0, 0]}>
                 {prognosis.monthlyBreakdown.map((m, i) => (
                   <Cell key={i} fill={m.month > new Date().getMonth() ? '#e2e8f0' : BAR_COLOR} opacity={m.month > new Date().getMonth() ? 0.4 : 1} />
@@ -663,7 +663,7 @@ function RevenueTrendsTab() {
               <YAxis yAxisId="revenue" tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
               <YAxis yAxisId="count" orientation="right" tick={{ fontSize: 12 }} label={{ value: 'Sales', angle: 90, position: 'insideRight', fontSize: 11 }} />
               <Tooltip
-                formatter={(value: number, name: string) => {
+                formatter={(value: number = 0, name: string = '') => {
                   if (name === 'revenue') return [formatCurrency(value, 'CHF'), 'Revenue'];
                   if (name === 'projected') return [formatCurrency(value, 'CHF'), 'Projected (remaining)'];
                   if (name === 'count') return [value, 'Sales'];
@@ -742,7 +742,7 @@ function RevenueTrendsTab() {
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="year" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
-              <Tooltip formatter={(value: number, name: string) => [formatCurrency(value, 'CHF'), name]} labelFormatter={(label) => `Year ${label}`} />
+              <Tooltip formatter={(value: number = 0, name: string = '') => [formatCurrency(value, 'CHF'), name]} labelFormatter={(label) => `Year ${label}`} />
               <Legend />
               {activeGalleryNames.map((name) => {
                 const gIdx = sortedGalleries.findIndex(([, val]) => val.name === name);
@@ -782,8 +782,9 @@ function RevenueTrendsTab() {
                 data={top10}
                 layout="vertical"
                 onClick={(state) => {
-                  if (state?.activePayload?.[0]) {
-                    const row = state.activePayload[0].payload as GalleryYearRow;
+                  const s = state as { activePayload?: { payload: unknown }[] } | undefined;
+                  if (s?.activePayload?.[0]) {
+                    const row = s.activePayload[0].payload as GalleryYearRow;
                     setExpandedGalleryId((prev) => prev === row.galleryId ? null : row.galleryId);
                   }
                 }}
@@ -791,7 +792,7 @@ function RevenueTrendsTab() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
                 <YAxis dataKey="galleryName" type="category" tick={{ fontSize: 11 }} width={160} />
-                <Tooltip formatter={(value: number) => formatCurrency(value, 'CHF')} />
+                <Tooltip formatter={(value: number = 0) => formatCurrency(value, 'CHF')} />
                 <Bar dataKey="revenue" name="Revenue" radius={[0, 4, 4, 0]} className="cursor-pointer">
                   {top10.map((g, i) => (
                     <Cell
@@ -1050,7 +1051,7 @@ function PricingIntelligenceTab() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
                   <YAxis dataKey="series" type="category" tick={{ fontSize: 11 }} width={100} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v, 'CHF')} />
+                  <Tooltip formatter={(v: number = 0) => formatCurrency(v, 'CHF')} />
                   <Bar dataKey="avgPrice" name="Avg Price" fill="#1a1a2e" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -1074,7 +1075,7 @@ function PricingIntelligenceTab() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="size" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v, 'CHF')} />
+                  <Tooltip formatter={(v: number = 0) => formatCurrency(v, 'CHF')} />
                   <Bar dataKey="avgPrice" name="Avg Price" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -1216,7 +1217,7 @@ function PricingIntelligenceTab() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="monthName" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(v: number, name: string) => name === 'avgPriceCHF' ? formatCurrency(v, 'CHF') : v} />
+                  <Tooltip formatter={(v: number = 0, name: string = '') => name === 'avgPriceCHF' ? formatCurrency(v, 'CHF') : v} />
                   <Bar dataKey="salesCount" name="Sales" fill="#1a1a2e" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

@@ -105,13 +105,8 @@ export function SaleRequestModal({
             id="currency"
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label} ({c.symbol})
-              </option>
-            ))}
-          </Select>
+            options={CURRENCIES.map((c) => ({ value: c.value, label: `${c.label} (${c.symbol})` }))}
+          />
         </div>
 
         <div>

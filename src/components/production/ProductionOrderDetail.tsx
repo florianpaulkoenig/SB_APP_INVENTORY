@@ -38,7 +38,7 @@ export interface ProductionOrderDetailProps {
       artworks?: {
         title: string;
         reference_code: string;
-        status: string;
+        status: string | null;
       } | null;
     }
   >;

@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import { pdf } from '@react-pdf/renderer';
+import { supabase } from '../../lib/supabase';
 import { CertificatePDF } from '../pdf/CertificatePDF';
 import { useDocumentNumber } from '../../hooks/useDocumentNumber';
 import { useCertificates } from '../../hooks/useCertificates';
@@ -88,8 +89,16 @@ export function CertificateGenerator({
     setDownloading(true);
 
     try {
+      // CertificatePDF needs the full artwork row — fetch it on demand
+      const { data: artwork, error: artworkError } = await supabase
+        .from('artworks')
+        .select('title, reference_code, medium, year, height, width, depth, dimension_unit, framed_height, framed_width, framed_depth, edition_type, edition_number, edition_total')
+        .eq('id', artworkId)
+        .single();
+      if (artworkError || !artwork) return;
+
       const blob = await pdf(
-        <CertificatePDF certificate={existingCertificate} language={language} />,
+        <CertificatePDF certificate={existingCertificate} artwork={artwork} language={language} />,
       ).toBlob();
 
       downloadBlob(blob, buildCertificateFilename({ title: artworkTitle, reference_code: artworkReferenceCode }));

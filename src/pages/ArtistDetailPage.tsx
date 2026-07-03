@@ -187,7 +187,7 @@ export function ArtistDetailPage() {
                 width={50}
               />
               <Tooltip
-                formatter={(v: number, name: string) => [
+                formatter={(v: number = 0, name: string = '') => [
                   formatCurrency(v, 'CHF'),
                   name === 'estimatedValue' ? 'Schätzwert' : 'Ankaufswert',
                 ]}

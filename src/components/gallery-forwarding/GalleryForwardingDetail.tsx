@@ -301,7 +301,7 @@ export function GalleryForwardingDetail({
                 Insurance Value
               </dt>
               <dd className="mt-1 text-sm font-semibold text-primary-800">
-                {formatCurrency(order.insurance_value, order.currency)}
+                {formatCurrency(order.insurance_value, order.currency ?? 'EUR')}
               </dd>
             </div>
           )}

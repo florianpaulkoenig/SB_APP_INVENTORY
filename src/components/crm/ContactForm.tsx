@@ -125,7 +125,7 @@ export function ContactForm({
           label="Type"
           options={[...CONTACT_TYPES]}
           value={type}
-          onChange={(e) => setType(e.target.value)}
+          onChange={(e) => setType(e.target.value as 'collector' | 'prospect' | 'institution')}
         />
       </div>
 

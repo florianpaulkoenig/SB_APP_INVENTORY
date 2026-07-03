@@ -51,7 +51,7 @@ export function useInsightFeedback() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          toast('Not authenticated', 'error');
+          toast({ title: 'Not authenticated', variant: 'error' });
           return;
         }
 
@@ -66,7 +66,7 @@ export function useInsightFeedback() {
 
           if (error) {
             console.error('Feedback update error:', error.message);
-            toast('Failed to save feedback', 'error');
+            toast({ title: 'Failed to save feedback', variant: 'error' });
             return;
           }
           setFeedbackMap((prev) => ({
@@ -90,16 +90,16 @@ export function useInsightFeedback() {
 
           if (error) {
             console.error('Feedback insert error:', error.message);
-            toast('Failed to save feedback', 'error');
+            toast({ title: 'Failed to save feedback', variant: 'error' });
             return;
           }
           const row = data as unknown as AiInsightFeedbackRow;
           setFeedbackMap((prev) => ({ ...prev, [insightId]: row }));
         }
-        toast('Feedback saved', 'success');
+        toast({ title: 'Feedback saved', variant: 'success' });
       } catch (err) {
         console.error('Feedback error:', err);
-        toast('Failed to save feedback', 'error');
+        toast({ title: 'Failed to save feedback', variant: 'error' });
       }
     },
     [toast],

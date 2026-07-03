@@ -49,7 +49,7 @@ export function CashFlowChart({ data }: { data: CashFlowMonth[] }) {
             width={isMobile ? 60 : 80}
           />
           <Tooltip
-            formatter={(value: number, name: string) => [chfFmt.format(value), name]}
+            formatter={(value: number = 0, name: string = '') => [chfFmt.format(value), name]}
             contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 13 }}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />

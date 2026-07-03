@@ -85,7 +85,7 @@ export function ArtworkImageGallery({
         .eq('artwork_id', artworkId)
         .order('created_at', { ascending: true });
 
-      rows = fallback.data;
+      rows = fallback.data as unknown as typeof rows;
       fetchError = fallback.error;
     }
 

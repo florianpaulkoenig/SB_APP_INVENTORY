@@ -20,7 +20,7 @@ export function InvoiceDetailPage() {
   const navigate = useNavigate();
 
   const { invoice, loading, refetch: refetchInvoice, updateInvoice, deleteInvoice } = useInvoice(id!);
-  const { items, loading: itemsLoading, addItem, removeItem } = useInvoiceItems(id!);
+  const { items, addItem } = useInvoiceItems(id!);
   const { artworks } = useArtworks();
 
   // ---- Modal state --------------------------------------------------------
@@ -35,13 +35,6 @@ export function InvoiceDetailPage() {
     const created = await addItem(data);
     if (created) {
       setShowAddItem(false);
-      await refetchInvoice();
-    }
-  }
-
-  async function handleRemoveItem(itemId: string) {
-    const success = await removeItem(itemId);
-    if (success) {
       await refetchInvoice();
     }
   }
@@ -136,11 +129,9 @@ export function InvoiceDetailPage() {
         contactName={contactName}
         galleryName={galleryName}
         items={items}
-        itemsLoading={itemsLoading}
         onEdit={() => setShowEditModal(true)}
         onDelete={handleDelete}
         onAddItem={() => setShowAddItem(true)}
-        onRemoveItem={handleRemoveItem}
       />
 
       {/* Related Tasks */}
@@ -158,8 +149,8 @@ export function InvoiceDetailPage() {
         <InvoiceItemForm
           invoiceId={id!}
           artworks={artworks}
-          onSubmit={handleAddItem}
           onCancel={() => setShowAddItem(false)}
+          onSubmit={handleAddItem}
         />
       </Modal>
 
@@ -171,10 +162,8 @@ export function InvoiceDetailPage() {
         size="2xl"
       >
         <InvoiceForm
-          invoiceNumber={invoice.invoice_number}
-          initialData={invoice}
+          invoice={invoice}
           onSubmit={handleEdit}
-          onCancel={() => setShowEditModal(false)}
           loading={editLoading}
         />
       </Modal>

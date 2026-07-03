@@ -110,7 +110,7 @@ export function SupplyPlanningPage() {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie data={data.statusBreakdown} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={100}
-                    label={(e) => `${e.status} (${e.count})`}>
+                    label={(e) => { const d = e as { status?: string; count?: number }; return `${d.status} (${d.count})`; }}>
                     {data.statusBreakdown.map((s, i) => (
                       <Cell key={i} fill={STATUS_COLORS[s.status] || COLORS[i % COLORS.length]} />
                     ))}

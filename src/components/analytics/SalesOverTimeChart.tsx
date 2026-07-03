@@ -84,7 +84,7 @@ export function SalesOverTimeChart({ data }: SalesOverTimeChartProps) {
               allowDecimals={false}
             />
             <Tooltip
-              formatter={(value: number, name: string) => {
+              formatter={(value: number = 0, name: string = '') => {
                 if (name === 'Revenue') return currencyFormatter(value);
                 return value;
               }}

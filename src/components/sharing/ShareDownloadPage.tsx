@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import type { ImageType } from '../../types/database';
 import { useShareLink } from '../../hooks/useShareLinks';
 import { supabase } from '../../lib/supabase';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -256,7 +257,7 @@ function ArtworkCard({
             .from('artwork_images')
             .select('id, image_type')
             .eq('artwork_id', artworkId)
-            .in('image_type', imageTypes),
+            .in('image_type', imageTypes as ImageType[]),
         ]);
 
         if (cancelled) return;

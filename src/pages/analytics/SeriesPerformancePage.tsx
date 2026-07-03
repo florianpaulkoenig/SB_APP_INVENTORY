@@ -57,7 +57,7 @@ export function SeriesPerformancePage() {
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
               <YAxis dataKey="series" type="category" tick={{ fontSize: 11 }} width={120} />
-              <Tooltip formatter={(v: number) => formatCurrency(v, 'CHF')} />
+              <Tooltip formatter={(v: number = 0) => formatCurrency(v, 'CHF')} />
               <Bar dataKey="totalRevenue" name="Revenue" fill="#1a1a2e" radius={[0, 4, 4, 0]}>
                 {data.series.slice(0, 12).map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -79,7 +79,7 @@ export function SeriesPerformancePage() {
               <YAxis dataKey="avgPrice" name="Avg Price" tick={{ fontSize: 12 }}
                 tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
               <ZAxis dataKey="totalProduced" range={[50, 400]} name="Produced" />
-              <Tooltip formatter={(value: number, name: string) =>
+              <Tooltip formatter={(value: number = 0, name: string = '') =>
                 name === 'Avg Price' ? formatCurrency(value, 'CHF') : `${value}${name === 'Sell-Through' ? '%' : ''}`
               } />
               <Scatter data={bubbleData}>

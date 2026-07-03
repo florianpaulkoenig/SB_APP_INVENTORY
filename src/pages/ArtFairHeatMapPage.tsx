@@ -286,7 +286,7 @@ export function ArtFairHeatMapPage() {
                   <XAxis type="number" tickFormatter={(v: number) => formatCurrency(v, 'CHF')} />
                   <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 12 }} />
                   <Tooltip
-                    formatter={(value: number) => [formatCurrency(value, 'CHF'), 'Revenue']}
+                    formatter={(value: number = 0) => [formatCurrency(value, 'CHF'), 'Revenue']}
                   />
                   <Bar dataKey="revenue" fill="#c9a96e" radius={[0, 4, 4, 0]} />
                 </BarChart>

@@ -4,7 +4,7 @@ import { useDeliveries } from '../hooks/useDeliveries';
 import { useDocumentNumber } from '../hooks/useDocumentNumber';
 import { DeliveryForm } from '../components/deliveries/DeliveryForm';
 import { Button } from '../components/ui/Button';
-import type { DeliveryInsert } from '../types/database';
+import type { DeliveryInsert, DeliveryUpdate } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Page
@@ -33,13 +33,13 @@ export function DeliveryCreatePage() {
 
   // ---- Submit handler -----------------------------------------------------
 
-  async function handleSubmit(data: DeliveryInsert) {
+  async function handleSubmit(data: DeliveryInsert | DeliveryUpdate) {
     setLoading(true);
 
     const created = await createDelivery({
       ...data,
       delivery_number: deliveryNumber || data.delivery_number,
-    });
+    } as DeliveryInsert);
 
     setLoading(false);
 
@@ -87,9 +87,7 @@ export function DeliveryCreatePage() {
       {/* Form */}
       <div className="mx-auto max-w-2xl rounded-lg border border-primary-100 bg-white p-6">
         <DeliveryForm
-          deliveryNumber={deliveryNumber}
           onSubmit={handleSubmit}
-          onCancel={() => navigate('/deliveries')}
           loading={loading}
         />
       </div>

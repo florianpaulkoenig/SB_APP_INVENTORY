@@ -391,7 +391,7 @@ export function ArtworkForm({
             label="Color"
             options={[...ARTWORK_COLORS.map((c) => ({ value: c.value, label: c.label }))]}
             value={color}
-            onChange={(e) => setColor(e.target.value)}
+            onChange={(e) => setColor(e.target.value as 'other' | 'green' | 'red' | 'white' | 'silver' | 'dark_grey')}
           />
         </div>
       </section>

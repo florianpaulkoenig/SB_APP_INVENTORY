@@ -94,7 +94,7 @@ export function GalleryDeliveriesPage() {
                       </Badge>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                      {delivery.items_count ?? '—'}
+                      {delivery.delivery_items?.[0]?.count ?? '—'}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                       {delivery.delivery_date ? formatDate(delivery.delivery_date) : '—'}

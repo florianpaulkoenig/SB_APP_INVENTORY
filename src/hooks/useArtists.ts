@@ -79,6 +79,7 @@ export function useArtists(options: UseArtistsOptions = {}) {
           .in('artist_id', ids);
 
         for (const aw of artworks ?? []) {
+          if (!aw.artist_id) continue;
           const s = statsMap.get(aw.artist_id) ?? { count: 0, purchase: 0, estimated: 0 };
           s.count += 1;
           s.purchase += aw.purchase_price ?? 0;

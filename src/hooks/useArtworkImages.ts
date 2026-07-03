@@ -58,7 +58,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
           .eq('artwork_id', artworkId)
           .order('created_at', { ascending: true });
 
-        data = fallback.data;
+        data = fallback.data as unknown as typeof data;
         fetchError = fallback.error;
       }
 

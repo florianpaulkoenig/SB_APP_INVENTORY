@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
-import type { DealRow, DealInsert, DealUpdate } from '../types/database';
+import type { DealRow, DealInsert, DealUpdate, DealStage } from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Filter / pagination types
@@ -58,7 +58,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
 
       // Stage filter
       if (filters.stage) {
-        query = query.eq('stage', filters.stage);
+        query = query.eq('stage', filters.stage as DealStage);
       }
 
       // Contact filter

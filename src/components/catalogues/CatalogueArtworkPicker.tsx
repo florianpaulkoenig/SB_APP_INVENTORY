@@ -16,6 +16,7 @@ import {
   ARTWORK_SERIES,
 } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
+import type { ArtworkCategory, ArtworkStatus, ArtworkSeries } from '../../types/database';
 import { getSignedUrl } from '../../lib/signedUrlCache';
 import { sanitizeFilterTerm } from '../../lib/utils';
 
@@ -108,18 +109,18 @@ export function CatalogueArtworkPicker({
     }
 
     if (categoryFilter) {
-      query = query.eq('category', categoryFilter);
-      countQuery = countQuery.eq('category', categoryFilter);
+      query = query.eq('category', categoryFilter as ArtworkCategory);
+      countQuery = countQuery.eq('category', categoryFilter as ArtworkCategory);
     }
 
     if (statusFilter) {
-      query = query.eq('status', statusFilter);
-      countQuery = countQuery.eq('status', statusFilter);
+      query = query.eq('status', statusFilter as ArtworkStatus);
+      countQuery = countQuery.eq('status', statusFilter as ArtworkStatus);
     }
 
     if (seriesFilter) {
-      query = query.eq('series', seriesFilter);
-      countQuery = countQuery.eq('series', seriesFilter);
+      query = query.eq('series', seriesFilter as ArtworkSeries);
+      countQuery = countQuery.eq('series', seriesFilter as ArtworkSeries);
     }
 
     if (galleryFilter) {

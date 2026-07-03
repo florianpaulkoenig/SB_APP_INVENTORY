@@ -32,7 +32,7 @@ export function GeoDistributionChart({ data }: { data: GeoDistributionData }) {
                 <XAxis type="number" tickFormatter={(v: number) => chfFmt.format(v)} tick={{ fill: '#737373', fontSize: 10 }} />
                 <YAxis type="category" dataKey="location" width={80} tick={{ fill: '#737373', fontSize: 11 }} />
                 <Tooltip
-                  formatter={(value: number) => [chfFmt.format(value), 'Revenue']}
+                  formatter={(value: number = 0) => [chfFmt.format(value), 'Revenue']}
                   contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 13 }}
                 />
                 <Bar dataKey="revenue" fill="#c9a96e" radius={[0, 4, 4, 0]} barSize={18} />
@@ -51,7 +51,7 @@ export function GeoDistributionChart({ data }: { data: GeoDistributionData }) {
                 <XAxis type="number" tickFormatter={(v: number) => chfFmt.format(v)} tick={{ fill: '#737373', fontSize: 10 }} />
                 <YAxis type="category" dataKey="location" width={80} tick={{ fill: '#737373', fontSize: 11 }} />
                 <Tooltip
-                  formatter={(value: number) => [chfFmt.format(value), 'Revenue']}
+                  formatter={(value: number = 0) => [chfFmt.format(value), 'Revenue']}
                   contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 13 }}
                 />
                 <Bar dataKey="revenue" fill="#7c9885" radius={[0, 4, 4, 0]} barSize={18} />

@@ -19,6 +19,7 @@ import type {
 
 export interface DeliveryWithJoins extends DeliveryRow {
   galleries?: { name: string } | null;
+  delivery_items?: { count: number }[];
 }
 
 export interface DeliveryItemWithJoins extends DeliveryItemRow {
@@ -70,7 +71,7 @@ export interface UseDeliveriesReturn {
 // Joined select string
 // ---------------------------------------------------------------------------
 
-const DELIVERY_SELECT = `*, galleries(name)`;
+const DELIVERY_SELECT = `*, galleries(name), delivery_items(count)`;
 
 const DELIVERY_ITEM_SELECT = `*, artworks(title, reference_code, medium, category, year, height, width, depth, dimension_unit, weight, status)`;
 

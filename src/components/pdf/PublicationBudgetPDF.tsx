@@ -119,7 +119,7 @@ export function PublicationBudgetPDF({ budget, items }: PublicationBudgetPDFProp
         />
 
         {/* Summary */}
-        <View style={{ marginBottom: 20, backgroundColor: PDF_COLORS.surface, padding: 12, borderWidth: 0.5, borderColor: PDF_COLORS.border }}>
+        <View style={{ marginBottom: 20, backgroundColor: PDF_COLORS.backgroundLight, padding: 12, borderWidth: 0.5, borderColor: PDF_COLORS.border }}>
           <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>Summary</Text>
           <SummaryRow label="Total Revenue" value={fmt(totalRevenue, defaultCurrency)} />
           <SummaryRow label="Total Costs"   value={fmt(totalCosts,   defaultCurrency)} />
@@ -152,7 +152,7 @@ export function PublicationBudgetPDF({ budget, items }: PublicationBudgetPDFProp
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <View style={styles.footerRow}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Text style={styles.footerText}>NOA Contemporary — {budget.name}</Text>
             <Text style={styles.footerText}>Exported {today()}</Text>
             <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />

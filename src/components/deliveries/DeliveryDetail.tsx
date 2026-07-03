@@ -7,8 +7,9 @@ import { Select } from '../ui/Select';
 import { DeliveryReceiptPDF } from '../pdf/DeliveryReceiptPDF';
 import { formatDate, formatDimensions, downloadBlob } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
+import type { DeliveryItemWithJoins } from '../../hooks/useDeliveries';
 import { resizeToDataUrl } from '../../lib/pdfImageUtils';
-import type { DeliveryRow, DeliveryItemRow, DeliveryStatus } from '../../types/database';
+import type { DeliveryRow, DeliveryStatus } from '../../types/database';
 
 // ---------------------------------------------------------------------------
 // Language options for PDF download
@@ -29,21 +30,7 @@ const LANGUAGE_OPTIONS = [
 export interface DeliveryDetailProps {
   delivery: DeliveryRow;
   galleryName?: string | null;
-  items: Array<
-    DeliveryItemRow & {
-      artworks?: {
-        title: string;
-        reference_code: string;
-        medium: string | null;
-        category: string | null;
-        status: string;
-        height?: number | null;
-        width?: number | null;
-        depth?: number | null;
-        dimension_unit?: string;
-      };
-    }
-  >;
+  items: DeliveryItemWithJoins[];
   onEdit: () => void;
   onDelete: () => Promise<void>;
   onAddItem: () => void;

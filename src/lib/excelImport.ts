@@ -167,6 +167,56 @@ const NUMERIC_FIELDS = new Set([
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB limit to mitigate DoS via large files
 const MAX_ROWS = 5000; // Prevent excessive memory usage
 
+function parseCsvText(text: string): ParseResult {
+  // Minimal RFC-4180 parser: quoted fields, embedded commas/newlines, "" escapes
+  const grid: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += ch;
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      row.push(field); field = '';
+    } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); field = '';
+      grid.push(row); row = [];
+    } else {
+      field += ch;
+    }
+  }
+  if (field !== '' || row.length > 0) { row.push(field); grid.push(row); }
+
+  const nonEmpty = grid.filter((r) => r.some((c) => c.trim() !== ''));
+  if (nonEmpty.length === 0) throw new Error('The spreadsheet is empty');
+
+  const headers = nonEmpty[0].map((h) => h.trim());
+  if (nonEmpty.length - 1 > MAX_ROWS) {
+    throw new Error(`Too many rows (${nonEmpty.length - 1}). Maximum allowed is ${MAX_ROWS}.`);
+  }
+
+  const rows: ExcelRow[] = nonEmpty.slice(1).map((cells) => {
+    const rowData: ExcelRow = {};
+    headers.forEach((header, idx) => {
+      const raw = (cells[idx] ?? '').trim();
+      if (raw === '') { rowData[header] = null; return; }
+      const num = Number(raw);
+      rowData[header] = raw !== '' && !Number.isNaN(num) && /^-?[\d.]+$/.test(raw) ? num : raw;
+    });
+    return rowData;
+  });
+
+  if (rows.length === 0) throw new Error('The spreadsheet is empty');
+  return { headers, rows };
+}
+
 export async function parseExcelFile(file: File): Promise<ParseResult> {
   if (file.size > MAX_FILE_SIZE) {
     throw new Error(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed is 10 MB.`);
@@ -179,10 +229,11 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
   const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
 
   if (ext === '.csv') {
-    await workbook.csv.load(buffer);
-  } else {
-    await workbook.xlsx.load(buffer);
+    // exceljs has no browser CSV loader (workbook.csv.load doesn't exist at
+    // runtime) — parse the text directly
+    return parseCsvText(new TextDecoder().decode(buffer));
   }
+  await workbook.xlsx.load(buffer);
 
   const worksheet = workbook.worksheets[0];
   if (!worksheet || worksheet.rowCount === 0) {
@@ -214,7 +265,7 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
       const val = cell.value;
       if (val === null || val === undefined) {
         rowData[header] = null;
-      } else if (typeof val === 'object' && 'result' in (val as Record<string, unknown>)) {
+      } else if (typeof val === 'object' && 'result' in (val as unknown as Record<string, unknown>)) {
         // Formula cell — use the computed result
         rowData[header] = (val as { result: string | number }).result;
       } else if (val instanceof Date) {

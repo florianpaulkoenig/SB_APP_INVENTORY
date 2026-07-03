@@ -3449,7 +3449,28 @@ export type Database = {
     // otherwise postgrest-js treats every column as a computed field and
     // star-selects collapse to {}
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      generate_document_number: {
+        Args: { p_user_id: string; p_prefix: string };
+        Returns: string;
+      };
+      record_viewing_room_view: {
+        Args: { p_viewing_room_id: string; p_viewer_ip: string | null };
+        Returns: undefined;
+      };
+      get_share_link_by_token: {
+        Args: { p_token: string };
+        Returns: ShareLinkRow[];
+      };
+      increment_share_link_download: {
+        Args: { p_token: string };
+        Returns: undefined;
+      };
+      get_viewing_room_by_slug: {
+        Args: { p_slug: string };
+        Returns: ViewingRoomRow[];
+      };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };

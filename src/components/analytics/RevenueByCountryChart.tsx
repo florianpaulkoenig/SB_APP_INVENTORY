@@ -72,7 +72,7 @@ export function RevenueByCountryChart({ data }: RevenueByCountryChartProps) {
               tickFormatter={currencyFormatter}
             />
             <Tooltip
-              formatter={(value: number) => [currencyFormatter(value), 'Revenue']}
+              formatter={(value: number = 0) => [currencyFormatter(value), 'Revenue']}
               contentStyle={{
                 backgroundColor: '#fff',
                 border: '1px solid #e5e5e5',

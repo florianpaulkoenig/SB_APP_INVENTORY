@@ -290,7 +290,7 @@ export function GalleryDashboardPage() {
                   tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
-                  formatter={(value: number) => [formatCurrency(value, 'CHF'), 'Revenue']}
+                  formatter={(value: number = 0) => [formatCurrency(value, 'CHF'), 'Revenue']}
                   labelStyle={{ color: '#171717', fontWeight: 600 }}
                   contentStyle={{ borderRadius: 8, border: '1px solid #e5e5e5' }}
                 />
@@ -332,7 +332,7 @@ export function GalleryDashboardPage() {
                   width={80}
                 />
                 <Tooltip
-                  formatter={(value: number) => [formatCurrency(value, 'CHF'), 'Revenue']}
+                  formatter={(value: number = 0) => [formatCurrency(value, 'CHF'), 'Revenue']}
                   contentStyle={{ borderRadius: 8, border: '1px solid #e5e5e5' }}
                 />
                 <Bar dataKey="revenue" fill="#c9a96e" radius={[0, 4, 4, 0]} />
@@ -402,7 +402,7 @@ export function GalleryDashboardPage() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number, name: string) => [value, name]}
+                  formatter={(value: number = 0, name: string = '') => [value, name]}
                   contentStyle={{ borderRadius: 8, border: '1px solid #e5e5e5' }}
                 />
                 <Legend

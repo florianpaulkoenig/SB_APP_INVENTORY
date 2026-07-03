@@ -85,7 +85,7 @@ export function GalleryPerformanceChart({ data }: GalleryPerformanceChartProps) 
               tickLine={false}
             />
             <Tooltip
-              formatter={(value: number, name: string) => {
+              formatter={(value: number = 0, name: string = '') => {
                 if (name === 'Revenue') return currencyFormatter(value);
                 return value;
               }}
