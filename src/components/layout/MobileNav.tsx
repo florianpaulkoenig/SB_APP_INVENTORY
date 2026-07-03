@@ -3,289 +3,22 @@ import { NavLink } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 import { usePortfolio, type Portfolio } from '../../contexts/PortfolioContext';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-type UserRole = 'admin' | 'gallery' | 'collector';
-
-interface NavItem {
-  label: string;
-  to: string;
-  icon: React.ReactNode;
-  roles: UserRole[];
-}
-
-interface NavSection {
-  title: string;
-  items: NavItem[];
-}
+import type { UserRole } from '../../types/database';
+import {
+  bottomItems,
+  filterByRole,
+  getNavSections,
+  PORTFOLIO_LABELS,
+} from './navConfig';
 
 interface MobileNavProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-// ---------------------------------------------------------------------------
-// Icons (same as Sidebar, 20x20 stroke)
-// ---------------------------------------------------------------------------
-const icons = {
-  dashboard: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1h-3.5v-4.5a1 1 0 00-1-1h-3a1 1 0 00-1 1V18H4a1 1 0 01-1-1V9.5z" />
-    </svg>
-  ),
-  artworks: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z" />
-    </svg>
-  ),
-  galleries: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16V6a2 2 0 012-2h10a2 2 0 012 2v10M3 16h14M3 16l2-6h10l2 6M7 8v2M10 8v2M13 8v2" />
-    </svg>
-  ),
-  production: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10 3.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM10 7v3l2 1.5" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 3.5L16 2M5.5 3.5L4 2" />
-    </svg>
-  ),
-  certificate: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10 1.5l2 2.5h3a1 1 0 011 1v4.5l2 2.5-2 2.5V19l-3-1.5L10 19l-3 1.5L4 19v-4.5L2 12l2-2.5V5a1 1 0 011-1h3l2-2.5z" />
-    </svg>
-  ),
-  delivery: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2 4h10v8H2zM12 7h3.5l2.5 3v4h-4M2 14h0M6.5 14a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM14.5 14a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" />
-    </svg>
-  ),
-  packingList: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 3h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zM3 7h14M8 3v4" />
-    </svg>
-  ),
-  catalogue: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 2.5h12a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5H4A1.5 1.5 0 012.5 16V4A1.5 1.5 0 014 2.5zM6 2.5v15M9.5 6.5h4M9.5 9.5h4M9.5 12.5h2" />
-    </svg>
-  ),
-  contacts: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M7 9a3 3 0 100-6 3 3 0 000 6zM2 17v-1a4 4 0 014-4h2a4 4 0 014 4v1M13 6a3 3 0 110 6M15 17v-1a4 4 0 00-2-3.5" />
-    </svg>
-  ),
-  deals: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10 2v16M6 6l-3 3 3 3M14 8l3 3-3 3M3 10h4M13 10h4" />
-    </svg>
-  ),
-  invoices: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 2h10a1 1 0 011 1v14l-2.5-1.5L11 17l-2.5-1.5L6 17l-2.5-1.5L4 17V3a1 1 0 011-1zM7 6h6M7 9h6M7 12h4" />
-    </svg>
-  ),
-  sales: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-4 3 2 4-5 3 3M17 8v5h-5" />
-    </svg>
-  ),
-  viewingRooms: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10 4C5.5 4 2 10 2 10s3.5 6 8 6 8-6 8-6-3.5-6-8-6z" />
-      <circle cx="10" cy="10" r="2.5" />
-    </svg>
-  ),
-  imageSharing: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14 11l4-4-4-4M18 7H8a4 4 0 00-4 4v5" />
-    </svg>
-  ),
-  analytics: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 17V10M7 17V7M11 17V11M15 17V5M19 17V8" />
-    </svg>
-  ),
-  exhibition: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2 17h16M4 17V7l6-4 6 4v10M8 17v-4h4v4M8 9h4" />
-    </svg>
-  ),
-  anlage: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2 16l4-5 3 3 4-6 3 4" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2 4h16M2 4v12a1 1 0 001 1h14a1 1 0 001-1V4" />
-    </svg>
-  ),
-  liquidity: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10 2v1M10 17v1M4.22 4.22l.7.7M15.08 15.08l.7.7M2 10h1M17 10h1M4.22 15.78l.7-.7M15.08 4.92l.7-.7" />
-      <circle cx="10" cy="10" r="4" />
-    </svg>
-  ),
-  emailLog: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h14a1 1 0 011 1v9a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2 5l8 6 8-6" />
-    </svg>
-  ),
-  settings: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16.2 12.2a1.2 1.2 0 00.2 1.3l.04.04a1.44 1.44 0 11-2.04 2.04l-.04-.04a1.2 1.2 0 00-1.3-.2 1.2 1.2 0 00-.72 1.1v.12a1.44 1.44 0 01-2.88 0v-.06a1.2 1.2 0 00-.78-1.1 1.2 1.2 0 00-1.3.2l-.04.04a1.44 1.44 0 11-2.04-2.04l-.04-.04a1.2 1.2 0 00.2-1.3 1.2 1.2 0 00-1.1-.72h-.12a1.44 1.44 0 010-2.88h.06a1.2 1.2 0 001.1-.78 1.2 1.2 0 00-.2-1.3l-.04-.04a1.44 1.44 0 112.04-2.04l.04.04a1.2 1.2 0 001.3.2h.06a1.2 1.2 0 00.72-1.1v-.12a1.44 1.44 0 012.88 0v.06a1.2 1.2 0 00.72 1.1 1.2 1.2 0 001.3-.2l.04-.04a1.44 1.44 0 112.04 2.04l-.04.04a1.2 1.2 0 00-.2 1.3v.06a1.2 1.2 0 001.1.72h.12a1.44 1.44 0 010 2.88h-.06a1.2 1.2 0 00-1.1.72z" />
-    </svg>
-  ),
-  artists: (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10 10a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM3 18v-1.5a5 5 0 015-5h4a5 5 0 015 5V18" />
-    </svg>
-  ),
-};
-
-// ---------------------------------------------------------------------------
-// Navigation definition (mirrors Sidebar)
-// ---------------------------------------------------------------------------
-const navSections: NavSection[] = [
-  {
-    title: 'INVENTORY',
-    items: [
-      { label: 'Dashboard', to: '/', icon: icons.dashboard, roles: ['admin', 'gallery', 'collector'] },
-      { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin', 'gallery', 'collector'] },
-      { label: 'Galleries', to: '/galleries', icon: icons.galleries, roles: ['admin'] },
-      { label: 'Production Orders', to: '/production', icon: icons.production, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'DOCUMENTS',
-    items: [
-      { label: 'Certificates', to: '/certificates', icon: icons.certificate, roles: ['admin', 'collector'] },
-      { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin', 'gallery'] },
-      { label: 'Packing Lists', to: '/packing-lists', icon: icons.packingList, roles: ['admin'] },
-      { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'SALES & CRM',
-    items: [
-      { label: 'Contacts', to: '/contacts', icon: icons.contacts, roles: ['admin'] },
-      { label: 'Deals', to: '/deals', icon: icons.deals, roles: ['admin'] },
-      { label: 'Invoices', to: '/invoices', icon: icons.invoices, roles: ['admin'] },
-      { label: 'Sales', to: '/sales', icon: icons.sales, roles: ['admin', 'gallery'] },
-    ],
-  },
-  {
-    title: 'SHARING',
-    items: [
-      { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin', 'gallery'] },
-      { label: 'Image Sharing', to: '/image-sharing', icon: icons.imageSharing, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'ANALYTICS',
-    items: [
-      { label: 'Analytics', to: '/analytics', icon: icons.analytics, roles: ['admin'] },
-    ],
-  },
-];
-
-// NOA Collection navigation
-const noaNavSections: NavSection[] = [
-  {
-    title: 'INVENTORY',
-    items: [
-      { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin'] },
-      { label: 'Artists', to: '/artists', icon: icons.artists, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'DOCUMENTS',
-    items: [
-      { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin'] },
-      { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'SHARING',
-    items: [
-      { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin'] },
-      { label: 'Image Sharing', to: '/sharing', icon: icons.imageSharing, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'EXHIBITIONS',
-    items: [
-      { label: 'Exhibitions', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'ANLAGEN',
-    items: [
-      { label: 'Anlageverwaltung', to: '/anlageverwaltung', icon: icons.anlage, roles: ['admin'] },
-    ],
-  },
-];
-
-const noaCurationNavSections: NavSection[] = [
-  {
-    title: 'INVENTORY',
-    items: [
-      { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin'] },
-      { label: 'Artists', to: '/artists', icon: icons.artists, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'DOCUMENTS',
-    items: [
-      { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'EXHIBITIONS',
-    items: [
-      { label: 'Exhibitions', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
-    ],
-  },
-];
-
-const noaLiquidityNavSections: NavSection[] = [
-  {
-    title: 'FINANCE',
-    items: [
-      { label: 'Liquidity', to: '/liquidity', icon: icons.liquidity, roles: ['admin'] },
-    ],
-  },
-];
-
-const bottomItems: NavItem[] = [
-  { label: 'Email Log', to: '/email-log', icon: icons.emailLog, roles: ['admin'] },
-  { label: 'Settings', to: '/settings', icon: icons.settings, roles: ['admin'] },
-];
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-function getCurrentRole(): UserRole {
-  return 'admin';
-}
-
-function filterByRole(items: NavItem[], role: UserRole): NavItem[] {
-  return items.filter((item) => item.roles.includes(role));
-}
-
-// ---------------------------------------------------------------------------
-// MobileNav component
-// ---------------------------------------------------------------------------
-const PORTFOLIO_LABELS: Record<Portfolio, string> = {
-  simon_berger: 'Simon Berger',
-  noa_collection: 'NOA Collection',
-  noa_curation: 'NOA Curation',
-  noa_liquidity: 'NOA Liquidity',
-};
-
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {
-  const { user, signOut } = useAuth();
-  const role = getCurrentRole();
+  const { user, signOut, role: authRole } = useAuth();
+  const role: UserRole = authRole ?? 'admin';
   const { portfolio, setPortfolio } = usePortfolio();
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
@@ -329,7 +62,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
             <div>
               <span className="font-display text-base font-bold text-primary-900">NOA contemporary</span>
               <p className="text-[10px] font-medium tracking-widest text-primary-400">
-                {PORTFOLIO_LABELS[portfolio].toUpperCase()}
+                {PORTFOLIO_LABELS[portfolio].name.toUpperCase()}
               </p>
             </div>
             <svg className="h-3 w-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -365,7 +98,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
                       'h-2 w-2 rounded-full',
                       p === portfolio ? 'bg-accent' : 'bg-primary-200',
                     )} />
-                    <p className="text-xs font-semibold">{PORTFOLIO_LABELS[p]}</p>
+                    <p className="text-xs font-semibold">{PORTFOLIO_LABELS[p].name}</p>
                   </button>
                 ))}
               </div>
@@ -375,7 +108,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
-          {(portfolio === 'noa_collection' ? noaNavSections : portfolio === 'noa_curation' ? noaCurationNavSections : portfolio === 'noa_liquidity' ? noaLiquidityNavSections : navSections).map((section) => {
+          {getNavSections(portfolio).map((section) => {
             const visibleItems = filterByRole(section.items, role);
             if (visibleItems.length === 0) return null;
 
@@ -462,3 +195,4 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
     </>
   );
 }
+

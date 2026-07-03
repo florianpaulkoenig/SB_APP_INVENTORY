@@ -82,10 +82,13 @@ export function ArtworkFilters({
 
   return (
     <div className="space-y-3">
-      {/* Primary row: search + status + gallery + toggles */}
-      <div className="flex items-center gap-3">
+      {/* Primary row. On mobile this stacks into three tiers (search /
+          status+gallery / controls) so nothing overflows or gets squished;
+          on ≥sm the grouping wrappers collapse (sm:contents) back into a
+          single inline row identical to the original desktop layout. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         {onSearchChange && (
-          <div className="flex-1 max-w-xs">
+          <div className="w-full sm:w-auto sm:flex-1 sm:max-w-xs">
             <SearchInput
               value={search ?? ''}
               onChange={onSearchChange}
@@ -95,25 +98,28 @@ export function ArtworkFilters({
           </div>
         )}
 
-        <div className="w-44 shrink-0">
-          <Select
-            options={[
-              { value: '', label: 'All Statuses' },
-              ...ARTWORK_STATUSES.map((s) => ({ value: s.value, label: s.label })),
-            ]}
-            value={filters.status ?? ''}
-            onChange={(e) => update('status', e.target.value)}
-          />
+        <div className="flex gap-3 sm:contents">
+          <div className="min-w-0 flex-1 sm:w-44 sm:flex-none">
+            <Select
+              options={[
+                { value: '', label: 'All Statuses' },
+                ...ARTWORK_STATUSES.map((s) => ({ value: s.value, label: s.label })),
+              ]}
+              value={filters.status ?? ''}
+              onChange={(e) => update('status', e.target.value)}
+            />
+          </div>
+
+          <div className="min-w-0 flex-1 sm:w-56 sm:flex-none">
+            <GallerySelect
+              label=""
+              value={filters.gallery_id ?? null}
+              onChange={(id) => update('gallery_id', id ?? '')}
+            />
+          </div>
         </div>
 
-        <div className="w-56 shrink-0">
-          <GallerySelect
-            label=""
-            value={filters.gallery_id ?? null}
-            onChange={(id) => update('gallery_id', id ?? '')}
-          />
-        </div>
-
+        <div className="flex items-center gap-3 sm:contents">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -171,6 +177,7 @@ export function ArtworkFilters({
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* Secondary filters — collapsible */}
