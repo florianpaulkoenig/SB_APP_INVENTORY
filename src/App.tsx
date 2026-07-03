@@ -201,17 +201,11 @@ const GalleryDashboardPage = React.lazy(() =>
 const GalleryArtworksPage = React.lazy(() =>
   import('./pages/GalleryArtworksPage').then((m) => ({ default: m.GalleryArtworksPage })),
 );
-const CollectorDashboardPage = React.lazy(() =>
-  import('./pages/CollectorDashboardPage').then((m) => ({ default: m.CollectorDashboardPage })),
-);
 const CollectorCertificatesPage = React.lazy(() =>
   import('./pages/CollectorCertificatesPage').then((m) => ({ default: m.CollectorCertificatesPage })),
 );
 const AnalyticsPage = React.lazy(() =>
   import('./pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })),
-);
-const ActivityLogPage = React.lazy(() =>
-  import('./pages/ActivityLogPage').then((m) => ({ default: m.ActivityLogPage })),
 );
 const SettingsPage = React.lazy(() =>
   import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
@@ -252,9 +246,6 @@ const EnquiriesPage = React.lazy(() =>
 const EnquiryDetailPage = React.lazy(() =>
   import('./pages/EnquiryDetailPage').then((m) => ({ default: m.EnquiryDetailPage })),
 );
-const DemandHeatMapPage = React.lazy(() =>
-  import('./pages/DemandHeatMapPage').then((m) => ({ default: m.DemandHeatMapPage })),
-);
 const AnnualSchedulePage = React.lazy(() =>
   import('./pages/AnnualSchedulePage').then((m) => ({ default: m.AnnualSchedulePage })),
 );
@@ -270,12 +261,6 @@ const ExhibitionsPage = React.lazy(() =>
 const ExhibitionDetailPage = React.lazy(() =>
   import('./pages/ExhibitionDetailPage').then((m) => ({ default: m.ExhibitionDetailPage })),
 );
-const BulkOperationsPage = React.lazy(() =>
-  import('./pages/BulkOperationsPage').then((m) => ({ default: m.BulkOperationsPage })),
-);
-const ArtFairHeatMapPage = React.lazy(() =>
-  import('./pages/ArtFairHeatMapPage').then((m) => ({ default: m.ArtFairHeatMapPage })),
-);
 const PriceManagementPage = React.lazy(() =>
   import('./pages/PriceManagementPage').then((m) => ({ default: m.PriceManagementPage })),
 );
@@ -285,38 +270,8 @@ const AuctionTrackingPage = React.lazy(() =>
 const GalleryAvailableWorksPage = React.lazy(() =>
   import('./pages/GalleryAvailableWorksPage').then((m) => ({ default: m.GalleryAvailableWorksPage })),
 );
-const InventoryHealthPage = React.lazy(() =>
-  import('./pages/analytics/InventoryHealthPage').then((m) => ({ default: m.InventoryHealthPage })),
-);
-const GalleryPerformancePage = React.lazy(() =>
-  import('./pages/analytics/GalleryPerformancePage').then((m) => ({ default: m.GalleryPerformancePage })),
-);
-const RevenueOverviewPage = React.lazy(() =>
-  import('./pages/analytics/RevenueOverviewPage').then((m) => ({ default: m.RevenueOverviewPage })),
-);
 const MonthlyReportPage = React.lazy(() =>
   import('./pages/analytics/MonthlyReportPage').then((m) => ({ default: m.MonthlyReportPage })),
-);
-const DemandVelocityPage = React.lazy(() =>
-  import('./pages/analytics/DemandVelocityPage').then((m) => ({ default: m.DemandVelocityPage })),
-);
-const PriceLadderPage = React.lazy(() =>
-  import('./pages/analytics/PriceLadderPage').then((m) => ({ default: m.PriceLadderPage })),
-);
-const CollectorIntelligencePage = React.lazy(() =>
-  import('./pages/analytics/CollectorIntelligencePage').then((m) => ({ default: m.CollectorIntelligencePage })),
-);
-const SeriesPerformancePage = React.lazy(() =>
-  import('./pages/analytics/SeriesPerformancePage').then((m) => ({ default: m.SeriesPerformancePage })),
-);
-const ExhibitionImpactPage = React.lazy(() =>
-  import('./pages/analytics/ExhibitionImpactPage').then((m) => ({ default: m.ExhibitionImpactPage })),
-);
-const SupplyPlanningPage = React.lazy(() =>
-  import('./pages/analytics/SupplyPlanningPage').then((m) => ({ default: m.SupplyPlanningPage })),
-);
-const CareerTrajectoryPage = React.lazy(() =>
-  import('./pages/analytics/CareerTrajectoryPage').then((m) => ({ default: m.CareerTrajectoryPage })),
 );
 const StrategicIntelligencePage = React.lazy(() =>
   import('./pages/analytics/StrategicIntelligencePage').then((m) => ({ default: m.StrategicIntelligencePage })),
@@ -761,111 +716,11 @@ const router = createBrowserRouter(
           ),
         },
         {
-          path: 'analytics/inventory-health',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><InventoryHealthPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'analytics/revenue-overview',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><RevenueOverviewPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
           path: 'analytics/monthly-report',
           element: (
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <RouteErrorBoundary><MonthlyReportPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'analytics/gallery-performance',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><GalleryPerformancePage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'analytics/demand-velocity',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><DemandVelocityPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'analytics/price-ladder',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><PriceLadderPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'analytics/collector-intelligence',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><CollectorIntelligencePage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'analytics/series-performance',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><SeriesPerformancePage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'analytics/exhibition-impact',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><ExhibitionImpactPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'analytics/supply-planning',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><SupplyPlanningPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'analytics/career-trajectory',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><CareerTrajectoryPage />
               </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
@@ -892,14 +747,6 @@ const router = createBrowserRouter(
         },
 
         // Bulk Operations (admin only)
-        {
-          path: 'bulk-operations',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <LazyPage><BulkOperationsPage /></LazyPage>
-            </RoleGuard>
-          ),
-        },
 
         // ---- Consolidated Analytics Dashboards ----
         {
@@ -1015,16 +862,6 @@ const router = createBrowserRouter(
         },
 
         // Activity Log (admin only)
-        {
-          path: 'activity-log',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><ActivityLogPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
 
         // Settings (admin only)
         {
@@ -1074,16 +911,6 @@ const router = createBrowserRouter(
 
         // Market Intelligence (admin only)
         {
-          path: 'demand-map',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><DemandHeatMapPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
           path: 'schedule',
           element: (
             <RoleGuard allowed={['admin']}>
@@ -1129,16 +956,6 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <RouteErrorBoundary><ExhibitionDetailPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'art-fair-map',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><ArtFairHeatMapPage />
               </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
@@ -1289,16 +1106,6 @@ const router = createBrowserRouter(
         },
 
         // Collector portal routes (admin + collector)
-        {
-          path: 'collector/dashboard',
-          element: (
-            <RoleGuard allowed={['admin', 'collector']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><CollectorDashboardPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
         {
           path: 'collector/certificates',
           element: (

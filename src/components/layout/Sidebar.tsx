@@ -26,6 +26,12 @@ interface SidebarProps {
 }
 
 // ---------------------------------------------------------------------------
+// Hidden nav entries (2026-07-03 feature audit): Deals, Image Sharing,
+// Auction Tracking, Sale Requests, Media Library, CV Editor, News and
+// Email Log were removed from the sidebar because their tables have zero
+// rows (features never used). The routes still exist — re-add a nav entry
+// here when a feature goes into real use.
+
 // Icons (Heroicons-style, 20x20, stroke)
 // ---------------------------------------------------------------------------
 const icons = {
@@ -243,7 +249,6 @@ const navSections: NavSection[] = [
     title: 'SALES & CRM',
     items: [
       { label: 'Contacts', to: '/contacts', icon: icons.contacts, roles: ['admin'] },
-      { label: 'Deals', to: '/deals', icon: icons.deals, roles: ['admin'] },
       { label: 'Enquiries', to: '/enquiries', icon: icons.enquiry, roles: ['admin'] },
       { label: 'Invoices', to: '/invoices', icon: icons.invoices, roles: ['admin'] },
       { label: 'Sales', to: '/sales', icon: icons.sales, roles: ['admin', 'gallery'] },
@@ -253,7 +258,6 @@ const navSections: NavSection[] = [
     title: 'SHARING',
     items: [
       { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin', 'gallery'] },
-      { label: 'Image Sharing', to: '/sharing', icon: icons.imageSharing, roles: ['admin'] },
     ],
   },
   {
@@ -294,7 +298,6 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Exhibitions & Fairs', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
       { label: 'Price Management', to: '/price-management', icon: icons.priceTag, roles: ['admin'] },
-      { label: 'Auction Tracking', to: '/auction-tracking', icon: icons.auction, roles: ['admin'] },
     ],
   },
   {
@@ -312,10 +315,6 @@ const navSections: NavSection[] = [
   {
     title: 'ADMIN',
     items: [
-      { label: 'Sale Requests', to: '/admin/sale-requests', icon: icons.sales, roles: ['admin'] },
-      { label: 'Media Library', to: '/media', icon: icons.imageSharing, roles: ['admin'] },
-      { label: 'CV Editor', to: '/cv', icon: icons.catalogue, roles: ['admin'] },
-      { label: 'News', to: '/news', icon: icons.emailLog, roles: ['admin'] },
     ],
   },
 ];
@@ -341,7 +340,6 @@ const noaNavSections: NavSection[] = [
     title: 'SHARING',
     items: [
       { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin'] },
-      { label: 'Image Sharing', to: '/sharing', icon: icons.imageSharing, roles: ['admin'] },
     ],
   },
   {
@@ -403,7 +401,7 @@ const noaLiquidityNavSections: NavSection[] = [
 ];
 
 const bottomItems: NavItem[] = [
-  { label: 'Email Log', to: '/email-log', icon: icons.emailLog, roles: ['admin'] },
+  { label: 'Users', to: '/users', icon: icons.contacts, roles: ['admin'] },
   { label: 'Settings', to: '/settings', icon: icons.settings, roles: ['admin'] },
 ];
 

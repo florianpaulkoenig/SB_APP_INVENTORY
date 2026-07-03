@@ -86,7 +86,7 @@ export function ConsignmentAgingChart({ data }: { data: InventoryAgingData }) {
                     <td className="py-1.5">
                       <button
                         type="button"
-                        onClick={() => navigate('/forwardings')}
+                        onClick={() => navigate('/forwarding')}
                         className="text-accent hover:text-accent-dark text-xs font-medium"
                       >
                         Forward

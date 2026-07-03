@@ -241,7 +241,7 @@ export function EnquiryDetailPage() {
                 </Button>
               )}
               {enquiry.converted_deal_id && (
-                <Button variant="secondary" onClick={() => navigate(`/deals/${enquiry.converted_deal_id}`)}>
+                <Button variant="secondary" onClick={() => navigate('/deals')}>
                   View Deal
                 </Button>
               )}
