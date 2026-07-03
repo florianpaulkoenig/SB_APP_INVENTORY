@@ -12,17 +12,21 @@
 // If a manually uploaded "<name>_lowres.<ext>" sibling exists, it is used as
 // the resize source to avoid downloading the multi-MB original.
 //
-// Usage:
+// Usage (from the repo root):
 //   npm i --no-save sharp             # one-off native dep, not committed
-//   SUPABASE_URL=https://<project>.supabase.co \
 //   SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
 //   node scripts/backfill-thumbnails.mjs [--dry-run] [--min-size 5]
+//
+// The project URL is read from .env (VITE_SUPABASE_URL) unless SUPABASE_URL
+// is set. The service-role key lives in the Supabase dashboard under
+// Settings → API — never in .env or the repo.
 //
 // Flags:
 //   --dry-run        list what would be generated, don't download/upload
 //   --min-size <MB>  only process originals at least this large (default 5)
 // ---------------------------------------------------------------------------
 
+import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 
 const BUCKET = 'artwork-images';
@@ -41,10 +45,23 @@ if (!Number.isFinite(minSizeMB) || minSizeMB < 0) {
 }
 const minSizeBytes = minSizeMB * 1024 * 1024;
 
-const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
+function urlFromDotenv() {
+  try {
+    const match = readFileSync('.env', 'utf8').match(/^\s*(?:VITE_)?SUPABASE_URL\s*=\s*(\S+)/m);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? urlFromDotenv();
+if (!url) {
+  console.error('Set SUPABASE_URL, or run from the repo root so .env provides VITE_SUPABASE_URL');
+  process.exit(1);
+}
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !serviceKey) {
-  console.error('Set SUPABASE_URL (or VITE_SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY');
+if (!serviceKey) {
+  console.error('Set SUPABASE_SERVICE_ROLE_KEY (Supabase dashboard → Settings → API)');
   process.exit(1);
 }
 
