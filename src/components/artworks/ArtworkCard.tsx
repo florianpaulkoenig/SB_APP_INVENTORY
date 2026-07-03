@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '../ui/Card';
 import { StatusBadge } from '../ui/StatusBadge';
 import { formatCurrency, formatDimensions, truncate } from '../../lib/utils';
+import { getOriginalUrlForFailedTransform } from '../../lib/signedUrlCache';
 import type { ArtworkRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -22,9 +23,24 @@ export interface ArtworkCardProps {
 
 export const ArtworkCard = React.memo(function ArtworkCard({ artwork, imageUrl, onClick, onDownloadCertificate, downloadingCertificate }: ArtworkCardProps) {
   const [imgError, setImgError] = React.useState(false);
+  // Untransformed original, used when the server-side thumbnail transform
+  // fails (Supabase rejects source images over ~25MB with a 400).
+  const [fallbackSrc, setFallbackSrc] = React.useState<string | null>(null);
 
   // Reset error state when imageUrl changes
-  React.useEffect(() => { setImgError(false); }, [imageUrl]);
+  React.useEffect(() => { setImgError(false); setFallbackSrc(null); }, [imageUrl]);
+
+  const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    if (fallbackSrc) {
+      // The original failed too — give up and show the placeholder
+      setImgError(true);
+      return;
+    }
+    void getOriginalUrlForFailedTransform(e.currentTarget.src).then((url) => {
+      if (url) setFallbackSrc(url);
+      else setImgError(true);
+    });
+  };
   const dimensions = formatDimensions(
     artwork.height,
     artwork.width,
@@ -52,11 +68,11 @@ export const ArtworkCard = React.memo(function ArtworkCard({ artwork, imageUrl, 
       <div className="relative w-full bg-primary-100" style={{ aspectRatio }}>
         {imageUrl && !imgError ? (
           <img
-            src={imageUrl}
+            src={fallbackSrc ?? imageUrl}
             alt={artwork.title}
             loading="lazy"
             className="h-full w-full object-contain"
-            onError={() => setImgError(true)}
+            onError={handleImgError}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">

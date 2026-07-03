@@ -49,6 +49,24 @@ const failedTransformPaths = new Set<string>();
 
 const RENDER_URL_RE = /\/storage\/v1\/render\/image\/sign\/([^/]+)\/([^?]+)/;
 
+/**
+ * Resolve the untransformed original for a transform URL whose image failed
+ * to load. Marks the path so future getSignedUrl(s) calls skip the transform.
+ * Returns null if the URL isn't a transform URL or signing fails.
+ *
+ * Components with their own <img> onError handling (e.g. ArtworkCard) must
+ * call this and swap the src themselves — a React error handler that hides
+ * the image on the first error would otherwise win over the global listener.
+ */
+export async function getOriginalUrlForFailedTransform(failedSrc: string): Promise<string | null> {
+  const match = RENDER_URL_RE.exec(failedSrc);
+  if (!match) return null;
+  const bucket = match[1];
+  const path = decodeURIComponent(match[2]);
+  failedTransformPaths.add(`${bucket}:${path}`);
+  return getSignedUrl(bucket, path);
+}
+
 function installTransformFallbackListener() {
   if (typeof window === 'undefined') return;
   window.addEventListener(
@@ -57,14 +75,10 @@ function installTransformFallbackListener() {
       const img = event.target;
       if (!(img instanceof HTMLImageElement)) return;
       if (img.dataset.transformFallback === '1') return;
-      const match = RENDER_URL_RE.exec(img.src);
-      if (!match) return;
+      if (!RENDER_URL_RE.test(img.src)) return;
       img.dataset.transformFallback = '1';
-      const bucket = match[1];
-      const path = decodeURIComponent(match[2]);
-      failedTransformPaths.add(`${bucket}:${path}`);
-      void getSignedUrl(bucket, path).then((url) => {
-        if (url) img.src = url;
+      void getOriginalUrlForFailedTransform(img.src).then((url) => {
+        if (url && img.isConnected) img.src = url;
       });
     },
     true, // error events don't bubble; capture catches them from any <img>
