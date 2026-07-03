@@ -167,7 +167,7 @@ const NUMERIC_FIELDS = new Set([
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB limit to mitigate DoS via large files
 const MAX_ROWS = 5000; // Prevent excessive memory usage
 
-function parseCsvText(text: string): ParseResult {
+export function parseCsvText(text: string): ParseResult {
   // Minimal RFC-4180 parser: quoted fields, embedded commas/newlines, "" escapes
   const grid: string[][] = [];
   let row: string[] = [];
