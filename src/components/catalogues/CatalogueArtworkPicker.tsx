@@ -155,10 +155,13 @@ export function CatalogueArtworkPicker({
 
       if (images && images.length > 0) {
         const urlPromises = images.map(async (img) => {
+          // 'contain' (not 'cover'): the renderer treats cover with only a
+          // width as "crop a width-px strip", not "scale down" — the card's
+          // CSS object-cover does the framing instead
           const url = await getSignedUrl('artwork-images', img.storage_path, 600, {
-            width: 200,
+            width: 400,
             quality: 60,
-            resize: 'cover',
+            resize: 'contain',
           });
           return {
             artworkId: img.artwork_id,
