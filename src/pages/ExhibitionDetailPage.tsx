@@ -276,7 +276,7 @@ export function ExhibitionDetailPage() {
         .update({ pdf_settings: settings } as never)
         .eq('id', id);
     }, 800);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [id, pdfSettingsReady, dossierLanguage, dossierCreatedBy, descTextTitle, pdfTitleFloorPlans, pdfTitleVenuePhotos, pdfTitleExhibitionPhotos, pdfTitleProductionOrders]);
 
   // ---- Debounced description_text save ------------------------------------

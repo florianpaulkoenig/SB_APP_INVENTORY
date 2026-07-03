@@ -70,7 +70,7 @@ export function useArtists(options: UseArtistsOptions = {}) {
 
       // Fetch artwork stats per artist in one query
       const ids = rows.map((a) => a.id);
-      let statsMap = new Map<string, { count: number; purchase: number; estimated: number }>();
+      const statsMap = new Map<string, { count: number; purchase: number; estimated: number }>();
 
       if (ids.length > 0) {
         const { data: artworks } = await supabase
@@ -155,9 +155,24 @@ export function useArtists(options: UseArtistsOptions = {}) {
 // useArtist — single artist by id with full artwork list
 // ---------------------------------------------------------------------------
 
+export interface ArtistArtworkRow {
+  id: string;
+  title: string;
+  year: number | null;
+  category: string | null;
+  medium: string | null;
+  purchase_price: number | null;
+  purchase_currency: string | null;
+  purchase_date: string | null;
+  estimated_value: number | null;
+  estimated_value_date: string | null;
+  status: string;
+  inventory_number: string;
+}
+
 export function useArtist(id: string) {
   const [artist, setArtist] = useState<ArtistRow | null>(null);
-  const [artworks, setArtworks] = useState<any[]>([]);
+  const [artworks, setArtworks] = useState<ArtistArtworkRow[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 

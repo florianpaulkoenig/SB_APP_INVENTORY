@@ -43,7 +43,7 @@ export function useCollectionArtworks(collectionId: string | null) {
         .eq('collection_id', collectionId)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      const mapped: CollectionArtworkEntry[] = (data ?? []).map((row: any) => ({
+      const mapped: CollectionArtworkEntry[] = ((data ?? []) as unknown as Record<string, never>[]).map((row) => ({
         id: row.id,
         artwork_id: row.artwork_id,
         acquisition_year: row.acquisition_year,

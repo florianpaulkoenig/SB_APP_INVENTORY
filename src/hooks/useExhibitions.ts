@@ -100,7 +100,7 @@ export function useExhibitions() {
 /* ------------------------------------------------------------------ */
 
 export function useArtworkExhibitions(artworkId: string) {
-  const [exhibitions, setExhibitions] = useState<any[]>([]);
+  const [exhibitions, setExhibitions] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 

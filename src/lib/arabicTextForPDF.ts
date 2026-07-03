@@ -10,6 +10,7 @@
 // segment can be rendered with the correct font (AnzianoPro / NotoSansArabic).
 // ---------------------------------------------------------------------------
 
+/* eslint-disable @typescript-eslint/ban-ts-comment, no-irregular-whitespace */
 // @ts-ignore — no types for arabic-reshaper
 import * as reshape from 'arabic-reshaper';
 // @ts-ignore — bidi-js exports a factory function

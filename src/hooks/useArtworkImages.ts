@@ -42,7 +42,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
     setLoading(true);
 
     try {
-      let query = supabase
+      const query = supabase
         .from('artwork_images')
         .select('id, artwork_id, user_id, storage_path, file_name, image_type, is_primary, sort_order, created_at')
         .eq('artwork_id', artworkId)

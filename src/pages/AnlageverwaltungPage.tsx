@@ -101,7 +101,7 @@ export function AnlageverwaltungPage() {
 
       // Fetch primary images
       const ids = rows.map((r) => r.id);
-      let imageMap = new Map<string, string>();
+      const imageMap = new Map<string, string>();
 
       if (ids.length > 0) {
         const { data: imgData } = await supabase

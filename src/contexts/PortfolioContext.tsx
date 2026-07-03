@@ -13,7 +13,7 @@ function loadPortfolio(): Portfolio {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'simon_berger' || stored === 'noa_collection' || stored === 'noa_curation' || stored === 'noa_liquidity') return stored;
-  } catch {}
+  } catch { /* localStorage unavailable */ }
   return 'simon_berger';
 }
 
@@ -24,7 +24,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
 
   const setPortfolio = useCallback((p: Portfolio) => {
     setPortfolioState(p);
-    try { localStorage.setItem(STORAGE_KEY, p); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, p); } catch { /* localStorage unavailable */ }
   }, []);
 
   return (

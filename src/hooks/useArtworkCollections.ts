@@ -4,7 +4,7 @@ import { useToast } from '../components/ui/Toast';
 import type { PublicCollectionInsert } from '../types/database';
 
 export function useArtworkCollections(artworkId: string) {
-  const [collections, setCollections] = useState<any[]>([]);
+  const [collections, setCollections] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 

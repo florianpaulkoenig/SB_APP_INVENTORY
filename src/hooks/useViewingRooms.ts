@@ -320,7 +320,7 @@ export function usePublicViewingRoom(slug: string) {
         }
 
         // Build PublicArtwork list preserving artwork_ids order
-        const artworkMap = new Map<string, any>();
+        const artworkMap = new Map<string, Record<string, unknown>>();
         for (const aw of artworkData ?? []) {
           artworkMap.set(aw.id, aw);
         }

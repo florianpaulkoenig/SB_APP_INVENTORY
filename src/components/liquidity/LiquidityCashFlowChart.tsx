@@ -43,13 +43,13 @@ interface ChartPoint {
 // Custom tooltip
 // ---------------------------------------------------------------------------
 
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { name?: string; value?: number; color?: string; dataKey?: string; payload?: Record<string, unknown> }[]; label?: string }) {
   if (!active || !payload?.length) return null;
 
   return (
     <div className="rounded-lg border border-primary-100 bg-white px-3 py-2.5 shadow-lg text-xs">
       <p className="mb-2 font-semibold text-primary-700">{label}</p>
-      {payload.map((p: any) => (
+      {payload.map((p) => (
         <div key={p.dataKey} className="flex items-center gap-2 mb-0.5">
           <span className="inline-block h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: p.color }} />
           <span className="text-primary-500">{p.name}:</span>
@@ -66,9 +66,9 @@ function CustomTooltip({ active, payload, label }: any) {
 // Dot renderer for Ist-Saldo (only draw where value is non-null)
 // ---------------------------------------------------------------------------
 
-function IstSaldoDot(props: any) {
+function IstSaldoDot(props: { cx?: number; cy?: number; payload?: Record<string, unknown> }) {
   const { cx, cy, payload } = props;
-  if (payload.istSaldo == null) return null;
+  if (payload?.istSaldo == null) return null;
   return (
     <circle
       cx={cx} cy={cy} r={5}
@@ -77,9 +77,9 @@ function IstSaldoDot(props: any) {
   );
 }
 
-function IstSaldoActiveDot(props: any) {
+function IstSaldoActiveDot(props: { cx?: number; cy?: number; payload?: Record<string, unknown> }) {
   const { cx, cy, payload } = props;
-  if (payload.istSaldo == null) return null;
+  if (payload?.istSaldo == null) return null;
   return (
     <circle
       cx={cx} cy={cy} r={7}

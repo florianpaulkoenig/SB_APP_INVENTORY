@@ -172,6 +172,15 @@ export function MediaLibraryPage() {
     }
   }, []);
 
+  function resetTextForm() {
+    setTextTitle('');
+    setTextContent('');
+    setTextCredit('');
+    setTextSourceUrl('');
+    setTextCategory('press');
+    setTextDescription('');
+  }
+
   const handleUpload = useCallback(async () => {
     if (!uploadFile || !uploadTitle || !uploadCategory) return;
     setUploading(true);
@@ -203,15 +212,6 @@ export function MediaLibraryPage() {
       resetTextForm();
     }
   }, [textTitle, textContent, textCategory, textCredit, textSourceUrl, textDescription, createTextEntry]);
-
-  function resetTextForm() {
-    setTextTitle('');
-    setTextContent('');
-    setTextCredit('');
-    setTextSourceUrl('');
-    setTextCategory('press');
-    setTextDescription('');
-  }
 
   function resetFileForm() {
     setUploadFile(null);

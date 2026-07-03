@@ -228,7 +228,7 @@ export function ProductionOrdersPage() {
     categories: Record<string, number>;
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const galleryStats = useMemo<GalleryStat[]>(() => {
     const map: Record<string, GalleryStat> = {};
     for (const o of activeOrders) {
