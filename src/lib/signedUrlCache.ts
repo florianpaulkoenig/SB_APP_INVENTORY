@@ -39,20 +39,112 @@ export const THUMBNAIL_TRANSFORM: ImageTransform = {
 // ---------------------------------------------------------------------------
 // Transform fallback — Supabase's image renderer rejects very large source
 // files (400 "The source image file is too large to process"), so a
-// transformed thumbnail URL can sign successfully yet fail to load. A
-// capture-phase error listener swaps any failed render/image <img> for a
-// freshly signed untransformed original, and the path is remembered so
-// later requests skip the transform entirely.
+// transformed thumbnail URL can sign successfully yet fail to load.
+//
+// Loading the multi-MB original instead is far too heavy for grid views
+// (several 100MP images saturate the connection and starve the app's API
+// calls). Instead, the first failure downloads the original ONCE, downscales
+// it in the browser and persists the result to storage under thumbs/<path>.
+// Every later request — this session and all future ones — serves that small
+// persisted thumbnail.
 // ---------------------------------------------------------------------------
 
 const failedTransformPaths = new Set<string>();
 
+const THUMB_PREFIX = 'thumbs/';
+const THUMB_WIDTH = 1200;
+const THUMB_JPEG_QUALITY = 0.8;
+
 const RENDER_URL_RE = /\/storage\/v1\/render\/image\/sign\/([^/]+)\/([^?]+)/;
 
+const inFlightFallbacks = new Map<string, Promise<string | null>>();
+
+// Serialize downloads/decodes of large originals — running several 100MP
+// decodes in parallel freezes the tab and starves other requests.
+let fallbackQueue: Promise<unknown> = Promise.resolve();
+function enqueueFallback<T>(fn: () => Promise<T>): Promise<T> {
+  const run = fallbackQueue.then(fn, fn);
+  fallbackQueue = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
+
+async function generateAndPersistThumb(bucket: string, path: string): Promise<string | null> {
+  const thumbPath = THUMB_PREFIX + path;
+
+  // A previous session (or another device) may already have persisted it
+  const persisted = await getSignedUrl(bucket, thumbPath);
+  if (persisted) return persisted;
+
+  const originalUrl = await getSignedUrl(bucket, path);
+  if (!originalUrl) return null;
+
+  try {
+    const resp = await fetch(originalUrl);
+    if (!resp.ok) return null;
+    const blob = await resp.blob();
+
+    const bitmap = await createImageBitmap(blob, {
+      resizeWidth: THUMB_WIDTH,
+      resizeQuality: 'high',
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      bitmap.close();
+      return originalUrl;
+    }
+    // JPEG has no alpha — flatten transparency onto white, not black
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
+
+    const thumbBlob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', THUMB_JPEG_QUALITY),
+    );
+    if (!thumbBlob) return originalUrl;
+
+    // Persist for all future sessions — best effort (gallery users lack
+    // upload rights on the bucket; they still get the local object URL)
+    void supabase.storage
+      .from(bucket)
+      .upload(thumbPath, thumbBlob, { contentType: 'image/jpeg' })
+      .then(({ error }) => {
+        if (error) console.warn('Failed to persist generated thumbnail:', error.message);
+      });
+
+    // Serve the local copy immediately; cache under the thumb path so
+    // getSignedUrl reuses it until the uploaded object takes over
+    const objectUrl = URL.createObjectURL(thumbBlob);
+    cache.set(cacheKey(bucket, thumbPath), { url: objectUrl, expiresAt: Date.now() + CACHE_TTL_MS });
+    return objectUrl;
+  } catch {
+    // Decode/downscale failed — the full original is the last resort
+    return originalUrl;
+  }
+}
+
+function getFallbackThumbUrl(bucket: string, path: string): Promise<string | null> {
+  const key = `${bucket}:${path}`;
+  const inFlight = inFlightFallbacks.get(key);
+  if (inFlight) return inFlight;
+  const promise = enqueueFallback(() => generateAndPersistThumb(bucket, path)).finally(() =>
+    inFlightFallbacks.delete(key),
+  );
+  inFlightFallbacks.set(key, promise);
+  return promise;
+}
+
 /**
- * Resolve the untransformed original for a transform URL whose image failed
- * to load. Marks the path so future getSignedUrl(s) calls skip the transform.
- * Returns null if the URL isn't a transform URL or signing fails.
+ * Resolve a lightweight replacement for a transform URL whose image failed
+ * to load: a persisted (or freshly generated) downscaled thumbnail, falling
+ * back to the original only if downscaling isn't possible. Marks the path so
+ * future getSignedUrl(s) calls skip the broken transform.
  *
  * Components with their own <img> onError handling (e.g. ArtworkCard) must
  * call this and swap the src themselves — a React error handler that hides
@@ -64,7 +156,7 @@ export async function getOriginalUrlForFailedTransform(failedSrc: string): Promi
   const bucket = match[1];
   const path = decodeURIComponent(match[2]);
   failedTransformPaths.add(`${bucket}:${path}`);
-  return getSignedUrl(bucket, path);
+  return getFallbackThumbUrl(bucket, path);
 }
 
 function installTransformFallbackListener() {
@@ -133,8 +225,11 @@ export async function getSignedUrl(
   expiresIn = DEFAULT_EXPIRY_SECONDS,
   transform?: ImageTransform,
 ): Promise<string | null> {
-  // Skip transforms known to fail for this source image
+  // For source images the renderer can't transform, serve the persisted
+  // downscaled thumbnail instead; only if none exists yet, sign the original.
   if (transform && failedTransformPaths.has(`${bucket}:${path}`)) {
+    const thumbUrl = await getSignedUrl(bucket, THUMB_PREFIX + path, expiresIn);
+    if (thumbUrl) return thumbUrl;
     transform = undefined;
   }
 
@@ -179,45 +274,16 @@ export async function getSignedUrls(
   expiresIn = DEFAULT_EXPIRY_SECONDS,
   transform?: ImageTransform,
 ): Promise<Map<string, string>> {
-  const now = Date.now();
   const result = new Map<string, string>();
-  const uncachedPaths: string[] = [];
 
-  const transformFor = (path: string): ImageTransform | undefined =>
-    transform && !failedTransformPaths.has(`${bucket}:${path}`) ? transform : undefined;
-
-  // Check cache first
-  for (const path of paths) {
-    const key = cacheKey(bucket, path, transformFor(path));
-    const cached = cache.get(key);
-    if (cached && cached.expiresAt > now) {
-      result.set(path, cached.url);
-    } else {
-      uncachedPaths.push(path);
-    }
-  }
-
-  // Fetch uncached URLs in parallel
-  if (uncachedPaths.length > 0) {
-    const responses = await Promise.all(
-      uncachedPaths.map((p) => {
-        const t = transformFor(p);
-        return supabase.storage.from(bucket).createSignedUrl(p, expiresIn, t ? { transform: t } : undefined);
-      }),
-    );
-
-    const ttl = Math.min(expiresIn * 800, CACHE_TTL_MS);
-    for (let i = 0; i < uncachedPaths.length; i++) {
-      const url = responses[i]?.data?.signedUrl;
-      if (url) {
-        const path = uncachedPaths[i];
-        result.set(path, url);
-        cache.set(cacheKey(bucket, path, transformFor(path)), { url, expiresAt: now + ttl });
-      }
-    }
-
-    if (uncachedPaths.length > 0) ensureCleanup();
-  }
+  // Delegate per path so every path shares the cache and the
+  // failed-transform handling in getSignedUrl.
+  await Promise.all(
+    paths.map(async (path) => {
+      const url = await getSignedUrl(bucket, path, expiresIn, transform);
+      if (url) result.set(path, url);
+    }),
+  );
 
   return result;
 }
@@ -227,10 +293,14 @@ export async function getSignedUrls(
  */
 export function invalidateSignedUrl(bucket: string, path: string): void {
   // Delete the base key plus every transform variant (keys are prefixed
-  // with "bucket:path" and optionally suffixed with "@…").
-  const prefix = `${bucket}:${path}`;
+  // with "bucket:path" and optionally suffixed with "@…"), the persisted
+  // thumbnail, and the failed-transform mark.
+  failedTransformPaths.delete(`${bucket}:${path}`);
+  const prefixes = [`${bucket}:${path}`, `${bucket}:${THUMB_PREFIX}${path}`];
   for (const key of cache.keys()) {
-    if (key === prefix || key.startsWith(`${prefix}@`)) cache.delete(key);
+    for (const prefix of prefixes) {
+      if (key === prefix || key.startsWith(`${prefix}@`)) cache.delete(key);
+    }
   }
 }
 
