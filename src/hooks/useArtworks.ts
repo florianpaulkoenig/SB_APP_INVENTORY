@@ -266,8 +266,6 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         await fetchArtworks();
         return created as ArtworkRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create artwork';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -294,8 +292,6 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         await fetchArtworks();
         return updated as ArtworkRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update artwork';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -332,8 +328,6 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         await fetchArtworks();
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete artwork';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

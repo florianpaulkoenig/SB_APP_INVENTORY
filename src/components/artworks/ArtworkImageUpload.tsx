@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef } from 'react';
-import { Button } from '../ui/Button';
 import { IMAGE_TYPES } from '../../lib/constants';
 import type { ImageType } from '../../types/database';
 

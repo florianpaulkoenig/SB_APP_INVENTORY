@@ -78,7 +78,6 @@ export function useUserProfiles() {
 
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update profile';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
@@ -103,7 +102,6 @@ export function useUserProfiles() {
 
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete profile';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
@@ -147,7 +145,6 @@ export function useUserProfiles() {
 
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to invite user';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

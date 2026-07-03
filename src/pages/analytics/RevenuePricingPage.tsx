@@ -744,7 +744,7 @@ function RevenueTrendsTab() {
               <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, 'CHF').replace('.00', '')} />
               <Tooltip formatter={(value: number, name: string) => [formatCurrency(value, 'CHF'), name]} labelFormatter={(label) => `Year ${label}`} />
               <Legend />
-              {activeGalleryNames.map((name, i) => {
+              {activeGalleryNames.map((name) => {
                 const gIdx = sortedGalleries.findIndex(([, val]) => val.name === name);
                 return (
                   <Line key={name} type="monotone" dataKey={name} stroke={GALLERY_COLORS[gIdx % GALLERY_COLORS.length]} strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />

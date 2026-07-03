@@ -10,7 +10,6 @@ import { Link } from 'react-router-dom';
 import { useGalleryPerformanceAnalytics } from '../../hooks/useGalleryPerformanceAnalytics';
 import type { GalleryPerformanceRow } from '../../hooks/useGalleryPerformanceAnalytics';
 import { useCommissionTransparency } from '../../hooks/useCommissionTransparency';
-import type { GalleryCommissionSummary } from '../../hooks/useCommissionTransparency';
 import { useConsignmentRisk } from '../../hooks/useConsignmentRisk';
 import type { ConsignmentRiskItem } from '../../hooks/useConsignmentRisk';
 import { computePaymentVelocity } from '../../lib/analytics/invoicePaymentVelocity';

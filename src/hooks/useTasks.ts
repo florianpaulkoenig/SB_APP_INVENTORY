@@ -156,8 +156,6 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
 
         return created as TaskRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create task';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }

@@ -6,7 +6,7 @@
 import { Document, Page, View, Text, Image } from '@react-pdf/renderer';
 import styles, { PDF_COLORS } from './PDFStyles';
 import { PDFHeader } from './PDFHeader';
-import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
+import { ARTIST_NAME } from '../../lib/constants';
 import type { OverviewOrder } from './ProductionOrdersOverviewPDF';
 
 // ---------------------------------------------------------------------------

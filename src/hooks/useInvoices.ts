@@ -164,8 +164,6 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
 
         return created as InvoiceRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create invoice';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -192,8 +190,6 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
 
         return updated as InvoiceRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update invoice';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -218,8 +214,6 @@ export function useInvoices(options: UseInvoicesOptions = {}): UseInvoicesReturn
 
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete invoice';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
@@ -394,8 +388,6 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
 
         if (updateError) throw updateError;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update invoice total';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       }
     },
@@ -480,8 +472,6 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
 
         return created as InvoiceItemRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to add invoice item';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -520,8 +510,6 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
 
         return updated as InvoiceItemRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update invoice item';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -558,8 +546,6 @@ export function useInvoiceItems(invoiceId: string): UseInvoiceItemsReturn {
 
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to remove invoice item';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

@@ -109,8 +109,6 @@ export function useActivityLog(filters: ActivityLogFilters = {}): UseActivityLog
         await fetchEntries();
         return created as ActivityLogRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to log activity';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }

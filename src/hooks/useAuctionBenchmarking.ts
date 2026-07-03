@@ -47,7 +47,6 @@ export function useAuctionBenchmarking(
       (a) => a.result === 'sold' || a.result === 'bought_in',
     );
     const sold = completed.filter((a) => a.result === 'sold');
-    const boughtIn = completed.filter((a) => a.result === 'bought_in');
 
     // ---- Per-auction-house stats ------------------------------------------
     const houseMap = new Map<

@@ -876,7 +876,6 @@ export function CataloguePDF({
 
       for (const aw of group.artworks) {
         const rows = buildDetailRows(aw, t, visibility, dimensionUnit, weightUnit);
-        const sectionLabel = dividerMode !== 'none' ? group.label : undefined;
 
         allPages.push(
           <Page key={`aw-${aw.reference_code}`} size="A4" style={s.artworkPage}>

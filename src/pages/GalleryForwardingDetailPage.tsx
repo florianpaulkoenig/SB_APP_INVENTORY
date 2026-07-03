@@ -28,7 +28,6 @@ export function GalleryForwardingDetailPage() {
   const { forwarding: forwardingOrder, loading, refetch: refetchOrder } = useGalleryForwarding(id!);
   const {
     items,
-    loading: itemsLoading,
     addItem,
     removeItem,
     refetch: refetchItems,

@@ -153,8 +153,6 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
 
         return created as SaleRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create sale';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -181,8 +179,6 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
 
         return updated as SaleRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update sale';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -207,8 +203,6 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
 
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete sale';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

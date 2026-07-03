@@ -145,7 +145,7 @@ export function computeRFMScore(
 /** Assess churn risk from RFM scores and recency. */
 export function assessChurnRisk(
   rfm: RFMScore,
-  daysSinceLastPurchase: number,
+  _daysSinceLastPurchase: number,
 ): 'low' | 'medium' | 'high' | 'critical' {
   if (rfm.recency <= 1) return 'critical';
   if (rfm.recency === 2 || (rfm.recency === 3 && rfm.frequency <= 2)) return 'high';

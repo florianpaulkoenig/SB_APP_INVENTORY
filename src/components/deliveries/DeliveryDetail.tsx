@@ -6,7 +6,6 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { DeliveryReceiptPDF } from '../pdf/DeliveryReceiptPDF';
 import { formatDate, formatDimensions, downloadBlob } from '../../lib/utils';
-import { DELIVERY_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
 import { resizeToDataUrl } from '../../lib/pdfImageUtils';
 import type { DeliveryRow, DeliveryItemRow, DeliveryStatus } from '../../types/database';

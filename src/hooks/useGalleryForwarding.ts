@@ -7,8 +7,6 @@ import type {
   GalleryForwardingOrderInsert,
   GalleryForwardingOrderUpdate,
   GalleryForwardingItemRow,
-  GalleryForwardingItemInsert,
-  GalleryForwardingItemUpdate,
   ForwardingStatus,
 } from '../types/database';
 
@@ -148,7 +146,6 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
 
         return created as GalleryForwardingOrderRow;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to create forwarding order';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -175,7 +172,6 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
 
         return updated as GalleryForwardingOrderRow;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to update forwarding order';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -200,7 +196,6 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
 
         return true;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to delete forwarding order';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
@@ -363,7 +358,6 @@ export function useGalleryForwardingItems(forwardingOrderId: string): UseGallery
 
         return created as GalleryForwardingItemRow;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to add artwork';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -388,7 +382,6 @@ export function useGalleryForwardingItems(forwardingOrderId: string): UseGallery
 
         return true;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to remove artwork';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

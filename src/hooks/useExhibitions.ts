@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { usePortfolio } from '../contexts/PortfolioContext';
-import type { ExhibitionRow, ExhibitionInsert, ExhibitionUpdate, ExhibitionArtworkInsert } from '../types/database';
+import type { ExhibitionRow, ExhibitionInsert, ExhibitionUpdate } from '../types/database';
 
 export function useExhibitions() {
   const [exhibitions, setExhibitions] = useState<ExhibitionRow[]>([]);
@@ -56,7 +56,6 @@ export function useExhibitions() {
       await fetch();
       return created as ExhibitionRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create exhibition';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -75,7 +74,6 @@ export function useExhibitions() {
       await fetch();
       return updated as ExhibitionRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update exhibition';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -89,7 +87,6 @@ export function useExhibitions() {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete exhibition';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
@@ -118,7 +115,6 @@ export function useArtworkExhibitions(artworkId: string) {
       if (fetchError) throw fetchError;
       setExhibitions(data ?? []);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch artwork exhibitions';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
@@ -164,7 +160,6 @@ export function useArtworkExhibitions(artworkId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to link artwork to exhibition';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
@@ -181,7 +176,6 @@ export function useArtworkExhibitions(artworkId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to unlink artwork from exhibition';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

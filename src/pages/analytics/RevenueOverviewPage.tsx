@@ -12,7 +12,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { formatCurrency } from '../../lib/utils';
 import {
   ComposedChart, Bar, Line, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, BarChart, Cell, ReferenceLine,
+  ResponsiveContainer, BarChart, Cell,
 } from 'recharts';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -768,7 +768,7 @@ export function RevenueOverviewPage() {
                 labelFormatter={(label) => `Year ${label}`}
               />
               <Legend />
-              {activeGalleryNames.map((name, i) => {
+              {activeGalleryNames.map((name) => {
                 const gIdx = sortedGalleries.findIndex(([, val]) => val.name === name);
                 return (
                   <Line

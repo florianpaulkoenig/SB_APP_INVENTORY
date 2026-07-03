@@ -61,7 +61,6 @@ export function useExpenses(artworkId?: string) {
       await fetch();
       return created as ExpenseRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create expense';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -80,7 +79,6 @@ export function useExpenses(artworkId?: string) {
       await fetch();
       return updated as ExpenseRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update expense';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -94,7 +92,6 @@ export function useExpenses(artworkId?: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete expense';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

@@ -286,7 +286,6 @@ export function PackingListDetail({
   packingList,
   deliveryNumber,
   items,
-  itemsLoading,
   crates,
   onEdit,
   onDelete,

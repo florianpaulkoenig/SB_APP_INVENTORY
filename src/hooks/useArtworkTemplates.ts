@@ -26,7 +26,6 @@ export function useArtworkTemplates() {
       if (error) throw error;
       setTemplates(data ?? []);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to load templates';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
@@ -63,7 +62,6 @@ export function useArtworkTemplates() {
         await fetchTemplates();
         return created as ArtworkTemplateRow;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to create template';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -87,7 +85,6 @@ export function useArtworkTemplates() {
         await fetchTemplates();
         return true;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to update template';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
@@ -111,7 +108,6 @@ export function useArtworkTemplates() {
         await fetchTemplates();
         return true;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to delete template';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

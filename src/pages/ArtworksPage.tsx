@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, createElement, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getSignedUrl } from '../lib/signedUrlCache';
-import { downloadBlob, buildCertificateFilename, formatDimensions, formatCurrency } from '../lib/utils';
+import { downloadBlob, buildCertificateFilename, formatDimensions } from '../lib/utils';
 import { useArtworks } from '../hooks/useArtworks';
 import type { ArtworkFilters as ArtworkFiltersType } from '../hooks/useArtworks';
 import { ArtworkCard } from '../components/artworks/ArtworkCard';
@@ -12,14 +12,11 @@ import { ExcelImporter } from '../components/artworks/ExcelImporter';
 import { ArtworkBulkEditModal } from '../components/artworks/ArtworkBulkEditModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Button } from '../components/ui/Button';
-import { Select } from '../components/ui/Select';
-import { SearchInput } from '../components/ui/SearchInput';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Pagination } from '../components/ui/Pagination';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toast';
-import { formatDate } from '../lib/utils';
 import { usePortfolio } from '../contexts/PortfolioContext';
 
 // ---------------------------------------------------------------------------

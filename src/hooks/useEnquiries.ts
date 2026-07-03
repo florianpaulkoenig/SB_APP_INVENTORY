@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from './useAuth';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
 import type { EnquiryRow, EnquiryInsert, EnquiryUpdate } from '../types/database';

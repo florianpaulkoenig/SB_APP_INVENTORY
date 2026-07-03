@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { getSignedUrls } from '../lib/signedUrlCache';
 import { useToast } from '../components/ui/Toast';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import type { ShareLinkRow, ShareLinkInsert } from '../types/database';
@@ -82,7 +81,6 @@ export function useShareLinks() {
 
       return created as ShareLinkRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create share link';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -104,7 +102,6 @@ export function useShareLinks() {
 
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete share link';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

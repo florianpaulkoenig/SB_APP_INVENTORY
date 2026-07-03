@@ -21,7 +21,6 @@ import {
   MAPPABLE_FIELDS,
   type ExcelRow,
   type ColumnMapping,
-  type ValidationResult,
 } from '../../lib/excelImport';
 
 // ---------------------------------------------------------------------------

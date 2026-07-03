@@ -48,7 +48,6 @@ const MONTH_NAMES = [
 
 // Default 3-way split: 50% gallery / 25% NOA / 25% artist (SB)
 // Matches useRevenueOverview defaults
-const DEFAULT_GALLERY_PCT = 50;
 const DEFAULT_NOA_PCT = 25;
 const DEFAULT_ARTIST_PCT = 25;
 

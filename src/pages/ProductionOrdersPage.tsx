@@ -433,7 +433,7 @@ export function ProductionOrdersPage() {
         );
       }
       if (dateFilteredOrders.length === 0) {
-        toast({ title: 'No Orders', description: 'No orders match the selected date range.', variant: 'destructive' });
+        toast({ title: 'No Orders', description: 'No orders match the selected date range.', variant: 'error' });
         setDownloadingArtist(false);
         return;
       }

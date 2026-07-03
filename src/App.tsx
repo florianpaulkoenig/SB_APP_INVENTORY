@@ -283,9 +283,6 @@ const AuctionTrackingPage = React.lazy(() =>
 const GalleryAvailableWorksPage = React.lazy(() =>
   import('./pages/GalleryAvailableWorksPage').then((m) => ({ default: m.GalleryAvailableWorksPage })),
 );
-const GalleryMarketingPortalPage = React.lazy(() =>
-  import('./pages/gallery/GalleryMarketingPortalPage').then((m) => ({ default: m.GalleryMarketingPortalPage })),
-);
 const InventoryHealthPage = React.lazy(() =>
   import('./pages/analytics/InventoryHealthPage').then((m) => ({ default: m.InventoryHealthPage })),
 );

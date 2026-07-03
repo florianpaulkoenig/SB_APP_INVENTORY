@@ -97,7 +97,6 @@ type Range = typeof RANGE_OPTIONS[number];
 
 export function LiquidityCashFlowChart({
   months,
-  currency = 'CHF',
 }: {
   months: MonthBucket[];
   currency?: string;

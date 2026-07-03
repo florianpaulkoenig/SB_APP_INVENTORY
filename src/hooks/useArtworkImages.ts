@@ -66,8 +66,6 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
       setImages((data as ArtworkImageRow[]) ?? []);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to fetch images';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
@@ -110,7 +108,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
         const storagePath = `${userId}/${artworkId}/${safeName}`;
 
         // Upload file to Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('artwork-images')
           .upload(storagePath, file, { upsert: true });
 
@@ -163,8 +161,6 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
         return created as ArtworkImageRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to upload image';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -221,8 +217,6 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete image';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
@@ -258,8 +252,6 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to set primary image';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }
@@ -280,8 +272,6 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
         return data.signedUrl;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to generate image URL';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }

@@ -136,8 +136,6 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         await fetchContacts();
         return created as ContactRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create contact';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -164,8 +162,6 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         await fetchContacts();
         return updated as ContactRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update contact';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -190,8 +186,6 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         await fetchContacts();
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete contact';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

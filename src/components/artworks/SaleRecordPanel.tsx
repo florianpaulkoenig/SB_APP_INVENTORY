@@ -38,7 +38,7 @@ export function SaleRecordPanel({ artworkId, artworkStatus, onSaleDeleted }: Sal
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [, setDeleting] = useState(false);
   const { toast } = useToast();
 
   // Edit form state

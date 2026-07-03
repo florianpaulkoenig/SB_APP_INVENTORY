@@ -83,7 +83,6 @@ export function PublicCollectionsPage() {
     loading: artworksLoading,
     addArtworks,
     removeArtwork,
-    refetch: refetchArtworks,
   } = useCollectionArtworks(selectedCollection?.id ?? null);
 
   // Keep counts in sync when panel changes

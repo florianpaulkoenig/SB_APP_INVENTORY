@@ -6,7 +6,6 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Select } from '../ui/Select';
 import { GalleryForwardingPDF } from '../pdf/GalleryForwardingPDF';
 import { formatDate, formatDimensions, formatCurrency, downloadBlob } from '../../lib/utils';
-import { FORWARDING_STATUSES } from '../../lib/constants';
 import { supabase } from '../../lib/supabase';
 import { resizeToDataUrl } from '../../lib/pdfImageUtils';
 import type {

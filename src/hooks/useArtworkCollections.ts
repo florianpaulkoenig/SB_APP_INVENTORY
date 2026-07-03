@@ -19,7 +19,6 @@ export function useArtworkCollections(artworkId: string) {
       if (fetchError) throw fetchError;
       setCollections(data ?? []);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch artwork collections';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);
@@ -73,7 +72,6 @@ export function useArtworkCollections(artworkId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to link artwork to collection';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }
@@ -90,7 +88,6 @@ export function useArtworkCollections(artworkId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to unlink artwork from collection';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

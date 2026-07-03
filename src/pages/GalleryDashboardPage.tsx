@@ -61,7 +61,7 @@ export function GalleryDashboardPage() {
   const { toCHF, ready: ratesReady } = useExchangeRates();
 
   const galleryId = profile?.gallery_id;
-  const { data, loading, refresh } = useGalleryAnalytics(galleryId, toCHF, ratesReady);
+  const { data, loading } = useGalleryAnalytics(galleryId, toCHF, ratesReady);
 
   const [galleryName, setGalleryName] = useState<string>('Gallery');
 

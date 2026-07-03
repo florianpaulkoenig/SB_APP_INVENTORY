@@ -5,7 +5,7 @@
 
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import styles, { PDF_COLORS, pdfFont } from './PDFStyles';
-import { PDFHeader, getCertificateTitle } from './PDFHeader';
+import { PDFHeader } from './PDFHeader';
 import { ARTIST_NAME } from '../../lib/constants';
 
 // ---------------------------------------------------------------------------

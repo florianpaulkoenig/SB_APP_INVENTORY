@@ -22,7 +22,6 @@ import { DOC_PREFIXES } from '../lib/constants';
 import type {
   ProductionOrderUpdate,
   ProductionOrderItemInsert,
-  ProductionOrderItemRow,
   ProductionStatus,
   ArtworkStatus,
   Currency,
@@ -45,7 +44,6 @@ export function ProductionOrderDetailPage() {
   const { productionOrder, loading, refetch: refetchOrder } = useProductionOrder(id!);
   const {
     items,
-    loading: itemsLoading,
     addItem,
     updateItem,
     removeItem,

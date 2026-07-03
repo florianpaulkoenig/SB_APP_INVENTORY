@@ -49,7 +49,6 @@ export function useInsuranceRecords(artworkId: string) {
       await fetch();
       return created as InsuranceRecordRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create insurance record';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -68,7 +67,6 @@ export function useInsuranceRecords(artworkId: string) {
       await fetch();
       return updated as InsuranceRecordRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update insurance record';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -82,7 +80,6 @@ export function useInsuranceRecords(artworkId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete insurance record';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

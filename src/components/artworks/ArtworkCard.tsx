@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card } from '../ui/Card';
-import { StatusBadge } from '../ui/StatusBadge';
-import { formatCurrency, formatDimensions, truncate } from '../../lib/utils';
+import { formatCurrency, formatDimensions } from '../../lib/utils';
 import { getOriginalUrlForFailedTransform } from '../../lib/signedUrlCache';
 import type { ArtworkRow } from '../../types/database';
 
@@ -48,10 +47,6 @@ export const ArtworkCard = React.memo(function ArtworkCard({ artwork, imageUrl, 
     artwork.dimension_unit,
     artwork.is_circular,
   );
-
-  const mediumYear = [artwork.medium, artwork.year?.toString()]
-    .filter(Boolean)
-    .join(', ');
 
   const galleryName = (artwork as ArtworkCardProps['artwork']).galleries?.name;
   const detailLine = [artwork.year?.toString(), dimensions].filter(Boolean).join(' · ');

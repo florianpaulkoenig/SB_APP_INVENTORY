@@ -33,9 +33,8 @@ export interface GalleryCardProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export const GalleryCard = memo(function GalleryCard({ gallery, stats, artworkCount, onClick }: GalleryCardProps) {
+export const GalleryCard = memo(function GalleryCard({ gallery, stats, onClick }: GalleryCardProps) {
   const location = [gallery.city, gallery.country].filter(Boolean).join(', ');
-  const total = stats?.total ?? artworkCount ?? 0;
 
   return (
     <Card hoverable onClick={onClick} className="p-5">

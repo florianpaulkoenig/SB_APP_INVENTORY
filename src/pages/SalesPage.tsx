@@ -46,7 +46,7 @@ export function SalesPage() {
   const [galleryFilter, setGalleryFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
 
-  const { sales, loading, refetch, createSale, updateSale, deleteSale } = useSales({
+  const { sales, loading, createSale, updateSale, deleteSale } = useSales({
     filters: {
       search: search || undefined,
       galleryId: galleryFilter || undefined,

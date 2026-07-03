@@ -160,8 +160,6 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
         return created as CertificateRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to create certificate';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -188,8 +186,6 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
         return updated as CertificateRow;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update certificate';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return null;
       }
@@ -214,8 +210,6 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
         return true;
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to delete certificate';
         toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
         return false;
       }

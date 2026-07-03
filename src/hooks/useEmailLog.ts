@@ -96,8 +96,6 @@ export function useEmailLog(options: UseEmailLogOptions = {}): UseEmailLogReturn
       setEmails((data as EmailLogWithJoins[]) ?? []);
       setTotalCount(count ?? 0);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to fetch email log';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
     } finally {
       setLoading(false);

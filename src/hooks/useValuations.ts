@@ -49,7 +49,6 @@ export function useValuations(artworkId: string) {
       await fetch();
       return created as ValuationRow;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create valuation';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return null;
     }
@@ -63,7 +62,6 @@ export function useValuations(artworkId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete valuation';
       toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
       return false;
     }

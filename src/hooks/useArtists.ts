@@ -164,7 +164,7 @@ export function useArtist(id: string) {
     if (!id) { setLoading(false); return; }
     setLoading(true);
     try {
-      const [{ data: artistData, error: e1 }, { data: awData, error: e2 }] = await Promise.all([
+      const [{ data: artistData, error: e1 }, { data: awData }] = await Promise.all([
         supabase.from('artists').select('*').eq('id', id).single(),
         supabase.from('artworks')
           .select('id, title, year, category, medium, purchase_price, purchase_currency, purchase_date, estimated_value, estimated_value_date, status, inventory_number')
