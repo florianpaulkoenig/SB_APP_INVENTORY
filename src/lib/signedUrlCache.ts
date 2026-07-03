@@ -36,6 +36,43 @@ export const THUMBNAIL_TRANSFORM: ImageTransform = {
   resize: 'contain',
 };
 
+// ---------------------------------------------------------------------------
+// Transform fallback — Supabase's image renderer rejects very large source
+// files (400 "The source image file is too large to process"), so a
+// transformed thumbnail URL can sign successfully yet fail to load. A
+// capture-phase error listener swaps any failed render/image <img> for a
+// freshly signed untransformed original, and the path is remembered so
+// later requests skip the transform entirely.
+// ---------------------------------------------------------------------------
+
+const failedTransformPaths = new Set<string>();
+
+const RENDER_URL_RE = /\/storage\/v1\/render\/image\/sign\/([^/]+)\/([^?]+)/;
+
+function installTransformFallbackListener() {
+  if (typeof window === 'undefined') return;
+  window.addEventListener(
+    'error',
+    (event) => {
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement)) return;
+      if (img.dataset.transformFallback === '1') return;
+      const match = RENDER_URL_RE.exec(img.src);
+      if (!match) return;
+      img.dataset.transformFallback = '1';
+      const bucket = match[1];
+      const path = decodeURIComponent(match[2]);
+      failedTransformPaths.add(`${bucket}:${path}`);
+      void getSignedUrl(bucket, path).then((url) => {
+        if (url) img.src = url;
+      });
+    },
+    true, // error events don't bubble; capture catches them from any <img>
+  );
+}
+
+installTransformFallbackListener();
+
 // Periodic cleanup every 2 minutes to avoid unbounded growth
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -82,6 +119,11 @@ export async function getSignedUrl(
   expiresIn = DEFAULT_EXPIRY_SECONDS,
   transform?: ImageTransform,
 ): Promise<string | null> {
+  // Skip transforms known to fail for this source image
+  if (transform && failedTransformPaths.has(`${bucket}:${path}`)) {
+    transform = undefined;
+  }
+
   const key = cacheKey(bucket, path, transform);
   const now = Date.now();
 
@@ -127,9 +169,12 @@ export async function getSignedUrls(
   const result = new Map<string, string>();
   const uncachedPaths: string[] = [];
 
+  const transformFor = (path: string): ImageTransform | undefined =>
+    transform && !failedTransformPaths.has(`${bucket}:${path}`) ? transform : undefined;
+
   // Check cache first
   for (const path of paths) {
-    const key = cacheKey(bucket, path, transform);
+    const key = cacheKey(bucket, path, transformFor(path));
     const cached = cache.get(key);
     if (cached && cached.expiresAt > now) {
       result.set(path, cached.url);
@@ -141,9 +186,10 @@ export async function getSignedUrls(
   // Fetch uncached URLs in parallel
   if (uncachedPaths.length > 0) {
     const responses = await Promise.all(
-      uncachedPaths.map((p) =>
-        supabase.storage.from(bucket).createSignedUrl(p, expiresIn, transform ? { transform } : undefined),
-      ),
+      uncachedPaths.map((p) => {
+        const t = transformFor(p);
+        return supabase.storage.from(bucket).createSignedUrl(p, expiresIn, t ? { transform: t } : undefined);
+      }),
     );
 
     const ttl = Math.min(expiresIn * 800, CACHE_TTL_MS);
@@ -152,7 +198,7 @@ export async function getSignedUrls(
       if (url) {
         const path = uncachedPaths[i];
         result.set(path, url);
-        cache.set(cacheKey(bucket, path, transform), { url, expiresAt: now + ttl });
+        cache.set(cacheKey(bucket, path, transformFor(path)), { url, expiresAt: now + ttl });
       }
     }
 

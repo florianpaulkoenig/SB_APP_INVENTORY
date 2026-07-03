@@ -246,15 +246,17 @@ export function ArtworksPage() {
     // Generate signed URLs in parallel. Request a server-side resized
     // thumbnail (max 600px, quality 65) instead of the full-size original —
     // grid cards never show more than ~400px, so this cuts transfer from
-    // multiple MB down to tens of KB per image.
+    // multiple MB down to tens of KB per image. getSignedUrl skips the
+    // transform for source images Supabase can't resize (too large) and the
+    // global fallback listener swaps failed thumbnails for the original.
     const results = await Promise.all(
       imageData.map(async (img) => {
-        const { data: signedData } = await supabase.storage
-          .from('artwork-images')
-          .createSignedUrl(img.storage_path, 600, {
-            transform: { width: 600, quality: 65, resize: 'contain' },
-          });
-        return { artworkId: img.artwork_id, url: signedData?.signedUrl ?? null };
+        const url = await getSignedUrl('artwork-images', img.storage_path, 600, {
+          width: 600,
+          quality: 65,
+          resize: 'contain',
+        });
+        return { artworkId: img.artwork_id, url };
       }),
     );
 
