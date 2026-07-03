@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import type { PublicCollectionRow } from '../../types/database';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Select } from '../ui/Select';
@@ -58,7 +59,7 @@ export function CollectionHistory({ artworkId }: CollectionHistoryProps) {
   const displayCollections = useMemo(
     () =>
       collections.map((ac: Record<string, unknown>) => ({
-        ...(ac.public_collections as Record<string, unknown> ?? {}),
+        ...((ac.public_collections ?? {}) as Partial<PublicCollectionRow>),
         _linkId: ac.id as string,
         _acquisitionYear: ac.acquisition_year as number | null,
         _notes: ac.notes as string | null,

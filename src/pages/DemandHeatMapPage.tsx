@@ -102,21 +102,21 @@ export function DemandHeatMapPage() {
         });
 
         // Additionally, place into specific pipeline stage layer
-        if (e.status === 'qualified') {
+        if (e.status === 'reviewing') {
           qualifiedMarkers.push({
             ...base,
             id: `qualified-${e.id}`,
             type: 'qualified',
             color: '#2563eb',
           });
-        } else if (e.status === 'lead') {
+        } else if (e.status === 'new') {
           leadMarkers.push({
             ...base,
             id: `lead-${e.id}`,
             type: 'lead',
             color: '#f97316',
           });
-        } else if (e.status === 'sold' || e.status === 'closed_won') {
+        } else if (e.status === 'converted') {
           saleMarkers.push({
             ...base,
             id: `sale-${e.id}`,
@@ -144,7 +144,7 @@ export function DemandHeatMapPage() {
       // Compute market opportunities by country
       const countryData = new Map<string, { enquiries: number; qualified: number; leads: number; sales: number }>();
 
-      const addToCountry = (country: string, field: 'enquiries' | 'qualified' | 'leads' | 'sales') => {
+      const addToCountry = (country: string | null, field: 'enquiries' | 'qualified' | 'leads' | 'sales') => {
         if (!country) return;
         const existing = countryData.get(country) || { enquiries: 0, qualified: 0, leads: 0, sales: 0 };
         existing[field]++;
@@ -153,9 +153,9 @@ export function DemandHeatMapPage() {
 
       enquiries.forEach((e) => {
         addToCountry(e.location_country, 'enquiries');
-        if (e.status === 'qualified') addToCountry(e.location_country, 'qualified');
-        if (e.status === 'lead') addToCountry(e.location_country, 'leads');
-        if (e.status === 'sold' || e.status === 'closed_won') addToCountry(e.location_country, 'sales');
+        if (e.status === 'reviewing') addToCountry(e.location_country, 'qualified');
+        if (e.status === 'new') addToCountry(e.location_country, 'leads');
+        if (e.status === 'converted') addToCountry(e.location_country, 'sales');
       });
 
       const opportunities: MarketRow[] = [];

@@ -10,7 +10,7 @@ export interface MapMarker {
   id: string;
   lat: number;
   lng: number;
-  type: 'enquiry' | 'exhibition' | 'sale' | 'art_fair' | 'collector';
+  type: 'enquiry' | 'exhibition' | 'sale' | 'art_fair' | 'collector' | 'qualified' | 'lead';
   label: string;
   value?: number;
   currency?: string;
@@ -31,6 +31,8 @@ const TYPE_COLORS: Record<MapMarker['type'], string> = {
   sale: '#c9a96e',       // gold
   art_fair: '#a855f7',   // violet
   collector: '#22c55e',  // green
+  qualified: '#2563eb',  // dark blue
+  lead: '#f97316',       // orange
 };
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;

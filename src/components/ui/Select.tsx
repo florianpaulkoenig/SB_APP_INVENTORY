@@ -9,7 +9,7 @@ export interface SelectOption {
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
-  options: SelectOption[];
+  options: readonly SelectOption[];
   placeholder?: string;
 }
 

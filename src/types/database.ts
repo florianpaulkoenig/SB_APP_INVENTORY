@@ -105,7 +105,7 @@ export type InstitutionType = 'museum' | 'foundation' | 'corporate' | 'universit
 
 // -- artists -----------------------------------------------------------------
 
-export interface ArtistRow {
+export type ArtistRow = {
   id: string;
   user_id: string;
   portfolio: string;
@@ -119,7 +119,7 @@ export interface ArtistRow {
   updated_at: string;
 }
 
-export interface ArtistInsert {
+export type ArtistInsert = {
   id?: string;
   user_id?: string;
   portfolio?: string;
@@ -129,13 +129,15 @@ export interface ArtistInsert {
   biography?: string | null;
   website?: string | null;
   notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type ArtistUpdate = Partial<ArtistInsert>;
 
 // -- galleries ---------------------------------------------------------------
 
-export interface GalleryRow {
+export type GalleryRow = {
   id: string;
   user_id: string;
   name: string;
@@ -159,7 +161,7 @@ export interface GalleryRow {
   updated_at: string;
 }
 
-export interface GalleryInsert {
+export type GalleryInsert = {
   id?: string;
   user_id?: string;
   name: string;
@@ -187,7 +189,7 @@ export type GalleryUpdate = Partial<GalleryInsert>;
 
 // -- artworks ----------------------------------------------------------------
 
-export interface ArtworkRow {
+export type ArtworkRow = {
   id: string;
   user_id: string;
   inventory_number: string;
@@ -232,9 +234,15 @@ export interface ArtworkRow {
   size_category: SizeCategory | null;
   created_at: string;
   updated_at: string;
+  portfolio: string;
+  purchase_price: number | null;
+  purchase_currency: string | null;
+  purchase_date: string | null;
+  estimated_value: number | null;
+  estimated_value_date: string | null;
 }
 
-export interface ArtworkInsert {
+export type ArtworkInsert = {
   id?: string;
   user_id?: string;
   inventory_number: string;
@@ -279,13 +287,19 @@ export interface ArtworkInsert {
   size_category?: SizeCategory | null;
   created_at?: string;
   updated_at?: string;
+  portfolio?: string;
+  purchase_price?: number | null;
+  purchase_currency?: string | null;
+  purchase_date?: string | null;
+  estimated_value?: number | null;
+  estimated_value_date?: string | null;
 }
 
 export type ArtworkUpdate = Partial<ArtworkInsert>;
 
 // -- artwork_images ----------------------------------------------------------
 
-export interface ArtworkImageRow {
+export type ArtworkImageRow = {
   id: string;
   user_id: string;
   artwork_id: string;
@@ -297,7 +311,7 @@ export interface ArtworkImageRow {
   created_at: string;
 }
 
-export interface ArtworkImageInsert {
+export type ArtworkImageInsert = {
   id?: string;
   user_id?: string;
   artwork_id: string;
@@ -313,7 +327,7 @@ export type ArtworkImageUpdate = Partial<ArtworkImageInsert>;
 
 // -- artwork_movements -------------------------------------------------------
 
-export interface ArtworkMovementRow {
+export type ArtworkMovementRow = {
   id: string;
   user_id: string;
   artwork_id: string;
@@ -326,7 +340,7 @@ export interface ArtworkMovementRow {
   created_at: string;
 }
 
-export interface ArtworkMovementInsert {
+export type ArtworkMovementInsert = {
   id?: string;
   user_id?: string;
   artwork_id: string;
@@ -349,7 +363,7 @@ export type SaleLocationT = 'gallery' | 'fair' | 'exhibition' | 'private' | 'onl
 export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'overdue';
 export type CollectorAnonymityMode = 'named' | 'anonymous' | 'private';
 
-export interface SaleRow {
+export type SaleRow = {
   id: string;
   user_id: string;
   artwork_id: string;
@@ -381,7 +395,7 @@ export interface SaleRow {
   updated_at: string;
 }
 
-export interface SaleInsert {
+export type SaleInsert = {
   id?: string;
   user_id?: string;
   artwork_id: string;
@@ -417,7 +431,7 @@ export type SaleUpdate = Partial<SaleInsert>;
 
 // -- deliveries --------------------------------------------------------------
 
-export interface DeliveryRow {
+export type DeliveryRow = {
   id: string;
   user_id: string;
   delivery_number: string;
@@ -429,9 +443,10 @@ export interface DeliveryRow {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  portfolio: string;
 }
 
-export interface DeliveryInsert {
+export type DeliveryInsert = {
   id?: string;
   user_id?: string;
   delivery_number: string;
@@ -443,13 +458,14 @@ export interface DeliveryInsert {
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
+  portfolio?: string;
 }
 
 export type DeliveryUpdate = Partial<DeliveryInsert>;
 
 // -- delivery_items ----------------------------------------------------------
 
-export interface DeliveryItemRow {
+export type DeliveryItemRow = {
   id: string;
   user_id: string;
   delivery_id: string;
@@ -459,7 +475,7 @@ export interface DeliveryItemRow {
   created_at: string;
 }
 
-export interface DeliveryItemInsert {
+export type DeliveryItemInsert = {
   id?: string;
   user_id?: string;
   delivery_id: string;
@@ -473,7 +489,7 @@ export type DeliveryItemUpdate = Partial<DeliveryItemInsert>;
 
 // -- packing_lists -----------------------------------------------------------
 
-export interface PackingListRow {
+export type PackingListRow = {
   id: string;
   user_id: string;
   packing_number: string;
@@ -485,7 +501,7 @@ export interface PackingListRow {
   updated_at: string;
 }
 
-export interface PackingListInsert {
+export type PackingListInsert = {
   id?: string;
   user_id?: string;
   packing_number: string;
@@ -501,7 +517,7 @@ export type PackingListUpdate = Partial<PackingListInsert>;
 
 // -- packing_list_crates -----------------------------------------------------
 
-export interface PackingListCrateRow {
+export type PackingListCrateRow = {
   id: string;
   user_id: string;
   packing_list_id: string;
@@ -518,7 +534,7 @@ export interface PackingListCrateRow {
   updated_at: string;
 }
 
-export interface PackingListCrateInsert {
+export type PackingListCrateInsert = {
   id?: string;
   user_id?: string;
   packing_list_id: string;
@@ -531,13 +547,15 @@ export interface PackingListCrateInsert {
   packaging_type?: string | null;
   notes?: string | null;
   sort_order?: number;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export type PackingListCrateUpdate = Partial<PackingListCrateInsert>;
 
 // -- packing_list_items ------------------------------------------------------
 
-export interface PackingListItemRow {
+export type PackingListItemRow = {
   id: string;
   user_id: string;
   packing_list_id: string;
@@ -551,7 +569,7 @@ export interface PackingListItemRow {
   created_at: string;
 }
 
-export interface PackingListItemInsert {
+export type PackingListItemInsert = {
   id?: string;
   user_id?: string;
   packing_list_id: string;
@@ -569,7 +587,7 @@ export type PackingListItemUpdate = Partial<PackingListItemInsert>;
 
 // -- production_orders -------------------------------------------------------
 
-export interface ProductionOrderRow {
+export type ProductionOrderRow = {
   id: string;
   user_id: string;
   order_number: string;
@@ -587,9 +605,10 @@ export interface ProductionOrderRow {
   show_price: boolean;
   created_at: string;
   updated_at: string;
+  payment_expected_date: string | null;
 }
 
-export interface ProductionOrderInsert {
+export type ProductionOrderInsert = {
   id?: string;
   user_id?: string;
   order_number: string;
@@ -607,13 +626,14 @@ export interface ProductionOrderInsert {
   show_price?: boolean;
   created_at?: string;
   updated_at?: string;
+  payment_expected_date?: string | null;
 }
 
 export type ProductionOrderUpdate = Partial<ProductionOrderInsert>;
 
 // -- production_order_items --------------------------------------------------
 
-export interface ProductionOrderItemRow {
+export type ProductionOrderItemRow = {
   id: string;
   user_id: string;
   production_order_id: string;
@@ -644,9 +664,12 @@ export interface ProductionOrderItemRow {
   artwork_id: string | null;
   sort_order: number;
   created_at: string;
+  is_window: boolean;
+  lamination_needed: boolean;
+  lamination_cost: number | null;
 }
 
-export interface ProductionOrderItemInsert {
+export type ProductionOrderItemInsert = {
   id?: string;
   user_id?: string;
   production_order_id: string;
@@ -677,13 +700,16 @@ export interface ProductionOrderItemInsert {
   artwork_id?: string | null;
   sort_order?: number;
   created_at?: string;
+  is_window?: boolean;
+  lamination_needed?: boolean;
+  lamination_cost?: number | null;
 }
 
 export type ProductionOrderItemUpdate = Partial<ProductionOrderItemInsert>;
 
 // -- gallery_forwarding_orders -----------------------------------------------
 
-export interface GalleryForwardingOrderRow {
+export type GalleryForwardingOrderRow = {
   id: string;
   user_id: string;
   forwarding_number: string;
@@ -704,7 +730,7 @@ export interface GalleryForwardingOrderRow {
   updated_at: string;
 }
 
-export interface GalleryForwardingOrderInsert {
+export type GalleryForwardingOrderInsert = {
   id?: string;
   user_id?: string;
   forwarding_number: string;
@@ -729,7 +755,7 @@ export type GalleryForwardingOrderUpdate = Partial<GalleryForwardingOrderInsert>
 
 // -- gallery_forwarding_items ------------------------------------------------
 
-export interface GalleryForwardingItemRow {
+export type GalleryForwardingItemRow = {
   id: string;
   user_id: string;
   forwarding_order_id: string;
@@ -739,7 +765,7 @@ export interface GalleryForwardingItemRow {
   created_at: string;
 }
 
-export interface GalleryForwardingItemInsert {
+export type GalleryForwardingItemInsert = {
   id?: string;
   user_id?: string;
   forwarding_order_id: string;
@@ -753,7 +779,7 @@ export type GalleryForwardingItemUpdate = Partial<GalleryForwardingItemInsert>;
 
 // -- certificates ------------------------------------------------------------
 
-export interface CertificateRow {
+export type CertificateRow = {
   id: string;
   user_id: string;
   artwork_id: string;
@@ -765,7 +791,7 @@ export interface CertificateRow {
   created_at: string;
 }
 
-export interface CertificateInsert {
+export type CertificateInsert = {
   id?: string;
   user_id?: string;
   artwork_id: string;
@@ -781,7 +807,7 @@ export type CertificateUpdate = Partial<CertificateInsert>;
 
 // -- document_sequences ------------------------------------------------------
 
-export interface DocumentSequenceRow {
+export type DocumentSequenceRow = {
   id: string;
   user_id: string;
   prefix: string;
@@ -789,7 +815,7 @@ export interface DocumentSequenceRow {
   last_number: number;
 }
 
-export interface DocumentSequenceInsert {
+export type DocumentSequenceInsert = {
   id?: string;
   user_id?: string;
   prefix: string;
@@ -801,7 +827,7 @@ export type DocumentSequenceUpdate = Partial<DocumentSequenceInsert>;
 
 // -- contacts ----------------------------------------------------------------
 
-export interface ContactRow {
+export type ContactRow = {
   id: string;
   user_id: string;
   type: ContactType;
@@ -820,7 +846,7 @@ export interface ContactRow {
   updated_at: string;
 }
 
-export interface ContactInsert {
+export type ContactInsert = {
   id?: string;
   user_id?: string;
   type?: ContactType;
@@ -843,7 +869,7 @@ export type ContactUpdate = Partial<ContactInsert>;
 
 // -- interactions ------------------------------------------------------------
 
-export interface InteractionRow {
+export type InteractionRow = {
   id: string;
   user_id: string;
   contact_id: string;
@@ -855,7 +881,7 @@ export interface InteractionRow {
   created_at: string;
 }
 
-export interface InteractionInsert {
+export type InteractionInsert = {
   id?: string;
   user_id?: string;
   contact_id: string;
@@ -871,7 +897,7 @@ export type InteractionUpdate = Partial<InteractionInsert>;
 
 // -- deals -------------------------------------------------------------------
 
-export interface DealRow {
+export type DealRow = {
   id: string;
   user_id: string;
   contact_id: string;
@@ -886,7 +912,7 @@ export interface DealRow {
   updated_at: string;
 }
 
-export interface DealInsert {
+export type DealInsert = {
   id?: string;
   user_id?: string;
   contact_id: string;
@@ -905,7 +931,7 @@ export type DealUpdate = Partial<DealInsert>;
 
 // -- tasks -------------------------------------------------------------------
 
-export interface TaskRow {
+export type TaskRow = {
   id: string;
   user_id: string;
   title: string;
@@ -922,7 +948,7 @@ export interface TaskRow {
   updated_at: string;
 }
 
-export interface TaskInsert {
+export type TaskInsert = {
   id?: string;
   user_id?: string;
   title: string;
@@ -943,7 +969,7 @@ export type TaskUpdate = Partial<TaskInsert>;
 
 // -- wish_list_items ---------------------------------------------------------
 
-export interface WishListItemRow {
+export type WishListItemRow = {
   id: string;
   user_id: string;
   contact_id: string;
@@ -953,7 +979,7 @@ export interface WishListItemRow {
   created_at: string;
 }
 
-export interface WishListItemInsert {
+export type WishListItemInsert = {
   id?: string;
   user_id?: string;
   contact_id: string;
@@ -969,7 +995,7 @@ export type WishListItemUpdate = Partial<WishListItemInsert>;
 
 export type ConditionGrade = 'excellent' | 'good' | 'fair' | 'damaged';
 
-export interface ConditionReportRow {
+export type ConditionReportRow = {
   id: string;
   user_id: string;
   artwork_id: string;
@@ -982,7 +1008,7 @@ export interface ConditionReportRow {
   created_at: string;
 }
 
-export interface ConditionReportInsert {
+export type ConditionReportInsert = {
   id?: string;
   user_id?: string;
   artwork_id: string;
@@ -999,7 +1025,7 @@ export type ConditionReportUpdate = Partial<ConditionReportInsert>;
 
 // -- insurance_records -------------------------------------------------------
 
-export interface InsuranceRecordRow {
+export type InsuranceRecordRow = {
   id: string;
   user_id: string;
   artwork_id: string;
@@ -1014,7 +1040,7 @@ export interface InsuranceRecordRow {
   updated_at: string;
 }
 
-export interface InsuranceRecordInsert {
+export type InsuranceRecordInsert = {
   id?: string;
   user_id?: string;
   artwork_id: string;
@@ -1033,7 +1059,7 @@ export type InsuranceRecordUpdate = Partial<InsuranceRecordInsert>;
 
 // -- valuations --------------------------------------------------------------
 
-export interface ValuationRow {
+export type ValuationRow = {
   id: string;
   user_id: string;
   artwork_id: string;
@@ -1045,7 +1071,7 @@ export interface ValuationRow {
   created_at: string;
 }
 
-export interface ValuationInsert {
+export type ValuationInsert = {
   id?: string;
   user_id?: string;
   artwork_id: string;
@@ -1063,7 +1089,7 @@ export type ValuationUpdate = Partial<ValuationInsert>;
 
 export type ExhibitionType = 'exhibition' | 'art_fair' | 'solo_show' | 'group_show';
 
-export interface ExhibitionRow {
+export type ExhibitionRow = {
   id: string;
   user_id: string;
   title: string;
@@ -1082,9 +1108,11 @@ export interface ExhibitionRow {
   description_text: string | null;
   created_at: string;
   updated_at: string;
+  portfolio: string;
+  pdf_settings: unknown | null;
 }
 
-export interface ExhibitionInsert {
+export type ExhibitionInsert = {
   id?: string;
   user_id?: string;
   title: string;
@@ -1103,13 +1131,15 @@ export interface ExhibitionInsert {
   description_text?: string | null;
   created_at?: string;
   updated_at?: string;
+  portfolio?: string;
+  pdf_settings?: unknown | null;
 }
 
 export type ExhibitionUpdate = Partial<ExhibitionInsert>;
 
 // -- exhibition_floor_plans ---------------------------------------------------
 
-export interface ExhibitionFloorPlanRow {
+export type ExhibitionFloorPlanRow = {
   id: string;
   user_id: string;
   exhibition_id: string;
@@ -1120,7 +1150,7 @@ export interface ExhibitionFloorPlanRow {
   created_at: string;
 }
 
-export interface ExhibitionFloorPlanInsert {
+export type ExhibitionFloorPlanInsert = {
   id?: string;
   user_id?: string;
   exhibition_id: string;
@@ -1133,7 +1163,7 @@ export interface ExhibitionFloorPlanInsert {
 
 // -- exhibition_artworks -----------------------------------------------------
 
-export interface ExhibitionArtworkRow {
+export type ExhibitionArtworkRow = {
   id: string;
   user_id: string;
   exhibition_id: string;
@@ -1141,7 +1171,7 @@ export interface ExhibitionArtworkRow {
   created_at: string;
 }
 
-export interface ExhibitionArtworkInsert {
+export type ExhibitionArtworkInsert = {
   id?: string;
   user_id?: string;
   exhibition_id: string;
@@ -1155,7 +1185,7 @@ export type ExhibitionArtworkUpdate = Partial<ExhibitionArtworkInsert>;
 
 export type ProjectStatus = 'planned' | 'in_progress' | 'completed' | 'on_hold' | 'cancelled';
 
-export interface ProjectRow {
+export type ProjectRow = {
   id: string;
   user_id: string;
   title: string;
@@ -1171,7 +1201,7 @@ export interface ProjectRow {
   updated_at: string;
 }
 
-export interface ProjectInsert {
+export type ProjectInsert = {
   id?: string;
   user_id?: string;
   title: string;
@@ -1183,13 +1213,15 @@ export interface ProjectInsert {
   gallery_id?: string | null;
   contact_id?: string | null;
   notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type ProjectUpdate = Partial<ProjectInsert>;
 
 // -- exhibition_production_orders ---------------------------------------------
 
-export interface ExhibitionProductionOrderRow {
+export type ExhibitionProductionOrderRow = {
   id: string;
   user_id: string;
   exhibition_id: string;
@@ -1197,16 +1229,17 @@ export interface ExhibitionProductionOrderRow {
   created_at: string;
 }
 
-export interface ExhibitionProductionOrderInsert {
+export type ExhibitionProductionOrderInsert = {
   id?: string;
   user_id?: string;
   exhibition_id: string;
   production_order_id: string;
+  created_at?: string;
 }
 
 // -- project_artworks ---------------------------------------------------------
 
-export interface ProjectArtworkRow {
+export type ProjectArtworkRow = {
   id: string;
   user_id: string;
   project_id: string;
@@ -1214,16 +1247,17 @@ export interface ProjectArtworkRow {
   created_at: string;
 }
 
-export interface ProjectArtworkInsert {
+export type ProjectArtworkInsert = {
   id?: string;
   user_id?: string;
   project_id: string;
   artwork_id: string;
+  created_at?: string;
 }
 
 // -- project_production_orders ------------------------------------------------
 
-export interface ProjectProductionOrderRow {
+export type ProjectProductionOrderRow = {
   id: string;
   user_id: string;
   project_id: string;
@@ -1231,16 +1265,17 @@ export interface ProjectProductionOrderRow {
   created_at: string;
 }
 
-export interface ProjectProductionOrderInsert {
+export type ProjectProductionOrderInsert = {
   id?: string;
   user_id?: string;
   project_id: string;
   production_order_id: string;
+  created_at?: string;
 }
 
 // -- production_order_documents ----------------------------------------------
 
-export interface ProductionOrderDocumentRow {
+export type ProductionOrderDocumentRow = {
   id: string;
   user_id: string;
   production_order_id: string;
@@ -1249,19 +1284,20 @@ export interface ProductionOrderDocumentRow {
   created_at: string;
 }
 
-export interface ProductionOrderDocumentInsert {
+export type ProductionOrderDocumentInsert = {
   id?: string;
   user_id?: string;
   production_order_id: string;
   file_name: string;
   storage_path: string;
+  created_at?: string | null;
 }
 
 // -- loans -------------------------------------------------------------------
 
 export type LoanStatus = 'pending' | 'active' | 'returned';
 
-export interface LoanRow {
+export type LoanRow = {
   id: string;
   user_id: string;
   artwork_id: string;
@@ -1277,7 +1313,7 @@ export interface LoanRow {
   updated_at: string;
 }
 
-export interface LoanInsert {
+export type LoanInsert = {
   id?: string;
   user_id?: string;
   artwork_id: string;
@@ -1301,7 +1337,7 @@ export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 
 export type ExpenseCategory = 'framing' | 'shipping' | 'photography' | 'restoration' | 'insurance' | 'storage' | 'other';
 
-export interface ExpenseRow {
+export type ExpenseRow = {
   id: string;
   user_id: string;
   artwork_id: string | null;
@@ -1316,7 +1352,7 @@ export interface ExpenseRow {
   created_at: string;
 }
 
-export interface ExpenseInsert {
+export type ExpenseInsert = {
   id?: string;
   user_id?: string;
   artwork_id?: string | null;
@@ -1335,7 +1371,7 @@ export type ExpenseUpdate = Partial<ExpenseInsert>;
 
 // -- price_history -----------------------------------------------------------
 
-export interface PriceHistoryRow {
+export type PriceHistoryRow = {
   id: string;
   user_id: string;
   artwork_id: string;
@@ -1346,7 +1382,7 @@ export interface PriceHistoryRow {
   created_at: string;
 }
 
-export interface PriceHistoryInsert {
+export type PriceHistoryInsert = {
   id?: string;
   user_id?: string;
   artwork_id: string;
@@ -1361,7 +1397,7 @@ export type PriceHistoryUpdate = Partial<PriceHistoryInsert>;
 
 // -- invoices ----------------------------------------------------------------
 
-export interface InvoiceRow {
+export type InvoiceRow = {
   id: string;
   user_id: string;
   invoice_number: string;
@@ -1380,7 +1416,7 @@ export interface InvoiceRow {
   updated_at: string;
 }
 
-export interface InvoiceInsert {
+export type InvoiceInsert = {
   id?: string;
   user_id?: string;
   invoice_number: string;
@@ -1403,7 +1439,7 @@ export type InvoiceUpdate = Partial<InvoiceInsert>;
 
 // -- invoice_items -----------------------------------------------------------
 
-export interface InvoiceItemRow {
+export type InvoiceItemRow = {
   id: string;
   user_id: string;
   invoice_id: string;
@@ -1415,7 +1451,7 @@ export interface InvoiceItemRow {
   created_at: string;
 }
 
-export interface InvoiceItemInsert {
+export type InvoiceItemInsert = {
   id?: string;
   user_id?: string;
   invoice_id: string;
@@ -1433,7 +1469,7 @@ export type InvoiceItemUpdate = Partial<InvoiceItemInsert>;
 
 export type EmailStatus = 'sent' | 'failed' | 'bounced';
 
-export interface EmailLogRow {
+export type EmailLogRow = {
   id: string;
   user_id: string;
   from_email: string;
@@ -1448,7 +1484,7 @@ export interface EmailLogRow {
   created_at: string;
 }
 
-export interface EmailLogInsert {
+export type EmailLogInsert = {
   id?: string;
   user_id?: string;
   from_email: string;
@@ -1467,7 +1503,7 @@ export type EmailLogUpdate = Partial<EmailLogInsert>;
 
 // -- share_links -------------------------------------------------------------
 
-export interface ShareLinkRow {
+export type ShareLinkRow = {
   id: string;
   user_id: string;
   token: string;
@@ -1476,9 +1512,10 @@ export interface ShareLinkRow {
   expiry: string | null;
   download_count: number;
   created_at: string;
+  portfolio: string;
 }
 
-export interface ShareLinkInsert {
+export type ShareLinkInsert = {
   id?: string;
   user_id?: string;
   token: string;
@@ -1487,6 +1524,7 @@ export interface ShareLinkInsert {
   expiry?: string | null;
   download_count?: number;
   created_at?: string;
+  portfolio?: string;
 }
 
 export type ShareLinkUpdate = Partial<ShareLinkInsert>;
@@ -1496,7 +1534,7 @@ export type ShareLinkUpdate = Partial<ShareLinkInsert>;
 export type ViewingRoomVisibility = 'public' | 'link_only' | 'password';
 export type ViewingRoomTemplate = 'grid' | 'carousel' | 'editorial';
 
-export interface ViewingRoomRow {
+export type ViewingRoomRow = {
   id: string;
   user_id: string;
   title: string;
@@ -1510,9 +1548,11 @@ export interface ViewingRoomRow {
   published: boolean;
   created_at: string;
   updated_at: string;
+  branding: unknown | null;
+  portfolio: string;
 }
 
-export interface ViewingRoomInsert {
+export type ViewingRoomInsert = {
   id?: string;
   user_id?: string;
   title: string;
@@ -1526,23 +1566,26 @@ export interface ViewingRoomInsert {
   published?: boolean;
   created_at?: string;
   updated_at?: string;
+  branding?: unknown | null;
+  portfolio?: string;
 }
 
 export type ViewingRoomUpdate = Partial<ViewingRoomInsert>;
 
 // -- viewing_room_views -------------------------------------------------------
 
-export interface ViewingRoomViewRow {
+export type ViewingRoomViewRow = {
   id: string;
   viewing_room_id: string;
   viewed_at: string;
+  viewer_ip: string | null;
 }
 
 // -- user_profiles ------------------------------------------------------------
 
 export type UserRole = 'admin' | 'gallery' | 'collector';
 
-export interface UserProfileRow {
+export type UserProfileRow = {
   id: string;
   user_id: string;
   role: UserRole;
@@ -1550,9 +1593,10 @@ export interface UserProfileRow {
   contact_id: string | null;
   display_name: string;
   created_at: string;
+  updated_at: string;
 }
 
-export interface UserProfileInsert {
+export type UserProfileInsert = {
   id?: string;
   user_id: string;
   role: UserRole;
@@ -1560,13 +1604,14 @@ export interface UserProfileInsert {
   contact_id?: string | null;
   display_name: string;
   created_at?: string;
+  updated_at?: string;
 }
 
 export type UserProfileUpdate = Partial<UserProfileInsert>;
 
 // -- activity_log -------------------------------------------------------------
 
-export interface ActivityLogRow {
+export type ActivityLogRow = {
   id: string;
   user_id: string;
   action: string;
@@ -1577,7 +1622,7 @@ export interface ActivityLogRow {
   created_at: string;
 }
 
-export interface ActivityLogInsert {
+export type ActivityLogInsert = {
   id?: string;
   user_id?: string;
   action: string;
@@ -1594,7 +1639,7 @@ export type ActivityLogUpdate = Partial<ActivityLogInsert>;
 
 export type ReminderType = 'consignment_followup' | 'loan_return' | 'invoice_overdue' | 'task_due';
 
-export interface ReminderRow {
+export type ReminderRow = {
   id: string;
   user_id: string;
   type: ReminderType;
@@ -1606,7 +1651,7 @@ export interface ReminderRow {
   created_at: string;
 }
 
-export interface ReminderInsert {
+export type ReminderInsert = {
   id?: string;
   user_id?: string;
   type: ReminderType;
@@ -1622,7 +1667,7 @@ export type ReminderUpdate = Partial<ReminderInsert>;
 
 // -- gallery_team_members -----------------------------------------------------
 
-export interface GalleryTeamMemberRow {
+export type GalleryTeamMemberRow = {
   id: string;
   user_id: string;
   gallery_id: string;
@@ -1636,7 +1681,7 @@ export interface GalleryTeamMemberRow {
   updated_at: string;
 }
 
-export interface GalleryTeamMemberInsert {
+export type GalleryTeamMemberInsert = {
   id?: string;
   user_id?: string;
   gallery_id: string;
@@ -1646,13 +1691,15 @@ export interface GalleryTeamMemberInsert {
   phone?: string | null;
   notes?: string | null;
   sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type GalleryTeamMemberUpdate = Partial<GalleryTeamMemberInsert>;
 
 // ---- Artwork Templates (predefined artworks) --------------------------------
 
-export interface ArtworkTemplateRow {
+export type ArtworkTemplateRow = {
   id: string;
   user_id: string;
   name: string;
@@ -1677,7 +1724,7 @@ export interface ArtworkTemplateRow {
   created_at: string;
 }
 
-export interface ArtworkTemplateInsert {
+export type ArtworkTemplateInsert = {
   id?: string;
   user_id?: string;
   name: string;
@@ -1706,7 +1753,7 @@ export type ArtworkTemplateUpdate = Partial<ArtworkTemplateInsert>;
 
 // -- public_collections -------------------------------------------------------
 
-export interface PublicCollectionRow {
+export type PublicCollectionRow = {
   id: string;
   user_id: string;
   name: string;
@@ -1719,7 +1766,7 @@ export interface PublicCollectionRow {
   updated_at: string;
 }
 
-export interface PublicCollectionInsert {
+export type PublicCollectionInsert = {
   id?: string;
   user_id?: string;
   name: string;
@@ -1728,13 +1775,15 @@ export interface PublicCollectionInsert {
   institution_type?: InstitutionType | null;
   website?: string | null;
   notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type PublicCollectionUpdate = Partial<PublicCollectionInsert>;
 
 // -- artwork_collections ------------------------------------------------------
 
-export interface ArtworkCollectionRow {
+export type ArtworkCollectionRow = {
   id: string;
   user_id: string;
   artwork_id: string;
@@ -1744,13 +1793,14 @@ export interface ArtworkCollectionRow {
   created_at: string;
 }
 
-export interface ArtworkCollectionInsert {
+export type ArtworkCollectionInsert = {
   id?: string;
   user_id?: string;
   artwork_id: string;
   collection_id: string;
   acquisition_year?: number | null;
   notes?: string | null;
+  created_at?: string;
 }
 
 export type ArtworkCollectionUpdate = Partial<ArtworkCollectionInsert>;
@@ -1761,7 +1811,7 @@ export type EnquirySource = 'email' | 'instagram' | 'website' | 'art_fair' | 'ph
 export type EnquiryStatus = 'new' | 'reviewing' | 'converted' | 'archived';
 export type EnquiryPriority = 'low' | 'normal' | 'high' | 'urgent';
 
-export interface EnquiryRow {
+export type EnquiryRow = {
   id: string;
   user_id: string;
   source: EnquirySource;
@@ -1784,7 +1834,7 @@ export interface EnquiryRow {
   updated_at: string;
 }
 
-export interface EnquiryInsert {
+export type EnquiryInsert = {
   id?: string;
   user_id?: string;
   source?: EnquirySource;
@@ -1811,7 +1861,7 @@ export type EnquiryUpdate = Partial<EnquiryInsert>;
 
 // -- exhibition_galleries ----------------------------------------------------
 
-export interface ExhibitionGalleryRow {
+export type ExhibitionGalleryRow = {
   id: string;
   user_id: string;
   exhibition_id: string;
@@ -1821,7 +1871,7 @@ export interface ExhibitionGalleryRow {
   created_at: string;
 }
 
-export interface ExhibitionGalleryInsert {
+export type ExhibitionGalleryInsert = {
   id?: string;
   user_id?: string;
   exhibition_id: string;
@@ -1837,7 +1887,7 @@ export type ExhibitionGalleryUpdate = Partial<ExhibitionGalleryInsert>;
 
 export type AuctionResult = 'upcoming' | 'sold' | 'bought_in' | 'withdrawn' | 'pending';
 
-export interface AuctionAlertRow {
+export type AuctionAlertRow = {
   id: string;
   user_id: string;
   auction_house: string;
@@ -1860,7 +1910,7 @@ export interface AuctionAlertRow {
   updated_at: string;
 }
 
-export interface AuctionAlertInsert {
+export type AuctionAlertInsert = {
   id?: string;
   user_id?: string;
   auction_house: string;
@@ -1889,7 +1939,7 @@ export type AuctionAlertUpdate = Partial<AuctionAlertInsert>;
 
 export type PriceReportType = 'market_analysis' | 'price_recommendation' | 'auction_review';
 
-export interface PriceIntelligenceReportRow {
+export type PriceIntelligenceReportRow = {
   id: string;
   user_id: string;
   report_type: PriceReportType;
@@ -1904,7 +1954,7 @@ export interface PriceIntelligenceReportRow {
 
 export type CollectorSegment = 'new' | 'returning' | 'vip' | 'institutional';
 
-export interface AnonymousCollectorRow {
+export type AnonymousCollectorRow = {
   id: string;
   user_id: string;
   anonymous_id: string;
@@ -1918,7 +1968,7 @@ export interface AnonymousCollectorRow {
   updated_at: string;
 }
 
-export interface AnonymousCollectorInsert {
+export type AnonymousCollectorInsert = {
   id?: string;
   user_id?: string;
   anonymous_id: string;
@@ -1936,7 +1986,7 @@ export type AnonymousCollectorUpdate = Partial<AnonymousCollectorInsert>;
 
 // -- partner_score_snapshots -------------------------------------------------
 
-export interface PartnerScoreSnapshotRow {
+export type PartnerScoreSnapshotRow = {
   id: string;
   user_id: string;
   gallery_id: string;
@@ -1945,7 +1995,7 @@ export interface PartnerScoreSnapshotRow {
   calculated_at: string;
 }
 
-export interface PartnerScoreSnapshotInsert {
+export type PartnerScoreSnapshotInsert = {
   id?: string;
   user_id?: string;
   gallery_id: string;
@@ -1958,25 +2008,25 @@ export type PartnerScoreSnapshotUpdate = Partial<PartnerScoreSnapshotInsert>;
 
 // -- reporting_reminders -----------------------------------------------------
 
-export type ReminderType = 'upcoming' | 'due' | 'overdue';
+export type ReportingReminderType = 'upcoming' | 'due' | 'overdue';
 export type ReminderStatus = 'pending' | 'sent' | 'dismissed';
 
-export interface ReportingReminderRow {
+export type ReportingReminderRow = {
   id: string;
   user_id: string;
   sale_id: string;
-  reminder_type: ReminderType;
+  reminder_type: ReportingReminderType;
   due_date: string;
   sent_at: string | null;
   status: ReminderStatus;
   created_at: string;
 }
 
-export interface ReportingReminderInsert {
+export type ReportingReminderInsert = {
   id?: string;
   user_id?: string;
   sale_id: string;
-  reminder_type: ReminderType;
+  reminder_type: ReportingReminderType;
   due_date: string;
   sent_at?: string | null;
   status?: ReminderStatus;
@@ -1989,7 +2039,7 @@ export type ReportingReminderUpdate = Partial<ReportingReminderInsert>;
 
 export type AccessTier = 'standard' | 'priority' | 'premium';
 
-export interface GalleryAccessTierRow {
+export type GalleryAccessTierRow = {
   id: string;
   user_id: string;
   gallery_id: string;
@@ -2000,7 +2050,7 @@ export interface GalleryAccessTierRow {
   updated_at: string;
 }
 
-export interface GalleryAccessTierInsert {
+export type GalleryAccessTierInsert = {
   id?: string;
   user_id?: string;
   gallery_id: string;
@@ -2017,7 +2067,7 @@ export type GalleryAccessTierUpdate = Partial<GalleryAccessTierInsert>;
 
 export type MilestoneType = 'exhibition' | 'museum_show' | 'publication' | 'award' | 'institutional' | 'collection' | 'fair';
 
-export interface CareerMilestoneRow {
+export type CareerMilestoneRow = {
   id: string;
   user_id: string;
   year: number;
@@ -2031,7 +2081,7 @@ export interface CareerMilestoneRow {
   updated_at: string;
 }
 
-export interface CareerMilestoneInsert {
+export type CareerMilestoneInsert = {
   id?: string;
   user_id?: string;
   year: number;
@@ -2066,7 +2116,7 @@ export type AiInsightStatus = 'new' | 'read' | 'acted' | 'dismissed' | 'expired'
 
 export type AiInsightTrigger = 'scheduled' | 'on_demand' | 'threshold';
 
-export interface AiInsightRow {
+export type AiInsightRow = {
   id: string;
   user_id: string;
   category: AiInsightCategory;
@@ -2084,7 +2134,7 @@ export interface AiInsightRow {
   created_at: string;
 }
 
-export interface AiInsightInsert {
+export type AiInsightInsert = {
   id?: string;
   user_id?: string;
   category: AiInsightCategory;
@@ -2106,13 +2156,13 @@ export type AiInsightUpdate = Partial<AiInsightInsert>;
 
 // -- ai_conversations --------------------------------------------------------
 
-export interface AiConversationMessage {
+export type AiConversationMessage = {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
 }
 
-export interface AiConversationRow {
+export type AiConversationRow = {
   id: string;
   user_id: string;
   title: string | null;
@@ -2122,7 +2172,7 @@ export interface AiConversationRow {
   updated_at: string;
 }
 
-export interface AiConversationInsert {
+export type AiConversationInsert = {
   id?: string;
   user_id?: string;
   title?: string | null;
@@ -2136,14 +2186,14 @@ export type AiConversationUpdate = Partial<AiConversationInsert>;
 
 // -- ai_rate_limits ----------------------------------------------------------
 
-export interface AiRateLimitRow {
+export type AiRateLimitRow = {
   user_id: string;
   mode: string;
   window_date: string;
   call_count: number;
 }
 
-export interface AiRateLimitInsert {
+export type AiRateLimitInsert = {
   user_id?: string;
   mode: string;
   window_date?: string;
@@ -2156,7 +2206,7 @@ export type AiRateLimitUpdate = Partial<AiRateLimitInsert>;
 
 export type AiFeedbackRating = 'positive' | 'negative';
 
-export interface AiInsightFeedbackRow {
+export type AiInsightFeedbackRow = {
   id: string;
   user_id: string;
   insight_id: string;
@@ -2167,7 +2217,7 @@ export interface AiInsightFeedbackRow {
   created_at: string;
 }
 
-export interface AiInsightFeedbackInsert {
+export type AiInsightFeedbackInsert = {
   id?: string;
   user_id?: string;
   insight_id: string;
@@ -2184,7 +2234,7 @@ export type AiInsightFeedbackUpdate = Partial<AiInsightFeedbackInsert>;
 // NOA Liquidity types
 // ============================================================================
 
-export interface NOALiquiditySettingsRow {
+export type NOALiquiditySettingsRow = {
   id: string;
   user_id: string;
   starting_balance: number;
@@ -2193,7 +2243,7 @@ export interface NOALiquiditySettingsRow {
   updated_at: string;
 }
 
-export interface NOALiquiditySettingsInsert {
+export type NOALiquiditySettingsInsert = {
   id?: string;
   user_id?: string;
   starting_balance: number;
@@ -2204,7 +2254,7 @@ export interface NOALiquiditySettingsInsert {
 
 export type NOALiquiditySettingsUpdate = Partial<NOALiquiditySettingsInsert>;
 
-export interface NOALiquidityActualBalanceRow {
+export type NOALiquidityActualBalanceRow = {
   id: string;
   user_id: string;
   year: number;
@@ -2216,7 +2266,7 @@ export interface NOALiquidityActualBalanceRow {
   updated_at: string;
 }
 
-export interface NOALiquidityActualBalanceInsert {
+export type NOALiquidityActualBalanceInsert = {
   id?: string;
   user_id?: string;
   year: number;
@@ -2237,7 +2287,7 @@ export type LiquidityExpenseType =
   | 'semi_annual'
   | 'annual';
 
-export interface NOALiquidityExpenseRow {
+export type NOALiquidityExpenseRow = {
   id: string;
   user_id: string;
   description: string;
@@ -2250,7 +2300,7 @@ export interface NOALiquidityExpenseRow {
   updated_at: string;
 }
 
-export interface NOALiquidityExpenseInsert {
+export type NOALiquidityExpenseInsert = {
   id?: string;
   user_id?: string;
   description: string;
@@ -2265,7 +2315,7 @@ export interface NOALiquidityExpenseInsert {
 
 export type NOALiquidityExpenseUpdate = Partial<NOALiquidityExpenseInsert>;
 
-export interface NOALiquidityIncomeRow {
+export type NOALiquidityIncomeRow = {
   id: string;
   user_id: string;
   description: string;
@@ -2278,7 +2328,7 @@ export interface NOALiquidityIncomeRow {
   updated_at: string;
 }
 
-export interface NOALiquidityIncomeInsert {
+export type NOALiquidityIncomeInsert = {
   id?: string;
   user_id?: string;
   description: string;
@@ -2293,7 +2343,7 @@ export interface NOALiquidityIncomeInsert {
 
 export type NOALiquidityIncomeUpdate = Partial<NOALiquidityIncomeInsert>;
 
-export interface NOALiquidityExpensePaymentRow {
+export type NOALiquidityExpensePaymentRow = {
   id: string;
   user_id: string;
   expense_id: string;
@@ -2307,7 +2357,7 @@ export interface NOALiquidityExpensePaymentRow {
 
 export type AppraisalPurpose = 'insurance' | 'resale' | 'estate' | 'donation' | 'other';
 
-export interface ArtworkAppraisalRow {
+export type ArtworkAppraisalRow = {
   id: string;
   user_id: string;
   artwork_id: string;
@@ -2328,7 +2378,7 @@ export interface ArtworkAppraisalRow {
   updated_at: string;
 }
 
-export interface ArtworkAppraisalInsert {
+export type ArtworkAppraisalInsert = {
   id?: string;
   user_id?: string;
   artwork_id: string;
@@ -2353,293 +2403,1057 @@ export type ArtworkAppraisalUpdate = Partial<ArtworkAppraisalInsert>;
 
 // ---- Supabase Database type (standard pattern) -----------------------------
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       galleries: {
         Row: GalleryRow;
         Insert: GalleryInsert;
         Update: GalleryUpdate;
+        Relationships: [];
       };
       artworks: {
         Row: ArtworkRow;
         Insert: ArtworkInsert;
         Update: ArtworkUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'artworks_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'artworks_artist_id_fkey';
+            columns: ['artist_id'];
+            referencedRelation: 'artists';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       artwork_images: {
         Row: ArtworkImageRow;
         Insert: ArtworkImageInsert;
         Update: ArtworkImageUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'artwork_images_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       artwork_movements: {
         Row: ArtworkMovementRow;
         Insert: ArtworkMovementInsert;
         Update: ArtworkMovementUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'artwork_movements_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'artwork_movements_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       sales: {
         Row: SaleRow;
         Insert: SaleInsert;
         Update: SaleUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'sales_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'sales_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'sales_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'sales_source_exhibition_id_fkey';
+            columns: ['source_exhibition_id'];
+            referencedRelation: 'exhibitions';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       deliveries: {
         Row: DeliveryRow;
         Insert: DeliveryInsert;
         Update: DeliveryUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'deliveries_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       delivery_items: {
         Row: DeliveryItemRow;
         Insert: DeliveryItemInsert;
         Update: DeliveryItemUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'delivery_items_delivery_id_fkey';
+            columns: ['delivery_id'];
+            referencedRelation: 'deliveries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'delivery_items_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       packing_lists: {
         Row: PackingListRow;
         Insert: PackingListInsert;
         Update: PackingListUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'packing_lists_delivery_id_fkey';
+            columns: ['delivery_id'];
+            referencedRelation: 'deliveries';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       packing_list_items: {
         Row: PackingListItemRow;
         Insert: PackingListItemInsert;
         Update: PackingListItemUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'packing_list_items_packing_list_id_fkey';
+            columns: ['packing_list_id'];
+            referencedRelation: 'packing_lists';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'packing_list_items_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'packing_list_items_crate_id_fkey';
+            columns: ['crate_id'];
+            referencedRelation: 'packing_list_crates';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       production_orders: {
         Row: ProductionOrderRow;
         Insert: ProductionOrderInsert;
         Update: ProductionOrderUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'production_orders_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'production_orders_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       production_order_items: {
         Row: ProductionOrderItemRow;
         Insert: ProductionOrderItemInsert;
         Update: ProductionOrderItemUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'production_order_items_production_order_id_fkey';
+            columns: ['production_order_id'];
+            referencedRelation: 'production_orders';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'production_order_items_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       gallery_forwarding_orders: {
         Row: GalleryForwardingOrderRow;
         Insert: GalleryForwardingOrderInsert;
         Update: GalleryForwardingOrderUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'gallery_forwarding_orders_from_gallery_id_fkey';
+            columns: ['from_gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'gallery_forwarding_orders_to_gallery_id_fkey';
+            columns: ['to_gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'gallery_forwarding_orders_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       gallery_forwarding_items: {
         Row: GalleryForwardingItemRow;
         Insert: GalleryForwardingItemInsert;
         Update: GalleryForwardingItemUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'gallery_forwarding_items_forwarding_order_id_fkey';
+            columns: ['forwarding_order_id'];
+            referencedRelation: 'gallery_forwarding_orders';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'gallery_forwarding_items_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       certificates: {
         Row: CertificateRow;
         Insert: CertificateInsert;
         Update: CertificateUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'certificates_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       document_sequences: {
         Row: DocumentSequenceRow;
         Insert: DocumentSequenceInsert;
         Update: DocumentSequenceUpdate;
+        Relationships: [];
       };
       invoices: {
         Row: InvoiceRow;
         Insert: InvoiceInsert;
         Update: InvoiceUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'invoices_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'invoices_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       invoice_items: {
         Row: InvoiceItemRow;
         Insert: InvoiceItemInsert;
         Update: InvoiceItemUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'invoice_items_invoice_id_fkey';
+            columns: ['invoice_id'];
+            referencedRelation: 'invoices';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'invoice_items_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       email_log: {
         Row: EmailLogRow;
         Insert: EmailLogInsert;
         Update: EmailLogUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'email_log_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       share_links: {
         Row: ShareLinkRow;
         Insert: ShareLinkInsert;
         Update: ShareLinkUpdate;
+        Relationships: [];
       };
       contacts: {
         Row: ContactRow;
         Insert: ContactInsert;
         Update: ContactUpdate;
+        Relationships: [];
       };
       interactions: {
         Row: InteractionRow;
         Insert: InteractionInsert;
         Update: InteractionUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'interactions_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       deals: {
         Row: DealRow;
         Insert: DealInsert;
         Update: DealUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'deals_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'deals_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       tasks: {
         Row: TaskRow;
         Insert: TaskInsert;
         Update: TaskUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'tasks_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tasks_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tasks_deal_id_fkey';
+            columns: ['deal_id'];
+            referencedRelation: 'deals';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tasks_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tasks_exhibition_id_fkey';
+            columns: ['exhibition_id'];
+            referencedRelation: 'exhibitions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tasks_invoice_id_fkey';
+            columns: ['invoice_id'];
+            referencedRelation: 'invoices';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       wish_list_items: {
         Row: WishListItemRow;
         Insert: WishListItemInsert;
         Update: WishListItemUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'wish_list_items_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'wish_list_items_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       condition_reports: {
         Row: ConditionReportRow;
         Insert: ConditionReportInsert;
         Update: ConditionReportUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'condition_reports_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'condition_reports_movement_id_fkey';
+            columns: ['movement_id'];
+            referencedRelation: 'artwork_movements';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       insurance_records: {
         Row: InsuranceRecordRow;
         Insert: InsuranceRecordInsert;
         Update: InsuranceRecordUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'insurance_records_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       valuations: {
         Row: ValuationRow;
         Insert: ValuationInsert;
         Update: ValuationUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'valuations_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       exhibitions: {
         Row: ExhibitionRow;
         Insert: ExhibitionInsert;
         Update: ExhibitionUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'exhibitions_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'exhibitions_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       exhibition_artworks: {
         Row: ExhibitionArtworkRow;
         Insert: ExhibitionArtworkInsert;
         Update: ExhibitionArtworkUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'exhibition_artworks_exhibition_id_fkey';
+            columns: ['exhibition_id'];
+            referencedRelation: 'exhibitions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'exhibition_artworks_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       loans: {
         Row: LoanRow;
         Insert: LoanInsert;
         Update: LoanUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'loans_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       expenses: {
         Row: ExpenseRow;
         Insert: ExpenseInsert;
         Update: ExpenseUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'expenses_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'expenses_exhibition_id_fkey';
+            columns: ['exhibition_id'];
+            referencedRelation: 'exhibitions';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       price_history: {
         Row: PriceHistoryRow;
         Insert: PriceHistoryInsert;
         Update: PriceHistoryUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'price_history_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       viewing_rooms: {
         Row: ViewingRoomRow;
         Insert: ViewingRoomInsert;
         Update: ViewingRoomUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'viewing_rooms_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       user_profiles: {
         Row: UserProfileRow;
         Insert: UserProfileInsert;
         Update: UserProfileUpdate;
+        Relationships: [];
       };
       activity_log: {
         Row: ActivityLogRow;
         Insert: ActivityLogInsert;
         Update: ActivityLogUpdate;
+        Relationships: [];
       };
       reminders: {
         Row: ReminderRow;
         Insert: ReminderInsert;
         Update: ReminderUpdate;
+        Relationships: [];
       };
       artwork_templates: {
         Row: ArtworkTemplateRow;
         Insert: ArtworkTemplateInsert;
         Update: ArtworkTemplateUpdate;
+        Relationships: [];
       };
       gallery_team_members: {
         Row: GalleryTeamMemberRow;
         Insert: GalleryTeamMemberInsert;
         Update: GalleryTeamMemberUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'gallery_team_members_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       public_collections: {
         Row: PublicCollectionRow;
         Insert: PublicCollectionInsert;
         Update: PublicCollectionUpdate;
+        Relationships: [];
       };
       artwork_collections: {
         Row: ArtworkCollectionRow;
         Insert: ArtworkCollectionInsert;
         Update: ArtworkCollectionUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'artwork_collections_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'artwork_collections_collection_id_fkey';
+            columns: ['collection_id'];
+            referencedRelation: 'public_collections';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       enquiries: {
         Row: EnquiryRow;
         Insert: EnquiryInsert;
         Update: EnquiryUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'enquiries_converted_deal_id_fkey';
+            columns: ['converted_deal_id'];
+            referencedRelation: 'deals';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'enquiries_converted_contact_id_fkey';
+            columns: ['converted_contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       exhibition_galleries: {
         Row: ExhibitionGalleryRow;
         Insert: ExhibitionGalleryInsert;
         Update: ExhibitionGalleryUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'exhibition_galleries_exhibition_id_fkey';
+            columns: ['exhibition_id'];
+            referencedRelation: 'exhibitions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'exhibition_galleries_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       auction_alerts: {
         Row: AuctionAlertRow;
         Insert: AuctionAlertInsert;
         Update: AuctionAlertUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'auction_alerts_matched_artwork_id_fkey';
+            columns: ['matched_artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'auction_alerts_matched_gallery_id_fkey';
+            columns: ['matched_gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       projects: {
         Row: ProjectRow;
         Insert: ProjectInsert;
         Update: ProjectUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'projects_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'projects_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       anonymous_collectors: {
         Row: AnonymousCollectorRow;
         Insert: AnonymousCollectorInsert;
         Update: AnonymousCollectorUpdate;
+        Relationships: [];
       };
       partner_score_snapshots: {
         Row: PartnerScoreSnapshotRow;
         Insert: PartnerScoreSnapshotInsert;
         Update: PartnerScoreSnapshotUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'partner_score_snapshots_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       reporting_reminders: {
         Row: ReportingReminderRow;
         Insert: ReportingReminderInsert;
         Update: ReportingReminderUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'reporting_reminders_sale_id_fkey';
+            columns: ['sale_id'];
+            referencedRelation: 'sales';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       gallery_access_tiers: {
         Row: GalleryAccessTierRow;
         Insert: GalleryAccessTierInsert;
         Update: GalleryAccessTierUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'gallery_access_tiers_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       career_milestones: {
         Row: CareerMilestoneRow;
         Insert: CareerMilestoneInsert;
         Update: CareerMilestoneUpdate;
+        Relationships: [];
       };
-    };
       ai_insights: {
         Row: AiInsightRow;
         Insert: AiInsightInsert;
         Update: AiInsightUpdate;
+        Relationships: [];
       };
       ai_conversations: {
         Row: AiConversationRow;
         Insert: AiConversationInsert;
         Update: AiConversationUpdate;
+        Relationships: [];
       };
       ai_rate_limits: {
         Row: AiRateLimitRow;
         Insert: AiRateLimitInsert;
         Update: AiRateLimitUpdate;
+        Relationships: [];
       };
       ai_insight_feedback: {
         Row: AiInsightFeedbackRow;
         Insert: AiInsightFeedbackInsert;
         Update: AiInsightFeedbackUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'ai_insight_feedback_insight_id_fkey';
+            columns: ['insight_id'];
+            referencedRelation: 'ai_insights';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       publication_budgets: {
         Row: PublicationBudgetRow;
         Insert: PublicationBudgetInsert;
         Update: PublicationBudgetUpdate;
+        Relationships: [];
       };
       publication_budget_items: {
         Row: PublicationBudgetItemRow;
         Insert: PublicationBudgetItemInsert;
         Update: PublicationBudgetItemUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'publication_budget_items_budget_id_fkey';
+            columns: ['budget_id'];
+            referencedRelation: 'publication_budgets';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      artists: {
+        Row: ArtistRow;
+        Insert: ArtistInsert;
+        Update: ArtistUpdate;
+        Relationships: [];
+      };
+      artwork_provenance: {
+        Row: ArtworkProvenanceRow;
+        Insert: ArtworkProvenanceInsert;
+        Update: ArtworkProvenanceUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'artwork_provenance_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      catalogues: {
+        Row: CatalogueRow;
+        Insert: CatalogueInsert;
+        Update: CatalogueUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'catalogues_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'catalogues_contact_id_fkey';
+            columns: ['contact_id'];
+            referencedRelation: 'contacts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'catalogues_exhibition_id_fkey';
+            columns: ['exhibition_id'];
+            referencedRelation: 'exhibitions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      cv_entries: {
+        Row: CvEntryRow;
+        Insert: CvEntryInsert;
+        Update: CvEntryUpdate;
+        Relationships: [];
+      };
+      exhibition_floor_plans: {
+        Row: ExhibitionFloorPlanRow;
+        Insert: ExhibitionFloorPlanInsert;
+        Update: ExhibitionFloorPlanUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'exhibition_floor_plans_exhibition_id_fkey';
+            columns: ['exhibition_id'];
+            referencedRelation: 'exhibitions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      exhibition_images: {
+        Row: ExhibitionImageRow;
+        Insert: ExhibitionImageInsert;
+        Update: ExhibitionImageUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'exhibition_images_exhibition_id_fkey';
+            columns: ['exhibition_id'];
+            referencedRelation: 'exhibitions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      exhibition_production_orders: {
+        Row: ExhibitionProductionOrderRow;
+        Insert: ExhibitionProductionOrderInsert;
+        Update: ExhibitionProductionOrderUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'exhibition_production_orders_exhibition_id_fkey';
+            columns: ['exhibition_id'];
+            referencedRelation: 'exhibitions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'exhibition_production_orders_production_order_id_fkey';
+            columns: ['production_order_id'];
+            referencedRelation: 'production_orders';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      media_files: {
+        Row: MediaFileRow;
+        Insert: MediaFileInsert;
+        Update: MediaFileUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'media_files_submitted_by_gallery_fkey';
+            columns: ['submitted_by_gallery'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      news_posts: {
+        Row: NewsPostRow;
+        Insert: NewsPostInsert;
+        Update: NewsPostUpdate;
+        Relationships: [];
+      };
+      news_read_status: {
+        Row: NewsReadStatusRow;
+        Insert: NewsReadStatusInsert;
+        Update: NewsReadStatusUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'news_read_status_news_id_fkey';
+            columns: ['news_id'];
+            referencedRelation: 'news_posts';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      packing_list_crates: {
+        Row: PackingListCrateRow;
+        Insert: PackingListCrateInsert;
+        Update: PackingListCrateUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'packing_list_crates_packing_list_id_fkey';
+            columns: ['packing_list_id'];
+            referencedRelation: 'packing_lists';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      price_intelligence_reports: {
+        Row: PriceIntelligenceReportRow;
+        Insert: PriceIntelligenceReportInsert;
+        Update: PriceIntelligenceReportUpdate;
+        Relationships: [];
+      };
+      production_order_documents: {
+        Row: ProductionOrderDocumentRow;
+        Insert: ProductionOrderDocumentInsert;
+        Update: ProductionOrderDocumentUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'production_order_documents_production_order_id_fkey';
+            columns: ['production_order_id'];
+            referencedRelation: 'production_orders';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      production_order_image_notes: {
+        Row: ProductionOrderImageNoteRow;
+        Insert: ProductionOrderImageNoteInsert;
+        Update: ProductionOrderImageNoteUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'production_order_image_notes_production_order_id_fkey';
+            columns: ['production_order_id'];
+            referencedRelation: 'production_orders';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      project_artworks: {
+        Row: ProjectArtworkRow;
+        Insert: ProjectArtworkInsert;
+        Update: ProjectArtworkUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'project_artworks_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'project_artworks_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      project_production_orders: {
+        Row: ProjectProductionOrderRow;
+        Insert: ProjectProductionOrderInsert;
+        Update: ProjectProductionOrderUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'project_production_orders_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'project_production_orders_production_order_id_fkey';
+            columns: ['production_order_id'];
+            referencedRelation: 'production_orders';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      sale_requests: {
+        Row: SaleRequestRow;
+        Insert: SaleRequestInsert;
+        Update: SaleRequestUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'sale_requests_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'sale_requests_gallery_id_fkey';
+            columns: ['gallery_id'];
+            referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      viewing_room_views: {
+        Row: ViewingRoomViewRow;
+        Insert: ViewingRoomViewInsert;
+        Update: ViewingRoomViewUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'viewing_room_views_viewing_room_id_fkey';
+            columns: ['viewing_room_id'];
+            referencedRelation: 'viewing_rooms';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
+    // `[_ in never]` (not Record<string, never>): its `keyof` must stay `never`,
+    // otherwise postgrest-js treats every column as a computed field and
+    // star-selects collapse to {}
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
   };
 }
-
 // ---------------------------------------------------------------------------
 // Publication Budget types
 // ---------------------------------------------------------------------------
@@ -2648,7 +3462,7 @@ export type PublicationBudgetStatus = 'draft' | 'active' | 'closed';
 export type PublicationBudgetItemType = 'revenue' | 'cost';
 export type PublicationBudgetItemStatus = 'estimated' | 'confirmed' | 'invoiced' | 'paid';
 
-export interface PublicationBudgetRow {
+export type PublicationBudgetRow = {
   id: string;
   name: string;
   description: string | null;
@@ -2657,7 +3471,7 @@ export interface PublicationBudgetRow {
   updated_at: string;
 }
 
-export interface PublicationBudgetInsert {
+export type PublicationBudgetInsert = {
   id?: string;
   name: string;
   description?: string | null;
@@ -2668,7 +3482,7 @@ export interface PublicationBudgetInsert {
 
 export type PublicationBudgetUpdate = Partial<PublicationBudgetInsert>;
 
-export interface PublicationBudgetItemRow {
+export type PublicationBudgetItemRow = {
   id: string;
   budget_id: string;
   type: PublicationBudgetItemType;
@@ -2684,7 +3498,7 @@ export interface PublicationBudgetItemRow {
   updated_at: string;
 }
 
-export interface PublicationBudgetItemInsert {
+export type PublicationBudgetItemInsert = {
   id?: string;
   budget_id: string;
   type: PublicationBudgetItemType;
@@ -2701,3 +3515,275 @@ export interface PublicationBudgetItemInsert {
 }
 
 export type PublicationBudgetItemUpdate = Partial<PublicationBudgetItemInsert>;
+// ---------------------------------------------------------------------------
+// Generated from the live PostgREST OpenAPI schema (2026-07-03) for tables
+// that were missing from the Tables map below.
+// ---------------------------------------------------------------------------
+
+export type ArtworkProvenanceRow = {
+  id: string;
+  user_id: string;
+  artwork_id: string;
+  owner_name: string;
+  owner_type: string;
+  acquisition_date: string | null;
+  acquisition_method: string | null;
+  notes: string | null;
+  sort_order: number;
+  confirmed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ArtworkProvenanceInsert = {
+  id?: string;
+  user_id: string;
+  artwork_id: string;
+  owner_name: string;
+  owner_type?: string;
+  acquisition_date?: string | null;
+  acquisition_method?: string | null;
+  notes?: string | null;
+  sort_order?: number;
+  confirmed?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type ArtworkProvenanceUpdate = Partial<ArtworkProvenanceInsert>;
+
+export type CatalogueRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  config: unknown;
+  created_at: string;
+  updated_at: string;
+  portfolio: string;
+  gallery_id: string | null;
+  contact_id: string | null;
+  exhibition_id: string | null;
+}
+
+export type CatalogueInsert = {
+  id?: string;
+  user_id: string;
+  name: string;
+  config: unknown;
+  created_at?: string;
+  updated_at?: string;
+  portfolio?: string;
+  gallery_id?: string | null;
+  contact_id?: string | null;
+  exhibition_id?: string | null;
+}
+
+export type CatalogueUpdate = Partial<CatalogueInsert>;
+
+export type CvEntryRow = {
+  id: string;
+  year: number | null;
+  category: string;
+  title: string;
+  location: string | null;
+  description: string | null;
+  sort_order: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CvEntryInsert = {
+  id?: string;
+  year?: number | null;
+  category: string;
+  title: string;
+  location?: string | null;
+  description?: string | null;
+  sort_order?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type CvEntryUpdate = Partial<CvEntryInsert>;
+
+export type ExhibitionImageRow = {
+  id: string;
+  user_id: string;
+  exhibition_id: string;
+  storage_path: string;
+  file_name: string;
+  caption: string | null;
+  sort_order: number;
+  created_at: string;
+  photo_type: string;
+}
+
+export type ExhibitionImageInsert = {
+  id?: string;
+  user_id: string;
+  exhibition_id: string;
+  storage_path: string;
+  file_name: string;
+  caption?: string | null;
+  sort_order?: number;
+  created_at?: string;
+  photo_type?: string;
+}
+
+export type ExhibitionImageUpdate = Partial<ExhibitionImageInsert>;
+
+export type MediaFileRow = {
+  id: string;
+  category: string;
+  title: string;
+  description: string | null;
+  file_name: string;
+  storage_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  uploaded_by: string;
+  status: string;
+  submitted_by_gallery: string | null;
+  review_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  content_type: string | null;
+  text_content: string | null;
+  credit: string | null;
+  source_url: string | null;
+}
+
+export type MediaFileInsert = {
+  id?: string;
+  category: string;
+  title: string;
+  description?: string | null;
+  file_name: string;
+  storage_path: string;
+  file_size?: number | null;
+  mime_type?: string | null;
+  uploaded_by: string;
+  status?: string;
+  submitted_by_gallery?: string | null;
+  review_notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  content_type?: string | null;
+  text_content?: string | null;
+  credit?: string | null;
+  source_url?: string | null;
+}
+
+export type MediaFileUpdate = Partial<MediaFileInsert>;
+
+export type NewsPostRow = {
+  id: string;
+  title: string;
+  body: string;
+  image_url: string | null;
+  external_link: string | null;
+  published: boolean;
+  published_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type NewsPostInsert = {
+  id?: string;
+  title: string;
+  body: string;
+  image_url?: string | null;
+  external_link?: string | null;
+  published?: boolean;
+  published_at?: string | null;
+  created_by: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type NewsPostUpdate = Partial<NewsPostInsert>;
+
+export type NewsReadStatusRow = {
+  id: string;
+  news_id: string;
+  user_id: string;
+  read_at: string;
+}
+
+export type NewsReadStatusInsert = {
+  id?: string;
+  news_id: string;
+  user_id: string;
+  read_at?: string;
+}
+
+export type NewsReadStatusUpdate = Partial<NewsReadStatusInsert>;
+
+export type ProductionOrderImageNoteRow = {
+  id: string;
+  production_order_id: string;
+  storage_path: string;
+  note: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ProductionOrderImageNoteInsert = {
+  id?: string;
+  production_order_id: string;
+  storage_path: string;
+  note?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type ProductionOrderImageNoteUpdate = Partial<ProductionOrderImageNoteInsert>;
+
+export type SaleRequestRow = {
+  id: string;
+  artwork_id: string;
+  gallery_id: string;
+  requested_by: string;
+  realized_price: number;
+  currency: string;
+  buyer_name: string | null;
+  notes: string | null;
+  status: string;
+  admin_notes: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SaleRequestInsert = {
+  id?: string;
+  artwork_id: string;
+  gallery_id: string;
+  requested_by: string;
+  realized_price: number;
+  currency?: string;
+  buyer_name?: string | null;
+  notes?: string | null;
+  status?: string;
+  admin_notes?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type SaleRequestUpdate = Partial<SaleRequestInsert>;
+
+// Insert/Update aliases for row types that existed but were never wired into
+// the Tables map (kept permissive — call sites historically cast `as never`).
+export type PriceIntelligenceReportInsert = Partial<PriceIntelligenceReportRow>;
+export type PriceIntelligenceReportUpdate = Partial<PriceIntelligenceReportInsert>;
+export type ViewingRoomViewInsert = Partial<ViewingRoomViewRow>;
+export type ViewingRoomViewUpdate = Partial<ViewingRoomViewInsert>;
+export type ExhibitionFloorPlanUpdate = Partial<ExhibitionFloorPlanInsert>;
+export type ExhibitionProductionOrderUpdate = Partial<ExhibitionProductionOrderInsert>;
+export type ProductionOrderDocumentUpdate = Partial<ProductionOrderDocumentInsert>;
+export type ProjectArtworkUpdate = Partial<ProjectArtworkInsert>;
+export type ProjectProductionOrderUpdate = Partial<ProjectProductionOrderInsert>;

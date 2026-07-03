@@ -21,7 +21,7 @@ export function usePublicationBudgets() {
       .from('publication_budgets')
       .select('id, name, description, status, created_at, updated_at')
       .order('created_at', { ascending: false });
-    if (error) { toast(error.message, 'error'); }
+    if (error) { toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' }); }
     else { setBudgets(data ?? []); }
     setLoading(false);
   }, [toast]);
@@ -34,8 +34,8 @@ export function usePublicationBudgets() {
       .insert(insert as never)
       .select('id, name, description, status, created_at, updated_at')
       .single();
-    if (error) { toast(error.message, 'error'); return null; }
-    toast('Budget created', 'success');
+    if (error) { toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' }); return null; }
+    toast({ title: 'Budget created', variant: 'success' });
     setBudgets((prev) => [data, ...prev]);
     return data;
   }, [toast]);
@@ -45,16 +45,16 @@ export function usePublicationBudgets() {
       .from('publication_budgets')
       .update({ ...update, updated_at: new Date().toISOString() } as never)
       .eq('id', id);
-    if (error) { toast(error.message, 'error'); return false; }
-    toast('Budget updated', 'success');
+    if (error) { toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' }); return false; }
+    toast({ title: 'Budget updated', variant: 'success' });
     setBudgets((prev) => prev.map((b) => b.id === id ? { ...b, ...update } : b));
     return true;
   }, [toast]);
 
   const deleteBudget = useCallback(async (id: string): Promise<boolean> => {
     const { error } = await supabase.from('publication_budgets').delete().eq('id', id);
-    if (error) { toast(error.message, 'error'); return false; }
-    toast('Budget deleted', 'success');
+    if (error) { toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' }); return false; }
+    toast({ title: 'Budget deleted', variant: 'success' });
     setBudgets((prev) => prev.filter((b) => b.id !== id));
     return true;
   }, [toast]);
@@ -76,7 +76,7 @@ export function usePublicationBudgetItems(budgetId: string) {
       .eq('budget_id', budgetId)
       .order('type', { ascending: true })
       .order('created_at', { ascending: true });
-    if (error) { toast(error.message, 'error'); }
+    if (error) { toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' }); }
     else { setItems(data ?? []); }
     setLoading(false);
   }, [budgetId, toast]);
@@ -89,7 +89,7 @@ export function usePublicationBudgetItems(budgetId: string) {
       .insert(insert as never)
       .select('id, budget_id, type, category, description, quantity, unit_price, amount, currency, status, notes, created_at, updated_at')
       .single();
-    if (error) { toast(error.message, 'error'); return false; }
+    if (error) { toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' }); return false; }
     setItems((prev) => [...prev, data]);
     return true;
   }, [toast]);
@@ -99,14 +99,14 @@ export function usePublicationBudgetItems(budgetId: string) {
       .from('publication_budget_items')
       .update({ ...update, updated_at: new Date().toISOString() } as never)
       .eq('id', id);
-    if (error) { toast(error.message, 'error'); return false; }
+    if (error) { toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' }); return false; }
     setItems((prev) => prev.map((i) => i.id === id ? { ...i, ...update } : i));
     return true;
   }, [toast]);
 
   const deleteItem = useCallback(async (id: string): Promise<boolean> => {
     const { error } = await supabase.from('publication_budget_items').delete().eq('id', id);
-    if (error) { toast(error.message, 'error'); return false; }
+    if (error) { toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' }); return false; }
     setItems((prev) => prev.filter((i) => i.id !== id));
     return true;
   }, [toast]);
