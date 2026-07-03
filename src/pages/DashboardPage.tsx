@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { useExchangeRates } from '../hooks/useExchangeRates';
 import { useDashboardAnalytics } from '../hooks/useDashboardAnalytics';
+import { usePortfolio } from '../contexts/PortfolioContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Card } from '../components/ui/Card';
 import { ProfitLossCard } from '../components/dashboard/ProfitLossCard';
@@ -122,6 +123,7 @@ interface GalleryRanking {
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const { portfolio } = usePortfolio();
   const { toCHF, ready: ratesReady } = useExchangeRates();
   const { data: analyticsData, loading: analyticsLoading } = useDashboardAnalytics(toCHF, ratesReady);
   // Consolidated dashboard state — single useState to batch all updates
@@ -202,6 +204,7 @@ export function DashboardPage() {
       supabase
         .from('artworks')
         .select('status, gallery_id, price, currency')
+        .eq('portfolio', portfolio)
         .limit(5000),
       supabase
         .from('production_orders')
@@ -209,7 +212,8 @@ export function DashboardPage() {
         .not('status', 'in', '("draft","completed")'),
       supabase
         .from('sales')
-        .select('sale_price, currency, gallery_id, sale_date, commission_percent, artwork_id')
+        .select('sale_price, currency, gallery_id, sale_date, commission_percent, artwork_id, artworks!inner(portfolio)')
+        .eq('artworks.portfolio', portfolio)
         .limit(5000),
     ]);
 
@@ -376,7 +380,7 @@ export function DashboardPage() {
     } finally {
       clearTimeout(safetyTimer);
     }
-  }, []);
+  }, [portfolio]);
 
   useEffect(() => {
     fetchRawData();
