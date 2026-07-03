@@ -27,6 +27,7 @@
 // ---------------------------------------------------------------------------
 
 import { readFileSync } from 'node:fs';
+import { createInterface } from 'node:readline/promises';
 import { createClient } from '@supabase/supabase-js';
 
 const BUCKET = 'artwork-images';
@@ -59,9 +60,21 @@ if (!url) {
   console.error('Set SUPABASE_URL, or run from the repo root so .env provides VITE_SUPABASE_URL');
   process.exit(1);
 }
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!serviceKey) {
-  console.error('Set SUPABASE_SERVICE_ROLE_KEY (Supabase dashboard → Settings → API)');
+let serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+if (!serviceKey && process.stdin.isTTY) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  serviceKey = (
+    await rl.question('Paste the service_role key (dashboard → Settings → API): ')
+  ).trim();
+  rl.close();
+}
+// Real keys are JWTs ("eyJ…") or new-style secrets ("sb_secret_…") — catch
+// placeholders and typos before making requests with them
+if (!serviceKey || !(serviceKey.startsWith('eyJ') || serviceKey.startsWith('sb_secret_'))) {
+  console.error(
+    'That does not look like a service_role key (expected it to start with "eyJ" or "sb_secret_").',
+  );
+  console.error(`Copy it from https://supabase.com/dashboard/project/<project-ref>/settings/api`);
   process.exit(1);
 }
 
