@@ -603,6 +603,7 @@ export function ProductionOrderDetailPage() {
           isOpen
           onClose={() => setConvertItem(null)}
           item={convertItem}
+          galleryId={productionOrder?.gallery_id ?? null}
           onConverted={handleConvertToArtwork}
         />
       )}

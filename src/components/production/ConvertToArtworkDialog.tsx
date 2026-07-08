@@ -37,6 +37,8 @@ export interface ConvertToArtworkDialogProps {
   isOpen: boolean;
   onClose: () => void;
   item: ProductionOrderItemRow;
+  /** Gallery of the parent production order — pre-selected as the artwork's gallery */
+  galleryId?: string | null;
   onConverted: (artworkId: string) => void;
 }
 
@@ -58,6 +60,7 @@ export function ConvertToArtworkDialog({
   isOpen,
   onClose,
   item,
+  galleryId,
   onConverted,
 }: ConvertToArtworkDialogProps) {
   const { generateNumber } = useDocumentNumber();
@@ -126,6 +129,10 @@ export function ConvertToArtworkDialog({
   // Notes
   const [notes, setNotes] = useState(item.notes ?? '');
 
+  // Gallery (pre-filled from the production order)
+  const [gallery, setGallery] = useState(galleryId ?? '');
+  const [galleryOptions, setGalleryOptions] = useState<{ value: string; label: string }[]>([]);
+
   const [status, setStatus] = useState<string>('available');
 
   const [loading, setLoading] = useState(false);
@@ -158,8 +165,23 @@ export function ConvertToArtworkDialog({
     setSeries(item.series ?? '');
     setColor(item.color ?? '');
     setNotes(item.notes ?? '');
+    setGallery(galleryId ?? '');
     setStatus('available');
     setErrors({});
+
+    // Load galleries for the gallery select
+    supabase
+      .from('galleries')
+      .select('id, name')
+      .order('name')
+      .then(({ data }) => {
+        setGalleryOptions(
+          ((data ?? []) as { id: string; name: string }[]).map((g) => ({
+            value: g.id,
+            label: g.name,
+          })),
+        );
+      });
 
     // Generate codes
     setReferenceCode(generateArtworkRefCode());
@@ -243,6 +265,7 @@ export function ConvertToArtworkDialog({
           series: (series || null) as ArtworkSeries | null,
           color: (color || null) as ArtworkColor | null,
           notes: notes.trim() || null,
+          gallery_id: gallery || null,
           is_circular: item.is_circular,
           is_window: item.is_window,
           lamination_needed: item.lamination_needed,
@@ -482,13 +505,21 @@ export function ConvertToArtworkDialog({
           placeholder="Notes carried over from the production item"
         />
 
-        {/* Status */}
-        <Select
-          label="Artwork Status"
-          options={[...ARTWORK_STATUS_OPTIONS]}
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        />
+        {/* Gallery & Status */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Select
+            label="Gallery"
+            options={[{ value: '', label: 'No gallery' }, ...galleryOptions]}
+            value={gallery}
+            onChange={(e) => setGallery(e.target.value)}
+          />
+          <Select
+            label="Artwork Status"
+            options={[...ARTWORK_STATUS_OPTIONS]}
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          />
+        </div>
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3 border-t border-primary-100 pt-4">
