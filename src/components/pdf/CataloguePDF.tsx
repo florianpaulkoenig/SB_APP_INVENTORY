@@ -6,7 +6,8 @@
 // ---------------------------------------------------------------------------
 
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import { PDF_COLORS, pdfFont } from './PDFStyles';
+import { PDF_COLORS } from './PDFStyles';
+import { MixedText } from './MixedText';
 import { COMPANY_NAME } from '../../lib/constants';
 
 // Ensure fonts are registered (side-effect import)
@@ -749,9 +750,9 @@ function ListRow({
         const align = col.key === 'price' ? 'right' as const : undefined;
         const cellVal = val(col.key);
         return (
-          <Text key={col.key} style={[cellStyle, { width: col.width, textAlign: align, fontFamily: pdfFont(cellVal) }]}>
+          <MixedText key={col.key} style={[cellStyle, { width: col.width, textAlign: align }]}>
             {cellVal}
-          </Text>
+          </MixedText>
         );
       })}
     </View>
@@ -803,9 +804,9 @@ export function CataloguePDF({
           <View style={s.coverDarkOverlay} />
         </View>
         <View style={s.coverContent}>
-          <Text style={[s.coverTitle, { fontFamily: pdfFont(title) }]}>{title}</Text>
-          {subtitle ? <Text style={[s.coverSubtitle, { fontFamily: pdfFont(subtitle) }]}>{subtitle}</Text> : null}
-          {coverText ? <Text style={[s.coverBodyText, { fontFamily: pdfFont(coverText) }]}>{coverText}</Text> : null}
+          <MixedText style={s.coverTitle}>{title}</MixedText>
+          {subtitle ? <MixedText style={s.coverSubtitle}>{subtitle}</MixedText> : null}
+          {coverText ? <MixedText style={s.coverBodyText}>{coverText}</MixedText> : null}
           {showDate && (
             <Text style={s.coverMetaText}>{formatLocalizedDate(language)}</Text>
           )}
@@ -828,10 +829,10 @@ export function CataloguePDF({
   } else {
     allPages.push(
       <Page key="cover" size="A4" style={s.coverClean}>
-        <Text style={[s.coverCleanTitle, { fontFamily: pdfFont(title) }]}>{title}</Text>
-        {subtitle ? <Text style={[s.coverCleanSubtitle, { fontFamily: pdfFont(subtitle) }]}>{subtitle}</Text> : null}
+        <MixedText style={s.coverCleanTitle}>{title}</MixedText>
+        {subtitle ? <MixedText style={s.coverCleanSubtitle}>{subtitle}</MixedText> : null}
         <View style={s.coverCleanLine} />
-        {coverText ? <Text style={[s.coverCleanBody, { fontFamily: pdfFont(coverText) }]}>{coverText}</Text> : null}
+        {coverText ? <MixedText style={s.coverCleanBody}>{coverText}</MixedText> : null}
         {showDate && <Text style={s.coverCleanDate}>{formatLocalizedDate(language)}</Text>}
         {showContactDetails && (
           <View style={{ alignItems: 'center' }}>
@@ -848,11 +849,11 @@ export function CataloguePDF({
   if (textPageContent && textPageContent.trim()) {
     allPages.push(
       <Page key="text" size="A4" style={s.textPage}>
-        <Text style={[s.textPageTitle, { fontFamily: pdfFont(title) }]}>{title}</Text>
-        {subtitle ? <Text style={[s.textPageSubtitle, { fontFamily: pdfFont(subtitle) }]}>{subtitle}</Text> : null}
+        <MixedText style={s.textPageTitle}>{title}</MixedText>
+        {subtitle ? <MixedText style={s.textPageSubtitle}>{subtitle}</MixedText> : null}
         <View style={s.textPageLine} />
         {textPageContent.split(/\n\n+/).filter((p) => p.trim()).map((p, i) => (
-          <Text key={i} style={[s.textPageParagraph, { fontFamily: pdfFont(p) }]}>{p.trim()}</Text>
+          <MixedText key={i} style={s.textPageParagraph}>{p.trim()}</MixedText>
         ))}
         <PageFooter />
       </Page>
@@ -866,7 +867,7 @@ export function CataloguePDF({
         allPages.push(
           <Page key={`div-${group.label}`} size="A4" style={s.dividerPage}>
             <View style={s.dividerLine} />
-            <Text style={[s.dividerTitle, { fontFamily: pdfFont(group.label) }]}>{group.label}</Text>
+            <MixedText style={s.dividerTitle}>{group.label}</MixedText>
             <Text style={s.dividerCount}>
               {group.artworks.length} artwork{group.artworks.length !== 1 ? 's' : ''}
             </Text>
@@ -891,12 +892,12 @@ export function CataloguePDF({
                 <Image src={aw.imageUrl} style={s.artworkImage} />
               ) : (
                 <View style={s.artworkPlaceholder}>
-                  <Text style={[s.artworkPlaceholderText, { fontFamily: pdfFont(aw.title) }]}>{aw.title}</Text>
+                  <MixedText style={s.artworkPlaceholderText}>{aw.title}</MixedText>
                 </View>
               )}
             </View>
 
-            <Text style={[s.artworkTitle, { fontFamily: pdfFont(aw.title) }]}>{aw.title}</Text>
+            <MixedText style={s.artworkTitle}>{aw.title}</MixedText>
             {visibility.showReferenceCode && (
               <Text style={s.artworkRefCode}>{aw.reference_code}</Text>
             )}
@@ -904,7 +905,7 @@ export function CataloguePDF({
             {rows.map((row) => (
               <View style={s.artworkDetailRow} key={row.label}>
                 <Text style={s.artworkDetailLabel}>{row.label}</Text>
-                <Text style={[s.artworkDetailValue, { fontFamily: pdfFont(row.value) }]}>{row.value}</Text>
+                <MixedText style={s.artworkDetailValue}>{row.value}</MixedText>
               </View>
             ))}
             {visibility.showSoldDot && aw.status === 'sold' && (
@@ -923,7 +924,7 @@ export function CataloguePDF({
         allPages.push(
           <Page key={`div-${group.label}`} size="A4" style={s.dividerPage}>
             <View style={s.dividerLine} />
-            <Text style={[s.dividerTitle, { fontFamily: pdfFont(group.label) }]}>{group.label}</Text>
+            <MixedText style={s.dividerTitle}>{group.label}</MixedText>
             <Text style={s.dividerCount}>
               {group.artworks.length} artwork{group.artworks.length !== 1 ? 's' : ''}
             </Text>
@@ -958,9 +959,9 @@ export function CataloguePDF({
             <Image src={ai.imageUrl} style={s.appendixImage} />
           </View>
           {ai.caption ? (
-            <Text style={[s.appendixCaption, { fontFamily: pdfFont(ai.caption) }]}>
+            <MixedText style={s.appendixCaption}>
               {ai.caption}
-            </Text>
+            </MixedText>
           ) : null}
           <PageFooter />
         </Page>,

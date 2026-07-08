@@ -4,7 +4,8 @@
 // ---------------------------------------------------------------------------
 
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import { PDF_COLORS, pdfFont } from './PDFStyles';
+import { PDF_COLORS } from './PDFStyles';
+import { MixedText } from './MixedText';
 
 // Ensure AnzianoPro font is registered (side-effect import)
 import './PDFStyles';
@@ -381,13 +382,13 @@ export function DeliveryReceiptPDF({
               )}
             </View>
             <View style={{ width: COL_TITLE, overflow: 'hidden' }}>
-              <Text style={[s.listCellBold, { fontFamily: pdfFont(item.artwork_title) }]}>{item.artwork_title}</Text>
+              <MixedText style={s.listCellBold}>{item.artwork_title}</MixedText>
             </View>
             <View style={{ width: COL_REF, overflow: 'hidden' }}>
               <Text style={s.listCell}>{item.artwork_reference_code}</Text>
             </View>
             <View style={{ width: COL_MEDIUM, overflow: 'hidden' }}>
-              <Text style={[s.listCell, { fontFamily: pdfFont(item.artwork_medium) }]}>{item.artwork_medium ?? '\u2014'}</Text>
+              <MixedText style={s.listCell}>{item.artwork_medium ?? '\u2014'}</MixedText>
             </View>
             <View style={{ width: COL_DIM, overflow: 'hidden' }}>
               <Text style={s.listCell}>{item.artwork_dimensions || '\u2014'}</Text>

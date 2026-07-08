@@ -5,7 +5,8 @@
 
 import React from 'react';
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
-import styles, { PDF_COLORS, pdfFont } from './PDFStyles';
+import styles, { PDF_COLORS } from './PDFStyles';
+import { MixedText } from './MixedText';
 import { PDFHeader } from './PDFHeader';
 import { COMPANY_NAME } from '../../lib/constants';
 
@@ -261,9 +262,12 @@ function TableHeader({ t }: { t: TranslationStrings }) {
 }
 
 function Cell({ width, children, style }: { width: string; children: React.ReactNode; style?: import('@react-pdf/types').Style }) {
+  const cellStyle = style ? [styles.tableCell, style] : styles.tableCell;
   return (
     <View style={{ width, overflow: 'hidden' }}>
-      <Text style={style ? [styles.tableCell, style] : styles.tableCell}>{children}</Text>
+      {typeof children === 'string'
+        ? <MixedText style={cellStyle}>{children}</MixedText>
+        : <Text style={cellStyle}>{children}</Text>}
     </View>
   );
 }
@@ -273,7 +277,7 @@ function ItemRow({ item, index }: { item: PDFPackingItem; index: number }) {
     <View style={index % 2 === 1 ? styles.tableBodyRowAlt : styles.tableBodyRow} key={index}>
       <Cell width={COL_NUM}>{index + 1}</Cell>
       <Cell width={COL_REF}>{item.artwork_reference_code}</Cell>
-      <Cell width={COL_TITLE} style={{ fontFamily: pdfFont(item.artwork_title) }}>
+      <Cell width={COL_TITLE}>
         {item.artwork_title}
       </Cell>
       <Cell width={COL_DIM}>{item.artwork_dimensions || '—'}</Cell>

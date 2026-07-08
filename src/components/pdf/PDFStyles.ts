@@ -82,12 +82,27 @@ export function hasArabic(text: string): boolean {
   return ARABIC_REGEX.test(text);
 }
 
-/** Pick the right font family for the given text */
-export function pdfFont(text?: string | null): string {
-  if (!text) return 'AnzianoPro';
-  if (hasCJK(text))    return 'NotoSansSC';
-  if (hasArabic(text)) return 'NotoSansArabic';
-  return 'AnzianoPro';
+export type CJKRun = { text: string; cjk: boolean };
+
+/** Split text into runs of CJK vs non-CJK characters so each run can be
+ *  rendered with the right font (NotoSansSC vs AnzianoPro). Rendering the
+ *  whole line in NotoSansSC would drop AnzianoPro for the Latin part —
+ *  see MixedText.tsx for the component that consumes these runs. */
+export function splitCJKRuns(text: string): CJKRun[] {
+  const runs: CJKRun[] = [];
+  let cur = '';
+  let curCJK = false;
+  for (const ch of text) {
+    const isCJK = CJK_REGEX.test(ch);
+    if (cur && isCJK !== curCJK) {
+      runs.push({ text: cur, cjk: curCJK });
+      cur = '';
+    }
+    curCJK = isCJK;
+    cur += ch;
+  }
+  if (cur) runs.push({ text: cur, cjk: curCJK });
+  return runs;
 }
 
 // ---------------------------------------------------------------------------

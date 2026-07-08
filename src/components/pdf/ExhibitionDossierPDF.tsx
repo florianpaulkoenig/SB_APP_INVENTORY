@@ -11,7 +11,7 @@
 
 import React from 'react';
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import styles, { PDF_COLORS } from './PDFStyles';
+import styles, { PDF_COLORS, splitCJKRuns } from './PDFStyles';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 import { parseRichText, superscript } from '../../lib/richText';
 import type { RichToken } from '../../lib/richText';
@@ -471,11 +471,15 @@ function RichPara({ tokens }: { tokens: RichToken[] }) {
           <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: 'AnzianoPro' }}>{'‬'}</Text>,
         );
       } else {
-        spans.push(
-          <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: latinFamily(isItalic), fontWeight: fw }}>
-            {run.text}
-          </Text>,
-        );
+        // Split CJK vs Latin so Chinese characters get NotoSansSC while the
+        // rest of the line keeps AnzianoPro (same pattern as the Arabic runs).
+        for (const seg of splitCJKRuns(run.text)) {
+          spans.push(
+            <Text key={key++} style={{ ...BASE_TEXT_STYLE, fontFamily: seg.cjk ? 'NotoSansSC' : latinFamily(isItalic), fontWeight: fw }}>
+              {seg.text}
+            </Text>,
+          );
+        }
       }
     }
   }

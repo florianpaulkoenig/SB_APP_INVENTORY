@@ -4,7 +4,8 @@
 // ---------------------------------------------------------------------------
 
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import styles, { PDF_COLORS, pdfFont } from './PDFStyles';
+import styles, { PDF_COLORS } from './PDFStyles';
+import { MixedText } from './MixedText';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 import type { AppraisalPurpose } from '../../types/database';
 
@@ -485,7 +486,7 @@ export function AppraisalPDF({ artwork, appraisal, artworkImageUrl, signatureUrl
               {row.highlight ? (
                 <Text style={s.valueHighlight}>{row.value}</Text>
               ) : (
-                <Text style={[styles.infoValue, { fontFamily: pdfFont(row.value) }]}>{row.value}</Text>
+                <MixedText style={styles.infoValue}>{row.value}</MixedText>
               )}
             </View>
           ))}
