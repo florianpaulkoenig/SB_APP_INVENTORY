@@ -3,13 +3,16 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
+import { Textarea } from '../ui/Textarea';
 import { generateArtworkRefCode } from '../../lib/utils';
 import { useDocumentNumber } from '../../hooks/useDocumentNumber';
 import { supabase } from '../../lib/supabase';
+import { generateAndUploadThumbnail } from '../../lib/imageThumbnails';
 import {
   ARTWORK_CATEGORIES,
   ARTWORK_MOTIFS,
   ARTWORK_SERIES,
+  ARTWORK_COLORS,
   EDITION_TYPES,
   CURRENCIES,
   DOC_PREFIXES,
@@ -20,6 +23,7 @@ import type {
   ArtworkCategory,
   ArtworkMotif,
   ArtworkSeries,
+  ArtworkColor,
   EditionType,
   Currency,
   DimensionUnit,
@@ -117,6 +121,10 @@ export function ConvertToArtworkDialog({
   const [category, setCategory] = useState(item.category ?? '');
   const [motif, setMotif] = useState(item.motif ?? '');
   const [series, setSeries] = useState(item.series ?? '');
+  const [color, setColor] = useState(item.color ?? '');
+
+  // Notes
+  const [notes, setNotes] = useState(item.notes ?? '');
 
   const [status, setStatus] = useState<string>('available');
 
@@ -148,6 +156,8 @@ export function ConvertToArtworkDialog({
     setCategory(item.category ?? '');
     setMotif(item.motif ?? '');
     setSeries(item.series ?? '');
+    setColor(item.color ?? '');
+    setNotes(item.notes ?? '');
     setStatus('available');
     setErrors({});
 
@@ -231,6 +241,12 @@ export function ConvertToArtworkDialog({
           category: (category || null) as ArtworkCategory | null,
           motif: (motif || null) as ArtworkMotif | null,
           series: (series || null) as ArtworkSeries | null,
+          color: (color || null) as ArtworkColor | null,
+          notes: notes.trim() || null,
+          is_circular: item.is_circular,
+          is_window: item.is_window,
+          lamination_needed: item.lamination_needed,
+          lamination_cost: item.lamination_cost,
           status: status as ArtworkStatus,
         } as never)
         .select('id')
@@ -246,7 +262,56 @@ export function ConvertToArtworkDialog({
 
       if (linkError) throw linkError;
 
-      // 3. Auto-create certificate of authenticity
+      // 3. Copy the item's reference photos over as artwork images
+      //    (best effort — a failed photo copy must not block the conversion)
+      try {
+        const prefix = `${session.user.id}/production-orders/${item.production_order_id}/items/${item.id}`;
+        const { data: files } = await supabase.storage
+          .from('artwork-images')
+          .list(prefix);
+        const photos = (files ?? []).filter((f) => !f.name.startsWith('.'));
+
+        let isPrimary = true;
+        for (let i = 0; i < photos.length; i++) {
+          const srcPath = `${prefix}/${photos[i].name}`;
+          const destPath = `${session.user.id}/${artwork.id}/${photos[i].name}`;
+
+          const { error: copyError } = await supabase.storage
+            .from('artwork-images')
+            .copy(srcPath, destPath);
+          if (copyError) {
+            console.warn('Failed to copy reference photo:', copyError.message);
+            continue;
+          }
+
+          // Reference photos have no thumbs/ copy — generate one for grids
+          const { data: blob } = await supabase.storage
+            .from('artwork-images')
+            .download(srcPath);
+          if (blob) await generateAndUploadThumbnail('artwork-images', destPath, blob);
+
+          const { error: imageInsertError } = await supabase
+            .from('artwork_images')
+            .insert({
+              user_id: session.user.id,
+              artwork_id: artwork.id,
+              storage_path: destPath,
+              file_name: photos[i].name,
+              image_type: 'raw',
+              is_primary: isPrimary,
+              sort_order: i,
+            } as never);
+          if (imageInsertError) {
+            console.warn('Failed to register reference photo:', imageInsertError.message);
+            continue;
+          }
+          isPrimary = false;
+        }
+      } catch (err) {
+        console.warn('Reference photo transfer failed:', err);
+      }
+
+      // 4. Auto-create certificate of authenticity
       try {
         const { data: certNumber } = await supabase.rpc('generate_document_number', {
           p_user_id: session.user.id,
@@ -289,6 +354,10 @@ export function ConvertToArtworkDialog({
   const seriesOptions = [
     { value: '', label: 'Select series...' },
     ...ARTWORK_SERIES.map((s) => ({ value: s.value, label: s.label })),
+  ];
+  const colorOptions = [
+    { value: '', label: 'Select color...' },
+    ...ARTWORK_COLORS.map((c) => ({ value: c.value, label: c.label })),
   ];
 
   return (
@@ -397,11 +466,21 @@ export function ConvertToArtworkDialog({
         </div>
 
         {/* Classification */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Select label="Category" options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value)} />
           <Select label="Motif" options={motifOptions} value={motif} onChange={(e) => setMotif(e.target.value)} />
           <Select label="Series" options={seriesOptions} value={series} onChange={(e) => setSeries(e.target.value)} />
+          <Select label="Color" options={colorOptions} value={color} onChange={(e) => setColor(e.target.value)} />
         </div>
+
+        {/* Notes */}
+        <Textarea
+          label="Notes"
+          rows={3}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Notes carried over from the production item"
+        />
 
         {/* Status */}
         <Select
