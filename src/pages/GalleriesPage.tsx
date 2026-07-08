@@ -28,6 +28,8 @@ export function GalleriesPage() {
   const { toCHF, ready: ratesReady } = useExchangeRates();
 
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<string>('name');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
@@ -40,10 +42,18 @@ export function GalleriesPage() {
   }
 
   const { galleries, loading, totalCount } = useGalleries({
-    filters: { search, sortBy, sortOrder: sortBy === 'status_color' ? 'desc' : 'asc' },
+    filters: {
+      search,
+      type: typeFilter,
+      statusColor: statusFilter,
+      sortBy,
+      sortOrder: sortBy === 'status_color' ? 'desc' : 'asc',
+    },
     page,
     pageSize: PAGE_SIZE,
   });
+
+  const hasFilters = Boolean(search || typeFilter || statusFilter);
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
@@ -171,6 +181,16 @@ export function GalleriesPage() {
     setPage(1);
   }
 
+  function handleTypeFilter(value: string) {
+    setTypeFilter(value);
+    setPage(1);
+  }
+
+  function handleStatusFilter(value: string) {
+    setStatusFilter(value);
+    setPage(1);
+  }
+
   return (
     <div>
       {/* Header */}
@@ -189,14 +209,21 @@ export function GalleriesPage() {
               {GALLERY_TYPES.map((gt) => {
                 const count = categoryCounts[gt.value] || 0;
                 if (count === 0) return null;
+                const active = typeFilter === gt.value;
                 return (
-                  <span
+                  <button
                     key={gt.value}
-                    className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-600"
+                    type="button"
+                    onClick={() => handleTypeFilter(active ? '' : gt.value)}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                      active
+                        ? 'bg-primary-900 text-white'
+                        : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
+                    }`}
                   >
                     {gt.label}
-                    <span className="font-semibold text-primary-800">{count}</span>
-                  </span>
+                    <span className={`font-semibold ${active ? 'text-white' : 'text-primary-800'}`}>{count}</span>
+                  </button>
                 );
               })}
             </div>
@@ -220,9 +247,34 @@ export function GalleriesPage() {
 
         <div className="ml-auto flex items-center gap-2 shrink-0">
           <select
+            value={typeFilter}
+            onChange={(e) => handleTypeFilter(e.target.value)}
+            className="border-0 border-b border-primary-200 bg-transparent py-1 text-xs text-primary-500 focus:border-accent focus:outline-none"
+            aria-label="Filter by category"
+          >
+            <option value="">All Categories</option>
+            {GALLERY_TYPES.map((gt) => (
+              <option key={gt.value} value={gt.value}>{gt.label}</option>
+            ))}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => handleStatusFilter(e.target.value)}
+            className="border-0 border-b border-primary-200 bg-transparent py-1 text-xs text-primary-500 focus:border-accent focus:outline-none"
+            aria-label="Filter by status"
+          >
+            <option value="">All Status</option>
+            <option value="green">Green</option>
+            <option value="yellow">Yellow</option>
+            <option value="red">Red</option>
+          </select>
+
+          <select
             value={sortBy}
             onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
             className="border-0 border-b border-primary-200 bg-transparent py-1 text-xs text-primary-500 focus:border-accent focus:outline-none"
+            aria-label="Sort by"
           >
             <option value="name">Name</option>
             <option value="status_color">Color</option>
@@ -280,14 +332,14 @@ export function GalleriesPage() {
               />
             </svg>
           }
-          title={search ? 'No galleries found' : 'No galleries yet'}
+          title={hasFilters ? 'No galleries found' : 'No galleries yet'}
           description={
-            search
-              ? 'Try adjusting your search terms.'
+            hasFilters
+              ? 'Try adjusting your search or filters.'
               : 'Add your first gallery to start tracking consignment partners.'
           }
           action={
-            !search ? (
+            !hasFilters ? (
               <Button onClick={() => navigate('/galleries/new')}>
                 Add First Gallery
               </Button>

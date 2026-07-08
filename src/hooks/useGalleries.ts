@@ -11,6 +11,8 @@ import type { GalleryRow, GalleryInsert, GalleryUpdate } from '../types/database
 export interface GalleryFilters {
   search?: string;
   country?: string;
+  type?: string;
+  statusColor?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
@@ -72,6 +74,16 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
         query = query.eq('country', filters.country);
       }
 
+      // Category (gallery type) filter
+      if (filters.type) {
+        query = query.eq('type', filters.type as GalleryRow['type']);
+      }
+
+      // Status color filter
+      if (filters.statusColor) {
+        query = query.eq('status_color', filters.statusColor as NonNullable<GalleryRow['status_color']>);
+      }
+
       // Sorting (whitelist to prevent injection)
       const VALID_SORT_COLUMNS = ['name', 'city', 'country', 'type', 'status_color', 'commission_rate', 'created_at', 'updated_at'] as const;
       const rawSortBy = filters.sortBy || 'name';
@@ -101,7 +113,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
     } finally {
       if (gen === fetchGenRef.current) setLoading(false);
     }
-  }, [filters.search, filters.country, filters.sortBy, filters.sortOrder, page, pageSize, toast]);
+  }, [filters.search, filters.country, filters.type, filters.statusColor, filters.sortBy, filters.sortOrder, page, pageSize, toast]);
 
   useEffect(() => {
     fetchGalleries();
