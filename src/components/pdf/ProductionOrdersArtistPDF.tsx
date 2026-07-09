@@ -124,11 +124,71 @@ export function ProductionOrdersArtistPDF({
             EST_ORDER_HEADER +
             order.items.reduce((sum, it) => sum + estimateItemHeight(it), 0);
           // Small orders are never split across pages. Long orders may wrap,
-          // but the header then demands enough room below it for the first
-          // item, so the title is never separated from its reference images.
+          // but the first item is rendered inside the unbreakable header
+          // block, so the title is never separated from its reference images.
           const keepWholeOrder = estTotal <= EST_KEEP_ORDER_MAX;
-          const firstItemEst =
-            order.items.length > 0 ? estimateItemHeight(order.items[0]) : 0;
+          const firstItem = order.items[0];
+          const keepFirstWithHeader =
+            !keepWholeOrder &&
+            firstItem != null &&
+            EST_ORDER_HEADER + estimateItemHeight(firstItem) <= EST_KEEP_FIRST_MAX;
+
+          const renderItem = (item: OverviewOrder['items'][number], itemIdx: number) => (
+            <View key={`item-${orderIdx}-${itemIdx}`} wrap={false}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  paddingVertical: 5,
+                  paddingHorizontal: 10,
+                  borderBottomWidth: item.referenceImageUrls && item.referenceImageUrls.length > 0 ? 0 : 0.5,
+                  borderBottomColor: PDF_COLORS.border,
+                  backgroundColor: itemIdx % 2 === 1 ? '#fafafa' : PDF_COLORS.white,
+                }}
+              >
+                <Text style={[styles.tableCell, { width: COL_ITEM, fontSize: 10 }]}>
+                  {item.description}
+                </Text>
+                <Text style={[styles.tableCell, { width: COL_DIMS }]}>
+                  {item.dimensions || '—'}
+                </Text>
+                <Text style={[styles.tableCell, { width: COL_QTY, textAlign: 'center', fontFamily: 'AnzianoPro', fontWeight: 'bold' as const }]}>
+                  {item.quantity ?? 1}
+                </Text>
+                <Text style={[styles.tableCell, { width: COL_CATEGORY }]}>
+                  {item.category ?? '—'}
+                </Text>
+              </View>
+              {/* Per-item reference images */}
+              {item.referenceImageUrls && item.referenceImageUrls.length > 0 && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderBottomWidth: 0.5,
+                    borderBottomColor: PDF_COLORS.border,
+                    backgroundColor: itemIdx % 2 === 1 ? '#fafafa' : PDF_COLORS.white,
+                  }}
+                >
+                  {item.referenceImageUrls.map((url, imgIdx) => (
+                    <View key={`ref-${orderIdx}-${itemIdx}-${imgIdx}`} style={{ marginRight: 8 }}>
+                      <Image
+                        src={url}
+                        style={{ width: 120, objectFit: 'contain' as const }}
+                      />
+                      {item.referenceImageNotes?.[imgIdx] ? (
+                        <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary700, marginTop: 2, width: 120 }}>
+                          {item.referenceImageNotes[imgIdx]}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
 
           return (
           <View
@@ -136,13 +196,8 @@ export function ProductionOrdersArtistPDF({
             style={{ marginBottom: 14 }}
             wrap={!keepWholeOrder}
           >
-            {/* Order header + table header kept together */}
-            <View
-              wrap={false}
-              minPresenceAhead={
-                keepWholeOrder ? undefined : Math.min(firstItemEst, EST_KEEP_FIRST_MAX)
-              }
-            >
+            {/* Order header + table header (+ first item of long orders) kept together */}
+            <View wrap={false}>
               {/* Order header */}
               <View
                 style={{
@@ -187,9 +242,11 @@ export function ProductionOrdersArtistPDF({
                   {t.category}
                 </Text>
               </View>
+
+              {keepFirstWithHeader ? renderItem(firstItem, 0) : null}
             </View>
 
-            {/* Item rows — each item+images kept together, but items can split across pages */}
+            {/* Remaining item rows — each item+images kept together */}
             {order.items.length === 0 ? (
               <View style={{ paddingVertical: 6, paddingHorizontal: 10, borderBottomWidth: 0.5, borderBottomColor: PDF_COLORS.border }}>
                 <Text style={{ fontFamily: 'AnzianoPro', fontSize: 9, color: PDF_COLORS.primary400 }}>
@@ -197,62 +254,9 @@ export function ProductionOrdersArtistPDF({
                 </Text>
               </View>
             ) : (
-              order.items.map((item, itemIdx) => (
-                <View key={`item-${orderIdx}-${itemIdx}`} wrap={false}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      paddingVertical: 5,
-                      paddingHorizontal: 10,
-                      borderBottomWidth: item.referenceImageUrls && item.referenceImageUrls.length > 0 ? 0 : 0.5,
-                      borderBottomColor: PDF_COLORS.border,
-                      backgroundColor: itemIdx % 2 === 1 ? '#fafafa' : PDF_COLORS.white,
-                    }}
-                  >
-                    <Text style={[styles.tableCell, { width: COL_ITEM, fontSize: 10 }]}>
-                      {item.description}
-                    </Text>
-                    <Text style={[styles.tableCell, { width: COL_DIMS }]}>
-                      {item.dimensions || '\u2014'}
-                    </Text>
-                    <Text style={[styles.tableCell, { width: COL_QTY, textAlign: 'center', fontFamily: 'AnzianoPro', fontWeight: 'bold' as const }]}>
-                      {item.quantity ?? 1}
-                    </Text>
-                    <Text style={[styles.tableCell, { width: COL_CATEGORY }]}>
-                      {item.category ?? '\u2014'}
-                    </Text>
-                  </View>
-                  {/* Per-item reference images */}
-                  {item.referenceImageUrls && item.referenceImageUrls.length > 0 && (
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        flexWrap: 'wrap',
-                        gap: 6,
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
-                        borderBottomWidth: 0.5,
-                        borderBottomColor: PDF_COLORS.border,
-                        backgroundColor: itemIdx % 2 === 1 ? '#fafafa' : PDF_COLORS.white,
-                      }}
-                    >
-                      {item.referenceImageUrls.map((url, imgIdx) => (
-                        <View key={`ref-${orderIdx}-${itemIdx}-${imgIdx}`} style={{ marginRight: 8 }}>
-                          <Image
-                            src={url}
-                            style={{ width: 120, objectFit: 'contain' as const }}
-                          />
-                          {item.referenceImageNotes?.[imgIdx] ? (
-                            <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary700, marginTop: 2, width: 120 }}>
-                              {item.referenceImageNotes[imgIdx]}
-                            </Text>
-                          ) : null}
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              ))
+              order.items
+                .slice(keepFirstWithHeader ? 1 : 0)
+                .map((item, idx) => renderItem(item, keepFirstWithHeader ? idx + 1 : idx))
             )}
           </View>
           );
