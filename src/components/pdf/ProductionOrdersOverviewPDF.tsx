@@ -152,6 +152,9 @@ export interface OverviewItem {
   category: string | null;
   referenceImageUrls?: string[];
   referenceImageNotes?: string[];
+  /** Pixel dimensions per reference image (aligned with referenceImageUrls) —
+   *  lets the artist PDF compute exact layout heights for pagination. */
+  referenceImageDims?: ({ w: number; h: number } | null)[];
 }
 
 export interface OverviewOrder {

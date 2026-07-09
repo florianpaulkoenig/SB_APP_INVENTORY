@@ -457,9 +457,22 @@ export function ProductionOrdersPage() {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         const userId = currentSession?.user?.id;
 
+        // Measure image dimensions for exact PDF pagination (best effort)
+        const measureDims = async (blob: Blob): Promise<{ w: number; h: number } | null> => {
+          try {
+            const bmp = await createImageBitmap(blob);
+            const dims = { w: bmp.width, h: bmp.height };
+            bmp.close();
+            return dims;
+          } catch {
+            return null;
+          }
+        };
+
         // Download per-item reference images from storage folders (multiple per item)
         const refImageDataUrlsByItem: Record<string, string[]> = {};
         const refImageNotesByItem: Record<string, string[]> = {};
+        const refImageDimsByItem: Record<string, ({ w: number; h: number } | null)[]> = {};
         refImageBlobsByItem = {};
 
         if (userId) {
@@ -471,6 +484,7 @@ export function ProductionOrdersPage() {
               if (files && files.length > 0) {
                 const dataUrls: string[] = [];
                 const noteList: string[] = [];
+                const dimsList: ({ w: number; h: number } | null)[] = [];
                 const blobs: Array<{ blob: Blob; ext: string }> = [];
                 // Fetch notes for this item's images
                 const { data: itemNoteRows } = await supabase
@@ -495,7 +509,11 @@ export function ProductionOrdersPage() {
                         reader.onerror = () => resolve(null);
                         reader.readAsDataURL(blob);
                       });
-                      if (dataUrl) { dataUrls.push(dataUrl); noteList.push(itemNoteMap[filePath] ?? ''); }
+                      if (dataUrl) {
+                        dataUrls.push(dataUrl);
+                        noteList.push(itemNoteMap[filePath] ?? '');
+                        dimsList.push(await measureDims(blob));
+                      }
                     }
                   } catch {
                     // skip files that fail to download
@@ -503,6 +521,7 @@ export function ProductionOrdersPage() {
                 }
                 if (dataUrls.length > 0) refImageDataUrlsByItem[item.id] = dataUrls;
                 if (noteList.length > 0) refImageNotesByItem[item.id] = noteList;
+                if (dimsList.length > 0) refImageDimsByItem[item.id] = dimsList;
                 if (blobs.length > 0) refImageBlobsByItem[item.id] = blobs;
               }
             } catch {
@@ -514,6 +533,7 @@ export function ProductionOrdersPage() {
         // Fetch order-level reference images + notes (uploaded via ProductionOrderImages)
         const refImageDataUrlsByOrder: Record<string, string[]> = {};
         const refImageNotesByOrder: Record<string, string[]> = {};
+        const refImageDimsByOrder: Record<string, ({ w: number; h: number } | null)[]> = {};
         if (userId) {
           for (const order of dateFilteredOrders) {
             try {
@@ -528,6 +548,7 @@ export function ProductionOrdersPage() {
                 for (const n of noteRows ?? []) noteMap[n.storage_path] = n.note;
                 const dataUrls: string[] = [];
                 const noteList: string[] = [];
+                const dimsList: ({ w: number; h: number } | null)[] = [];
                 for (const file of orderFiles) {
                   try {
                     const path = `${prefix}${file.name}`;
@@ -539,13 +560,18 @@ export function ProductionOrdersPage() {
                         reader.onerror = () => resolve(null);
                         reader.readAsDataURL(blob);
                       });
-                      if (dataUrl) { dataUrls.push(dataUrl); noteList.push(noteMap[path] ?? ''); }
+                      if (dataUrl) {
+                        dataUrls.push(dataUrl);
+                        noteList.push(noteMap[path] ?? '');
+                        dimsList.push(await measureDims(blob));
+                      }
                     }
                   } catch { /* skip */ }
                 }
                 if (dataUrls.length > 0) {
                   refImageDataUrlsByOrder[order.id] = dataUrls;
                   refImageNotesByOrder[order.id] = noteList;
+                  refImageDimsByOrder[order.id] = dimsList;
                 }
               }
             } catch { /* skip */ }
@@ -590,6 +616,10 @@ export function ProductionOrdersPage() {
             referenceImageNotes: [
               ...(refImageNotesByItem[item.id] ?? (refImageDataUrlsByItem[item.id] ?? []).map(() => '')),
               ...(isFirstItem ? (refImageNotesByOrder[orderId] ?? []) : []),
+            ],
+            referenceImageDims: [
+              ...(refImageDimsByItem[item.id] ?? []),
+              ...(isFirstItem ? (refImageDimsByOrder[orderId] ?? []) : []),
             ],
           });
           itemMeta[item.id] = {
@@ -718,8 +748,11 @@ export function ProductionOrdersPage() {
         .in('production_order_id', orderIds);
       for (const n of noteRows ?? []) noteMap[n.storage_path] = n.note;
 
-      // Download a storage image and downscale it to a small JPEG data URL
-      async function fetchThumbDataUrl(path: string): Promise<string | null> {
+      // Download a storage image and downscale it to a small JPEG data URL;
+      // also measure pixel dimensions for exact PDF pagination
+      async function fetchThumbDataUrl(
+        path: string,
+      ): Promise<{ url: string; dims: { w: number; h: number } | null } | null> {
         try {
           const { data: blob } = await supabase.storage
             .from('artwork-images')
@@ -727,20 +760,28 @@ export function ProductionOrdersPage() {
           if (!blob) return null;
           const small = await createThumbnailBlob(blob, 480);
           const finalBlob = small ?? blob;
-          return await new Promise<string | null>((resolve) => {
+          let dims: { w: number; h: number } | null = null;
+          try {
+            const bmp = await createImageBitmap(finalBlob);
+            dims = { w: bmp.width, h: bmp.height };
+            bmp.close();
+          } catch { /* dims stay null — PDF falls back to square estimate */ }
+          const url = await new Promise<string | null>((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result as string | null);
             reader.onerror = () => resolve(null);
             reader.readAsDataURL(finalBlob);
           });
+          return url ? { url, dims } : null;
         } catch {
           return null;
         }
       }
 
-      // Per-item reference image thumbnails + notes
+      // Per-item reference image thumbnails + notes + dimensions
       const refThumbsByItem: Record<string, string[]> = {};
       const refNotesByItem: Record<string, string[]> = {};
+      const refDimsByItem: Record<string, ({ w: number; h: number } | null)[]> = {};
       if (userId) {
         for (const item of allItems ?? []) {
           const prefix = `${userId}/production-orders/${item.production_order_id}/items/${item.id}`;
@@ -748,13 +789,14 @@ export function ProductionOrdersPage() {
             const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
             const urls: string[] = [];
             const notes: string[] = [];
+            const dims: ({ w: number; h: number } | null)[] = [];
             for (const file of files ?? []) {
               if (!file.id) continue;
               const path = `${prefix}/${file.name}`;
-              const dataUrl = await fetchThumbDataUrl(path);
-              if (dataUrl) { urls.push(dataUrl); notes.push(noteMap[path] ?? ''); }
+              const thumb = await fetchThumbDataUrl(path);
+              if (thumb) { urls.push(thumb.url); notes.push(noteMap[path] ?? ''); dims.push(thumb.dims); }
             }
-            if (urls.length > 0) { refThumbsByItem[item.id] = urls; refNotesByItem[item.id] = notes; }
+            if (urls.length > 0) { refThumbsByItem[item.id] = urls; refNotesByItem[item.id] = notes; refDimsByItem[item.id] = dims; }
           } catch { /* skip items whose storage listing fails */ }
         }
       }
@@ -762,6 +804,7 @@ export function ProductionOrdersPage() {
       // Order-level reference images (attached to the order's first item)
       const refThumbsByOrder: Record<string, string[]> = {};
       const refNotesByOrder: Record<string, string[]> = {};
+      const refDimsByOrder: Record<string, ({ w: number; h: number } | null)[]> = {};
       if (userId) {
         for (const order of dateFilteredOrders) {
           const prefix = `${userId}/production-orders/${order.id}/`;
@@ -769,13 +812,14 @@ export function ProductionOrdersPage() {
             const { data: orderFiles } = await supabase.storage.from('artwork-images').list(prefix);
             const urls: string[] = [];
             const notes: string[] = [];
+            const dims: ({ w: number; h: number } | null)[] = [];
             for (const file of orderFiles ?? []) {
               if (!file.id) continue;
               const path = `${prefix}${file.name}`;
-              const dataUrl = await fetchThumbDataUrl(path);
-              if (dataUrl) { urls.push(dataUrl); notes.push(noteMap[path] ?? ''); }
+              const thumb = await fetchThumbDataUrl(path);
+              if (thumb) { urls.push(thumb.url); notes.push(noteMap[path] ?? ''); dims.push(thumb.dims); }
             }
-            if (urls.length > 0) { refThumbsByOrder[order.id] = urls; refNotesByOrder[order.id] = notes; }
+            if (urls.length > 0) { refThumbsByOrder[order.id] = urls; refNotesByOrder[order.id] = notes; refDimsByOrder[order.id] = dims; }
           } catch { /* skip */ }
         }
       }
@@ -809,6 +853,10 @@ export function ProductionOrdersPage() {
           referenceImageNotes: [
             ...(refNotesByItem[item.id] ?? []),
             ...(isFirstItem ? (refNotesByOrder[orderId] ?? []) : []),
+          ],
+          referenceImageDims: [
+            ...(refDimsByItem[item.id] ?? []),
+            ...(isFirstItem ? (refDimsByOrder[orderId] ?? []) : []),
           ],
         });
       }

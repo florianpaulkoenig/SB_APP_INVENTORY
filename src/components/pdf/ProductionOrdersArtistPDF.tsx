@@ -2,12 +2,14 @@
 // NOA Inventory -- Production Orders Artist Export PDF
 // Simplified export for the artist: Item, Dimensions, Qty, Category only
 //
-// Pagination: small orders flow together and are never split across pages.
-// Orders too long for one page get their own <Page> with the order header
-// rendered `fixed`, so the title repeats on every page the order spans and
-// is never separated from its items by a page break.
+// Pagination is computed manually from measured image dimensions so the
+// content flows without large gaps: orders follow each other on shared
+// pages, an order header is never separated from its first item, and when
+// an order continues onto the next page its title bar + column header are
+// repeated at the top of that page.
 // ---------------------------------------------------------------------------
 
+import type { ReactElement } from 'react';
 import { Document, Page, View, Text, Image } from '@react-pdf/renderer';
 import styles, { PDF_COLORS } from './PDFStyles';
 import { PDFHeader } from './PDFHeader';
@@ -60,21 +62,49 @@ const COL_QTY = '10%';
 const COL_CATEGORY = '25%';
 
 // ---------------------------------------------------------------------------
-// Page-break height estimates (pt) — orders that fit comfortably on one page
-// flow together; anything bigger gets its own page with a repeating header.
+// Layout metrics (pt) for manual pagination.
+// A4 = 841.89pt tall; page padding 50 top + 60 bottom → ~732 usable.
+// Slightly conservative values so estimate errors produce small bottom gaps
+// instead of overflowing rows.
 // ---------------------------------------------------------------------------
-const EST_ORDER_HEADER = 40;       // order header + table header
-const EST_ITEM_ROW = 24;           // text-only item row
-const EST_IMAGE_ROW = 190;         // one row of reference images (~3 images)
-const EST_IMAGES_PER_ROW = 3;
-const EST_KEEP_ORDER_MAX = 450;    // keep the whole order together below this
+const PAGE_CONTENT_H = 712;    // usable height per page (with safety margin)
+const FIRST_PAGE_EXTRA = 130;  // PDFHeader block on page 1
+const ORDER_HEADER_H = 42;     // black title bar + column header row
+const ORDER_SPACING = 14;      // gap below each order
+const NO_ITEMS_H = 22;
+const TOTAL_H = 40;
+const IMG_W = 120;             // rendered thumbnail width
+const IMGS_PER_ROW = 3;        // 120pt + gaps in ~455pt row width
 
 type ArtistItem = OverviewOrder['items'][number];
 
-function estimateItemHeight(item: ArtistItem): number {
-  const imageCount = item.referenceImageUrls?.length ?? 0;
-  if (imageCount === 0) return EST_ITEM_ROW;
-  return EST_ITEM_ROW + Math.ceil(imageCount / EST_IMAGES_PER_ROW) * EST_IMAGE_ROW + 12;
+function textLines(text: string, charsPerLine: number): number {
+  return Math.max(1, Math.ceil(text.length / charsPerLine));
+}
+
+/** Estimated rendered height of one item block (row + reference images). */
+function itemHeight(item: ArtistItem): number {
+  // Description column is ~190pt wide at fontSize 10 → ~30 chars per line
+  const descLines = textLines(item.description ?? '', 30);
+  const rowH = 10 + descLines * 13;
+
+  const n = item.referenceImageUrls?.length ?? 0;
+  if (n === 0) return rowH + 1;
+
+  // Per-image cell height from measured dimensions (fallback: square)
+  const cellHs: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const dims = item.referenceImageDims?.[i];
+    const imgH = dims && dims.w > 0 ? (IMG_W * dims.h) / dims.w : IMG_W;
+    const note = item.referenceImageNotes?.[i] ?? '';
+    const noteH = note ? textLines(note, 30) * 9 + 2 : 0;
+    cellHs.push(imgH + noteH);
+  }
+  let imagesH = 0;
+  for (let i = 0; i < cellHs.length; i += IMGS_PER_ROW) {
+    imagesH += Math.max(...cellHs.slice(i, i + IMGS_PER_ROW)) + 6;
+  }
+  return rowH + imagesH + 12 + 1;
 }
 
 // ---------------------------------------------------------------------------
@@ -134,7 +164,7 @@ function OrderHeader({ order, t }: { order: OverviewOrder; t: Record<string, str
 /** One item row + its reference images — never split across pages. */
 function ItemBlock({ item, itemIdx }: { item: ArtistItem; itemIdx: number }) {
   return (
-    <View wrap={false}>
+    <>
       <View
         style={{
           flexDirection: 'row',
@@ -176,10 +206,10 @@ function ItemBlock({ item, itemIdx }: { item: ArtistItem; itemIdx: number }) {
             <View key={`ref-${imgIdx}`} style={{ marginRight: 8 }}>
               <Image
                 src={url}
-                style={{ width: 120, objectFit: 'contain' as const }}
+                style={{ width: IMG_W, objectFit: 'contain' as const }}
               />
               {item.referenceImageNotes?.[imgIdx] ? (
-                <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary700, marginTop: 2, width: 120 }}>
+                <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary700, marginTop: 2, width: IMG_W }}>
                   {item.referenceImageNotes[imgIdx]}
                 </Text>
               ) : null}
@@ -187,37 +217,8 @@ function ItemBlock({ item, itemIdx }: { item: ArtistItem; itemIdx: number }) {
           ))}
         </View>
       )}
-    </View>
+    </>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Pagination chunks — consecutive small orders share flowing pages, every
-// long order gets its own <Page> so its header can repeat via `fixed`.
-// ---------------------------------------------------------------------------
-
-type Chunk =
-  | { type: 'flow'; orders: { order: OverviewOrder; orderIdx: number }[] }
-  | { type: 'single'; order: OverviewOrder; orderIdx: number };
-
-function buildChunks(orders: OverviewOrder[]): Chunk[] {
-  const chunks: Chunk[] = [];
-  orders.forEach((order, orderIdx) => {
-    const est =
-      EST_ORDER_HEADER +
-      order.items.reduce((sum, it) => sum + estimateItemHeight(it), 0);
-    if (est <= EST_KEEP_ORDER_MAX) {
-      const last = chunks[chunks.length - 1];
-      if (last && last.type === 'flow') {
-        last.orders.push({ order, orderIdx });
-      } else {
-        chunks.push({ type: 'flow', orders: [{ order, orderIdx }] });
-      }
-    } else {
-      chunks.push({ type: 'single', order, orderIdx });
-    }
-  });
-  return chunks;
 }
 
 // ---------------------------------------------------------------------------
@@ -256,94 +257,128 @@ export function ProductionOrdersArtistPDF({
     }
   }
 
-  const chunks = buildChunks(orders);
+  // -------------------------------------------------------------------------
+  // Manual pagination: walk all orders, track remaining page height, and emit
+  // unbreakable blocks with explicit `break` flags. When an order spills onto
+  // a new page, its header is repeated there together with the next item.
+  // -------------------------------------------------------------------------
+  const blocks: ReactElement[] = [];
+  let rem = PAGE_CONTENT_H - FIRST_PAGE_EXTRA;
 
-  const footer = (
-    <View style={styles.footer} fixed>
-      <Text style={styles.footerText}>{`© ${ARTIST_NAME}`}</Text>
-      <Text
-        style={styles.pageNumber}
-        render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
-      />
-    </View>
-  );
+  const consume = (h: number) => { rem = Math.max(0, rem - h); };
+  const newPage = () => { rem = PAGE_CONTENT_H; };
 
-  const total = (
-    <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: PDF_COLORS.primary900, paddingTop: 8 }}>
-      <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 11, color: PDF_COLORS.primary900 }}>
-        {t.totalPieces}: {totalPieces}
-      </Text>
-    </View>
-  );
+  orders.forEach((order, orderIdx) => {
+    const itemHs = order.items.map(itemHeight);
+    const bodyH = order.items.length === 0 ? NO_ITEMS_H : itemHs.reduce((a, b) => a + b, 0);
+    const totalOrderH = ORDER_HEADER_H + bodyH + ORDER_SPACING;
+
+    if (totalOrderH <= PAGE_CONTENT_H) {
+      // Order fits on a single page → keep it atomic
+      const breakBefore = totalOrderH > rem;
+      if (breakBefore) newPage();
+      blocks.push(
+        <View
+          key={`order-${orderIdx}`}
+          wrap={false}
+          break={breakBefore}
+          style={{ marginBottom: ORDER_SPACING }}
+        >
+          <OrderHeader order={order} t={t} />
+          {order.items.length === 0 ? (
+            <View style={{ paddingVertical: 6, paddingHorizontal: 10, borderBottomWidth: 0.5, borderBottomColor: PDF_COLORS.border }}>
+              <Text style={{ fontFamily: 'AnzianoPro', fontSize: 9, color: PDF_COLORS.primary400 }}>
+                {t.noItems}
+              </Text>
+            </View>
+          ) : (
+            order.items.map((item, itemIdx) => (
+              <ItemBlock key={`item-${orderIdx}-${itemIdx}`} item={item} itemIdx={itemIdx} />
+            ))
+          )}
+        </View>,
+      );
+      consume(totalOrderH);
+      return;
+    }
+
+    // Order longer than one page → flow items, repeating the header on
+    // every page the order continues on. Header always stays glued to the
+    // item that follows it.
+    let headerPending = true; // header not yet emitted on current page
+
+    order.items.forEach((item, itemIdx) => {
+      const h = itemHs[itemIdx];
+      const needed = (headerPending ? ORDER_HEADER_H : 0) + h;
+
+      if (needed > rem) {
+        newPage();
+        // New page always starts with the (repeated) order header
+        blocks.push(
+          <View key={`order-${orderIdx}-cont-${itemIdx}`} wrap={false} break>
+            <OrderHeader order={order} t={t} />
+            <ItemBlock item={item} itemIdx={itemIdx} />
+          </View>,
+        );
+        consume(ORDER_HEADER_H + h);
+        headerPending = false;
+      } else if (headerPending) {
+        blocks.push(
+          <View key={`order-${orderIdx}-head-${itemIdx}`} wrap={false}>
+            <OrderHeader order={order} t={t} />
+            <ItemBlock item={item} itemIdx={itemIdx} />
+          </View>,
+        );
+        consume(needed);
+        headerPending = false;
+      } else {
+        blocks.push(
+          <View key={`item-${orderIdx}-${itemIdx}`} wrap={false}>
+            <ItemBlock item={item} itemIdx={itemIdx} />
+          </View>,
+        );
+        consume(h);
+      }
+    });
+
+    blocks.push(<View key={`spacer-${orderIdx}`} style={{ height: ORDER_SPACING }} />);
+    consume(ORDER_SPACING);
+  });
+
+  const totalBreak = TOTAL_H > rem;
 
   return (
     <Document>
-      {chunks.map((chunk, chunkIdx) => {
-        const isFirst = chunkIdx === 0;
-        const isLast = chunkIdx === chunks.length - 1;
+      <Page size="A4" style={styles.page} wrap>
+        <PDFHeader
+          title={t.title}
+          subtitle={subtitle}
+          language={language}
+          companyName={ARTIST_NAME}
+        />
 
-        const pdfHeader = (
-          <PDFHeader
-            title={t.title}
-            subtitle={subtitle}
-            language={language}
-            companyName={ARTIST_NAME}
+        {blocks}
+
+        {/* Total */}
+        <View
+          wrap={false}
+          break={totalBreak}
+          style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: PDF_COLORS.primary900, paddingTop: 8 }}
+        >
+          <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 11, color: PDF_COLORS.primary900 }}>
+            {t.totalPieces}: {totalPieces}
+          </Text>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer} fixed>
+          <Text style={styles.footerText}>{`© ${ARTIST_NAME}`}</Text>
+          <Text
+            style={styles.pageNumber}
+            render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
           />
-        );
-
-        if (chunk.type === 'single') {
-          // Long order: own page, header repeats on every page it spans
-          return (
-            <Page key={chunkIdx} size="A4" style={styles.page} wrap>
-              <View fixed>
-                {isFirst ? pdfHeader : null}
-                <OrderHeader order={chunk.order} t={t} />
-              </View>
-
-              <View style={{ marginBottom: 14 }}>
-                {chunk.order.items.map((item, itemIdx) => (
-                  <ItemBlock key={`item-${chunk.orderIdx}-${itemIdx}`} item={item} itemIdx={itemIdx} />
-                ))}
-              </View>
-
-              {isLast ? total : null}
-              {footer}
-            </Page>
-          );
-        }
-
-        // Consecutive small orders: flow together, each order unbreakable
-        return (
-          <Page key={chunkIdx} size="A4" style={styles.page} wrap>
-            {isFirst ? pdfHeader : null}
-
-            {chunk.orders.map(({ order, orderIdx }) => (
-              <View
-                key={`${order.order_number}-${orderIdx}`}
-                style={{ marginBottom: 14 }}
-                wrap={false}
-              >
-                <OrderHeader order={order} t={t} />
-
-                {order.items.length === 0 ? (
-                  <View style={{ paddingVertical: 6, paddingHorizontal: 10, borderBottomWidth: 0.5, borderBottomColor: PDF_COLORS.border }}>
-                    <Text style={{ fontFamily: 'AnzianoPro', fontSize: 9, color: PDF_COLORS.primary400 }}>
-                      {t.noItems}
-                    </Text>
-                  </View>
-                ) : (
-                  order.items.map((item, itemIdx) => (
-                    <ItemBlock key={`item-${orderIdx}-${itemIdx}`} item={item} itemIdx={itemIdx} />
-                  ))
-                )}
-              </View>
-            ))}
-
-            {isLast ? total : null}
-            {footer}
-          </Page>
-        );
-      })}
+        </View>
+      </Page>
     </Document>
   );
 }
