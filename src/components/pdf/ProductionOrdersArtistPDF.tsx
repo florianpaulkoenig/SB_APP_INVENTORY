@@ -55,6 +55,25 @@ const COL_QTY = '10%';
 const COL_CATEGORY = '25%';
 
 // ---------------------------------------------------------------------------
+// Page-break height estimates (pt) — decide how much of an order to keep
+// together. Small orders stay on one page; for long orders the header is at
+// least kept together with the first item so the title is never separated
+// from its reference images by a page break.
+// ---------------------------------------------------------------------------
+const EST_ORDER_HEADER = 40;       // order header + table header
+const EST_ITEM_ROW = 24;           // text-only item row
+const EST_IMAGE_ROW = 190;         // one row of reference images (~3 images)
+const EST_IMAGES_PER_ROW = 3;
+const EST_KEEP_ORDER_MAX = 450;    // keep the whole order together below this
+const EST_KEEP_FIRST_MAX = 500;    // keep header + first item together below this
+
+function estimateItemHeight(item: OverviewOrder['items'][number]): number {
+  const imageCount = item.referenceImageUrls?.length ?? 0;
+  if (imageCount === 0) return EST_ITEM_ROW;
+  return EST_ITEM_ROW + Math.ceil(imageCount / EST_IMAGES_PER_ROW) * EST_IMAGE_ROW + 12;
+}
+
+// ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 export interface ProductionOrdersArtistPDFProps {
@@ -100,10 +119,30 @@ export function ProductionOrdersArtistPDF({
           companyName={ARTIST_NAME}
         />
 
-        {orders.map((order, orderIdx) => (
-          <View key={`${order.order_number}-${orderIdx}`} style={{ marginBottom: 14 }}>
+        {orders.map((order, orderIdx) => {
+          const estTotal =
+            EST_ORDER_HEADER +
+            order.items.reduce((sum, it) => sum + estimateItemHeight(it), 0);
+          // Small orders are never split across pages. Long orders may wrap,
+          // but the header then demands enough room below it for the first
+          // item, so the title is never separated from its reference images.
+          const keepWholeOrder = estTotal <= EST_KEEP_ORDER_MAX;
+          const firstItemEst =
+            order.items.length > 0 ? estimateItemHeight(order.items[0]) : 0;
+
+          return (
+          <View
+            key={`${order.order_number}-${orderIdx}`}
+            style={{ marginBottom: 14 }}
+            wrap={!keepWholeOrder}
+          >
             {/* Order header + table header kept together */}
-            <View wrap={false}>
+            <View
+              wrap={false}
+              minPresenceAhead={
+                keepWholeOrder ? undefined : Math.min(firstItemEst, EST_KEEP_FIRST_MAX)
+              }
+            >
               {/* Order header */}
               <View
                 style={{
@@ -216,7 +255,8 @@ export function ProductionOrdersArtistPDF({
               ))
             )}
           </View>
-        ))}
+          );
+        })}
 
         {/* Total */}
         <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: PDF_COLORS.primary900, paddingTop: 8 }}>
