@@ -17,6 +17,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { PRODUCTION_STATUSES } from '../lib/constants';
 import { formatDate, formatDimensions, formatCurrency, sanitizeFilterTerm, downloadBlob } from '../lib/utils';
+import { createThumbnailBlob } from '../lib/imageThumbnails';
 import { useExchangeRates } from '../hooks/useExchangeRates';
 import type { ProductionStatus, ProductionOrderRow } from '../types/database';
 
@@ -672,7 +673,7 @@ export function ProductionOrdersPage() {
     }
   }
 
-  // ---- PDF artist list export (list only, no photos — smallest file) --------
+  // ---- PDF artist list export (thumbnails only, no full-res ZIP) ------------
 
   async function handleDownloadArtistListExport() {
     if (productionOrders.length === 0) return;
@@ -696,18 +697,93 @@ export function ProductionOrdersPage() {
         return;
       }
 
-      // Batch-fetch items — list data only, no reference images
+      // Batch-fetch items — list data + downscaled reference thumbnails
+      // (full-resolution originals stay out of the file, no ZIP)
       const orderIds = dateFilteredOrders.map((o) => o.id);
       const itemsByOrder: Record<string, OverviewItem[]> = {};
       const { data: allItems } = await supabase
         .from('production_order_items')
-        .select('production_order_id, description, medium, height, width, depth, dimension_unit, quantity, year, edition_type, edition_number, edition_total, category, sort_order')
+        .select('id, production_order_id, description, medium, height, width, depth, dimension_unit, quantity, year, edition_type, edition_number, edition_total, category, sort_order')
         .in('production_order_id', orderIds)
         .order('sort_order', { ascending: true });
+
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const userId = currentSession?.user?.id;
+
+      // All image notes for the exported orders, keyed by storage path
+      const noteMap: Record<string, string> = {};
+      const { data: noteRows } = await supabase
+        .from('production_order_image_notes')
+        .select('storage_path, note')
+        .in('production_order_id', orderIds);
+      for (const n of noteRows ?? []) noteMap[n.storage_path] = n.note;
+
+      // Download a storage image and downscale it to a small JPEG data URL
+      async function fetchThumbDataUrl(path: string): Promise<string | null> {
+        try {
+          const { data: blob } = await supabase.storage
+            .from('artwork-images')
+            .download(path);
+          if (!blob) return null;
+          const small = await createThumbnailBlob(blob, 480);
+          const finalBlob = small ?? blob;
+          return await new Promise<string | null>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string | null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(finalBlob);
+          });
+        } catch {
+          return null;
+        }
+      }
+
+      // Per-item reference image thumbnails + notes
+      const refThumbsByItem: Record<string, string[]> = {};
+      const refNotesByItem: Record<string, string[]> = {};
+      if (userId) {
+        for (const item of allItems ?? []) {
+          const prefix = `${userId}/production-orders/${item.production_order_id}/items/${item.id}`;
+          try {
+            const { data: files } = await supabase.storage.from('artwork-images').list(prefix);
+            const urls: string[] = [];
+            const notes: string[] = [];
+            for (const file of files ?? []) {
+              if (!file.id) continue;
+              const path = `${prefix}/${file.name}`;
+              const dataUrl = await fetchThumbDataUrl(path);
+              if (dataUrl) { urls.push(dataUrl); notes.push(noteMap[path] ?? ''); }
+            }
+            if (urls.length > 0) { refThumbsByItem[item.id] = urls; refNotesByItem[item.id] = notes; }
+          } catch { /* skip items whose storage listing fails */ }
+        }
+      }
+
+      // Order-level reference images (attached to the order's first item)
+      const refThumbsByOrder: Record<string, string[]> = {};
+      const refNotesByOrder: Record<string, string[]> = {};
+      if (userId) {
+        for (const order of dateFilteredOrders) {
+          const prefix = `${userId}/production-orders/${order.id}/`;
+          try {
+            const { data: orderFiles } = await supabase.storage.from('artwork-images').list(prefix);
+            const urls: string[] = [];
+            const notes: string[] = [];
+            for (const file of orderFiles ?? []) {
+              if (!file.id) continue;
+              const path = `${prefix}${file.name}`;
+              const dataUrl = await fetchThumbDataUrl(path);
+              if (dataUrl) { urls.push(dataUrl); notes.push(noteMap[path] ?? ''); }
+            }
+            if (urls.length > 0) { refThumbsByOrder[order.id] = urls; refNotesByOrder[order.id] = notes; }
+          } catch { /* skip */ }
+        }
+      }
 
       for (const item of allItems ?? []) {
         const orderId = item.production_order_id;
         if (!itemsByOrder[orderId]) itemsByOrder[orderId] = [];
+        const isFirstItem = itemsByOrder[orderId].length === 0;
         itemsByOrder[orderId].push({
           description: item.description,
           medium: item.medium,
@@ -725,6 +801,15 @@ export function ProductionOrdersPage() {
           price: null,
           currency: null,
           category: item.category ?? null,
+          // Item-level thumbnails + order-level thumbnails on first item
+          referenceImageUrls: [
+            ...(refThumbsByItem[item.id] ?? []),
+            ...(isFirstItem ? (refThumbsByOrder[orderId] ?? []) : []),
+          ],
+          referenceImageNotes: [
+            ...(refNotesByItem[item.id] ?? []),
+            ...(isFirstItem ? (refNotesByOrder[orderId] ?? []) : []),
+          ],
         });
       }
 
@@ -911,7 +996,7 @@ export function ProductionOrdersPage() {
             onClick={handleDownloadArtistListExport}
             loading={downloadingArtistList}
             disabled={productionOrders.length === 0}
-            title="List only, no photos — smallest file"
+            title="List with photo thumbnails — small PDF, no ZIP with full-res photos"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />

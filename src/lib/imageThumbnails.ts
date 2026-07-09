@@ -25,11 +25,14 @@ export function thumbnailPath(path: string): string {
 }
 
 /**
- * Downscale an image blob to at most THUMB_MAX_DIMENSION on its longest edge
+ * Downscale an image blob to at most maxDimension on its longest edge
  * and re-encode as JPEG. Returns null when the source can't be decoded, or
  * when it's already small enough that a thumbnail would gain nothing.
  */
-export async function createThumbnailBlob(source: Blob): Promise<Blob | null> {
+export async function createThumbnailBlob(
+  source: Blob,
+  maxDimension: number = THUMB_MAX_DIMENSION,
+): Promise<Blob | null> {
   let full: ImageBitmap;
   try {
     full = await createImageBitmap(source);
@@ -38,7 +41,7 @@ export async function createThumbnailBlob(source: Blob): Promise<Blob | null> {
   }
 
   try {
-    const scale = Math.min(1, THUMB_MAX_DIMENSION / Math.max(full.width, full.height));
+    const scale = Math.min(1, maxDimension / Math.max(full.width, full.height));
     // Small dimensions AND small file — a thumbnail wouldn't be any lighter
     if (scale === 1 && source.size <= 1024 * 1024) return null;
 
