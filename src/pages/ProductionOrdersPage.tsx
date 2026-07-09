@@ -47,6 +47,7 @@ export function ProductionOrdersPage() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadingOverview, setDownloadingOverview] = useState(false);
   const [downloadingArtist, setDownloadingArtist] = useState(false);
+  const [downloadingArtistList, setDownloadingArtistList] = useState(false);
   const [matchingGalleryIds, setMatchingGalleryIds] = useState<string[]>([]);
   const [artistDateFrom, setArtistDateFrom] = useState('');
   const [artistDateTo, setArtistDateTo] = useState('');
@@ -671,6 +672,102 @@ export function ProductionOrdersPage() {
     }
   }
 
+  // ---- PDF artist list export (list only, no photos — smallest file) --------
+
+  async function handleDownloadArtistListExport() {
+    if (productionOrders.length === 0) return;
+    setDownloadingArtistList(true);
+
+    try {
+      // Same scope as the artist export: exclude completed/shipped + date range
+      let dateFilteredOrders = productionOrders.filter((o) => o.status !== 'completed' && o.status !== 'shipped');
+      if (artistDateFrom) {
+        dateFilteredOrders = dateFilteredOrders.filter(
+          (o) => o.deadline && o.deadline >= artistDateFrom
+        );
+      }
+      if (artistDateTo) {
+        dateFilteredOrders = dateFilteredOrders.filter(
+          (o) => o.deadline && o.deadline <= artistDateTo
+        );
+      }
+      if (dateFilteredOrders.length === 0) {
+        toast({ title: 'No Orders', description: 'No orders match the selected date range.', variant: 'error' });
+        return;
+      }
+
+      // Batch-fetch items — list data only, no reference images
+      const orderIds = dateFilteredOrders.map((o) => o.id);
+      const itemsByOrder: Record<string, OverviewItem[]> = {};
+      const { data: allItems } = await supabase
+        .from('production_order_items')
+        .select('production_order_id, description, medium, height, width, depth, dimension_unit, quantity, year, edition_type, edition_number, edition_total, category, sort_order')
+        .in('production_order_id', orderIds)
+        .order('sort_order', { ascending: true });
+
+      for (const item of allItems ?? []) {
+        const orderId = item.production_order_id;
+        if (!itemsByOrder[orderId]) itemsByOrder[orderId] = [];
+        itemsByOrder[orderId].push({
+          description: item.description,
+          medium: item.medium,
+          dimensions: formatDimensions(
+            item.height,
+            item.width,
+            item.depth,
+            item.dimension_unit ?? 'cm',
+          ),
+          quantity: item.quantity,
+          year: item.year ?? null,
+          edition_type: item.edition_type ?? null,
+          edition_number: item.edition_number ?? null,
+          edition_total: item.edition_total ?? null,
+          price: null,
+          currency: null,
+          category: item.category ?? null,
+        });
+      }
+
+      // Sort orders by deadline (earliest first)
+      const sortedOrders = [...dateFilteredOrders].sort((a, b) => {
+        if (!a.deadline && !b.deadline) return 0;
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+      });
+
+      const artistOrders: OverviewOrder[] = sortedOrders.map((order) => ({
+        order_number: order.order_number,
+        title: order.title,
+        status: order.status,
+        ordered_date: order.ordered_date,
+        deadline: order.deadline,
+        gallery_name: order.gallery_id ? galleryNameMap[order.gallery_id] ?? null : null,
+        contact_name: null,
+        price: null,
+        currency: order.currency ?? 'EUR',
+        items: itemsByOrder[order.id] ?? [],
+      }));
+
+      const pdfBlob = await pdf(
+        <ProductionOrdersArtistPDF
+          orders={artistOrders}
+          language={language}
+          dateRange={artistDateFrom || artistDateTo
+            ? { from: artistDateFrom || undefined, to: artistDateTo || undefined }
+            : undefined}
+        />,
+      ).toBlob();
+
+      downloadBlob(pdfBlob, `NOA_SB_Production_Artist_List_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      toast({ title: 'Export failed', description: msg, variant: 'error' });
+    } finally {
+      setDownloadingArtistList(false);
+    }
+  }
+
   // ---- PDF overview of all (filtered) orders --------------------------------
 
   async function handleDownloadOverview() {
@@ -808,6 +905,18 @@ export function ProductionOrdersPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
             Export: Artist
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleDownloadArtistListExport}
+            loading={downloadingArtistList}
+            disabled={productionOrders.length === 0}
+            title="List only, no photos — smallest file"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+            </svg>
+            Export: Artist List
           </Button>
           <Button
             variant="outline"
