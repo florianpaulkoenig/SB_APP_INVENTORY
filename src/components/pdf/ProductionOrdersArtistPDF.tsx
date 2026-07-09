@@ -65,7 +65,6 @@ const EST_ITEM_ROW = 24;           // text-only item row
 const EST_IMAGE_ROW = 190;         // one row of reference images (~3 images)
 const EST_IMAGES_PER_ROW = 3;
 const EST_KEEP_ORDER_MAX = 450;    // keep the whole order together below this
-const EST_KEEP_FIRST_MAX = 500;    // keep header + first item together below this
 
 function estimateItemHeight(item: OverviewOrder['items'][number]): number {
   const imageCount = item.referenceImageUrls?.length ?? 0;
@@ -124,14 +123,11 @@ export function ProductionOrdersArtistPDF({
             EST_ORDER_HEADER +
             order.items.reduce((sum, it) => sum + estimateItemHeight(it), 0);
           // Small orders are never split across pages. Long orders may wrap,
-          // but the first item is rendered inside the unbreakable header
-          // block, so the title is never separated from its reference images.
+          // but the first item is always rendered inside the unbreakable
+          // header block, so the title is never separated from its images.
           const keepWholeOrder = estTotal <= EST_KEEP_ORDER_MAX;
           const firstItem = order.items[0];
-          const keepFirstWithHeader =
-            !keepWholeOrder &&
-            firstItem != null &&
-            EST_ORDER_HEADER + estimateItemHeight(firstItem) <= EST_KEEP_FIRST_MAX;
+          const keepFirstWithHeader = !keepWholeOrder && firstItem != null;
 
           const renderItem = (item: OverviewOrder['items'][number], itemIdx: number) => (
             <View key={`item-${orderIdx}-${itemIdx}`} wrap={false}>
