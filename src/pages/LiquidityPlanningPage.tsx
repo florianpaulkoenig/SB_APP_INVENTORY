@@ -1301,15 +1301,22 @@ function MonthSection({
   const paidExpenses   = bucket.expenses.filter((e) =>  bucket.paidExpenseMap[e.id]);
 
   // ---- Lock checks (Saldokorrektur) ----------------------------------------
+  // The lock only covers COMPLETED months: items dated in the current month
+  // stay editable even when the correction date lies after them (e.g. item
+  // from 10 July, correction per 11 July).
+  const now = new Date();
+  const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const effLockDate = lockDate !== null && lockDate > currentMonthStart ? currentMonthStart : lockDate;
+
   const monthEnd = `${bucket.year}-${String(bucket.month + 1).padStart(2, '0')}-${String(new Date(bucket.year, bucket.month + 1, 0).getDate()).padStart(2, '0')}`;
-  const monthFullyLocked = lockDate !== null && monthEnd < lockDate;
+  const monthFullyLocked = effLockDate !== null && monthEnd < effLockDate;
   const incomeLocked = (e: NOALiquidityIncomeRow) =>
-    lockDate !== null && e.expected_date < lockDate;
+    effLockDate !== null && e.expected_date < effLockDate;
   const paidIncomeLocked = (e: NOALiquidityIncomeRow) =>
-    lockDate !== null && e.expected_date < lockDate &&
+    effLockDate !== null && e.expected_date < effLockDate &&
     (e.paid_at === null || lockTs === null || new Date(e.paid_at).getTime() < lockTs);
   const expenseLocked = (e: NOALiquidityExpenseRow) =>
-    lockDate !== null && expenseInstanceDate(e, bucket.year, bucket.month) < lockDate;
+    effLockDate !== null && expenseInstanceDate(e, bucket.year, bucket.month) < effLockDate;
   const paidExpenseLocked = (e: NOALiquidityExpenseRow) => {
     if (!expenseLocked(e)) return false;
     const paidAt = bucket.paidExpenseAtMap[e.id];
