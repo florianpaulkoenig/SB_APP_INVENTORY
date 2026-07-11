@@ -113,7 +113,7 @@ export interface UseNOALiquidityReturn {
   markExpensePaid:   (expenseId: string, year: number, month: number) => Promise<boolean>;
   markExpenseUnpaid: (paymentId: string) => Promise<boolean>;
   // Startsaldo
-  upsertStartsaldo: (amount: number, currency: string) => Promise<boolean>;
+  upsertStartsaldo: (amount: number, currency: string, date: string) => Promise<boolean>;
   // Effektiver Konto-Saldo
   upsertEffectiveBalance: (amount: number) => Promise<boolean>;
   clearEffectiveBalance: () => Promise<boolean>;
@@ -261,25 +261,46 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       setEffectiveBalanceDate(settings?.effective_balance_date ?? null);
 
       // ---- Tagessaldo components ---------------------------------------------
-      // Anchor = moment the Startsaldo was recorded. Every payment marked
-      // AFTER it moves the Tagessaldo, regardless of which month it belongs to.
+      // The Startsaldo is the bank balance as of anchorDate (D, user-chosen).
+      // A paid item counts toward the Tagessaldo when
+      //   • it belongs to a period on/after D (money moved after the snapshot), OR
+      //   • it was marked paid after the Startsaldo was SAVED (anchorTs) — an
+      //     older überfällig item settled late, i.e. not part of the snapshot.
+      // Items from before D that were already marked paid when the Startsaldo
+      // was saved are considered included in the snapshot.
+      const anchorDate = settings?.starting_balance_date ?? null; // 'YYYY-MM-DD'
       const anchorTs = settings?.starting_balance_at
         ? new Date(settings.starting_balance_at).getTime()
-        : settings?.starting_balance_date
-          ? new Date(settings.starting_balance_date + 'T00:00:00').getTime()
+        : anchorDate
+          ? new Date(anchorDate + 'T00:00:00').getTime()
           : 0;
 
       const allIncome = [...windowEntries, ...pastIncome];
       setPaidIncomeSinceStart(
         allIncome
-          .filter((e) => e.paid_at && new Date(e.paid_at).getTime() >= anchorTs)
+          .filter((e) =>
+            e.paid_at !== null &&
+            (anchorDate === null ||
+              e.expected_date >= anchorDate ||
+              new Date(e.paid_at as string).getTime() >= anchorTs),
+          )
           .reduce((s, e) => s + e.amount, 0),
       );
 
       const expenseById = new Map(allExpenses.map((e) => [e.id, e]));
       setPaidExpensesSinceStart(
         expPaymentList
-          .filter((p) => p.paid_at && new Date(p.paid_at).getTime() >= anchorTs)
+          .filter((p) => {
+            const exp = expenseById.get(p.expense_id);
+            if (!exp) return false;
+            if (anchorDate === null) return true;
+            // Instance due date = due day of the expense within the paid month
+            const dueDay      = exp.due_date ? Number(exp.due_date.slice(8, 10)) : 1;
+            const daysInMonth = new Date(p.year, p.month, 0).getDate();
+            const instanceDate =
+              `${p.year}-${String(p.month).padStart(2, '0')}-${String(Math.min(dueDay, daysInMonth)).padStart(2, '0')}`;
+            return instanceDate >= anchorDate || new Date(p.paid_at).getTime() >= anchorTs;
+          })
           .reduce((s, p) => s + (expenseById.get(p.expense_id)?.amount ?? 0), 0),
       );
 
@@ -312,6 +333,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
 
       const pastBuckets: MonthBucket[] = [];
       const lateExpenses: LateExpenseInstance[] = [];
+      // Balance at the start of the current month — seeds the forward chain
+      let chainSeed = saldo;
       if (rangeStart !== null) {
         const nPast =
           (windowStart.getFullYear() - rangeStart.getFullYear()) * 12 +
@@ -365,22 +388,60 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           }
         }
 
-        // Backward balance chain, anchored at the Startsaldo (= balance at
-        // the beginning of the current month, i.e. end of the last past month)
+        // Balance chains, anchored at the Startsaldo date's month.
+        //   • Months from the anchor month up to the current one are filled
+        //     FORWARD using paid-only nets (actual cash movement; unpaid items
+        //     carry into the current month as überfällig and count there).
+        //   • Months before the anchor month are filled BACKWARD using
+        //     expected nets. Ist-Saldi override the chain where present.
+        const expectedNetOf = (b: MonthBucket) => {
+          const inc = [...b.entries, ...b.paidEntries].reduce((s, e) => s + e.amount, 0);
+          const exp = b.expenses.reduce((s, e) => s + e.amount, 0);
+          return inc - exp;
+        };
+        const paidNetOf = (b: MonthBucket) => {
+          const inc = b.paidEntries.reduce((s, e) => s + e.amount, 0);
+          const exp = b.expenses.filter((e) => b.paidExpenseMap[e.id]).reduce((s, e) => s + e.amount, 0);
+          return inc - exp;
+        };
+
+        const anchorMonthStart = anchorDate !== null
+          ? new Date(
+              new Date(anchorDate + 'T00:00:00').getFullYear(),
+              new Date(anchorDate + 'T00:00:00').getMonth(),
+              1,
+            )
+          : windowStart;
+
+        let pivot = pastBuckets.length; // anchor in/after the current month
+        if (anchorMonthStart < windowStart) {
+          const found = pastBuckets.findIndex(
+            (b) => b.year === anchorMonthStart.getFullYear() && b.month === anchorMonthStart.getMonth(),
+          );
+          // Anchor older than the review range → forward-fill everything
+          pivot = found >= 0 ? found : 0;
+        }
+
+        // Forward from the anchor month — yields the seed for the current month
         let carry = saldo;
-        for (let j = pastBuckets.length - 1; j >= 0; j--) {
+        for (let j = pivot; j < pastBuckets.length; j++) {
           const b = pastBuckets[j];
-          const incomeSum  = [...b.entries, ...b.paidEntries].reduce((s, e) => s + e.amount, 0);
-          const expenseSum = b.expenses.reduce((s, e) => s + e.amount, 0);
-          b.projectedBalance = carry;
-          // End of the next-older month = start of this month; prefer the
-          // user-entered Ist-Saldo as anchor when present (mirrors forward logic)
-          carry = (b.actualBalance ?? carry) - (incomeSum - expenseSum);
+          b.projectedBalance = carry + paidNetOf(b);
+          carry = b.actualBalance ?? b.projectedBalance;
+        }
+        chainSeed = carry;
+
+        // Backward for months before the anchor month
+        let back = saldo;
+        for (let j = pivot - 1; j >= 0; j--) {
+          const b = pastBuckets[j];
+          b.projectedBalance = back;
+          back = (b.actualBalance ?? back) - expectedNetOf(b);
         }
       }
 
       // ---- Current + next 11 months ------------------------------------------
-      let runningBalance = saldo;
+      let runningBalance = chainSeed;
 
       const buckets: MonthBucket[] = Array.from({ length: 12 }, (_, i) => {
         const d     = new Date(today.getFullYear(), today.getMonth() + i, 1);
@@ -641,7 +702,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
 
   // ---- Startsaldo -----------------------------------------------------------
 
-  const upsertStartsaldo = useCallback(async (amount: number, currency: string): Promise<boolean> => {
+  const upsertStartsaldo = useCallback(async (amount: number, currency: string, date: string): Promise<boolean> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return false;
 
@@ -651,7 +712,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         user_id:               session.user.id,
         starting_balance:      amount,
         currency,
-        starting_balance_date: new Date().toISOString().slice(0, 10),
+        starting_balance_date: date,
         starting_balance_at:   new Date().toISOString(),
         updated_at:            new Date().toISOString(),
       } as never, { onConflict: 'user_id' } as never);

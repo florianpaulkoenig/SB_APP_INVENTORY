@@ -192,43 +192,59 @@ function TagessaldoCard({
 // ---------------------------------------------------------------------------
 
 function StartsaldoCard({
-  startsaldo, currency, onSave,
+  startsaldo, startsaldoDate, currency, onSave,
 }: {
   startsaldo: number;
+  startsaldoDate: string | null;
   currency: string;
-  onSave: (amount: number, currency: string) => Promise<boolean>;
+  onSave: (amount: number, currency: string, date: string) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
   const [amount, setAmount]   = useState('');
   const [cur, setCur]         = useState('CHF');
+  const [date, setDate]       = useState('');
   const [saving, setSaving]   = useState(false);
 
-  function openEdit() { setAmount(startsaldo > 0 ? String(startsaldo) : ''); setCur(currency); setEditing(true); }
+  function openEdit() {
+    setAmount(startsaldo > 0 ? String(startsaldo) : '');
+    setCur(currency);
+    setDate(startsaldoDate ?? new Date().toISOString().slice(0, 10));
+    setEditing(true);
+  }
 
   async function handleSave() {
     const num = parseFloat(amount);
-    if (isNaN(num)) return;
+    if (isNaN(num) || !date) return;
     setSaving(true);
-    const ok = await onSave(num, cur);
+    const ok = await onSave(num, cur, date);
     setSaving(false);
     if (ok) setEditing(false);
   }
 
   if (editing) {
     return (
-      <div className="mb-4 flex items-center gap-3 rounded-lg border border-primary-200 bg-white px-4 py-3">
-        <span className="shrink-0 text-sm font-medium text-primary-600">Startsaldo</span>
-        <Input type="number" min="0" step="1000" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="w-40" />
-        <Select options={CURRENCY_OPTIONS} value={cur} onChange={(e) => setCur(e.target.value)} className="w-28" />
-        <Button size="sm" onClick={handleSave} loading={saving} disabled={!amount}>Speichern</Button>
-        <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Abbrechen</Button>
+      <div className="mb-4 rounded-lg border border-primary-200 bg-white px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="shrink-0 text-sm font-medium text-primary-600">Startsaldo</span>
+          <Input type="number" min="0" step="1000" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="w-40" />
+          <Select options={CURRENCY_OPTIONS} value={cur} onChange={(e) => setCur(e.target.value)} className="w-28" />
+          <span className="shrink-0 text-xs text-primary-400">per</span>
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-40" />
+          <Button size="sm" onClick={handleSave} loading={saving} disabled={!amount || !date}>Speichern</Button>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Abbrechen</Button>
+        </div>
+        <p className="mt-2 text-xs text-primary-400">
+          Kontostand der Bank an diesem Datum. Bezahlte Einnahmen und Ausgaben ab diesem Datum fließen in den Tagessaldo ein.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-primary-100 bg-white px-4 py-3">
-      <span className="text-sm text-primary-500">Startsaldo (Monatsbeginn)</span>
+      <span className="text-sm text-primary-500">
+        Startsaldo{startsaldoDate ? ` per ${formatDate(startsaldoDate)}` : ''}
+      </span>
       <div className="flex items-center gap-3">
         <span className="text-sm font-semibold text-primary-900">{formatCurrency(startsaldo, currency)}</span>
         <button onClick={openEdit} className="text-xs text-primary-400 hover:text-primary-700 underline underline-offset-2 transition-colors">
@@ -1404,7 +1420,7 @@ export function LiquidityPlanningPage() {
               onAcceptDifference={acceptEffectiveBalance}
             />
           )}
-          <StartsaldoCard startsaldo={startsaldo} currency={startsaldoCurrency} onSave={upsertStartsaldo} />
+          <StartsaldoCard startsaldo={startsaldo} startsaldoDate={startsaldoDate} currency={startsaldoCurrency} onSave={upsertStartsaldo} />
           <ExpenseManagementCard
             expenses={expenses.filter((e) => e.type !== 'one_time')}
             onUpdate={updateExpense}
