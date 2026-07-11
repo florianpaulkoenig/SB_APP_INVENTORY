@@ -2239,6 +2239,7 @@ export type NOALiquiditySettingsRow = {
   user_id: string;
   starting_balance: number;
   starting_balance_date: string;
+  starting_balance_at: string | null;
   currency: string;
   effective_balance: number | null;
   effective_balance_date: string | null;
@@ -2250,6 +2251,7 @@ export type NOALiquiditySettingsInsert = {
   user_id?: string;
   starting_balance: number;
   starting_balance_date: string;
+  starting_balance_at?: string | null;
   currency?: string;
   effective_balance?: number | null;
   effective_balance_date?: string | null;

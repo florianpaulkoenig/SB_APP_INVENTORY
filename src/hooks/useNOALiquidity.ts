@@ -65,6 +65,12 @@ export interface UseNOALiquidityReturn {
   expenses: NOALiquidityExpenseRow[];
   startsaldo: number;
   startsaldoCurrency: string;
+  /** Date the Startsaldo was recorded (YYYY-MM-DD, null if never set) */
+  startsaldoDate: string | null;
+  /** Sum of income marked paid AFTER the Startsaldo was set (any month) */
+  paidIncomeSinceStart: number;
+  /** Sum of expense payments recorded AFTER the Startsaldo was set (any month) */
+  paidExpensesSinceStart: number;
   /** User-entered real bank balance (null if none recorded) */
   effectiveBalance: number | null;
   effectiveBalanceDate: string | null;
@@ -167,6 +173,9 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
   const [expenses, setExpenses]     = useState<NOALiquidityExpenseRow[]>([]);
   const [startsaldo, setStartsaldo]                 = useState(0);
   const [startsaldoCurrency, setStartsaldoCurrency] = useState('CHF');
+  const [startsaldoDate, setStartsaldoDate]         = useState<string | null>(null);
+  const [paidIncomeSinceStart, setPaidIncomeSinceStart]     = useState(0);
+  const [paidExpensesSinceStart, setPaidExpensesSinceStart] = useState(0);
   const [effectiveBalance, setEffectiveBalance]         = useState<number | null>(null);
   const [effectiveBalanceDate, setEffectiveBalanceDate] = useState<string | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -247,8 +256,32 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       const currency = settings?.currency         ?? 'CHF';
       setStartsaldo(saldo);
       setStartsaldoCurrency(currency);
+      setStartsaldoDate(settings?.starting_balance_date ?? null);
       setEffectiveBalance(settings?.effective_balance ?? null);
       setEffectiveBalanceDate(settings?.effective_balance_date ?? null);
+
+      // ---- Tagessaldo components ---------------------------------------------
+      // Anchor = moment the Startsaldo was recorded. Every payment marked
+      // AFTER it moves the Tagessaldo, regardless of which month it belongs to.
+      const anchorTs = settings?.starting_balance_at
+        ? new Date(settings.starting_balance_at).getTime()
+        : settings?.starting_balance_date
+          ? new Date(settings.starting_balance_date + 'T00:00:00').getTime()
+          : 0;
+
+      const allIncome = [...windowEntries, ...pastIncome];
+      setPaidIncomeSinceStart(
+        allIncome
+          .filter((e) => e.paid_at && new Date(e.paid_at).getTime() >= anchorTs)
+          .reduce((s, e) => s + e.amount, 0),
+      );
+
+      const expenseById = new Map(allExpenses.map((e) => [e.id, e]));
+      setPaidExpensesSinceStart(
+        expPaymentList
+          .filter((p) => p.paid_at && new Date(p.paid_at).getTime() >= anchorTs)
+          .reduce((s, p) => s + (expenseById.get(p.expense_id)?.amount ?? 0), 0),
+      );
 
       // Actual balance lookup: "YYYY-MM" → { id, balance }
       const actualMap: Record<string, { id: string; balance: number }> = {};
@@ -619,6 +652,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         starting_balance:      amount,
         currency,
         starting_balance_date: new Date().toISOString().slice(0, 10),
+        starting_balance_at:   new Date().toISOString(),
         updated_at:            new Date().toISOString(),
       } as never, { onConflict: 'user_id' } as never);
 
@@ -699,6 +733,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         starting_balance:       newStartingBalance,
         currency,
         starting_balance_date:  new Date().toISOString().slice(0, 10),
+        starting_balance_at:    new Date().toISOString(),
         effective_balance:      null,
         effective_balance_date: null,
         updated_at:             new Date().toISOString(),
@@ -756,6 +791,9 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     expenses,
     startsaldo,
     startsaldoCurrency,
+    startsaldoDate,
+    paidIncomeSinceStart,
+    paidExpensesSinceStart,
     effectiveBalance,
     effectiveBalanceDate,
     loading,

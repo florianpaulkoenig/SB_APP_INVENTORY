@@ -45,13 +45,16 @@ const RECURRENCE_BADGES: Record<LiquidityExpenseType, { label: string; className
 // ---------------------------------------------------------------------------
 
 function TagessaldoCard({
-  months, startsaldo, currency,
+  startsaldo, startsaldoDate, currency,
+  paidIncome, paidExpenses,
   effectiveBalance, effectiveBalanceDate,
   onSaveEffective, onClearEffective, onAcceptDifference,
 }: {
-  months: MonthBucket[];
   startsaldo: number;
+  startsaldoDate: string | null;
   currency: string;
+  paidIncome: number;
+  paidExpenses: number;
   effectiveBalance: number | null;
   effectiveBalanceDate: string | null;
   onSaveEffective: (amount: number) => Promise<boolean>;
@@ -62,12 +65,6 @@ function TagessaldoCard({
   const [input, setInput]     = useState('');
   const [saving, setSaving]   = useState(false);
 
-  let paidIncome = 0;
-  let paidExpenses = 0;
-  for (const b of months) {
-    paidIncome   += b.paidEntries.reduce((s, e) => s + e.amount, 0);
-    paidExpenses += b.expenses.filter((e) => b.paidExpenseMap[e.id]).reduce((s, e) => s + e.amount, 0);
-  }
   const saldo = startsaldo + paidIncome - paidExpenses;
   const todayLabel = new Date().toLocaleDateString('de-CH', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -112,9 +109,9 @@ function TagessaldoCard({
         </span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-primary-400">
-        <span>Startsaldo {formatCurrency(startsaldo, currency)}</span>
-        <span className="text-emerald-600">+ {formatCurrency(paidIncome, currency)} bezahlte Einnahmen</span>
-        <span className="text-red-500">− {formatCurrency(paidExpenses, currency)} bezahlte Ausgaben</span>
+        <span>Startsaldo {formatCurrency(startsaldo, currency)}{startsaldoDate ? ` (per ${formatDate(startsaldoDate)})` : ''}</span>
+        <span className="text-emerald-600">+ {formatCurrency(paidIncome, currency)} seither bezahlte Einnahmen</span>
+        <span className="text-red-500">− {formatCurrency(paidExpenses, currency)} seither bezahlte Ausgaben</span>
       </div>
 
       {/* Effective bank balance — entry, comparison, accept */}
@@ -1331,7 +1328,8 @@ function MonthSection({
 export function LiquidityPlanningPage() {
   const {
     months, pastMonths, expenses,
-    startsaldo, startsaldoCurrency,
+    startsaldo, startsaldoCurrency, startsaldoDate,
+    paidIncomeSinceStart, paidExpensesSinceStart,
     effectiveBalance, effectiveBalanceDate,
     loading,
     addIncome, updateIncome, deleteIncome, markIncomePaid, markIncomeUnpaid,
@@ -1394,9 +1392,11 @@ export function LiquidityPlanningPage() {
         <>
           {!loading && (
             <TagessaldoCard
-              months={months}
               startsaldo={startsaldo}
+              startsaldoDate={startsaldoDate}
               currency={startsaldoCurrency}
+              paidIncome={paidIncomeSinceStart}
+              paidExpenses={paidExpensesSinceStart}
               effectiveBalance={effectiveBalance}
               effectiveBalanceDate={effectiveBalanceDate}
               onSaveEffective={upsertEffectiveBalance}
