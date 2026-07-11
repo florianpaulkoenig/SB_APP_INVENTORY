@@ -369,8 +369,6 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
 
       const pastBuckets: MonthBucket[] = [];
       const lateExpenses: LateExpenseInstance[] = [];
-      // Balance at the start of the current month — seeds the forward chain
-      let chainSeed = saldo;
       if (rangeStart !== null) {
         const nPast =
           (windowStart.getFullYear() - rangeStart.getFullYear()) * 12 +
@@ -463,14 +461,14 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           pivot = found >= 0 ? found : 0;
         }
 
-        // Forward from the anchor month — yields the seed for the current month
+        // Forward from the anchor month (display only — the current-month
+        // projection is anchored at the Tagessaldo base, not at this chain)
         let carry = saldo;
         for (let j = pivot; j < pastBuckets.length; j++) {
           const b = pastBuckets[j];
           b.projectedBalance = carry + paidNetOf(b);
           carry = b.actualBalance ?? b.projectedBalance;
         }
-        chainSeed = carry;
 
         // Backward for months before the anchor month
         let back = saldo;
@@ -482,7 +480,9 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       }
 
       // ---- Current + next 11 months ------------------------------------------
-      let runningBalance = chainSeed;
+      // Chain: bucket 0 starts at the Tagessaldo base (anchor + paid since),
+      // every month adds only its outstanding (unpaid) amounts.
+      let runningBalance = tagessaldoBase;
 
       const buckets: MonthBucket[] = Array.from({ length: 12 }, (_, i) => {
         const d     = new Date(today.getFullYear(), today.getMonth() + i, 1);
@@ -511,20 +511,16 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           }
         }
 
-        let projectedBalance: number;
-        if (i === 0) {
-          // Current month: cash position today + everything still outstanding
-          const unpaidIncome = [...unpaid, ...late].reduce((s, e) => s + e.amount, 0);
-          const unpaidExpenseSum =
-            monthExpenses.filter((e) => !paidExpenseMap[e.id]).reduce((s, e) => s + e.amount, 0) +
-            lateExp.reduce((s, le) => s + le.expense.amount, 0);
-          projectedBalance = tagessaldoBase + unpaidIncome - unpaidExpenseSum;
-        } else {
-          // Projected income = all expected amounts for this month (paid or not)
-          const incomeSum  = [...unpaid, ...paid].reduce((s, e) => s + e.amount, 0);
-          const expenseSum = monthExpenses.reduce((s, e) => s + e.amount, 0);
-          projectedBalance = runningBalance + incomeSum - expenseSum;
-        }
+        // Only UNPAID amounts enter the projection. Every paid item — past,
+        // current or prepaid future — is already inside tagessaldoBase
+        // (either in the anchor snapshot or in the paid-since components);
+        // adding it to a month again would double-count it.
+        const unpaidIncome = [...unpaid, ...late].reduce((s, e) => s + e.amount, 0);
+        const unpaidExpenseSum =
+          monthExpenses.filter((e) => !paidExpenseMap[e.id]).reduce((s, e) => s + e.amount, 0) +
+          lateExp.reduce((s, le) => s + le.expense.amount, 0);
+        const projectedBalance =
+          (i === 0 ? tagessaldoBase : runningBalance) + unpaidIncome - unpaidExpenseSum;
 
         const abEntry = actualMap[key] ?? null;
         runningBalance = abEntry !== null ? abEntry.balance : projectedBalance;
