@@ -40,6 +40,47 @@ const RECURRENCE_BADGES: Record<LiquidityExpenseType, { label: string; className
 };
 
 // ---------------------------------------------------------------------------
+// Tagessaldo card — current balance as of today
+//   Startsaldo + paid income − paid expenses (across the 12-month window)
+// ---------------------------------------------------------------------------
+
+function TagessaldoCard({
+  months, startsaldo, currency,
+}: {
+  months: MonthBucket[];
+  startsaldo: number;
+  currency: string;
+}) {
+  let paidIncome = 0;
+  let paidExpenses = 0;
+  for (const b of months) {
+    paidIncome   += b.paidEntries.reduce((s, e) => s + e.amount, 0);
+    paidExpenses += b.expenses.filter((e) => b.paidExpenseMap[e.id]).reduce((s, e) => s + e.amount, 0);
+  }
+  const saldo = startsaldo + paidIncome - paidExpenses;
+  const todayLabel = new Date().toLocaleDateString('de-CH', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  return (
+    <div className="mb-4 rounded-lg border border-primary-200 bg-white px-5 py-4">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-primary-500">Tagesaktueller Saldo</p>
+          <p className="mt-0.5 text-xs text-primary-400">per {todayLabel}</p>
+        </div>
+        <span className={`text-2xl font-semibold tabular-nums ${saldo >= 0 ? 'text-primary-900' : 'text-red-600'}`}>
+          {formatCurrency(saldo, currency)}
+        </span>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-primary-400">
+        <span>Startsaldo {formatCurrency(startsaldo, currency)}</span>
+        <span className="text-emerald-600">+ {formatCurrency(paidIncome, currency)} bezahlte Einnahmen</span>
+        <span className="text-red-500">− {formatCurrency(paidExpenses, currency)} bezahlte Ausgaben</span>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Startsaldo card
 // ---------------------------------------------------------------------------
 
@@ -1182,6 +1223,7 @@ export function LiquidityPlanningPage() {
 
       {!showingAForm && (
         <>
+          {!loading && <TagessaldoCard months={months} startsaldo={startsaldo} currency={startsaldoCurrency} />}
           <StartsaldoCard startsaldo={startsaldo} currency={startsaldoCurrency} onSave={upsertStartsaldo} />
           <ExpenseManagementCard
             expenses={expenses.filter((e) => e.type !== 'one_time')}
