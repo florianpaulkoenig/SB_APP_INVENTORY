@@ -85,9 +85,11 @@ function TagessaldoCard({
   }
 
   async function handleAccept() {
-    if (diff === null) return;
+    if (effectiveBalance === null) return;
     setSaving(true);
-    await onAcceptDifference(startsaldo + diff, currency);
+    // The accepted bank balance becomes the new Startsaldo (per today);
+    // re-anchoring resets the since-then components to zero.
+    await onAcceptDifference(effectiveBalance, currency);
     setSaving(false);
   }
 

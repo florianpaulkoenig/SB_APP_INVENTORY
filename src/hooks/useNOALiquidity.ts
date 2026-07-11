@@ -261,29 +261,38 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       setEffectiveBalanceDate(settings?.effective_balance_date ?? null);
 
       // ---- Tagessaldo components ---------------------------------------------
-      // The Startsaldo is the bank balance as of anchorDate (D, user-chosen).
-      // A paid item counts toward the Tagessaldo when
-      //   • it belongs to a period on/after D (money moved after the snapshot), OR
-      //   • it was marked paid after the Startsaldo was SAVED (anchorTs) — an
-      //     older überfällig item settled late, i.e. not part of the snapshot.
-      // Items from before D that were already marked paid when the Startsaldo
-      // was saved are considered included in the snapshot.
-      const anchorDate = settings?.starting_balance_date ?? null; // 'YYYY-MM-DD'
+      // The Startsaldo is the bank balance as of anchorDate (D, user-chosen),
+      // recorded at moment anchorTs (T). A paid item counts when
+      //   • it was marked paid AFTER T — a settlement that happened after the
+      //     snapshot was taken, OR
+      //   • it was already marked paid at T but belongs to a period BETWEEN D
+      //     and the day the Startsaldo was saved — backfilled entries whose
+      //     money moved after the snapshot date.
+      // Anything else was already reflected in the bank balance at D. In
+      // particular, items with periods after the save day that were marked
+      // paid before T (prepaid future items) are part of the snapshot.
+      const anchorDate = settings?.starting_balance_date ?? null; // D, 'YYYY-MM-DD'
       const anchorTs = settings?.starting_balance_at
         ? new Date(settings.starting_balance_at).getTime()
         : anchorDate
           ? new Date(anchorDate + 'T00:00:00').getTime()
           : 0;
+      // Local calendar day of T
+      const anchorSaveDay = (() => {
+        const d = new Date(anchorTs);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      })();
+
+      const countsPaidItem = (paidAt: string, periodDate: string): boolean => {
+        if (anchorDate === null) return true;
+        if (new Date(paidAt).getTime() >= anchorTs) return true;
+        return periodDate >= anchorDate && periodDate < anchorSaveDay;
+      };
 
       const allIncome = [...windowEntries, ...pastIncome];
       setPaidIncomeSinceStart(
         allIncome
-          .filter((e) =>
-            e.paid_at !== null &&
-            (anchorDate === null ||
-              e.expected_date >= anchorDate ||
-              new Date(e.paid_at as string).getTime() >= anchorTs),
-          )
+          .filter((e) => e.paid_at !== null && countsPaidItem(e.paid_at as string, e.expected_date))
           .reduce((s, e) => s + e.amount, 0),
       );
 
@@ -293,13 +302,12 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           .filter((p) => {
             const exp = expenseById.get(p.expense_id);
             if (!exp) return false;
-            if (anchorDate === null) return true;
             // Instance due date = due day of the expense within the paid month
             const dueDay      = exp.due_date ? Number(exp.due_date.slice(8, 10)) : 1;
             const daysInMonth = new Date(p.year, p.month, 0).getDate();
             const instanceDate =
               `${p.year}-${String(p.month).padStart(2, '0')}-${String(Math.min(dueDay, daysInMonth)).padStart(2, '0')}`;
-            return instanceDate >= anchorDate || new Date(p.paid_at).getTime() >= anchorTs;
+            return countsPaidItem(p.paid_at, instanceDate);
           })
           .reduce((s, p) => s + (expenseById.get(p.expense_id)?.amount ?? 0), 0),
       );
