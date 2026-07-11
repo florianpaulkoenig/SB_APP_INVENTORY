@@ -518,6 +518,61 @@ function IncomeEntryRow({
 }
 
 // ---------------------------------------------------------------------------
+// Carried rows — unpaid items shown greyed in their origin month with a note
+// pointing to the month they were carried to (the current month)
+// ---------------------------------------------------------------------------
+
+function CarriedIncomeRow({
+  entry, targetLabel,
+}: {
+  entry: NOALiquidityIncomeRow;
+  targetLabel: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 py-2.5 border-b border-primary-50 last:border-0 opacity-60">
+      <span className="w-20 shrink-0 text-xs text-primary-300 tabular-nums">{formatDate(entry.expected_date)}</span>
+      <div className="min-w-0 flex-1">
+        <span className="text-sm text-primary-400">{entry.description}</span>
+        {entry.notes && <span className="ml-2 text-xs text-primary-300">{entry.notes}</span>}
+      </div>
+      <span
+        className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
+        title={`Offen — wird in ${targetLabel} als überfällig geführt`}
+      >
+        → übertragen nach {targetLabel}
+      </span>
+      <span className="shrink-0 text-sm text-primary-400 tabular-nums">
+        +{formatCurrency(entry.amount, entry.currency)}
+      </span>
+    </div>
+  );
+}
+
+function CarriedExpenseRow({
+  expense, targetLabel,
+}: {
+  expense: NOALiquidityExpenseRow;
+  targetLabel: string;
+}) {
+  const badge = RECURRENCE_BADGES[expense.type];
+  return (
+    <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0 opacity-60">
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      <span className="min-w-0 flex-1 text-sm text-primary-400">{expense.description}</span>
+      <span
+        className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
+        title={`Offen — wird in ${targetLabel} als überfällig geführt`}
+      >
+        → übertragen nach {targetLabel}
+      </span>
+      <span className="shrink-0 text-sm text-primary-400 tabular-nums">
+        -{formatCurrency(expense.amount, expense.currency)}
+      </span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Paid income row
 // ---------------------------------------------------------------------------
 
@@ -1198,6 +1253,7 @@ function MonthSection({
   balanceCurrency,
   lockDate,
   lockTs,
+  carriedToLabel = null,
   onUpdateIncome,
   onDeleteIncome,
   onMarkIncomePaid,
@@ -1217,6 +1273,11 @@ function MonthSection({
   lockDate: string | null;
   /** Moment the latest Saldokorrektur was recorded (ms epoch) */
   lockTs: number | null;
+  /**
+   * Set for past months: label of the month unpaid items were carried to
+   * (the current month). Unpaid rows then render greyed with a note.
+   */
+  carriedToLabel?: string | null;
   onUpdateIncome: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
   onDeleteIncome: (id: string) => void;
   onMarkIncomePaid: (id: string) => void;
@@ -1347,10 +1408,14 @@ function MonthSection({
           {hasUnpaid && (
             <div>
               {bucket.entries.map((e) => (
-                <IncomeEntryRow
-                  key={e.id} entry={e} locked={incomeLocked(e)}
-                  onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
-                />
+                carriedToLabel !== null ? (
+                  <CarriedIncomeRow key={e.id} entry={e} targetLabel={carriedToLabel} />
+                ) : (
+                  <IncomeEntryRow
+                    key={e.id} entry={e} locked={incomeLocked(e)}
+                    onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
+                  />
+                )
               ))}
             </div>
           )}
@@ -1359,12 +1424,16 @@ function MonthSection({
           {hasUnpaidExpenses && (
             <div className={hasUnpaid || hasLate ? 'border-t border-primary-50 pt-0.5' : ''}>
               {unpaidExpenses.map((e) => (
-                <MonthExpenseRow
-                  key={e.id} expense={e} locked={expenseLocked(e)}
-                  onMarkPaid={(id) => onMarkExpensePaid(id, bucket.year, bucket.month + 1)}
-                  onUpdate={onUpdateExpense}
-                  onDelete={onDeleteExpense}
-                />
+                carriedToLabel !== null ? (
+                  <CarriedExpenseRow key={e.id} expense={e} targetLabel={carriedToLabel} />
+                ) : (
+                  <MonthExpenseRow
+                    key={e.id} expense={e} locked={expenseLocked(e)}
+                    onMarkPaid={(id) => onMarkExpensePaid(id, bucket.year, bucket.month + 1)}
+                    onUpdate={onUpdateExpense}
+                    onDelete={onDeleteExpense}
+                  />
+                )
               ))}
             </div>
           )}
@@ -1561,6 +1630,7 @@ export function LiquidityPlanningPage() {
                         balanceCurrency={startsaldoCurrency}
                         lockDate={lockDate}
                         lockTs={lockTs}
+                        carriedToLabel={months[0]?.label ?? null}
                         onUpdateIncome={updateIncome}
                         onDeleteIncome={deleteIncome}
                         onMarkIncomePaid={markIncomePaid}
