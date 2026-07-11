@@ -51,6 +51,9 @@ export interface UseNOALiquidityReturn {
   expenses: NOALiquidityExpenseRow[];
   startsaldo: number;
   startsaldoCurrency: string;
+  /** User-entered real bank balance (null if none recorded) */
+  effectiveBalance: number | null;
+  effectiveBalanceDate: string | null;
   loading: boolean;
   // Income CRUD
   addIncome: (data: {
@@ -91,6 +94,11 @@ export interface UseNOALiquidityReturn {
   markExpenseUnpaid: (paymentId: string) => Promise<boolean>;
   // Startsaldo
   upsertStartsaldo: (amount: number, currency: string) => Promise<boolean>;
+  // Effektiver Konto-Saldo
+  upsertEffectiveBalance: (amount: number) => Promise<boolean>;
+  clearEffectiveBalance: () => Promise<boolean>;
+  /** Accept the difference: set a new Startsaldo and clear the effective balance */
+  acceptEffectiveBalance: (newStartingBalance: number, currency: string) => Promise<boolean>;
   // Ist-Saldo
   upsertActualBalance: (year: number, month: number, balance: number, currency: string) => Promise<boolean>;
   deleteActualBalance: (id: string) => Promise<boolean>;
@@ -144,6 +152,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
   const [expenses, setExpenses] = useState<NOALiquidityExpenseRow[]>([]);
   const [startsaldo, setStartsaldo]                 = useState(0);
   const [startsaldoCurrency, setStartsaldoCurrency] = useState('CHF');
+  const [effectiveBalance, setEffectiveBalance]         = useState<number | null>(null);
+  const [effectiveBalanceDate, setEffectiveBalanceDate] = useState<string | null>(null);
   const [loading, setLoading]   = useState(true);
   const [tick, setTick]         = useState(0);
   const { toast } = useToast();
@@ -231,6 +241,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       const currency = settings?.currency         ?? 'CHF';
       setStartsaldo(saldo);
       setStartsaldoCurrency(currency);
+      setEffectiveBalance(settings?.effective_balance ?? null);
+      setEffectiveBalanceDate(settings?.effective_balance_date ?? null);
 
       // Actual balance lookup: "YYYY-MM" → { id, balance }
       const actualMap: Record<string, { id: string; balance: number }> = {};
@@ -517,6 +529,88 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     return true;
   }, [toast, refetch]);
 
+  // ---- Effektiver Konto-Saldo -------------------------------------------------
+
+  const upsertEffectiveBalance = useCallback(async (amount: number): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return false;
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const { data, error } = await supabase
+      .from('noa_liquidity_settings' as never)
+      .update({
+        effective_balance:      amount,
+        effective_balance_date: today,
+        updated_at:             new Date().toISOString(),
+      } as never)
+      .eq('user_id', session.user.id)
+      .select('id');
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+
+    // No settings row yet — create one with default Startsaldo 0
+    if (!data || data.length === 0) {
+      const { error: insErr } = await supabase
+        .from('noa_liquidity_settings' as never)
+        .insert({
+          user_id:                session.user.id,
+          starting_balance:       0,
+          starting_balance_date:  today,
+          effective_balance:      amount,
+          effective_balance_date: today,
+        } as never);
+      if (insErr) { toast({ title: 'Fehler', description: insErr.message, variant: 'error' }); return false; }
+    }
+
+    toast({ title: 'Konto-Saldo gespeichert', variant: 'success' });
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
+  const clearEffectiveBalance = useCallback(async (): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return false;
+
+    const { error } = await supabase
+      .from('noa_liquidity_settings' as never)
+      .update({
+        effective_balance:      null,
+        effective_balance_date: null,
+        updated_at:             new Date().toISOString(),
+      } as never)
+      .eq('user_id', session.user.id);
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
+  const acceptEffectiveBalance = useCallback(async (
+    newStartingBalance: number,
+    currency: string,
+  ): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return false;
+
+    const { error } = await supabase
+      .from('noa_liquidity_settings' as never)
+      .upsert({
+        user_id:                session.user.id,
+        starting_balance:       newStartingBalance,
+        currency,
+        starting_balance_date:  new Date().toISOString().slice(0, 10),
+        effective_balance:      null,
+        effective_balance_date: null,
+        updated_at:             new Date().toISOString(),
+      } as never, { onConflict: 'user_id' } as never);
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+    toast({ title: 'Differenz übernommen', description: 'Der Startsaldo wurde angepasst.', variant: 'success' });
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
   // ---- Ist-Saldo ------------------------------------------------------------
 
   const upsertActualBalance = useCallback(async (
@@ -562,6 +656,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     expenses,
     startsaldo,
     startsaldoCurrency,
+    effectiveBalance,
+    effectiveBalanceDate,
     loading,
     addIncome,
     updateIncome,
@@ -575,6 +671,9 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     markExpensePaid,
     markExpenseUnpaid,
     upsertStartsaldo,
+    upsertEffectiveBalance,
+    clearEffectiveBalance,
+    acceptEffectiveBalance,
     upsertActualBalance,
     deleteActualBalance,
     refetch,

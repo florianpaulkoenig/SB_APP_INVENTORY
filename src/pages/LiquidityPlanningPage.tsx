@@ -46,11 +46,22 @@ const RECURRENCE_BADGES: Record<LiquidityExpenseType, { label: string; className
 
 function TagessaldoCard({
   months, startsaldo, currency,
+  effectiveBalance, effectiveBalanceDate,
+  onSaveEffective, onClearEffective, onAcceptDifference,
 }: {
   months: MonthBucket[];
   startsaldo: number;
   currency: string;
+  effectiveBalance: number | null;
+  effectiveBalanceDate: string | null;
+  onSaveEffective: (amount: number) => Promise<boolean>;
+  onClearEffective: () => Promise<boolean>;
+  onAcceptDifference: (newStartingBalance: number, currency: string) => Promise<boolean>;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [input, setInput]     = useState('');
+  const [saving, setSaving]   = useState(false);
+
   let paidIncome = 0;
   let paidExpenses = 0;
   for (const b of months) {
@@ -59,6 +70,35 @@ function TagessaldoCard({
   }
   const saldo = startsaldo + paidIncome - paidExpenses;
   const todayLabel = new Date().toLocaleDateString('de-CH', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const diff = effectiveBalance !== null ? effectiveBalance - saldo : null;
+
+  function openEdit() {
+    setInput(effectiveBalance !== null ? String(effectiveBalance) : '');
+    setEditing(true);
+  }
+
+  async function handleSave() {
+    const num = parseFloat(input);
+    if (isNaN(num)) return;
+    setSaving(true);
+    const ok = await onSaveEffective(num);
+    setSaving(false);
+    if (ok) setEditing(false);
+  }
+
+  async function handleAccept() {
+    if (diff === null) return;
+    setSaving(true);
+    await onAcceptDifference(startsaldo + diff, currency);
+    setSaving(false);
+  }
+
+  async function handleClear() {
+    setSaving(true);
+    await onClearEffective();
+    setSaving(false);
+  }
 
   return (
     <div className="mb-4 rounded-lg border border-primary-200 bg-white px-5 py-4">
@@ -75,6 +115,76 @@ function TagessaldoCard({
         <span>Startsaldo {formatCurrency(startsaldo, currency)}</span>
         <span className="text-emerald-600">+ {formatCurrency(paidIncome, currency)} bezahlte Einnahmen</span>
         <span className="text-red-500">− {formatCurrency(paidExpenses, currency)} bezahlte Ausgaben</span>
+      </div>
+
+      {/* Effective bank balance — entry, comparison, accept */}
+      <div className="mt-3 border-t border-primary-50 pt-3">
+        {editing ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-primary-500">Effektiver Konto-Saldo:</span>
+            <input
+              type="number" step="0.01" value={input} onChange={(e) => setInput(e.target.value)} autoFocus
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false); }}
+              placeholder="z. B. 42500.00"
+              className="w-36 rounded border border-primary-200 px-2 py-1 text-sm tabular-nums focus:border-primary-400 focus:outline-none"
+            />
+            <span className="text-xs text-primary-400">{currency}</span>
+            <Button size="sm" onClick={handleSave} loading={saving} disabled={!input}>Speichern</Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Abbrechen</Button>
+          </div>
+        ) : effectiveBalance === null ? (
+          <button
+            onClick={openEdit}
+            className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-700 transition-colors"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Effektiven Konto-Saldo eintragen (Abgleich mit Bank)
+          </button>
+        ) : (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="text-xs text-primary-500">
+              Konto-Saldo{effectiveBalanceDate ? ` per ${formatDate(effectiveBalanceDate)}` : ''}:
+              <span className="ml-1.5 text-sm font-semibold text-primary-900 tabular-nums">
+                {formatCurrency(effectiveBalance, currency)}
+              </span>
+            </span>
+
+            {diff === 0 ? (
+              <span className="flex items-center gap-1 text-xs font-medium text-emerald-600">
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                Stimmt mit dem berechneten Saldo überein
+              </span>
+            ) : (
+              <span className={`text-xs font-semibold tabular-nums ${diff !== null && diff > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                Differenz: {diff !== null && diff > 0 ? '+' : ''}{formatCurrency(diff ?? 0, currency)}
+              </span>
+            )}
+
+            <div className="flex items-center gap-2 ml-auto">
+              {diff !== null && diff !== 0 && (
+                <Button size="sm" onClick={handleAccept} loading={saving} title="Startsaldo wird so angepasst, dass der berechnete Saldo dem Konto-Saldo entspricht">
+                  Differenz akzeptieren
+                </Button>
+              )}
+              <button onClick={openEdit} className="text-xs text-primary-400 hover:text-primary-700 underline underline-offset-2 transition-colors">
+                Bearbeiten
+              </button>
+              <button onClick={handleClear} disabled={saving} className="text-xs text-primary-400 hover:text-red-500 underline underline-offset-2 transition-colors">
+                Entfernen
+              </button>
+            </div>
+
+            {diff !== null && diff !== 0 && (
+              <p className="w-full text-xs text-primary-400">
+                «Differenz akzeptieren» passt den Startsaldo an — oder Einträge unten prüfen (fehlende Zahlungen, nicht markierte Ein-/Ausgaben), bis die Differenz verschwindet.
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1166,10 +1276,12 @@ export function LiquidityPlanningPage() {
   const {
     months, expenses,
     startsaldo, startsaldoCurrency,
+    effectiveBalance, effectiveBalanceDate,
     loading,
     addIncome, updateIncome, deleteIncome, markIncomePaid, markIncomeUnpaid,
     addExpense, updateExpense, deleteExpense, toggleExpenseActive, markExpensePaid, markExpenseUnpaid,
-    upsertStartsaldo, upsertActualBalance, deleteActualBalance,
+    upsertStartsaldo, upsertEffectiveBalance, clearEffectiveBalance, acceptEffectiveBalance,
+    upsertActualBalance, deleteActualBalance,
   } = useNOALiquidity();
 
   const [showIncomeForm, setShowIncomeForm]   = useState(false);
@@ -1223,7 +1335,18 @@ export function LiquidityPlanningPage() {
 
       {!showingAForm && (
         <>
-          {!loading && <TagessaldoCard months={months} startsaldo={startsaldo} currency={startsaldoCurrency} />}
+          {!loading && (
+            <TagessaldoCard
+              months={months}
+              startsaldo={startsaldo}
+              currency={startsaldoCurrency}
+              effectiveBalance={effectiveBalance}
+              effectiveBalanceDate={effectiveBalanceDate}
+              onSaveEffective={upsertEffectiveBalance}
+              onClearEffective={clearEffectiveBalance}
+              onAcceptDifference={acceptEffectiveBalance}
+            />
+          )}
           <StartsaldoCard startsaldo={startsaldo} currency={startsaldoCurrency} onSave={upsertStartsaldo} />
           <ExpenseManagementCard
             expenses={expenses.filter((e) => e.type !== 'one_time')}

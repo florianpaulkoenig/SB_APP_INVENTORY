@@ -2240,6 +2240,8 @@ export type NOALiquiditySettingsRow = {
   starting_balance: number;
   starting_balance_date: string;
   currency: string;
+  effective_balance: number | null;
+  effective_balance_date: string | null;
   updated_at: string;
 }
 
@@ -2249,6 +2251,8 @@ export type NOALiquiditySettingsInsert = {
   starting_balance: number;
   starting_balance_date: string;
   currency?: string;
+  effective_balance?: number | null;
+  effective_balance_date?: string | null;
   updated_at?: string;
 }
 
