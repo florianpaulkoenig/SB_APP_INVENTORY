@@ -20,6 +20,13 @@ import type {
 // Public types
 // ---------------------------------------------------------------------------
 
+/** An unpaid expense instance from a past month, carried into the current month */
+export interface LateExpenseInstance {
+  expense: NOALiquidityExpenseRow;
+  year: number;
+  month: number; // 1-indexed
+}
+
 export interface MonthBucket {
   year: number;
   month: number;           // 0-indexed
@@ -33,6 +40,11 @@ export interface MonthBucket {
    * first (current) month bucket.
    */
   lateEntries: NOALiquidityIncomeRow[];
+  /**
+   * Unpaid expense instances from past months — only populated on the
+   * first (current) month bucket.
+   */
+  lateExpenses: LateExpenseInstance[];
   expenses: NOALiquidityExpenseRow[];
   /**
    * Map from expense_id → payment_id for expenses paid in this month.
@@ -245,56 +257,6 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         actualMap[key] = { id: ab.id, balance: ab.balance };
       }
 
-      // Build 12 monthly buckets
-      let runningBalance = saldo;
-
-      const buckets: MonthBucket[] = Array.from({ length: 12 }, (_, i) => {
-        const d     = new Date(today.getFullYear(), today.getMonth() + i, 1);
-        const year  = d.getFullYear();
-        const month = d.getMonth(); // 0-indexed
-        const key   = `${year}-${String(month + 1).padStart(2, '0')}`;
-
-        // Split window entries into unpaid / paid for this month
-        const unpaid     = windowEntries.filter((e) => e.expected_date.startsWith(key) && !e.paid_at);
-        const paid       = windowEntries.filter((e) => e.expected_date.startsWith(key) &&  e.paid_at);
-        // Late entries only in the first (current) bucket
-        const late       = i === 0 ? lateEntries : [];
-
-        const monthExpenses = allExpenses.filter((e) => expenseAppliesTo(e, year, month));
-
-        // Build paidExpenseMap for this month: expenseId → paymentId
-        const monthKey1 = String(month + 1).padStart(2, '0'); // 1-indexed month string
-        const paidExpenseMap: Record<string, string> = {};
-        for (const e of monthExpenses) {
-          const pKey = `${e.id}:${year}-${monthKey1}`;
-          if (expPaymentMap[pKey]) paidExpenseMap[e.id] = expPaymentMap[pKey];
-        }
-
-        // Projected income = all expected amounts for this month (including late & paid)
-        const incomeSum  = [...unpaid, ...paid, ...late].reduce((s, e) => s + e.amount, 0);
-        const expenseSum = monthExpenses.reduce((s, e) => s + e.amount, 0);
-        const net        = incomeSum - expenseSum;
-
-        const projectedBalance = runningBalance + net;
-
-        const abEntry = actualMap[key] ?? null;
-        runningBalance = abEntry !== null ? abEntry.balance : projectedBalance;
-
-        return {
-          year,
-          month,
-          label:           `${MONTH_LABELS_DE[month]} ${year}`,
-          entries:         unpaid,
-          paidEntries:     paid,
-          lateEntries:     late,
-          expenses:        monthExpenses,
-          paidExpenseMap,
-          projectedBalance,
-          actualBalance:   abEntry?.balance  ?? null,
-          actualBalanceId: abEntry?.id       ?? null,
-        };
-      });
-
       // ---- Past months (review) --------------------------------------------
       // Contiguous range from the earliest month with data up to the month
       // before the current one, capped at 24 months back.
@@ -316,6 +278,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       const rangeStart = earliest !== null && earliest < capDate ? capDate : earliest;
 
       const pastBuckets: MonthBucket[] = [];
+      const lateExpenses: LateExpenseInstance[] = [];
       if (rangeStart !== null) {
         const nPast =
           (windowStart.getFullYear() - rangeStart.getFullYear()) * 12 +
@@ -351,12 +314,22 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
             entries:         unpaid,
             paidEntries:     paid,
             lateEntries:     [],
+            lateExpenses:    [],
             expenses:        monthExpenses,
             paidExpenseMap,
             projectedBalance: 0, // filled by the backward chain below
             actualBalance:   abEntry?.balance ?? null,
             actualBalanceId: abEntry?.id      ?? null,
           });
+        }
+
+        // Unpaid past expense instances carry over into the current month
+        for (const b of pastBuckets) {
+          for (const e of b.expenses) {
+            if (!b.paidExpenseMap[e.id]) {
+              lateExpenses.push({ expense: e, year: b.year, month: b.month + 1 });
+            }
+          }
         }
 
         // Backward balance chain, anchored at the Startsaldo (= balance at
@@ -372,6 +345,59 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           carry = (b.actualBalance ?? carry) - (incomeSum - expenseSum);
         }
       }
+
+      // ---- Current + next 11 months ------------------------------------------
+      let runningBalance = saldo;
+
+      const buckets: MonthBucket[] = Array.from({ length: 12 }, (_, i) => {
+        const d     = new Date(today.getFullYear(), today.getMonth() + i, 1);
+        const year  = d.getFullYear();
+        const month = d.getMonth(); // 0-indexed
+        const key   = `${year}-${String(month + 1).padStart(2, '0')}`;
+
+        // Split window entries into unpaid / paid for this month
+        const unpaid     = windowEntries.filter((e) => e.expected_date.startsWith(key) && !e.paid_at);
+        const paid       = windowEntries.filter((e) => e.expected_date.startsWith(key) &&  e.paid_at);
+        // Late income & expenses only in the first (current) bucket
+        const late       = i === 0 ? lateEntries  : [];
+        const lateExp    = i === 0 ? lateExpenses : [];
+
+        const monthExpenses = allExpenses.filter((e) => expenseAppliesTo(e, year, month));
+
+        // Build paidExpenseMap for this month: expenseId → paymentId
+        const monthKey1 = String(month + 1).padStart(2, '0'); // 1-indexed month string
+        const paidExpenseMap: Record<string, string> = {};
+        for (const e of monthExpenses) {
+          const pKey = `${e.id}:${year}-${monthKey1}`;
+          if (expPaymentMap[pKey]) paidExpenseMap[e.id] = expPaymentMap[pKey];
+        }
+
+        // Projected income = all expected amounts for this month (including late & paid)
+        const incomeSum  = [...unpaid, ...paid, ...late].reduce((s, e) => s + e.amount, 0);
+        const expenseSum = monthExpenses.reduce((s, e) => s + e.amount, 0)
+                         + lateExp.reduce((s, le) => s + le.expense.amount, 0);
+        const net        = incomeSum - expenseSum;
+
+        const projectedBalance = runningBalance + net;
+
+        const abEntry = actualMap[key] ?? null;
+        runningBalance = abEntry !== null ? abEntry.balance : projectedBalance;
+
+        return {
+          year,
+          month,
+          label:           `${MONTH_LABELS_DE[month]} ${year}`,
+          entries:         unpaid,
+          paidEntries:     paid,
+          lateEntries:     late,
+          lateExpenses:    lateExp,
+          expenses:        monthExpenses,
+          paidExpenseMap,
+          projectedBalance,
+          actualBalance:   abEntry?.balance  ?? null,
+          actualBalanceId: abEntry?.id       ?? null,
+        };
+      });
 
       setMonths(buckets);
       setPastMonths(pastBuckets);

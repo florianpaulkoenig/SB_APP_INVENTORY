@@ -10,7 +10,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { CURRENCIES } from '../lib/constants';
 import { useNOALiquidity } from '../hooks/useNOALiquidity';
-import type { MonthBucket } from '../hooks/useNOALiquidity';
+import type { MonthBucket, LateExpenseInstance } from '../hooks/useNOALiquidity';
 import type { NOALiquidityIncomeRow, NOALiquidityExpenseRow, LiquidityExpenseType } from '../types/database';
 import { LiquidityCashFlowChart } from '../components/liquidity/LiquidityCashFlowChart';
 
@@ -621,6 +621,46 @@ function MonthExpenseRow({
 }
 
 // ---------------------------------------------------------------------------
+// Late expense row — unpaid instance carried over from a past month
+// ---------------------------------------------------------------------------
+
+function LateExpenseRow({
+  instance, onMarkPaid,
+}: {
+  instance: LateExpenseInstance;
+  onMarkPaid: (expenseId: string, year: number, month: number) => void;
+}) {
+  const e = instance.expense;
+  const badge = RECURRENCE_BADGES[e.type];
+  const originLabel = new Date(instance.year, instance.month - 1, 1)
+    .toLocaleDateString('de-CH', { month: 'long', year: 'numeric' });
+
+  return (
+    <div className="flex items-center gap-2 py-2.5 border-b border-primary-50 last:border-0">
+      <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
+        Überfällig
+      </span>
+      <span className="w-28 shrink-0 text-xs text-red-400">{originLabel}</span>
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      <span className="min-w-0 flex-1 text-sm font-medium text-red-700">{e.description}</span>
+      <span className="shrink-0 text-sm font-medium text-red-600 tabular-nums">
+        -{formatCurrency(e.amount, e.currency)}
+      </span>
+      <button
+        onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
+        className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-50 transition-colors shrink-0"
+        title={`Als bezahlt markieren (wird ${originLabel} zugeordnet)`}
+      >
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+        Bezahlt
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Expense row inside month section — paid
 // ---------------------------------------------------------------------------
 
@@ -1044,7 +1084,8 @@ function MonthSummaryFooter({
   // Sum ALL income (unpaid + late + paid) as face value
   const allIncome = [...bucket.entries, ...bucket.lateEntries, ...bucket.paidEntries];
   const incomeTotal  = allIncome.reduce((s, e) => s + e.amount, 0);
-  const expenseTotal = bucket.expenses.reduce((s, e) => s + e.amount, 0);
+  const expenseTotal = bucket.expenses.reduce((s, e) => s + e.amount, 0)
+                     + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0);
   const net          = incomeTotal - expenseTotal;
 
   return (
@@ -1123,11 +1164,13 @@ function MonthSection({
 
   const hasUnpaid        = bucket.entries.length > 0;
   const hasLate          = bucket.lateEntries.length > 0;
+  const hasLateExpenses  = bucket.lateExpenses.length > 0;
   const hasPaidIncome    = bucket.paidEntries.length > 0;
   const hasUnpaidExpenses = unpaidExpenses.length > 0;
   const hasPaidExpenses  = paidExpenses.length > 0;
   const hasExpenses      = bucket.expenses.length > 0;
-  const hasAny           = hasUnpaid || hasLate || hasPaidIncome || hasExpenses;
+  const hasAny           = hasUnpaid || hasLate || hasLateExpenses || hasPaidIncome || hasExpenses;
+  const lateCount        = bucket.lateEntries.length + bucket.lateExpenses.length;
 
   return (
     <div className={`rounded-lg border overflow-hidden ${
@@ -1139,9 +1182,9 @@ function MonthSection({
         <span className={`text-sm font-semibold ${hasAny ? 'text-primary-900' : 'text-primary-400'}`}>
           {bucket.label}
         </span>
-        {hasLate && (
+        {lateCount > 0 && (
           <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
-            {bucket.lateEntries.length} überfällig
+            {lateCount} überfällig
           </span>
         )}
         <button
@@ -1179,6 +1222,19 @@ function MonthSection({
                 <IncomeEntryRow
                   key={e.id} entry={e} isLate
                   onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Late (overdue) expense instances from past months */}
+          {hasLateExpenses && (
+            <div className="border-b border-red-50 pb-0.5 mb-0.5">
+              {bucket.lateExpenses.map((le) => (
+                <LateExpenseRow
+                  key={`${le.expense.id}:${le.year}-${le.month}`}
+                  instance={le}
+                  onMarkPaid={onMarkExpensePaid}
                 />
               ))}
             </div>
