@@ -48,6 +48,8 @@ export interface MonthBucket {
 
 export interface UseNOALiquidityReturn {
   months: MonthBucket[];
+  /** Months before the current one that contain data — ascending (oldest first) */
+  pastMonths: MonthBucket[];
   expenses: NOALiquidityExpenseRow[];
   startsaldo: number;
   startsaldoCurrency: string;
@@ -148,8 +150,9 @@ function expenseAppliesTo(
 // ---------------------------------------------------------------------------
 
 export function useNOALiquidity(): UseNOALiquidityReturn {
-  const [months, setMonths]     = useState<MonthBucket[]>([]);
-  const [expenses, setExpenses] = useState<NOALiquidityExpenseRow[]>([]);
+  const [months, setMonths]         = useState<MonthBucket[]>([]);
+  const [pastMonths, setPastMonths] = useState<MonthBucket[]>([]);
+  const [expenses, setExpenses]     = useState<NOALiquidityExpenseRow[]>([]);
   const [startsaldo, setStartsaldo]                 = useState(0);
   const [startsaldoCurrency, setStartsaldoCurrency] = useState('CHF');
   const [effectiveBalance, setEffectiveBalance]         = useState<number | null>(null);
@@ -170,12 +173,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       const wsStr = windowStart.toISOString().slice(0, 10);
       const weStr = windowEnd.toISOString().slice(0, 10);
 
-      const windowStartYear  = windowStart.getFullYear();
-      const windowStartMonth = windowStart.getMonth() + 1; // 1-indexed
-      const windowEndYear    = new Date(today.getFullYear(), today.getMonth() + 12, 0).getFullYear();
-      const windowEndMonth   = new Date(today.getFullYear(), today.getMonth() + 12, 0).getMonth() + 1;
-
-      const [incomeRes, lateRes, expensesRes, settingsRes, actualBalancesRes, expPaymentsRes] = await Promise.all([
+      const [incomeRes, pastIncomeRes, expensesRes, settingsRes, actualBalancesRes, expPaymentsRes] = await Promise.all([
         // Income within the 12-month window (paid or unpaid)
         supabase
           .from('noa_liquidity_income' as never)
@@ -184,12 +182,12 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           .lte('expected_date', weStr)
           .order('expected_date', { ascending: true }),
 
-        // Overdue unpaid income from BEFORE the window
+        // ALL income from BEFORE the window (paid + unpaid) — for the
+        // past-months review and the overdue list
         supabase
           .from('noa_liquidity_income' as never)
           .select('*')
           .lt('expected_date', wsStr)
-          .is('paid_at', null)
           .order('expected_date', { ascending: true }),
 
         supabase
@@ -206,15 +204,10 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           .from('noa_liquidity_actual_balances' as never)
           .select('*'),
 
-        // Expense payments within the 12-month window
+        // All expense payments (past months included)
         supabase
           .from('noa_liquidity_expense_payments' as never)
-          .select('*')
-          .or(
-            `and(year.eq.${windowStartYear},month.gte.${windowStartMonth}),` +
-            `and(year.gt.${windowStartYear},year.lt.${windowEndYear}),` +
-            `and(year.eq.${windowEndYear},month.lte.${windowEndMonth})`
-          ),
+          .select('*'),
       ]);
 
       if (incomeRes.error) {
@@ -224,7 +217,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       }
 
       const windowEntries  = (incomeRes.data       ?? []) as NOALiquidityIncomeRow[];
-      const lateEntries    = (lateRes.data          ?? []) as NOALiquidityIncomeRow[];
+      const pastIncome     = (pastIncomeRes.data    ?? []) as NOALiquidityIncomeRow[];
+      const lateEntries    = pastIncome.filter((e) => !e.paid_at);
       const allExpenses    = (expensesRes.data      ?? []) as NOALiquidityExpenseRow[];
       const settings       = settingsRes.data             as NOALiquiditySettingsRow | null;
       const actualBalList  = (actualBalancesRes.data ?? []) as NOALiquidityActualBalanceRow[];
@@ -301,7 +295,86 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         };
       });
 
+      // ---- Past months (review) --------------------------------------------
+      // Contiguous range from the earliest month with data up to the month
+      // before the current one, capped at 24 months back.
+
+      const dataMonths: Date[] = [
+        ...pastIncome.map((e) => {
+          const d = new Date(e.expected_date + 'T00:00:00');
+          return new Date(d.getFullYear(), d.getMonth(), 1);
+        }),
+        ...actualBalList.map((ab) => new Date(ab.year, ab.month - 1, 1)),
+        ...expPaymentList.map((p) => new Date(p.year, p.month - 1, 1)),
+      ].filter((d) => d < windowStart);
+
+      const earliest = dataMonths.length > 0
+        ? dataMonths.reduce((min, d) => (d < min ? d : min))
+        : null;
+
+      const capDate = new Date(today.getFullYear(), today.getMonth() - 24, 1);
+      const rangeStart = earliest !== null && earliest < capDate ? capDate : earliest;
+
+      const pastBuckets: MonthBucket[] = [];
+      if (rangeStart !== null) {
+        const nPast =
+          (windowStart.getFullYear() - rangeStart.getFullYear()) * 12 +
+          (windowStart.getMonth() - rangeStart.getMonth());
+
+        for (let i = nPast; i >= 1; i--) {
+          const d     = new Date(today.getFullYear(), today.getMonth() - i, 1);
+          const year  = d.getFullYear();
+          const month = d.getMonth();
+          const key   = `${year}-${String(month + 1).padStart(2, '0')}`;
+          const monthKey1 = String(month + 1).padStart(2, '0');
+
+          const unpaid = pastIncome.filter((e) => e.expected_date.startsWith(key) && !e.paid_at);
+          const paid   = pastIncome.filter((e) => e.expected_date.startsWith(key) &&  e.paid_at);
+
+          // Applicable expenses — plus expenses with a recorded payment for
+          // this month even if they no longer apply (e.g. deactivated since)
+          const monthExpenses = allExpenses.filter(
+            (e) => expenseAppliesTo(e, year, month) || !!expPaymentMap[`${e.id}:${year}-${monthKey1}`],
+          );
+          const paidExpenseMap: Record<string, string> = {};
+          for (const e of monthExpenses) {
+            const pKey = `${e.id}:${year}-${monthKey1}`;
+            if (expPaymentMap[pKey]) paidExpenseMap[e.id] = expPaymentMap[pKey];
+          }
+
+          const abEntry = actualMap[key] ?? null;
+
+          pastBuckets.push({
+            year,
+            month,
+            label:           `${MONTH_LABELS_DE[month]} ${year}`,
+            entries:         unpaid,
+            paidEntries:     paid,
+            lateEntries:     [],
+            expenses:        monthExpenses,
+            paidExpenseMap,
+            projectedBalance: 0, // filled by the backward chain below
+            actualBalance:   abEntry?.balance ?? null,
+            actualBalanceId: abEntry?.id      ?? null,
+          });
+        }
+
+        // Backward balance chain, anchored at the Startsaldo (= balance at
+        // the beginning of the current month, i.e. end of the last past month)
+        let carry = saldo;
+        for (let j = pastBuckets.length - 1; j >= 0; j--) {
+          const b = pastBuckets[j];
+          const incomeSum  = [...b.entries, ...b.paidEntries].reduce((s, e) => s + e.amount, 0);
+          const expenseSum = b.expenses.reduce((s, e) => s + e.amount, 0);
+          b.projectedBalance = carry;
+          // End of the next-older month = start of this month; prefer the
+          // user-entered Ist-Saldo as anchor when present (mirrors forward logic)
+          carry = (b.actualBalance ?? carry) - (incomeSum - expenseSum);
+        }
+      }
+
       setMonths(buckets);
+      setPastMonths(pastBuckets);
       setExpenses(allExpenses);
       setLoading(false);
     }
@@ -653,6 +726,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
 
   return {
     months,
+    pastMonths,
     expenses,
     startsaldo,
     startsaldoCurrency,

@@ -1274,7 +1274,7 @@ function MonthSection({
 
 export function LiquidityPlanningPage() {
   const {
-    months, expenses,
+    months, pastMonths, expenses,
     startsaldo, startsaldoCurrency,
     effectiveBalance, effectiveBalanceDate,
     loading,
@@ -1286,6 +1286,7 @@ export function LiquidityPlanningPage() {
 
   const [showIncomeForm, setShowIncomeForm]   = useState(false);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [showPastMonths, setShowPastMonths]   = useState(false);
 
   const today = new Date();
   const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -1366,6 +1367,52 @@ export function LiquidityPlanningPage() {
         <div className="flex justify-center py-20"><LoadingSpinner size="lg" /></div>
       ) : (
         <div className="space-y-2">
+          {/* Past months — collapsed by default, newest first */}
+          {pastMonths.length > 0 && (
+            <div className="rounded-lg border border-primary-100 bg-primary-50/40 overflow-hidden">
+              <button
+                onClick={() => setShowPastMonths((v) => !v)}
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+              >
+                <span className="text-sm font-semibold text-primary-600">
+                  Vergangene Monate
+                  <span className="ml-2 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500">
+                    {pastMonths.length}
+                  </span>
+                </span>
+                <svg className={`h-4 w-4 text-primary-400 transition-transform ${showPastMonths ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
+              {showPastMonths && (
+                <div className="space-y-2 border-t border-primary-100 p-2">
+                  {[...pastMonths].reverse().map((bucket) => {
+                    const key = `${bucket.year}-${String(bucket.month + 1).padStart(2, '0')}`;
+                    return (
+                      <MonthSection
+                        key={key}
+                        bucket={bucket}
+                        isCurrentMonth={false}
+                        balanceCurrency={startsaldoCurrency}
+                        onUpdateIncome={updateIncome}
+                        onDeleteIncome={deleteIncome}
+                        onMarkIncomePaid={markIncomePaid}
+                        onMarkIncomeUnpaid={markIncomeUnpaid}
+                        onMarkExpensePaid={markExpensePaid}
+                        onMarkExpenseUnpaid={markExpenseUnpaid}
+                        onUpdateExpense={updateExpense}
+                        onDeleteExpense={deleteExpense}
+                        onAddExpense={addExpense}
+                        onUpsertActualBalance={upsertActualBalance}
+                        onDeleteActualBalance={deleteActualBalance}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {months.map((bucket) => {
             const key = `${bucket.year}-${String(bucket.month + 1).padStart(2, '0')}`;
             return (
