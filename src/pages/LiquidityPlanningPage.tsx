@@ -40,6 +40,41 @@ const RECURRENCE_BADGES: Record<LiquidityExpenseType, { label: string; className
 };
 
 // ---------------------------------------------------------------------------
+// Provisional badge + checkbox
+// ---------------------------------------------------------------------------
+
+function ProvBadge() {
+  return (
+    <span
+      className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
+      title="Provisorisch — zählt nur zur provisorischen Liquiditätskurve"
+    >
+      Prov.
+    </span>
+  );
+}
+
+function ProvCheckbox({
+  checked, onChange,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-2 text-sm text-primary-600 cursor-pointer select-none">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 rounded border-primary-300 accent-amber-600"
+      />
+      Provisorisch
+      <span className="text-xs text-primary-400">(nur provisorische Kurve)</span>
+    </label>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Tagessaldo card — current balance as of today
 //   Startsaldo + paid income − paid expenses (across the 12-month window)
 // ---------------------------------------------------------------------------
@@ -282,7 +317,7 @@ function StartsaldoCard({
 function AddIncomeForm({
   onSave, onCancel,
 }: {
-  onSave: (data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
+  onSave: (data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null; provisional?: boolean }) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [description, setDescription] = useState('');
@@ -290,15 +325,16 @@ function AddIncomeForm({
   const [currency, setCurrency]       = useState('CHF');
   const [expectedDate, setExpectedDate] = useState('');
   const [notes, setNotes]             = useState('');
+  const [provisional, setProvisional] = useState(false);
   const [saving, setSaving]           = useState(false);
 
   async function handleSubmit() {
     const n = parseFloat(amount);
     if (!description.trim() || isNaN(n) || n <= 0 || !expectedDate) return;
     setSaving(true);
-    const ok = await onSave({ description: description.trim(), amount: n, currency, expected_date: expectedDate, notes: notes.trim() || null });
+    const ok = await onSave({ description: description.trim(), amount: n, currency, expected_date: expectedDate, notes: notes.trim() || null, provisional });
     setSaving(false);
-    if (ok) { setDescription(''); setAmount(''); setExpectedDate(''); setNotes(''); }
+    if (ok) { setDescription(''); setAmount(''); setExpectedDate(''); setNotes(''); setProvisional(false); }
   }
 
   return (
@@ -312,6 +348,9 @@ function AddIncomeForm({
         <Select label="Währung" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
         <Input label="Erwartetes Datum *" type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
         <Input label="Notiz (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Interne Notiz …" />
+        <div className="sm:col-span-2">
+          <ProvCheckbox checked={provisional} onChange={setProvisional} />
+        </div>
       </div>
       <div className="mt-4 flex items-center gap-3">
         <Button onClick={handleSubmit} loading={saving} disabled={!description.trim() || !amount || !expectedDate}>Speichern</Button>
@@ -328,7 +367,7 @@ function AddIncomeForm({
 function AddExpenseForm({
   onSave, onCancel,
 }: {
-  onSave: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
+  onSave: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string; provisional?: boolean }) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [description, setDescription] = useState('');
@@ -336,15 +375,16 @@ function AddExpenseForm({
   const [currency, setCurrency]       = useState('CHF');
   const [type, setType]               = useState<LiquidityExpenseType>('monthly');
   const [dueDate, setDueDate]         = useState('');
+  const [provisional, setProvisional] = useState(false);
   const [saving, setSaving]           = useState(false);
 
   async function handleSubmit() {
     const n = parseFloat(amount);
     if (!description.trim() || isNaN(n) || n <= 0 || !dueDate) return;
     setSaving(true);
-    const ok = await onSave({ description: description.trim(), amount: n, currency, type, due_date: dueDate });
+    const ok = await onSave({ description: description.trim(), amount: n, currency, type, due_date: dueDate, provisional });
     setSaving(false);
-    if (ok) { setDescription(''); setAmount(''); setDueDate(''); setType('monthly'); }
+    if (ok) { setDescription(''); setAmount(''); setDueDate(''); setType('monthly'); setProvisional(false); }
   }
 
   return (
@@ -358,6 +398,9 @@ function AddExpenseForm({
         <Select label="Währung" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
         <Select label="Wiederholung *" options={RECURRING_OPTIONS} value={type} onChange={(e) => setType(e.target.value as LiquidityExpenseType)} />
         <Input label={type === 'one_time' ? 'Datum *' : 'Ab Datum *'} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+        <div className="sm:col-span-2">
+          <ProvCheckbox checked={provisional} onChange={setProvisional} />
+        </div>
       </div>
       <div className="mt-4 flex items-center gap-3">
         <Button onClick={handleSubmit} loading={saving} disabled={!description.trim() || !amount || !dueDate}>Speichern</Button>
@@ -377,7 +420,7 @@ function InlineIncomeEditForm({
   onCancel,
 }: {
   entry: NOALiquidityIncomeRow;
-  onSave: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
+  onSave: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null; provisional?: boolean }) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [description, setDescription] = useState(entry.description);
@@ -385,13 +428,14 @@ function InlineIncomeEditForm({
   const [currency, setCurrency]       = useState(entry.currency);
   const [expectedDate, setExpectedDate] = useState(entry.expected_date);
   const [notes, setNotes]             = useState(entry.notes ?? '');
+  const [provisional, setProvisional] = useState(!!entry.provisional);
   const [saving, setSaving]           = useState(false);
 
   async function handleSave() {
     const n = parseFloat(amount);
     if (!description.trim() || isNaN(n) || n <= 0 || !expectedDate) return;
     setSaving(true);
-    const ok = await onSave(entry.id, { description: description.trim(), amount: n, currency, expected_date: expectedDate, notes: notes.trim() || null });
+    const ok = await onSave(entry.id, { description: description.trim(), amount: n, currency, expected_date: expectedDate, notes: notes.trim() || null, provisional });
     setSaving(false);
     if (ok) onCancel();
   }
@@ -406,6 +450,9 @@ function InlineIncomeEditForm({
         <Select label="" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
         <Input label="" type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
         <Input label="" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notiz (optional)" />
+        <div className="sm:col-span-2">
+          <ProvCheckbox checked={provisional} onChange={setProvisional} />
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={handleSave} loading={saving} disabled={!description.trim() || !amount || !expectedDate}>Speichern</Button>
@@ -455,6 +502,8 @@ function IncomeEntryRow({
       <span className={`w-20 shrink-0 text-xs tabular-nums ${isLate ? 'text-red-400' : 'text-primary-400'}`}>
         {formatDate(entry.expected_date)}
       </span>
+
+      {entry.provisional && <ProvBadge />}
 
       {/* Description + notes */}
       <div className="min-w-0 flex-1">
@@ -531,6 +580,7 @@ function CarriedIncomeRow({
   return (
     <div className="flex items-center gap-2 py-2.5 border-b border-primary-50 last:border-0 opacity-60">
       <span className="w-20 shrink-0 text-xs text-primary-300 tabular-nums">{formatDate(entry.expected_date)}</span>
+      {entry.provisional && <ProvBadge />}
       <div className="min-w-0 flex-1">
         <span className="text-sm text-primary-400">{entry.description}</span>
         {entry.notes && <span className="ml-2 text-xs text-primary-300">{entry.notes}</span>}
@@ -558,6 +608,7 @@ function CarriedExpenseRow({
   return (
     <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0 opacity-60">
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      {expense.provisional && <ProvBadge />}
       <span className="min-w-0 flex-1 text-sm text-primary-400">{expense.description}</span>
       <span
         className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
@@ -606,6 +657,8 @@ function PaidIncomeRow({
 
       {/* Date */}
       <span className="w-20 shrink-0 text-xs text-primary-400 tabular-nums">{formatDate(entry.expected_date)}</span>
+
+      {entry.provisional && <ProvBadge />}
 
       {/* Description */}
       <div className="min-w-0 flex-1">
@@ -681,6 +734,7 @@ function MonthExpenseRow({
   return (
     <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0">
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      {expense.provisional && <ProvBadge />}
       <span className="min-w-0 flex-1 text-sm text-primary-700">{expense.description}</span>
       <span className="shrink-0 text-sm font-medium text-red-500 tabular-nums">
         -{formatCurrency(expense.amount, expense.currency)}
@@ -747,6 +801,7 @@ function LateExpenseRow({
       </span>
       <span className="w-28 shrink-0 text-xs text-red-400">{originLabel}</span>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      {e.provisional && <ProvBadge />}
       <span className="min-w-0 flex-1 text-sm font-medium text-red-700">{e.description}</span>
       <span className="shrink-0 text-sm font-medium text-red-600 tabular-nums">
         -{formatCurrency(e.amount, e.currency)}
@@ -784,6 +839,7 @@ function PaidExpenseRow({
         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
       </svg>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      {expense.provisional && <ProvBadge />}
       <span className="min-w-0 flex-1 text-sm text-primary-500 line-through">{expense.description}</span>
       <span className="shrink-0 text-sm text-primary-400 tabular-nums line-through">
         -{formatCurrency(expense.amount, expense.currency)}
@@ -815,7 +871,7 @@ function InlineExpenseEditForm({
   onCancel,
 }: {
   expense: NOALiquidityExpenseRow;
-  onSave: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
+  onSave: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string; provisional?: boolean }) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [description, setDescription] = useState(expense.description);
@@ -823,13 +879,14 @@ function InlineExpenseEditForm({
   const [currency, setCurrency]       = useState(expense.currency);
   const [type, setType]               = useState<LiquidityExpenseType>(expense.type);
   const [dueDate, setDueDate]         = useState(expense.due_date ?? '');
+  const [provisional, setProvisional] = useState(!!expense.provisional);
   const [saving, setSaving]           = useState(false);
 
   async function handleSave() {
     const n = parseFloat(amount);
     if (!description.trim() || isNaN(n) || n <= 0 || !dueDate) return;
     setSaving(true);
-    const ok = await onSave(expense.id, { description: description.trim(), amount: n, currency, type, due_date: dueDate });
+    const ok = await onSave(expense.id, { description: description.trim(), amount: n, currency, type, due_date: dueDate, provisional });
     setSaving(false);
     if (ok) onCancel();
   }
@@ -844,6 +901,9 @@ function InlineExpenseEditForm({
         <Select label="" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
         <Select label="" options={RECURRENCE_OPTIONS} value={type} onChange={(e) => setType(e.target.value as LiquidityExpenseType)} />
         <Input label="" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+        <div className="sm:col-span-2">
+          <ProvCheckbox checked={provisional} onChange={setProvisional} />
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={handleSave} loading={saving} disabled={!description.trim() || !amount || !dueDate}>Speichern</Button>
@@ -876,6 +936,7 @@ function ExpenseManagementRow({
   return (
     <div className={`flex items-center gap-3 py-2.5 border-b border-primary-50 last:border-0 ${!expense.active ? 'opacity-50' : ''}`}>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      {expense.provisional && <ProvBadge />}
       <div className="min-w-0 flex-1">
         <span className="text-sm text-primary-900">{expense.description}</span>
         {expense.due_date && (
@@ -930,20 +991,21 @@ function InlineOneTimeExpenseForm({
   onCancel,
 }: {
   defaultDate: string; // YYYY-MM-DD, first day of the month
-  onSave: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
+  onSave: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string; provisional?: boolean }) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [description, setDescription] = useState('');
   const [amount, setAmount]           = useState('');
   const [currency, setCurrency]       = useState('CHF');
   const [dueDate, setDueDate]         = useState(defaultDate);
+  const [provisional, setProvisional] = useState(false);
   const [saving, setSaving]           = useState(false);
 
   async function handleSubmit() {
     const n = parseFloat(amount);
     if (!description.trim() || isNaN(n) || n <= 0 || !dueDate) return;
     setSaving(true);
-    const ok = await onSave({ description: description.trim(), amount: n, currency, type: 'one_time', due_date: dueDate });
+    const ok = await onSave({ description: description.trim(), amount: n, currency, type: 'one_time', due_date: dueDate, provisional });
     setSaving(false);
     if (ok) onCancel();
   }
@@ -958,6 +1020,9 @@ function InlineOneTimeExpenseForm({
         <Input label="" type="number" min="0" step="100" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Betrag *" />
         <Select label="" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
         <Input label="" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+        <div className="sm:col-span-2">
+          <ProvCheckbox checked={provisional} onChange={setProvisional} />
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={handleSubmit} loading={saving} disabled={!description.trim() || !amount || !dueDate}>Speichern</Button>
@@ -1130,6 +1195,11 @@ function BalanceRow({
         <span className={`text-sm font-semibold tabular-nums ${projectedBalance >= 0 ? 'text-primary-800' : 'text-red-700'}`}>
           {formatCurrency(projectedBalance, currency)}
         </span>
+        {bucket.projectedBalanceProv !== projectedBalance && (
+          <span className="text-xs text-amber-600 tabular-nums" title="Inklusive provisorischer Positionen">
+            (prov. {formatCurrency(bucket.projectedBalanceProv, currency)})
+          </span>
+        )}
         {!editing && actualBalance !== null && (
           <>
             <span className="text-primary-200 select-none">|</span>

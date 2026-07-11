@@ -2302,6 +2302,7 @@ export type NOALiquidityExpenseRow = {
   type: LiquidityExpenseType;
   active: boolean;
   due_date: string | null;
+  provisional: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -2330,6 +2331,7 @@ export type NOALiquidityIncomeRow = {
   expected_date: string;
   notes: string | null;
   paid_at: string | null;   // null = unpaid, ISO string = paid timestamp
+  provisional: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -54,8 +54,10 @@ export interface MonthBucket {
   paidExpenseMap: Record<string, string>;
   /** Map from expense_id → paid_at timestamp for expenses paid in this month */
   paidExpenseAtMap: Record<string, string>;
-  /** Running projected balance at end of this month */
+  /** Projected end-of-month balance — definitive (without provisional items) */
   projectedBalance: number;
+  /** Projected end-of-month balance including provisional items */
+  projectedBalanceProv: number;
   /** User-entered actual account balance (null if not set) */
   actualBalance: number | null;
   actualBalanceId: string | null;
@@ -91,6 +93,7 @@ export interface UseNOALiquidityReturn {
     currency: string;
     expected_date: string;
     notes?: string | null;
+    provisional?: boolean;
   }) => Promise<boolean>;
   updateIncome: (id: string, data: {
     description: string;
@@ -98,6 +101,7 @@ export interface UseNOALiquidityReturn {
     currency: string;
     expected_date: string;
     notes?: string | null;
+    provisional?: boolean;
   }) => Promise<boolean>;
   deleteIncome: (id: string) => Promise<boolean>;
   markIncomePaid:   (id: string) => Promise<boolean>;
@@ -109,6 +113,7 @@ export interface UseNOALiquidityReturn {
     currency: string;
     type: LiquidityExpenseType;
     due_date: string;
+    provisional?: boolean;
   }) => Promise<boolean>;
   updateExpense: (id: string, data: {
     description: string;
@@ -116,6 +121,7 @@ export interface UseNOALiquidityReturn {
     currency: string;
     type: LiquidityExpenseType;
     due_date: string;
+    provisional?: boolean;
   }) => Promise<boolean>;
   deleteExpense: (id: string) => Promise<boolean>;
   toggleExpenseActive: (id: string, active: boolean) => Promise<boolean>;
@@ -412,7 +418,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
             expenses:        monthExpenses,
             paidExpenseMap,
             paidExpenseAtMap,
-            projectedBalance: 0, // filled by the backward chain below
+            projectedBalance: 0,     // filled by the chains below
+            projectedBalanceProv: 0, // mirrors projectedBalance for past months
             actualBalance:   abEntry?.balance ?? null,
             actualBalanceId: abEntry?.id      ?? null,
           });
@@ -467,6 +474,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         for (let j = pivot; j < pastBuckets.length; j++) {
           const b = pastBuckets[j];
           b.projectedBalance = carry + paidNetOf(b);
+          b.projectedBalanceProv = b.projectedBalance;
           carry = b.actualBalance ?? b.projectedBalance;
         }
 
@@ -475,14 +483,16 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         for (let j = pivot - 1; j >= 0; j--) {
           const b = pastBuckets[j];
           b.projectedBalance = back;
+          b.projectedBalanceProv = back;
           back = (b.actualBalance ?? back) - expectedNetOf(b);
         }
       }
 
       // ---- Current + next 11 months ------------------------------------------
-      // Chain: bucket 0 starts at the Tagessaldo base (anchor + paid since),
+      // Chains: bucket 0 starts at the Tagessaldo base (anchor + paid since),
       // every month adds only its outstanding (unpaid) amounts.
-      let runningBalance = tagessaldoBase;
+      let runningBalance     = tagessaldoBase; // definitive
+      let runningBalanceProv = tagessaldoBase; // incl. provisional items
 
       const buckets: MonthBucket[] = Array.from({ length: 12 }, (_, i) => {
         const d     = new Date(today.getFullYear(), today.getMonth() + i, 1);
@@ -511,19 +521,34 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           }
         }
 
-        // Only UNPAID amounts enter the projection. Every paid item — past,
+        // Only UNPAID amounts enter the projections. Every paid item — past,
         // current or prepaid future — is already inside tagessaldoBase
         // (either in the anchor snapshot or in the paid-since components);
         // adding it to a month again would double-count it.
-        const unpaidIncome = [...unpaid, ...late].reduce((s, e) => s + e.amount, 0);
-        const unpaidExpenseSum =
-          monthExpenses.filter((e) => !paidExpenseMap[e.id]).reduce((s, e) => s + e.amount, 0) +
-          lateExp.reduce((s, le) => s + le.expense.amount, 0);
+        // Definitive curve excludes provisional items; the provisional curve
+        // includes everything.
+        const unpaidIncomeAll = [...unpaid, ...late];
+        const unpaidExpAll    = monthExpenses.filter((e) => !paidExpenseMap[e.id]);
+
+        const sumIncome  = (arr: NOALiquidityIncomeRow[])  => arr.reduce((s, e) => s + e.amount, 0);
+        const sumExpense = (arr: NOALiquidityExpenseRow[]) => arr.reduce((s, e) => s + e.amount, 0);
+        const sumLateExp = (arr: LateExpenseInstance[])    => arr.reduce((s, le) => s + le.expense.amount, 0);
+
         const projectedBalance =
-          (i === 0 ? tagessaldoBase : runningBalance) + unpaidIncome - unpaidExpenseSum;
+          (i === 0 ? tagessaldoBase : runningBalance)
+          + sumIncome(unpaidIncomeAll.filter((e) => !e.provisional))
+          - sumExpense(unpaidExpAll.filter((e) => !e.provisional))
+          - sumLateExp(lateExp.filter((le) => !le.expense.provisional));
+
+        const projectedBalanceProv =
+          (i === 0 ? tagessaldoBase : runningBalanceProv)
+          + sumIncome(unpaidIncomeAll)
+          - sumExpense(unpaidExpAll)
+          - sumLateExp(lateExp);
 
         const abEntry = actualMap[key] ?? null;
-        runningBalance = abEntry !== null ? abEntry.balance : projectedBalance;
+        runningBalance     = abEntry !== null ? abEntry.balance : projectedBalance;
+        runningBalanceProv = abEntry !== null ? abEntry.balance : projectedBalanceProv;
 
         return {
           year,
@@ -537,6 +562,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           paidExpenseMap,
           paidExpenseAtMap,
           projectedBalance,
+          projectedBalanceProv,
           actualBalance:   abEntry?.balance  ?? null,
           actualBalanceId: abEntry?.id       ?? null,
         };
@@ -559,6 +585,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     currency: string;
     expected_date: string;
     notes?: string | null;
+    provisional?: boolean;
   }): Promise<boolean> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return false;
@@ -572,6 +599,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         currency:      data.currency,
         expected_date: data.expected_date,
         notes:         data.notes ?? null,
+        provisional:   data.provisional ?? false,
       } as never);
 
     if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
@@ -586,6 +614,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     currency: string;
     expected_date: string;
     notes?: string | null;
+    provisional?: boolean;
   }): Promise<boolean> => {
     const { error } = await supabase
       .from('noa_liquidity_income' as never)
@@ -595,6 +624,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         currency:      data.currency,
         expected_date: data.expected_date,
         notes:         data.notes ?? null,
+        provisional:   data.provisional ?? false,
         updated_at:    new Date().toISOString(),
       } as never)
       .eq('id', id);
@@ -648,6 +678,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     currency: string;
     type: LiquidityExpenseType;
     due_date: string;
+    provisional?: boolean;
   }): Promise<boolean> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return false;
@@ -662,6 +693,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         type:        data.type,
         due_date:    data.due_date,
         active:      true,
+        provisional: data.provisional ?? false,
       } as never);
 
     if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
@@ -699,6 +731,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     currency: string;
     type: LiquidityExpenseType;
     due_date: string;
+    provisional?: boolean;
   }): Promise<boolean> => {
     const { error } = await supabase
       .from('noa_liquidity_expenses' as never)
@@ -708,6 +741,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         currency:    data.currency,
         type:        data.type,
         due_date:    data.due_date,
+        provisional: data.provisional ?? false,
         updated_at:  new Date().toISOString(),
       } as never)
       .eq('id', id);

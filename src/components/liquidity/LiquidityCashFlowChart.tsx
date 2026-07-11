@@ -33,10 +33,11 @@ function shortLabel(label: string): string {
 // ---------------------------------------------------------------------------
 
 interface ChartPoint {
-  label:    string;
-  profit:   number;          // net (income − expenses) for this month
-  saldo:    number;          // projected end-of-month balance
-  istSaldo: number | null;   // actual balance if entered
+  label:     string;
+  profit:    number;          // net (income − expenses) for this month
+  saldo:     number;          // projected end-of-month balance (definitive)
+  saldoProv: number;          // projected balance incl. provisional items
+  istSaldo:  number | null;   // actual balance if entered
 }
 
 // ---------------------------------------------------------------------------
@@ -109,14 +110,16 @@ export function LiquidityCashFlowChart({
     const expenseSum = bucket.expenses.reduce((s, e) => s + e.amount, 0)
                      + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0);
     return {
-      label:    shortLabel(bucket.label),
-      profit:   incomeSum - expenseSum,
-      saldo:    bucket.projectedBalance,
-      istSaldo: bucket.actualBalance,
+      label:     shortLabel(bucket.label),
+      profit:    incomeSum - expenseSum,
+      saldo:     bucket.projectedBalance,
+      saldoProv: bucket.projectedBalanceProv,
+      istSaldo:  bucket.actualBalance,
     };
   });
 
   const data = allData.slice(0, range);
+  const hasProvisional = data.some((d) => d.saldoProv !== d.saldo);
 
   const tickFmt = (v: number) => {
     if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
@@ -204,12 +207,27 @@ export function LiquidityCashFlowChart({
             ))}
           </Bar>
 
-          {/* Projected Saldo line */}
+          {/* Provisional Saldo line (dashed) — only when provisional items exist */}
+          {hasProvisional && (
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="saldoProv"
+              name="Saldo (provisorisch)"
+              stroke="#f59e0b"
+              strokeWidth={2}
+              strokeDasharray="6 4"
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+          )}
+
+          {/* Definitive Saldo line */}
           <Line
             yAxisId="right"
             type="monotone"
             dataKey="saldo"
-            name="Saldo (projiziert)"
+            name="Saldo (definitiv)"
             stroke="#c9a96e"
             strokeWidth={2.5}
             dot={{ r: 3, fill: '#c9a96e', strokeWidth: 0 }}
@@ -233,7 +251,8 @@ export function LiquidityCashFlowChart({
 
       {/* Legend note */}
       <p className="mt-2 text-[10px] text-primary-400 text-right">
-        Balken: Einnahmen − Ausgaben pro Monat · Linie: projizierter Saldo per Monatsende · Punkte: eingetragener Ist-Saldo
+        Balken: Einnahmen − Ausgaben pro Monat · Linie: definitiver Saldo per Monatsende
+        {hasProvisional ? ' · gestrichelt: inkl. provisorischer Positionen' : ''} · Punkte: eingetragener Ist-Saldo
       </p>
     </div>
   );
