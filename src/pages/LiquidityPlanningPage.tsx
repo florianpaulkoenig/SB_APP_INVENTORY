@@ -46,6 +46,7 @@ const RECURRENCE_BADGES: Record<LiquidityExpenseType, { label: string; className
 
 function TagessaldoCard({
   startsaldo, startsaldoDate, currency,
+  correction,
   paidIncome, paidExpenses,
   effectiveBalance, effectiveBalanceDate,
   onSaveEffective, onClearEffective, onAcceptDifference,
@@ -53,19 +54,21 @@ function TagessaldoCard({
   startsaldo: number;
   startsaldoDate: string | null;
   currency: string;
+  correction: { balance: number; date: string } | null;
   paidIncome: number;
   paidExpenses: number;
   effectiveBalance: number | null;
   effectiveBalanceDate: string | null;
   onSaveEffective: (amount: number) => Promise<boolean>;
   onClearEffective: () => Promise<boolean>;
-  onAcceptDifference: (newStartingBalance: number, currency: string) => Promise<boolean>;
+  onAcceptDifference: (balance: number, currency: string) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
   const [input, setInput]     = useState('');
   const [saving, setSaving]   = useState(false);
 
-  const saldo = startsaldo + paidIncome - paidExpenses;
+  const anchorBalance = correction?.balance ?? startsaldo;
+  const saldo = anchorBalance + paidIncome - paidExpenses;
   const todayLabel = new Date().toLocaleDateString('de-CH', { day: 'numeric', month: 'long', year: 'numeric' });
 
   const diff = effectiveBalance !== null ? effectiveBalance - saldo : null;
@@ -111,7 +114,11 @@ function TagessaldoCard({
         </span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-primary-400">
-        <span>Startsaldo {formatCurrency(startsaldo, currency)}{startsaldoDate ? ` (per ${formatDate(startsaldoDate)})` : ''}</span>
+        {correction ? (
+          <span>Saldokorrektur {formatCurrency(correction.balance, currency)} (per {formatDate(correction.date)})</span>
+        ) : (
+          <span>Startsaldo {formatCurrency(startsaldo, currency)}{startsaldoDate ? ` (per ${formatDate(startsaldoDate)})` : ''}</span>
+        )}
         <span className="text-emerald-600">+ {formatCurrency(paidIncome, currency)} seither bezahlte Einnahmen</span>
         <span className="text-red-500">− {formatCurrency(paidExpenses, currency)} seither bezahlte Ausgaben</span>
       </div>
@@ -165,7 +172,7 @@ function TagessaldoCard({
 
             <div className="flex items-center gap-2 ml-auto">
               {diff !== null && diff !== 0 && (
-                <Button size="sm" onClick={handleAccept} loading={saving} title="Startsaldo wird so angepasst, dass der berechnete Saldo dem Konto-Saldo entspricht">
+                <Button size="sm" onClick={handleAccept} loading={saving} title="Erfasst eine finale Saldokorrektur per heute; ältere Einträge werden fixiert">
                   Differenz akzeptieren
                 </Button>
               )}
@@ -179,7 +186,7 @@ function TagessaldoCard({
 
             {diff !== null && diff !== 0 && (
               <p className="w-full text-xs text-primary-400">
-                «Differenz akzeptieren» passt den Startsaldo an — oder Einträge unten prüfen (fehlende Zahlungen, nicht markierte Ein-/Ausgaben), bis die Differenz verschwindet.
+                «Differenz akzeptieren» erfasst eine finale Saldokorrektur per heute (der Startsaldo bleibt bestehen, ältere Einträge werden fixiert) — oder Einträge unten prüfen, bis die Differenz verschwindet.
               </p>
             )}
           </div>
@@ -194,11 +201,13 @@ function TagessaldoCard({
 // ---------------------------------------------------------------------------
 
 function StartsaldoCard({
-  startsaldo, startsaldoDate, currency, onSave,
+  startsaldo, startsaldoDate, currency, locked, onSave,
 }: {
   startsaldo: number;
   startsaldoDate: string | null;
   currency: string;
+  /** True once a Saldokorrektur exists — the Startsaldo is then final */
+  locked: boolean;
   onSave: (amount: number, currency: string, date: string) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
@@ -249,9 +258,18 @@ function StartsaldoCard({
       </span>
       <div className="flex items-center gap-3">
         <span className="text-sm font-semibold text-primary-900">{formatCurrency(startsaldo, currency)}</span>
-        <button onClick={openEdit} className="text-xs text-primary-400 hover:text-primary-700 underline underline-offset-2 transition-colors">
-          Bearbeiten
-        </button>
+        {locked ? (
+          <span className="flex items-center gap-1 text-xs text-primary-300" title="Durch Saldokorrektur fixiert">
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+            Fixiert
+          </span>
+        ) : (
+          <button onClick={openEdit} className="text-xs text-primary-400 hover:text-primary-700 underline underline-offset-2 transition-colors">
+            Bearbeiten
+          </button>
+        )}
       </div>
     </div>
   );
@@ -404,12 +422,15 @@ function InlineIncomeEditForm({
 function IncomeEntryRow({
   entry,
   isLate = false,
+  locked = false,
   onUpdate,
   onDelete,
   onMarkPaid,
 }: {
   entry: NOALiquidityIncomeRow;
   isLate?: boolean;
+  /** Locked by a Saldokorrektur: no edit/delete — settling (Bezahlt) stays possible */
+  locked?: boolean;
   onUpdate: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
   onDelete: (id: string) => void;
   onMarkPaid: (id: string) => void;
@@ -464,29 +485,32 @@ function IncomeEntryRow({
           Bezahlt
         </button>
 
-        {/* Edit button */}
-        <button
-          onClick={() => setEditing(true)}
-          className="p-1 text-primary-300 hover:text-primary-600 transition-colors"
-          title="Bearbeiten"
-        >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-          </svg>
-        </button>
+        {/* Edit + Delete — hidden when locked by a Saldokorrektur */}
+        {!locked && (
+          <>
+            <button
+              onClick={() => setEditing(true)}
+              className="p-1 text-primary-300 hover:text-primary-600 transition-colors"
+              title="Bearbeiten"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+              </svg>
+            </button>
 
-        {/* Delete */}
-        {confirming ? (
-          <div className="flex items-center gap-1">
-            <button onClick={() => onDelete(entry.id)} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
-            <button onClick={() => setConfirming(false)} className="text-xs text-primary-400 hover:text-primary-600">Nein</button>
-          </div>
-        ) : (
-          <button onClick={() => setConfirming(true)} className="p-1 text-primary-300 hover:text-red-400 transition-colors" aria-label="Löschen">
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+            {confirming ? (
+              <div className="flex items-center gap-1">
+                <button onClick={() => onDelete(entry.id)} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
+                <button onClick={() => setConfirming(false)} className="text-xs text-primary-400 hover:text-primary-600">Nein</button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirming(true)} className="p-1 text-primary-300 hover:text-red-400 transition-colors" aria-label="Löschen">
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -499,11 +523,14 @@ function IncomeEntryRow({
 
 function PaidIncomeRow({
   entry,
+  locked = false,
   onUpdate,
   onDelete,
   onMarkUnpaid,
 }: {
   entry: NOALiquidityIncomeRow;
+  /** Locked by a Saldokorrektur: paid state and data are final */
+  locked?: boolean;
   onUpdate: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
   onDelete: (id: string) => void;
   onMarkUnpaid: (id: string) => void;
@@ -536,33 +563,39 @@ function PaidIncomeRow({
         +{formatCurrency(entry.amount, entry.currency)}
       </span>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0">
-        <button
-          onClick={() => onMarkUnpaid(entry.id)}
-          className="text-xs text-primary-400 hover:text-primary-700 transition-colors"
-          title="Als unbezahlt markieren"
-        >
-          Rückgängig
-        </button>
-        <button onClick={() => setEditing(true)} className="p-1 text-primary-300 hover:text-primary-600 transition-colors">
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-          </svg>
-        </button>
-        {confirming ? (
-          <div className="flex items-center gap-1">
-            <button onClick={() => onDelete(entry.id)} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
-            <button onClick={() => setConfirming(false)} className="text-xs text-primary-400">Nein</button>
-          </div>
-        ) : (
-          <button onClick={() => setConfirming(true)} className="p-1 text-primary-300 hover:text-red-400 transition-colors">
+      {/* Actions — hidden when locked by a Saldokorrektur */}
+      {locked ? (
+        <svg className="h-3.5 w-3.5 shrink-0 text-primary-200" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-label="Fixiert">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+        </svg>
+      ) : (
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => onMarkUnpaid(entry.id)}
+            className="text-xs text-primary-400 hover:text-primary-700 transition-colors"
+            title="Als unbezahlt markieren"
+          >
+            Rückgängig
+          </button>
+          <button onClick={() => setEditing(true)} className="p-1 text-primary-300 hover:text-primary-600 transition-colors">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
             </svg>
           </button>
-        )}
-      </div>
+          {confirming ? (
+            <div className="flex items-center gap-1">
+              <button onClick={() => onDelete(entry.id)} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
+              <button onClick={() => setConfirming(false)} className="text-xs text-primary-400">Nein</button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirming(true)} className="p-1 text-primary-300 hover:text-red-400 transition-colors">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -572,9 +605,11 @@ function PaidIncomeRow({
 // ---------------------------------------------------------------------------
 
 function MonthExpenseRow({
-  expense, onMarkPaid, onUpdate, onDelete,
+  expense, locked = false, onMarkPaid, onUpdate, onDelete,
 }: {
   expense: NOALiquidityExpenseRow;
+  /** Locked by a Saldokorrektur: no edit/delete — settling (Bezahlt) stays possible */
+  locked?: boolean;
   onMarkPaid: (expenseId: string) => void;
   onUpdate?: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
   onDelete?: (id: string) => void;
@@ -582,7 +617,7 @@ function MonthExpenseRow({
   const [editing, setEditing]       = useState(false);
   const [confirming, setConfirming] = useState(false);
   const badge = RECURRENCE_BADGES[expense.type];
-  const isOneTime = expense.type === 'one_time';
+  const isOneTime = expense.type === 'one_time' && !locked;
 
   if (editing && onUpdate) {
     return <InlineExpenseEditForm expense={expense} onSave={onUpdate} onCancel={() => setEditing(false)} />;
@@ -680,9 +715,11 @@ function LateExpenseRow({
 // ---------------------------------------------------------------------------
 
 function PaidExpenseRow({
-  expense, onMarkUnpaid,
+  expense, locked = false, onMarkUnpaid,
 }: {
   expense: NOALiquidityExpenseRow;
+  /** Locked by a Saldokorrektur: paid state is final */
+  locked?: boolean;
   onMarkUnpaid: (expenseId: string) => void;
 }) {
   const badge = RECURRENCE_BADGES[expense.type];
@@ -696,13 +733,19 @@ function PaidExpenseRow({
       <span className="shrink-0 text-sm text-primary-400 tabular-nums line-through">
         -{formatCurrency(expense.amount, expense.currency)}
       </span>
-      <button
-        onClick={() => onMarkUnpaid(expense.id)}
-        className="text-xs text-primary-400 hover:text-primary-700 transition-colors shrink-0"
-        title="Als unbezahlt markieren"
-      >
-        Rückgängig
-      </button>
+      {locked ? (
+        <svg className="h-3.5 w-3.5 shrink-0 text-primary-200" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-label="Fixiert">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+        </svg>
+      ) : (
+        <button
+          onClick={() => onMarkUnpaid(expense.id)}
+          className="text-xs text-primary-400 hover:text-primary-700 transition-colors shrink-0"
+          title="Als unbezahlt markieren"
+        >
+          Rückgängig
+        </button>
+      )}
     </div>
   );
 }
@@ -988,10 +1031,12 @@ function ExpenseManagementCard({
 // ---------------------------------------------------------------------------
 
 function BalanceRow({
-  bucket, currency, onUpsert, onDelete,
+  bucket, currency, locked = false, onUpsert, onDelete,
 }: {
   bucket: MonthBucket;
   currency: string;
+  /** Locked by a Saldokorrektur: Ist-Saldo is final */
+  locked?: boolean;
   onUpsert: (year: number, month: number, balance: number, currency: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
 }) {
@@ -1044,19 +1089,23 @@ function BalanceRow({
                 </span>
               )}
             </div>
-            <button onClick={openEdit} className="text-primary-300 hover:text-primary-600 transition-colors" title="Ist-Saldo bearbeiten">
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-              </svg>
-            </button>
-            <button onClick={handleDelete} disabled={saving} className="text-primary-300 hover:text-red-400 transition-colors" title="Ist-Saldo löschen">
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            {!locked && (
+              <>
+                <button onClick={openEdit} className="text-primary-300 hover:text-primary-600 transition-colors" title="Ist-Saldo bearbeiten">
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                  </svg>
+                </button>
+                <button onClick={handleDelete} disabled={saving} className="text-primary-300 hover:text-red-400 transition-colors" title="Ist-Saldo löschen">
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </>
+            )}
           </>
         )}
-        {!editing && actualBalance === null && (
+        {!editing && actualBalance === null && !locked && (
           <button onClick={openEdit} className="flex items-center gap-1 text-xs text-primary-300 hover:text-primary-600 transition-colors">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
@@ -1136,10 +1185,19 @@ function MonthSummaryFooter({
 // Month section
 // ---------------------------------------------------------------------------
 
+// Instance due date of an expense within a given month (YYYY-MM-DD)
+function expenseInstanceDate(e: NOALiquidityExpenseRow, year: number, month0: number): string {
+  const dueDay      = e.due_date ? Number(e.due_date.slice(8, 10)) : 1;
+  const daysInMonth = new Date(year, month0 + 1, 0).getDate();
+  return `${year}-${String(month0 + 1).padStart(2, '0')}-${String(Math.min(dueDay, daysInMonth)).padStart(2, '0')}`;
+}
+
 function MonthSection({
   bucket,
   isCurrentMonth,
   balanceCurrency,
+  lockDate,
+  lockTs,
   onUpdateIncome,
   onDeleteIncome,
   onMarkIncomePaid,
@@ -1155,6 +1213,10 @@ function MonthSection({
   bucket: MonthBucket;
   isCurrentMonth: boolean;
   balanceCurrency: string;
+  /** Latest Saldokorrektur date — periods before it are final */
+  lockDate: string | null;
+  /** Moment the latest Saldokorrektur was recorded (ms epoch) */
+  lockTs: number | null;
   onUpdateIncome: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
   onDeleteIncome: (id: string) => void;
   onMarkIncomePaid: (id: string) => void;
@@ -1176,6 +1238,22 @@ function MonthSection({
 
   const unpaidExpenses = bucket.expenses.filter((e) => !bucket.paidExpenseMap[e.id]);
   const paidExpenses   = bucket.expenses.filter((e) =>  bucket.paidExpenseMap[e.id]);
+
+  // ---- Lock checks (Saldokorrektur) ----------------------------------------
+  const monthEnd = `${bucket.year}-${String(bucket.month + 1).padStart(2, '0')}-${String(new Date(bucket.year, bucket.month + 1, 0).getDate()).padStart(2, '0')}`;
+  const monthFullyLocked = lockDate !== null && monthEnd < lockDate;
+  const incomeLocked = (e: NOALiquidityIncomeRow) =>
+    lockDate !== null && e.expected_date < lockDate;
+  const paidIncomeLocked = (e: NOALiquidityIncomeRow) =>
+    lockDate !== null && e.expected_date < lockDate &&
+    (e.paid_at === null || lockTs === null || new Date(e.paid_at).getTime() < lockTs);
+  const expenseLocked = (e: NOALiquidityExpenseRow) =>
+    lockDate !== null && expenseInstanceDate(e, bucket.year, bucket.month) < lockDate;
+  const paidExpenseLocked = (e: NOALiquidityExpenseRow) => {
+    if (!expenseLocked(e)) return false;
+    const paidAt = bucket.paidExpenseAtMap[e.id];
+    return !paidAt || lockTs === null || new Date(paidAt).getTime() < lockTs;
+  };
 
   const hasUnpaid        = bucket.entries.length > 0;
   const hasLate          = bucket.lateEntries.length > 0;
@@ -1202,16 +1280,26 @@ function MonthSection({
             {lateCount} überfällig
           </span>
         )}
-        <button
-          onClick={() => setShowOneTimeForm((v) => !v)}
-          className="ml-auto flex items-center gap-1 rounded px-2 py-1 text-xs text-primary-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-          title="Einmalige Ausgabe hinzufügen"
-        >
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Einmalige Ausgabe
-        </button>
+        {!monthFullyLocked && (
+          <button
+            onClick={() => setShowOneTimeForm((v) => !v)}
+            className="ml-auto flex items-center gap-1 rounded px-2 py-1 text-xs text-primary-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+            title="Einmalige Ausgabe hinzufügen"
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Einmalige Ausgabe
+          </button>
+        )}
+        {monthFullyLocked && (
+          <span className="ml-auto flex items-center gap-1 text-xs text-primary-300" title="Durch Saldokorrektur fixiert">
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+            Fixiert
+          </span>
+        )}
       </div>
 
       {/* Inline one-time expense add form — directly below header */}
@@ -1235,7 +1323,7 @@ function MonthSection({
             <div className="border-b border-red-50 pb-0.5 mb-0.5">
               {bucket.lateEntries.map((e) => (
                 <IncomeEntryRow
-                  key={e.id} entry={e} isLate
+                  key={e.id} entry={e} isLate locked={incomeLocked(e)}
                   onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
                 />
               ))}
@@ -1260,7 +1348,7 @@ function MonthSection({
             <div>
               {bucket.entries.map((e) => (
                 <IncomeEntryRow
-                  key={e.id} entry={e}
+                  key={e.id} entry={e} locked={incomeLocked(e)}
                   onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
                 />
               ))}
@@ -1272,7 +1360,7 @@ function MonthSection({
             <div className={hasUnpaid || hasLate ? 'border-t border-primary-50 pt-0.5' : ''}>
               {unpaidExpenses.map((e) => (
                 <MonthExpenseRow
-                  key={e.id} expense={e}
+                  key={e.id} expense={e} locked={expenseLocked(e)}
                   onMarkPaid={(id) => onMarkExpensePaid(id, bucket.year, bucket.month + 1)}
                   onUpdate={onUpdateExpense}
                   onDelete={onDeleteExpense}
@@ -1295,7 +1383,7 @@ function MonthSection({
               </button>
               {showPaidIncome && bucket.paidEntries.map((e) => (
                 <PaidIncomeRow
-                  key={e.id} entry={e}
+                  key={e.id} entry={e} locked={paidIncomeLocked(e)}
                   onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkUnpaid={onMarkIncomeUnpaid}
                 />
               ))}
@@ -1316,7 +1404,7 @@ function MonthSection({
               </button>
               {showPaidExpenses && paidExpenses.map((e) => (
                 <PaidExpenseRow
-                  key={e.id} expense={e}
+                  key={e.id} expense={e} locked={paidExpenseLocked(e)}
                   onMarkUnpaid={(id) => onMarkExpenseUnpaid(bucket.paidExpenseMap[id])}
                 />
               ))}
@@ -1332,6 +1420,7 @@ function MonthSection({
       <BalanceRow
         bucket={bucket}
         currency={balanceCurrency}
+        locked={monthFullyLocked}
         onUpsert={onUpsertActualBalance}
         onDelete={onDeleteActualBalance}
       />
@@ -1349,6 +1438,7 @@ export function LiquidityPlanningPage() {
     startsaldo, startsaldoCurrency, startsaldoDate,
     paidIncomeSinceStart, paidExpensesSinceStart,
     effectiveBalance, effectiveBalanceDate,
+    lastCorrection, lockDate, lockTs,
     loading,
     addIncome, updateIncome, deleteIncome, markIncomePaid, markIncomeUnpaid,
     addExpense, updateExpense, deleteExpense, toggleExpenseActive, markExpensePaid, markExpenseUnpaid,
@@ -1413,6 +1503,7 @@ export function LiquidityPlanningPage() {
               startsaldo={startsaldo}
               startsaldoDate={startsaldoDate}
               currency={startsaldoCurrency}
+              correction={lastCorrection ? { balance: lastCorrection.balance, date: lastCorrection.correction_date } : null}
               paidIncome={paidIncomeSinceStart}
               paidExpenses={paidExpensesSinceStart}
               effectiveBalance={effectiveBalance}
@@ -1422,7 +1513,7 @@ export function LiquidityPlanningPage() {
               onAcceptDifference={acceptEffectiveBalance}
             />
           )}
-          <StartsaldoCard startsaldo={startsaldo} startsaldoDate={startsaldoDate} currency={startsaldoCurrency} onSave={upsertStartsaldo} />
+          <StartsaldoCard startsaldo={startsaldo} startsaldoDate={startsaldoDate} currency={startsaldoCurrency} locked={lastCorrection !== null} onSave={upsertStartsaldo} />
           <ExpenseManagementCard
             expenses={expenses.filter((e) => e.type !== 'one_time')}
             onUpdate={updateExpense}
@@ -1468,6 +1559,8 @@ export function LiquidityPlanningPage() {
                         bucket={bucket}
                         isCurrentMonth={false}
                         balanceCurrency={startsaldoCurrency}
+                        lockDate={lockDate}
+                        lockTs={lockTs}
                         onUpdateIncome={updateIncome}
                         onDeleteIncome={deleteIncome}
                         onMarkIncomePaid={markIncomePaid}
@@ -1495,6 +1588,8 @@ export function LiquidityPlanningPage() {
                 bucket={bucket}
                 isCurrentMonth={key === currentMonthKey}
                 balanceCurrency={startsaldoCurrency}
+                lockDate={lockDate}
+                lockTs={lockTs}
                 onUpdateIncome={updateIncome}
                 onDeleteIncome={deleteIncome}
                 onMarkIncomePaid={markIncomePaid}

@@ -13,6 +13,7 @@ import type {
   NOALiquidityExpensePaymentRow,
   NOALiquiditySettingsRow,
   NOALiquidityActualBalanceRow,
+  NOALiquidityBalanceCorrectionRow,
   LiquidityExpenseType,
 } from '../types/database';
 
@@ -51,6 +52,8 @@ export interface MonthBucket {
    * If expense_id is a key, the expense instance for this month is paid.
    */
   paidExpenseMap: Record<string, string>;
+  /** Map from expense_id → paid_at timestamp for expenses paid in this month */
+  paidExpenseAtMap: Record<string, string>;
   /** Running projected balance at end of this month */
   projectedBalance: number;
   /** User-entered actual account balance (null if not set) */
@@ -74,6 +77,12 @@ export interface UseNOALiquidityReturn {
   /** User-entered real bank balance (null if none recorded) */
   effectiveBalance: number | null;
   effectiveBalanceDate: string | null;
+  /** Latest Saldokorrektur — final bank snapshot anchoring the Tagessaldo */
+  lastCorrection: NOALiquidityBalanceCorrectionRow | null;
+  /** Items with period dates before this are locked (= lastCorrection date) */
+  lockDate: string | null;
+  /** Moment the latest correction was recorded (ms epoch) */
+  lockTs: number | null;
   loading: boolean;
   // Income CRUD
   addIncome: (data: {
@@ -178,6 +187,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
   const [paidExpensesSinceStart, setPaidExpensesSinceStart] = useState(0);
   const [effectiveBalance, setEffectiveBalance]         = useState<number | null>(null);
   const [effectiveBalanceDate, setEffectiveBalanceDate] = useState<string | null>(null);
+  const [lastCorrection, setLastCorrection] = useState<NOALiquidityBalanceCorrectionRow | null>(null);
   const [loading, setLoading]   = useState(true);
   const [tick, setTick]         = useState(0);
   const { toast } = useToast();
@@ -194,7 +204,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       const wsStr = windowStart.toISOString().slice(0, 10);
       const weStr = windowEnd.toISOString().slice(0, 10);
 
-      const [incomeRes, pastIncomeRes, expensesRes, settingsRes, actualBalancesRes, expPaymentsRes] = await Promise.all([
+      const [incomeRes, pastIncomeRes, expensesRes, settingsRes, actualBalancesRes, expPaymentsRes, correctionsRes] = await Promise.all([
         // Income within the 12-month window (paid or unpaid)
         supabase
           .from('noa_liquidity_income' as never)
@@ -229,6 +239,12 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         supabase
           .from('noa_liquidity_expense_payments' as never)
           .select('*'),
+
+        // Saldokorrekturen, newest first (missing table pre-migration → empty)
+        supabase
+          .from('noa_liquidity_balance_corrections' as never)
+          .select('*')
+          .order('correction_date', { ascending: false }),
       ]);
 
       if (incomeRes.error) {
@@ -244,12 +260,17 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       const settings       = settingsRes.data             as NOALiquiditySettingsRow | null;
       const actualBalList  = (actualBalancesRes.data ?? []) as NOALiquidityActualBalanceRow[];
       const expPaymentList = (expPaymentsRes.data   ?? []) as NOALiquidityExpensePaymentRow[];
+      const corrections    = (correctionsRes.data   ?? []) as NOALiquidityBalanceCorrectionRow[];
+      const correction     = corrections[0] ?? null; // newest
+      setLastCorrection(correction);
 
-      // Expense payment lookup: "expenseId:year-MM" → payment_id
+      // Expense payment lookup: "expenseId:year-MM" → payment_id / paid_at
       const expPaymentMap: Record<string, string> = {};
+      const expPaymentAtMap: Record<string, string> = {};
       for (const p of expPaymentList) {
         const key = `${p.expense_id}:${p.year}-${String(p.month).padStart(2, '0')}`;
         expPaymentMap[key] = p.id;
+        expPaymentAtMap[key] = p.paid_at;
       }
 
       const saldo    = settings?.starting_balance ?? 0;
@@ -261,22 +282,28 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       setEffectiveBalanceDate(settings?.effective_balance_date ?? null);
 
       // ---- Tagessaldo components ---------------------------------------------
-      // The Startsaldo is the bank balance as of anchorDate (D, user-chosen),
-      // recorded at moment anchorTs (T). A paid item counts when
+      // Anchor = the latest Saldokorrektur if one exists, else the Startsaldo:
+      // the bank balance as of anchorDate (D), recorded at moment anchorTs (T).
+      // A paid item counts when
       //   • it was marked paid AFTER T — a settlement that happened after the
       //     snapshot was taken, OR
       //   • it was already marked paid at T but belongs to a period BETWEEN D
-      //     and the day the Startsaldo was saved — backfilled entries whose
+      //     and the day the snapshot was saved — backfilled entries whose
       //     money moved after the snapshot date.
       // Anything else was already reflected in the bank balance at D. In
       // particular, items with periods after the save day that were marked
       // paid before T (prepaid future items) are part of the snapshot.
-      const anchorDate = settings?.starting_balance_date ?? null; // D, 'YYYY-MM-DD'
-      const anchorTs = settings?.starting_balance_at
-        ? new Date(settings.starting_balance_at).getTime()
-        : anchorDate
-          ? new Date(anchorDate + 'T00:00:00').getTime()
-          : 0;
+      const anchorBalance = correction?.balance ?? saldo;
+      const anchorDate = correction?.correction_date
+        ?? settings?.starting_balance_date
+        ?? null; // D, 'YYYY-MM-DD'
+      const anchorTs = correction
+        ? new Date(correction.created_at).getTime()
+        : settings?.starting_balance_at
+          ? new Date(settings.starting_balance_at).getTime()
+          : anchorDate
+            ? new Date(anchorDate + 'T00:00:00').getTime()
+            : 0;
       // Local calendar day of T
       const anchorSaveDay = (() => {
         const d = new Date(anchorTs);
@@ -290,27 +317,28 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       };
 
       const allIncome = [...windowEntries, ...pastIncome];
-      setPaidIncomeSinceStart(
-        allIncome
-          .filter((e) => e.paid_at !== null && countsPaidItem(e.paid_at as string, e.expected_date))
-          .reduce((s, e) => s + e.amount, 0),
-      );
+      const paidIncomeSince = allIncome
+        .filter((e) => e.paid_at !== null && countsPaidItem(e.paid_at as string, e.expected_date))
+        .reduce((s, e) => s + e.amount, 0);
+      setPaidIncomeSinceStart(paidIncomeSince);
 
       const expenseById = new Map(allExpenses.map((e) => [e.id, e]));
-      setPaidExpensesSinceStart(
-        expPaymentList
-          .filter((p) => {
-            const exp = expenseById.get(p.expense_id);
-            if (!exp) return false;
-            // Instance due date = due day of the expense within the paid month
-            const dueDay      = exp.due_date ? Number(exp.due_date.slice(8, 10)) : 1;
-            const daysInMonth = new Date(p.year, p.month, 0).getDate();
-            const instanceDate =
-              `${p.year}-${String(p.month).padStart(2, '0')}-${String(Math.min(dueDay, daysInMonth)).padStart(2, '0')}`;
-            return countsPaidItem(p.paid_at, instanceDate);
-          })
-          .reduce((s, p) => s + (expenseById.get(p.expense_id)?.amount ?? 0), 0),
-      );
+      const paidExpensesSince = expPaymentList
+        .filter((p) => {
+          const exp = expenseById.get(p.expense_id);
+          if (!exp) return false;
+          // Instance due date = due day of the expense within the paid month
+          const dueDay      = exp.due_date ? Number(exp.due_date.slice(8, 10)) : 1;
+          const daysInMonth = new Date(p.year, p.month, 0).getDate();
+          const instanceDate =
+            `${p.year}-${String(p.month).padStart(2, '0')}-${String(Math.min(dueDay, daysInMonth)).padStart(2, '0')}`;
+          return countsPaidItem(p.paid_at, instanceDate);
+        })
+        .reduce((s, p) => s + (expenseById.get(p.expense_id)?.amount ?? 0), 0);
+      setPaidExpensesSinceStart(paidExpensesSince);
+
+      // Current cash position — anchors the current month's projection
+      const tagessaldoBase = anchorBalance + paidIncomeSince - paidExpensesSince;
 
       // Actual balance lookup: "YYYY-MM" → { id, balance }
       const actualMap: Record<string, { id: string; balance: number }> = {};
@@ -364,9 +392,13 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
             (e) => expenseAppliesTo(e, year, month) || !!expPaymentMap[`${e.id}:${year}-${monthKey1}`],
           );
           const paidExpenseMap: Record<string, string> = {};
+          const paidExpenseAtMap: Record<string, string> = {};
           for (const e of monthExpenses) {
             const pKey = `${e.id}:${year}-${monthKey1}`;
-            if (expPaymentMap[pKey]) paidExpenseMap[e.id] = expPaymentMap[pKey];
+            if (expPaymentMap[pKey]) {
+              paidExpenseMap[e.id]   = expPaymentMap[pKey];
+              paidExpenseAtMap[e.id] = expPaymentAtMap[pKey];
+            }
           }
 
           const abEntry = actualMap[key] ?? null;
@@ -381,6 +413,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
             lateExpenses:    [],
             expenses:        monthExpenses,
             paidExpenseMap,
+            paidExpenseAtMap,
             projectedBalance: 0, // filled by the backward chain below
             actualBalance:   abEntry?.balance ?? null,
             actualBalanceId: abEntry?.id      ?? null,
@@ -469,18 +502,29 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         // Build paidExpenseMap for this month: expenseId → paymentId
         const monthKey1 = String(month + 1).padStart(2, '0'); // 1-indexed month string
         const paidExpenseMap: Record<string, string> = {};
+        const paidExpenseAtMap: Record<string, string> = {};
         for (const e of monthExpenses) {
           const pKey = `${e.id}:${year}-${monthKey1}`;
-          if (expPaymentMap[pKey]) paidExpenseMap[e.id] = expPaymentMap[pKey];
+          if (expPaymentMap[pKey]) {
+            paidExpenseMap[e.id]   = expPaymentMap[pKey];
+            paidExpenseAtMap[e.id] = expPaymentAtMap[pKey];
+          }
         }
 
-        // Projected income = all expected amounts for this month (including late & paid)
-        const incomeSum  = [...unpaid, ...paid, ...late].reduce((s, e) => s + e.amount, 0);
-        const expenseSum = monthExpenses.reduce((s, e) => s + e.amount, 0)
-                         + lateExp.reduce((s, le) => s + le.expense.amount, 0);
-        const net        = incomeSum - expenseSum;
-
-        const projectedBalance = runningBalance + net;
+        let projectedBalance: number;
+        if (i === 0) {
+          // Current month: cash position today + everything still outstanding
+          const unpaidIncome = [...unpaid, ...late].reduce((s, e) => s + e.amount, 0);
+          const unpaidExpenseSum =
+            monthExpenses.filter((e) => !paidExpenseMap[e.id]).reduce((s, e) => s + e.amount, 0) +
+            lateExp.reduce((s, le) => s + le.expense.amount, 0);
+          projectedBalance = tagessaldoBase + unpaidIncome - unpaidExpenseSum;
+        } else {
+          // Projected income = all expected amounts for this month (paid or not)
+          const incomeSum  = [...unpaid, ...paid].reduce((s, e) => s + e.amount, 0);
+          const expenseSum = monthExpenses.reduce((s, e) => s + e.amount, 0);
+          projectedBalance = runningBalance + incomeSum - expenseSum;
+        }
 
         const abEntry = actualMap[key] ?? null;
         runningBalance = abEntry !== null ? abEntry.balance : projectedBalance;
@@ -495,6 +539,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           lateExpenses:    lateExp,
           expenses:        monthExpenses,
           paidExpenseMap,
+          paidExpenseAtMap,
           projectedBalance,
           actualBalance:   abEntry?.balance  ?? null,
           actualBalanceId: abEntry?.id       ?? null,
@@ -789,27 +834,46 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
   }, [toast, refetch]);
 
   const acceptEffectiveBalance = useCallback(async (
-    newStartingBalance: number,
+    balance: number,
     currency: string,
   ): Promise<boolean> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return false;
 
+    const today = new Date();
+    const correctionDate =
+      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    // Final Saldokorrektur — the Startsaldo stays untouched
     const { error } = await supabase
-      .from('noa_liquidity_settings' as never)
+      .from('noa_liquidity_balance_corrections' as never)
       .upsert({
-        user_id:                session.user.id,
-        starting_balance:       newStartingBalance,
+        user_id:         session.user.id,
+        correction_date: correctionDate,
+        balance,
         currency,
-        starting_balance_date:  new Date().toISOString().slice(0, 10),
-        starting_balance_at:    new Date().toISOString(),
+        created_at:      new Date().toISOString(),
+      } as never, { onConflict: 'user_id,correction_date' } as never);
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+
+    // Clear the reconciliation entry
+    const { error: clearErr } = await supabase
+      .from('noa_liquidity_settings' as never)
+      .update({
         effective_balance:      null,
         effective_balance_date: null,
         updated_at:             new Date().toISOString(),
-      } as never, { onConflict: 'user_id' } as never);
+      } as never)
+      .eq('user_id', session.user.id);
 
-    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
-    toast({ title: 'Differenz übernommen', description: 'Der Startsaldo wurde angepasst.', variant: 'success' });
+    if (clearErr) { toast({ title: 'Fehler', description: clearErr.message, variant: 'error' }); return false; }
+
+    toast({
+      title: 'Saldokorrektur erfasst',
+      description: `Kontostand ${balance.toLocaleString('de-CH')} ${currency} per heute ist neu der Anker. Ältere Einträge sind fixiert.`,
+      variant: 'success',
+    });
     refetch();
     return true;
   }, [toast, refetch]);
@@ -865,6 +929,9 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     paidExpensesSinceStart,
     effectiveBalance,
     effectiveBalanceDate,
+    lastCorrection,
+    lockDate: lastCorrection?.correction_date ?? null,
+    lockTs:   lastCorrection ? new Date(lastCorrection.created_at).getTime() : null,
     loading,
     addIncome,
     updateIncome,

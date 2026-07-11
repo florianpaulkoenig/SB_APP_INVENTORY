@@ -2349,6 +2349,24 @@ export type NOALiquidityIncomeInsert = {
 
 export type NOALiquidityIncomeUpdate = Partial<NOALiquidityIncomeInsert>;
 
+export type NOALiquidityBalanceCorrectionRow = {
+  id: string;
+  user_id: string;
+  correction_date: string; // YYYY-MM-DD
+  balance: number;
+  currency: string;
+  created_at: string;
+}
+
+export type NOALiquidityBalanceCorrectionInsert = {
+  id?: string;
+  user_id?: string;
+  correction_date: string;
+  balance: number;
+  currency?: string;
+  created_at?: string;
+}
+
 export type NOALiquidityExpensePaymentRow = {
   id: string;
   user_id: string;
