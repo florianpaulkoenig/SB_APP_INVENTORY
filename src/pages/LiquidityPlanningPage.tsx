@@ -317,7 +317,7 @@ function StartsaldoCard({
 function AddIncomeForm({
   onSave, onCancel,
 }: {
-  onSave: (data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null; provisional?: boolean }) => Promise<boolean>;
+  onSave: (data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null; invoice_number?: string | null; provisional?: boolean }) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [description, setDescription] = useState('');
@@ -325,6 +325,7 @@ function AddIncomeForm({
   const [currency, setCurrency]       = useState('CHF');
   const [expectedDate, setExpectedDate] = useState('');
   const [notes, setNotes]             = useState('');
+  const [invoiceNo, setInvoiceNo]     = useState('');
   const [provisional, setProvisional] = useState(false);
   const [saving, setSaving]           = useState(false);
 
@@ -332,9 +333,9 @@ function AddIncomeForm({
     const n = parseFloat(amount);
     if (!description.trim() || isNaN(n) || n <= 0 || !expectedDate) return;
     setSaving(true);
-    const ok = await onSave({ description: description.trim(), amount: n, currency, expected_date: expectedDate, notes: notes.trim() || null, provisional });
+    const ok = await onSave({ description: description.trim(), amount: n, currency, expected_date: expectedDate, notes: notes.trim() || null, invoice_number: invoiceNo.trim() || null, provisional });
     setSaving(false);
-    if (ok) { setDescription(''); setAmount(''); setExpectedDate(''); setNotes(''); setProvisional(false); }
+    if (ok) { setDescription(''); setAmount(''); setExpectedDate(''); setNotes(''); setInvoiceNo(''); setProvisional(false); }
   }
 
   return (
@@ -348,6 +349,7 @@ function AddIncomeForm({
         <Select label="Währung" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
         <Input label="Erwartetes Datum *" type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
         <Input label="Notiz (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Interne Notiz …" />
+        <Input label="Rechnungsnr. (optional)" value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="z. B. 2026-042" />
         <div className="sm:col-span-2">
           <ProvCheckbox checked={provisional} onChange={setProvisional} />
         </div>
@@ -367,7 +369,7 @@ function AddIncomeForm({
 function AddExpenseForm({
   onSave, onCancel,
 }: {
-  onSave: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string; provisional?: boolean }) => Promise<boolean>;
+  onSave: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string; invoice_number?: string | null; provisional?: boolean }) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [description, setDescription] = useState('');
@@ -375,6 +377,7 @@ function AddExpenseForm({
   const [currency, setCurrency]       = useState('CHF');
   const [type, setType]               = useState<LiquidityExpenseType>('monthly');
   const [dueDate, setDueDate]         = useState('');
+  const [invoiceNo, setInvoiceNo]     = useState('');
   const [provisional, setProvisional] = useState(false);
   const [saving, setSaving]           = useState(false);
 
@@ -382,9 +385,9 @@ function AddExpenseForm({
     const n = parseFloat(amount);
     if (!description.trim() || isNaN(n) || n <= 0 || !dueDate) return;
     setSaving(true);
-    const ok = await onSave({ description: description.trim(), amount: n, currency, type, due_date: dueDate, provisional });
+    const ok = await onSave({ description: description.trim(), amount: n, currency, type, due_date: dueDate, invoice_number: invoiceNo.trim() || null, provisional });
     setSaving(false);
-    if (ok) { setDescription(''); setAmount(''); setDueDate(''); setType('monthly'); setProvisional(false); }
+    if (ok) { setDescription(''); setAmount(''); setDueDate(''); setType('monthly'); setInvoiceNo(''); setProvisional(false); }
   }
 
   return (
@@ -398,6 +401,7 @@ function AddExpenseForm({
         <Select label="Währung" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
         <Select label="Wiederholung *" options={RECURRING_OPTIONS} value={type} onChange={(e) => setType(e.target.value as LiquidityExpenseType)} />
         <Input label={type === 'one_time' ? 'Datum *' : 'Ab Datum *'} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+        <Input label="Rechnungsnr. (optional)" value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="z. B. RE-2026-15" />
         <div className="sm:col-span-2">
           <ProvCheckbox checked={provisional} onChange={setProvisional} />
         </div>
@@ -420,7 +424,7 @@ function InlineIncomeEditForm({
   onCancel,
 }: {
   entry: NOALiquidityIncomeRow;
-  onSave: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null; provisional?: boolean }) => Promise<boolean>;
+  onSave: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null; invoice_number?: string | null; provisional?: boolean }) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [description, setDescription] = useState(entry.description);
@@ -428,6 +432,7 @@ function InlineIncomeEditForm({
   const [currency, setCurrency]       = useState(entry.currency);
   const [expectedDate, setExpectedDate] = useState(entry.expected_date);
   const [notes, setNotes]             = useState(entry.notes ?? '');
+  const [invoiceNo, setInvoiceNo]     = useState(entry.invoice_number ?? '');
   const [provisional, setProvisional] = useState(!!entry.provisional);
   const [saving, setSaving]           = useState(false);
 
@@ -435,7 +440,7 @@ function InlineIncomeEditForm({
     const n = parseFloat(amount);
     if (!description.trim() || isNaN(n) || n <= 0 || !expectedDate) return;
     setSaving(true);
-    const ok = await onSave(entry.id, { description: description.trim(), amount: n, currency, expected_date: expectedDate, notes: notes.trim() || null, provisional });
+    const ok = await onSave(entry.id, { description: description.trim(), amount: n, currency, expected_date: expectedDate, notes: notes.trim() || null, invoice_number: invoiceNo.trim() || null, provisional });
     setSaving(false);
     if (ok) onCancel();
   }
@@ -450,6 +455,7 @@ function InlineIncomeEditForm({
         <Select label="" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
         <Input label="" type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
         <Input label="" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notiz (optional)" />
+        <Input label="" value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Rechnungsnr. (optional)" />
         <div className="sm:col-span-2">
           <ProvCheckbox checked={provisional} onChange={setProvisional} />
         </div>
@@ -512,6 +518,9 @@ function IncomeEntryRow({
         </span>
         {entry.notes && (
           <span className={`ml-2 text-xs ${isLate ? 'text-red-400' : 'text-primary-400'}`}>{entry.notes}</span>
+        )}
+        {entry.invoice_number && (
+          <span className={`ml-2 text-xs tabular-nums ${isLate ? 'text-red-300' : 'text-primary-300'}`}>Rg. {entry.invoice_number}</span>
         )}
       </div>
 
@@ -584,6 +593,7 @@ function CarriedIncomeRow({
       <div className="min-w-0 flex-1">
         <span className="text-sm text-primary-400">{entry.description}</span>
         {entry.notes && <span className="ml-2 text-xs text-primary-300">{entry.notes}</span>}
+        {entry.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {entry.invoice_number}</span>}
       </div>
       <span
         className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
@@ -609,7 +619,10 @@ function CarriedExpenseRow({
     <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0 opacity-60">
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
       {expense.provisional && <ProvBadge />}
-      <span className="min-w-0 flex-1 text-sm text-primary-400">{expense.description}</span>
+      <span className="min-w-0 flex-1 text-sm text-primary-400">
+        {expense.description}
+        {expense.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {expense.invoice_number}</span>}
+      </span>
       <span
         className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
         title={`Offen — wird in ${targetLabel} als überfällig geführt`}
@@ -664,6 +677,7 @@ function PaidIncomeRow({
       <div className="min-w-0 flex-1">
         <span className="text-sm text-primary-600 line-through">{entry.description}</span>
         {entry.notes && <span className="ml-2 text-xs text-primary-300">{entry.notes}</span>}
+        {entry.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {entry.invoice_number}</span>}
       </div>
 
       {/* Amount */}
@@ -735,7 +749,10 @@ function MonthExpenseRow({
     <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0">
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
       {expense.provisional && <ProvBadge />}
-      <span className="min-w-0 flex-1 text-sm text-primary-700">{expense.description}</span>
+      <span className="min-w-0 flex-1 text-sm text-primary-700">
+        {expense.description}
+        {expense.invoice_number && <span className="ml-2 text-xs text-primary-400 tabular-nums">Rg. {expense.invoice_number}</span>}
+      </span>
       <span className="shrink-0 text-sm font-medium text-red-500 tabular-nums">
         -{formatCurrency(expense.amount, expense.currency)}
       </span>
@@ -802,7 +819,10 @@ function LateExpenseRow({
       <span className="w-28 shrink-0 text-xs text-red-400">{originLabel}</span>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
       {e.provisional && <ProvBadge />}
-      <span className="min-w-0 flex-1 text-sm font-medium text-red-700">{e.description}</span>
+      <span className="min-w-0 flex-1 text-sm font-medium text-red-700">
+        {e.description}
+        {e.invoice_number && <span className="ml-2 text-xs font-normal text-red-400 tabular-nums">Rg. {e.invoice_number}</span>}
+      </span>
       <span className="shrink-0 text-sm font-medium text-red-600 tabular-nums">
         -{formatCurrency(e.amount, e.currency)}
       </span>
@@ -840,7 +860,10 @@ function PaidExpenseRow({
       </svg>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
       {expense.provisional && <ProvBadge />}
-      <span className="min-w-0 flex-1 text-sm text-primary-500 line-through">{expense.description}</span>
+      <span className="min-w-0 flex-1 text-sm text-primary-500 line-through">
+        {expense.description}
+        {expense.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {expense.invoice_number}</span>}
+      </span>
       <span className="shrink-0 text-sm text-primary-400 tabular-nums line-through">
         -{formatCurrency(expense.amount, expense.currency)}
       </span>
@@ -871,7 +894,7 @@ function InlineExpenseEditForm({
   onCancel,
 }: {
   expense: NOALiquidityExpenseRow;
-  onSave: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string; provisional?: boolean }) => Promise<boolean>;
+  onSave: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string; invoice_number?: string | null; provisional?: boolean }) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [description, setDescription] = useState(expense.description);
@@ -879,6 +902,7 @@ function InlineExpenseEditForm({
   const [currency, setCurrency]       = useState(expense.currency);
   const [type, setType]               = useState<LiquidityExpenseType>(expense.type);
   const [dueDate, setDueDate]         = useState(expense.due_date ?? '');
+  const [invoiceNo, setInvoiceNo]     = useState(expense.invoice_number ?? '');
   const [provisional, setProvisional] = useState(!!expense.provisional);
   const [saving, setSaving]           = useState(false);
 
@@ -886,7 +910,7 @@ function InlineExpenseEditForm({
     const n = parseFloat(amount);
     if (!description.trim() || isNaN(n) || n <= 0 || !dueDate) return;
     setSaving(true);
-    const ok = await onSave(expense.id, { description: description.trim(), amount: n, currency, type, due_date: dueDate, provisional });
+    const ok = await onSave(expense.id, { description: description.trim(), amount: n, currency, type, due_date: dueDate, invoice_number: invoiceNo.trim() || null, provisional });
     setSaving(false);
     if (ok) onCancel();
   }
@@ -901,6 +925,7 @@ function InlineExpenseEditForm({
         <Select label="" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
         <Select label="" options={RECURRENCE_OPTIONS} value={type} onChange={(e) => setType(e.target.value as LiquidityExpenseType)} />
         <Input label="" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+        <Input label="" value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Rechnungsnr. (optional)" />
         <div className="sm:col-span-2">
           <ProvCheckbox checked={provisional} onChange={setProvisional} />
         </div>
@@ -939,6 +964,7 @@ function ExpenseManagementRow({
       {expense.provisional && <ProvBadge />}
       <div className="min-w-0 flex-1">
         <span className="text-sm text-primary-900">{expense.description}</span>
+        {expense.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {expense.invoice_number}</span>}
         {expense.due_date && (
           <span className="ml-2 text-xs text-primary-400">
             {expense.type === 'one_time' ? formatDate(expense.due_date) : `ab ${formatDate(expense.due_date)}`}
@@ -991,13 +1017,14 @@ function InlineOneTimeExpenseForm({
   onCancel,
 }: {
   defaultDate: string; // YYYY-MM-DD, first day of the month
-  onSave: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string; provisional?: boolean }) => Promise<boolean>;
+  onSave: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string; invoice_number?: string | null; provisional?: boolean }) => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [description, setDescription] = useState('');
   const [amount, setAmount]           = useState('');
   const [currency, setCurrency]       = useState('CHF');
   const [dueDate, setDueDate]         = useState(defaultDate);
+  const [invoiceNo, setInvoiceNo]     = useState('');
   const [provisional, setProvisional] = useState(false);
   const [saving, setSaving]           = useState(false);
 
@@ -1005,7 +1032,7 @@ function InlineOneTimeExpenseForm({
     const n = parseFloat(amount);
     if (!description.trim() || isNaN(n) || n <= 0 || !dueDate) return;
     setSaving(true);
-    const ok = await onSave({ description: description.trim(), amount: n, currency, type: 'one_time', due_date: dueDate, provisional });
+    const ok = await onSave({ description: description.trim(), amount: n, currency, type: 'one_time', due_date: dueDate, invoice_number: invoiceNo.trim() || null, provisional });
     setSaving(false);
     if (ok) onCancel();
   }
@@ -1020,6 +1047,7 @@ function InlineOneTimeExpenseForm({
         <Input label="" type="number" min="0" step="100" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Betrag *" />
         <Select label="" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
         <Input label="" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+        <Input label="" value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Rechnungsnr. (optional)" />
         <div className="sm:col-span-2">
           <ProvCheckbox checked={provisional} onChange={setProvisional} />
         </div>

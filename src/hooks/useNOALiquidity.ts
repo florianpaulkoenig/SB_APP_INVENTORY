@@ -93,6 +93,7 @@ export interface UseNOALiquidityReturn {
     currency: string;
     expected_date: string;
     notes?: string | null;
+    invoice_number?: string | null;
     provisional?: boolean;
   }) => Promise<boolean>;
   updateIncome: (id: string, data: {
@@ -101,6 +102,7 @@ export interface UseNOALiquidityReturn {
     currency: string;
     expected_date: string;
     notes?: string | null;
+    invoice_number?: string | null;
     provisional?: boolean;
   }) => Promise<boolean>;
   deleteIncome: (id: string) => Promise<boolean>;
@@ -113,6 +115,7 @@ export interface UseNOALiquidityReturn {
     currency: string;
     type: LiquidityExpenseType;
     due_date: string;
+    invoice_number?: string | null;
     provisional?: boolean;
   }) => Promise<boolean>;
   updateExpense: (id: string, data: {
@@ -121,6 +124,7 @@ export interface UseNOALiquidityReturn {
     currency: string;
     type: LiquidityExpenseType;
     due_date: string;
+    invoice_number?: string | null;
     provisional?: boolean;
   }) => Promise<boolean>;
   deleteExpense: (id: string) => Promise<boolean>;
@@ -585,6 +589,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     currency: string;
     expected_date: string;
     notes?: string | null;
+    invoice_number?: string | null;
     provisional?: boolean;
   }): Promise<boolean> => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -599,6 +604,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         currency:      data.currency,
         expected_date: data.expected_date,
         notes:         data.notes ?? null,
+        invoice_number: data.invoice_number ?? null,
         provisional:   data.provisional ?? false,
       } as never);
 
@@ -614,6 +620,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     currency: string;
     expected_date: string;
     notes?: string | null;
+    invoice_number?: string | null;
     provisional?: boolean;
   }): Promise<boolean> => {
     const { error } = await supabase
@@ -624,6 +631,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         currency:      data.currency,
         expected_date: data.expected_date,
         notes:         data.notes ?? null,
+        invoice_number: data.invoice_number ?? null,
         provisional:   data.provisional ?? false,
         updated_at:    new Date().toISOString(),
       } as never)
@@ -678,6 +686,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     currency: string;
     type: LiquidityExpenseType;
     due_date: string;
+    invoice_number?: string | null;
     provisional?: boolean;
   }): Promise<boolean> => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -693,6 +702,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         type:        data.type,
         due_date:    data.due_date,
         active:      true,
+        invoice_number: data.invoice_number ?? null,
         provisional: data.provisional ?? false,
       } as never);
 
@@ -731,6 +741,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     currency: string;
     type: LiquidityExpenseType;
     due_date: string;
+    invoice_number?: string | null;
     provisional?: boolean;
   }): Promise<boolean> => {
     const { error } = await supabase
@@ -741,6 +752,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         currency:    data.currency,
         type:        data.type,
         due_date:    data.due_date,
+        invoice_number: data.invoice_number ?? null,
         provisional: data.provisional ?? false,
         updated_at:  new Date().toISOString(),
       } as never)
