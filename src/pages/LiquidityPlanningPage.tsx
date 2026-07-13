@@ -1298,37 +1298,57 @@ function MonthSummaryFooter({
   bucket: MonthBucket;
   currency: string;
 }) {
-  // Sum ALL income (unpaid + late + paid) as face value
+  // Sum ALL income (unpaid + late + paid) as face value — split into
+  // definitive (without provisional items) and incl.-provisional totals
   const allIncome = [...bucket.entries, ...bucket.lateEntries, ...bucket.paidEntries];
-  const incomeTotal  = allIncome.reduce((s, e) => s + e.amount, 0);
-  const expenseTotal = bucket.expenses.reduce((s, e) => s + e.amount, 0)
-                     + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0);
-  const net          = incomeTotal - expenseTotal;
+  const incomeProv  = allIncome.reduce((s, e) => s + e.amount, 0);
+  const incomeDef   = allIncome.filter((e) => !e.provisional).reduce((s, e) => s + e.amount, 0);
+  const expenseProv = bucket.expenses.reduce((s, e) => s + e.amount, 0)
+                    + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0);
+  const expenseDef  = bucket.expenses.filter((e) => !e.provisional).reduce((s, e) => s + e.amount, 0)
+                    + bucket.lateExpenses.filter((le) => !le.expense.provisional).reduce((s, le) => s + le.expense.amount, 0);
+  const netDef  = incomeDef - expenseDef;
+  const netProv = incomeProv - expenseProv;
 
   return (
     <div className="grid grid-cols-3 divide-x divide-primary-100 border-t border-primary-100 bg-primary-50/60">
       {/* Einnahmen */}
       <div className="px-4 py-3">
         <p className="text-xs text-primary-400 mb-1">Einnahmen</p>
-        <p className={`text-base font-semibold tabular-nums ${incomeTotal > 0 ? 'text-emerald-700' : 'text-primary-300'}`}>
-          {incomeTotal > 0 ? '+' : ''}{formatCurrency(incomeTotal, currency)}
+        <p className={`text-base font-semibold tabular-nums ${incomeDef > 0 ? 'text-emerald-700' : 'text-primary-300'}`}>
+          {incomeDef > 0 ? '+' : ''}{formatCurrency(incomeDef, currency)}
         </p>
+        {incomeProv !== incomeDef && (
+          <p className="text-xs text-amber-600 tabular-nums" title="Inklusive provisorischer Positionen">
+            prov. {incomeProv > 0 ? '+' : ''}{formatCurrency(incomeProv, currency)}
+          </p>
+        )}
       </div>
 
       {/* Ausgaben */}
       <div className="px-4 py-3">
         <p className="text-xs text-primary-400 mb-1">Ausgaben</p>
-        <p className={`text-base font-semibold tabular-nums ${expenseTotal > 0 ? 'text-red-500' : 'text-primary-300'}`}>
-          {expenseTotal > 0 ? '-' : ''}{formatCurrency(expenseTotal, currency)}
+        <p className={`text-base font-semibold tabular-nums ${expenseDef > 0 ? 'text-red-500' : 'text-primary-300'}`}>
+          {expenseDef > 0 ? '-' : ''}{formatCurrency(expenseDef, currency)}
         </p>
+        {expenseProv !== expenseDef && (
+          <p className="text-xs text-amber-600 tabular-nums" title="Inklusive provisorischer Positionen">
+            prov. -{formatCurrency(expenseProv, currency)}
+          </p>
+        )}
       </div>
 
       {/* Netto */}
       <div className="px-4 py-3">
         <p className="text-xs text-primary-400 mb-1">Netto</p>
-        <p className={`text-base font-semibold tabular-nums ${net > 0 ? 'text-primary-800' : net < 0 ? 'text-red-600' : 'text-primary-300'}`}>
-          {net !== 0 ? (net > 0 ? '+' : '') : ''}{formatCurrency(net, currency)}
+        <p className={`text-base font-semibold tabular-nums ${netDef > 0 ? 'text-primary-800' : netDef < 0 ? 'text-red-600' : 'text-primary-300'}`}>
+          {netDef !== 0 ? (netDef > 0 ? '+' : '') : ''}{formatCurrency(netDef, currency)}
         </p>
+        {netProv !== netDef && (
+          <p className="text-xs text-amber-600 tabular-nums" title="Inklusive provisorischer Positionen">
+            prov. {netProv > 0 ? '+' : ''}{formatCurrency(netProv, currency)}
+          </p>
+        )}
       </div>
     </div>
   );
