@@ -1,9 +1,15 @@
 // ---------------------------------------------------------------------------
 // NOA Inventory -- Production Order PDF (Artist Version)
+// Layout mirrors the production list export (ProductionOrdersArtistPDF):
+// PDFHeader, black order title bar, grey column header, alternating item
+// rows with per-item notes and inline reference images. Ends with a
+// signature section (artist / gallery-agent / client, dated with the
+// export date).
 // ---------------------------------------------------------------------------
 
-import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image } from '@react-pdf/renderer';
 import styles, { PDF_COLORS } from './PDFStyles';
+import { PDFHeader } from './PDFHeader';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 
 // ---------------------------------------------------------------------------
@@ -12,7 +18,6 @@ import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 interface TranslationStrings {
   artworkCreationSchedule: string;
   orderNo: string;
-  title: string;
   status: string;
   orderDate: string;
   deadline: string;
@@ -22,15 +27,20 @@ interface TranslationStrings {
   client: string;
   price: string;
   notes: string;
+  item: string;
+  qty: string;
   totalItems: string;
-  referencePhotos: string;
+  generatedOn: string;
+  signatures: string;
+  artist: string;
+  galleryAgent: string;
+  date: string;
 }
 
 const TRANSLATIONS: Record<string, TranslationStrings> = {
   en: {
     artworkCreationSchedule: 'Artwork Creation Schedule',
     orderNo: 'Order No.',
-    title: 'Title',
     status: 'Status',
     orderDate: 'Order Date',
     deadline: 'Deadline',
@@ -40,29 +50,39 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     client: 'Client',
     price: 'Price',
     notes: 'Notes',
+    item: 'Item',
+    qty: 'Qty',
     totalItems: 'Total Items',
-    referencePhotos: 'Reference Photos',
+    generatedOn: 'Generated on',
+    signatures: 'Signatures',
+    artist: 'Artist',
+    galleryAgent: 'Gallery / Agent',
+    date: 'Date',
   },
   de: {
     artworkCreationSchedule: 'Kunstwerk-Produktionsplan',
     orderNo: 'Auftrag Nr.',
-    title: 'Titel',
     status: 'Status',
     orderDate: 'Auftragsdatum',
     deadline: 'Frist',
-    dimensions: 'Maße',
+    dimensions: 'Masse',
     medium: 'Technik',
     gallery: 'Galerie',
     client: 'Kunde',
     price: 'Preis',
     notes: 'Anmerkungen',
+    item: 'Position',
+    qty: 'Anz.',
     totalItems: 'Gesamtanzahl',
-    referencePhotos: 'Referenzfotos',
+    generatedOn: 'Erstellt am',
+    signatures: 'Unterschriften',
+    artist: 'Künstler',
+    galleryAgent: 'Galerie / Agent',
+    date: 'Datum',
   },
   fr: {
-    artworkCreationSchedule: "Calendrier de Cr\u00e9ation d'Oeuvres",
-    orderNo: 'Commande N\u00b0',
-    title: 'Titre',
+    artworkCreationSchedule: "Calendrier de Création d'Oeuvres",
+    orderNo: 'Commande N°',
     status: 'Statut',
     orderDate: 'Date de commande',
     deadline: 'Délai',
@@ -72,23 +92,21 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     client: 'Client',
     price: 'Prix',
     notes: 'Notes',
+    item: 'Article',
+    qty: 'Qté',
     totalItems: 'Total articles',
-    referencePhotos: 'Photos de r\u00e9f\u00e9rence',
+    generatedOn: 'Généré le',
+    signatures: 'Signatures',
+    artist: 'Artiste',
+    galleryAgent: 'Galerie / Agent',
+    date: 'Date',
   },
 };
 
 // ---------------------------------------------------------------------------
 // Status translations
 // ---------------------------------------------------------------------------
-interface StatusStrings {
-  draft: string;
-  ordered: string;
-  in_production: string;
-  quality_check: string;
-  completed: string;
-}
-
-const STATUS_TRANSLATIONS: Record<string, StatusStrings> = {
+const STATUS_TRANSLATIONS: Record<string, Record<string, string>> = {
   en: {
     draft: 'Draft',
     ordered: 'Ordered',
@@ -100,17 +118,21 @@ const STATUS_TRANSLATIONS: Record<string, StatusStrings> = {
     draft: 'Entwurf',
     ordered: 'Bestellt',
     in_production: 'In Produktion',
-    quality_check: 'Qualit\u00e4tspr\u00fcfung',
+    quality_check: 'Qualitätsprüfung',
     completed: 'Abgeschlossen',
   },
   fr: {
     draft: 'Brouillon',
-    ordered: 'Command\u00e9',
+    ordered: 'Commandé',
     in_production: 'En production',
-    quality_check: 'Contr\u00f4le qualit\u00e9',
-    completed: 'Termin\u00e9',
+    quality_check: 'Contrôle qualité',
+    completed: 'Terminé',
   },
 };
+
+function translateStatus(status: string, language: string): string {
+  return STATUS_TRANSLATIONS[language]?.[status] ?? STATUS_TRANSLATIONS.en[status] ?? status;
+}
 
 // ---------------------------------------------------------------------------
 // Props
@@ -143,141 +165,14 @@ export interface ProductionOrderPDFProps {
 }
 
 // ---------------------------------------------------------------------------
-// Column widths for the items table
+// Column widths — mirrors the production list export
 // ---------------------------------------------------------------------------
-const COL_TITLE = '28%';
-const COL_DIMENSIONS = '20%';
-const COL_MEDIUM = '17%';
-const COL_GALLERY = '20%';
-const COL_DEADLINE = '15%';
+const COL_ITEM = '38%';
+const COL_DIMS = '24%';
+const COL_MEDIUM = '28%';
+const COL_QTY = '10%';
 
-// ---------------------------------------------------------------------------
-// Custom styles for the artist version
-// ---------------------------------------------------------------------------
-const artistStyles = StyleSheet.create({
-  headerContainer: {
-    marginBottom: 24,
-  },
-  artistName: {
-    fontFamily: 'AnzianoPro',
-    fontWeight: 'bold' as const,
-    fontSize: 22,
-    color: PDF_COLORS.primary900,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  scheduleTitle: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 14,
-    color: PDF_COLORS.primary700,
-    marginTop: 4,
-    letterSpacing: 1,
-  },
-  orderNumber: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 10,
-    color: PDF_COLORS.primary400,
-    marginTop: 2,
-  },
-  titleBar: {
-    flexDirection: 'row',
-    backgroundColor: PDF_COLORS.primary900,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginTop: 16,
-  },
-  titleBarText: {
-    fontFamily: 'AnzianoPro',
-    fontWeight: 'bold' as const,
-    fontSize: 9,
-    color: PDF_COLORS.white,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 0.5,
-    borderBottomColor: PDF_COLORS.border,
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-  },
-  itemRowAlt: {
-    flexDirection: 'row',
-    borderBottomWidth: 0.5,
-    borderBottomColor: PDF_COLORS.border,
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    backgroundColor: PDF_COLORS.backgroundLight,
-  },
-  itemText: {
-    fontFamily: 'AnzianoPro',
-    fontSize: 9,
-    color: PDF_COLORS.primary700,
-  },
-  itemTitleText: {
-    fontFamily: 'AnzianoPro',
-    fontWeight: 'bold' as const,
-    fontSize: 9,
-    color: PDF_COLORS.primary900,
-  },
-  refPhotosSection: {
-    marginTop: 20,
-  },
-  refPhotosTitle: {
-    fontFamily: 'AnzianoPro',
-    fontWeight: 'bold' as const,
-    fontSize: 11,
-    color: PDF_COLORS.primary900,
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  refPhotoItem: {
-    marginBottom: 18,
-  },
-  refPhotoCaption: {
-    fontFamily: 'AnzianoPro',
-    fontWeight: 'bold' as const,
-    fontSize: 9,
-    color: PDF_COLORS.primary900,
-    marginBottom: 6,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-  },
-  refPhotoDivider: {
-    height: 0.5,
-    backgroundColor: PDF_COLORS.border,
-    marginBottom: 10,
-  },
-  refPhotoGrid: {
-    flexDirection: 'row' as const,
-    flexWrap: 'wrap' as const,
-  },
-  // image cell container (warm background fills letterbox areas)
-  refPhotoCellBox: {
-    height: 120,
-    backgroundColor: '#F4F3F1',
-    borderRadius: 2,
-    padding: 10,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  refPhotoCellImage: {
-    width: '100%',
-    height: 100,
-    objectFit: 'contain' as const,
-  },
-});
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Translate a production status value. */
-function translateStatus(status: string, language: string): string {
-  const statusMap = STATUS_TRANSLATIONS[language] ?? STATUS_TRANSLATIONS.en;
-  return (statusMap as unknown as Record<string, string>)[status] ?? status;
-}
+const IMG_W = 120; // inline reference thumbnail width (same as list export)
 
 // ---------------------------------------------------------------------------
 // Component
@@ -291,21 +186,19 @@ export function ProductionOrderPDF({
   showPrice = true,
 }: ProductionOrderPDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
+  const today = new Date().toLocaleDateString(
+    language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : 'en-GB',
+  );
 
   // Build info rows -- only include rows that have a value
   const infoRows: { label: string; value: string }[] = [
     { label: t.orderNo, value: order.order_number },
     { label: t.status, value: translateStatus(order.status, language) },
   ];
-
-  if (order.ordered_date) {
-    infoRows.push({ label: t.orderDate, value: order.ordered_date });
-  }
-
-  if (contactName) {
-    infoRows.push({ label: t.client, value: contactName });
-  }
-
+  if (order.ordered_date) infoRows.push({ label: t.orderDate, value: order.ordered_date });
+  if (order.deadline)     infoRows.push({ label: t.deadline, value: order.deadline });
+  if (galleryName)        infoRows.push({ label: t.gallery, value: galleryName });
+  if (contactName)        infoRows.push({ label: t.client, value: contactName });
   if (showPrice && order.price != null && order.price > 0) {
     const formatted = new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -315,20 +208,25 @@ export function ProductionOrderPDF({
     infoRows.push({ label: t.price, value: formatted });
   }
 
-  // Total quantity across all items
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Signature blocks: artist / gallery-agent / client — dated with export date
+  const signatureBlocks: { role: string; name: string | null }[] = [
+    { role: t.artist, name: ARTIST_NAME },
+    { role: t.galleryAgent, name: galleryName ?? null },
+    { role: t.client, name: contactName ?? null },
+  ];
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
-        {/* ----- Header: Artist Name + Artwork Creation Schedule ---------- */}
-        <View style={artistStyles.headerContainer}>
-          <Text style={artistStyles.artistName}>{ARTIST_NAME}</Text>
-          <Text style={artistStyles.scheduleTitle}>
-            {t.artworkCreationSchedule}
-          </Text>
-          <Text style={artistStyles.orderNumber}>{order.order_number}</Text>
-        </View>
+      <Page size="A4" style={styles.page} wrap>
+        {/* ----- Header — same style as the production list export -------- */}
+        <PDFHeader
+          title={t.artworkCreationSchedule}
+          subtitle={`${order.order_number} · ${t.generatedOn} ${today}`}
+          language={language}
+          companyName={ARTIST_NAME}
+        />
 
         {/* ----- Order Info ---------------------------------------------- */}
         <View style={styles.infoGrid}>
@@ -340,61 +238,145 @@ export function ProductionOrderPDF({
           ))}
         </View>
 
-        {/* ----- Items: Black title bar + rows --------------------------- */}
-        <View style={styles.table}>
-          {/* Black title bar */}
-          <View style={artistStyles.titleBar}>
-            <Text style={[artistStyles.titleBarText, { width: COL_TITLE }]}>
-              {t.title}
+        {/* ----- Items — black title bar + grey column header + rows ------ */}
+        <View style={{ marginTop: 8 }}>
+          {/* Black order title bar */}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              backgroundColor: PDF_COLORS.primary900,
+              paddingVertical: 6,
+              paddingHorizontal: 10,
+            }}
+          >
+            <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.white }}>
+              {order.title}
             </Text>
-            <Text style={[artistStyles.titleBarText, { width: COL_DIMENSIONS }]}>
+            {order.deadline && (
+              <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 10, color: PDF_COLORS.white }}>
+                {t.deadline}: {order.deadline}
+              </Text>
+            )}
+          </View>
+
+          {/* Grey column header */}
+          <View
+            style={{
+              flexDirection: 'row',
+              backgroundColor: PDF_COLORS.backgroundLight,
+              paddingVertical: 4,
+              paddingHorizontal: 10,
+              borderBottomWidth: 0.5,
+              borderBottomColor: PDF_COLORS.border,
+            }}
+          >
+            <Text style={[styles.tableHeaderCell, { width: COL_ITEM, color: PDF_COLORS.primary400 }]}>
+              {t.item}
+            </Text>
+            <Text style={[styles.tableHeaderCell, { width: COL_DIMS, color: PDF_COLORS.primary400 }]}>
               {t.dimensions}
             </Text>
-            <Text style={[artistStyles.titleBarText, { width: COL_MEDIUM }]}>
+            <Text style={[styles.tableHeaderCell, { width: COL_MEDIUM, color: PDF_COLORS.primary400 }]}>
               {t.medium}
             </Text>
-            <Text style={[artistStyles.titleBarText, { width: COL_GALLERY }]}>
-              {t.gallery}
-            </Text>
-            <Text style={[artistStyles.titleBarText, { width: COL_DEADLINE }]}>
-              {t.deadline}
+            <Text style={[styles.tableHeaderCell, { width: COL_QTY, color: PDF_COLORS.primary400, textAlign: 'center' }]}>
+              {t.qty}
             </Text>
           </View>
 
-          {/* Item rows */}
-          {items.map((item, index) => (
-            <View
-              style={index % 2 === 1 ? artistStyles.itemRowAlt : artistStyles.itemRow}
-              key={`${item.description}-${index}`}
-            >
-              <Text style={[artistStyles.itemTitleText, { width: COL_TITLE }]}>
-                {item.description}
-              </Text>
-              <Text style={[artistStyles.itemText, { width: COL_DIMENSIONS }]}>
-                {item.dimensions || '\u2014'}
-              </Text>
-              <Text style={[artistStyles.itemText, { width: COL_MEDIUM }]}>
-                {item.medium || '\u2014'}
-              </Text>
-              <Text style={[artistStyles.itemText, { width: COL_GALLERY }]}>
-                {galleryName ?? '\u2014'}
-              </Text>
-              <Text style={[artistStyles.itemText, { width: COL_DEADLINE }]}>
-                {order.deadline ?? '\u2014'}
-              </Text>
-            </View>
-          ))}
+          {/* Item rows — row + notes + reference images stay together */}
+          {items.map((item, itemIdx) => {
+            const bg = itemIdx % 2 === 1 ? '#fafafa' : PDF_COLORS.white;
+            const hasImages = !!item.referenceImageUrls && item.referenceImageUrls.length > 0;
+            const hasNotes = !!item.notes;
+            return (
+              <View key={`item-${itemIdx}`} wrap={false}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    paddingVertical: 5,
+                    paddingHorizontal: 10,
+                    borderBottomWidth: hasNotes || hasImages ? 0 : 0.5,
+                    borderBottomColor: PDF_COLORS.border,
+                    backgroundColor: bg,
+                  }}
+                >
+                  <Text style={[styles.tableCell, { width: COL_ITEM, fontSize: 10, fontFamily: 'AnzianoPro', fontWeight: 'bold' as const }]}>
+                    {item.description}
+                  </Text>
+                  <Text style={[styles.tableCell, { width: COL_DIMS }]}>
+                    {item.dimensions || '—'}
+                  </Text>
+                  <Text style={[styles.tableCell, { width: COL_MEDIUM }]}>
+                    {item.medium || '—'}
+                  </Text>
+                  <Text style={[styles.tableCell, { width: COL_QTY, textAlign: 'center', fontFamily: 'AnzianoPro', fontWeight: 'bold' as const }]}>
+                    {item.quantity}
+                  </Text>
+                </View>
+
+                {/* Per-item notes */}
+                {hasNotes && (
+                  <View
+                    style={{
+                      paddingHorizontal: 10,
+                      paddingBottom: 5,
+                      borderBottomWidth: hasImages ? 0 : 0.5,
+                      borderBottomColor: PDF_COLORS.border,
+                      backgroundColor: bg,
+                    }}
+                  >
+                    <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: PDF_COLORS.primary400 }}>
+                      {t.notes}: <Text style={{ color: PDF_COLORS.primary700 }}>{item.notes}</Text>
+                    </Text>
+                  </View>
+                )}
+
+                {/* Inline reference images (same as list export) */}
+                {hasImages && (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderBottomWidth: 0.5,
+                      borderBottomColor: PDF_COLORS.border,
+                      backgroundColor: bg,
+                    }}
+                  >
+                    {item.referenceImageUrls!.map((url, imgIdx) => (
+                      <View key={`ref-${itemIdx}-${imgIdx}`} style={{ marginRight: 8, marginBottom: 6 }}>
+                        <Image
+                          src={url}
+                          style={{ width: IMG_W, objectFit: 'contain' as const }}
+                        />
+                        {item.referenceImageNotes?.[imgIdx] ? (
+                          <Text style={{ fontFamily: 'AnzianoPro', fontSize: 7, color: PDF_COLORS.primary700, marginTop: 2, width: IMG_W }}>
+                            {item.referenceImageNotes[imgIdx]}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
 
-        {/* ----- Summary ------------------------------------------------- */}
-        <View style={styles.infoGrid}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t.totalItems}</Text>
-            <Text style={styles.infoValue}>{totalItems}</Text>
-          </View>
+        {/* ----- Total --------------------------------------------------- */}
+        <View
+          wrap={false}
+          style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: PDF_COLORS.primary900, paddingTop: 8 }}
+        >
+          <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 11, color: PDF_COLORS.primary900 }}>
+            {t.totalItems}: {totalItems}
+          </Text>
         </View>
 
-        {/* ----- Notes --------------------------------------------------- */}
+        {/* ----- Order Notes ---------------------------------------------- */}
         {order.notes && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t.notes}</Text>
@@ -402,66 +384,45 @@ export function ProductionOrderPDF({
           </View>
         )}
 
-        {/* ----- Reference Photos ---------------------------------------- */}
-        {items.some((i) => i.referenceImageUrls && i.referenceImageUrls.length > 0) && (
-          <View style={artistStyles.refPhotosSection} break>
-            <Text style={artistStyles.refPhotosTitle}>{t.referencePhotos}</Text>
-            {items
-              .filter((i) => i.referenceImageUrls && i.referenceImageUrls.length > 0)
-              .map((item, idx) => {
-                const imgs = item.referenceImageUrls!;
-                // 2-column grid \u2014 equal 8pt gap in both directions
-                const cellW = '49%';
-
-                return (
-                  <View style={artistStyles.refPhotoItem} key={`ref-${idx}`} wrap={false}>
-                    {/* Divider above item (skip first) */}
-                    {idx > 0 && <View style={artistStyles.refPhotoDivider} />}
-
-                    <Text style={artistStyles.refPhotoCaption}>
-                      {item.description}
-                      {item.dimensions ? ` \u2014 ${item.dimensions}` : ''}
-                    </Text>
-
-                    {/* Grid row */}
-                    <View style={artistStyles.refPhotoGrid}>
-                      {imgs.map((url, imgIdx) => {
-                        const isLastInRow = imgIdx % 2 === 1 || imgIdx === imgs.length - 1;
-                        const imgNote = item.referenceImageNotes?.[imgIdx];
-                        return (
-                          <View
-                            key={`ref-img-${idx}-${imgIdx}`}
-                            style={{
-                              width: cellW,
-                              marginRight: isLastInRow ? 0 : 8,
-                              marginBottom: 8,
-                            }}
-                          >
-                            <View style={artistStyles.refPhotoCellBox}>
-                              <Image
-                                style={artistStyles.refPhotoCellImage}
-                                src={url}
-                              />
-                            </View>
-                            {imgNote ? (
-                              <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: PDF_COLORS.primary700, marginTop: 3, lineHeight: 1.4 }}>
-                                {imgNote}
-                              </Text>
-                            ) : null}
-                          </View>
-                        );
-                      })}
-                    </View>
-                  </View>
-                );
-              })}
+        {/* ----- Signatures ------------------------------------------------ */}
+        <View wrap={false} style={{ marginTop: 48 }}>
+          <Text
+            style={{
+              fontFamily: 'AnzianoPro',
+              fontWeight: 'bold' as const,
+              fontSize: 9,
+              color: PDF_COLORS.primary400,
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              marginBottom: 28,
+            }}
+          >
+            {t.signatures}
+          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            {signatureBlocks.map((block) => (
+              <View key={block.role} style={{ width: '30%' }}>
+                <View style={{ borderBottomWidth: 0.75, borderBottomColor: PDF_COLORS.primary900, marginBottom: 5 }} />
+                <Text style={{ fontFamily: 'AnzianoPro', fontWeight: 'bold' as const, fontSize: 9, color: PDF_COLORS.primary900 }}>
+                  {block.role}
+                </Text>
+                {block.name && (
+                  <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: PDF_COLORS.primary700, marginTop: 1 }}>
+                    {block.name}
+                  </Text>
+                )}
+                <Text style={{ fontFamily: 'AnzianoPro', fontSize: 8, color: PDF_COLORS.primary400, marginTop: 3 }}>
+                  {t.date}: {today}
+                </Text>
+              </View>
+            ))}
           </View>
-        )}
+        </View>
 
         {/* ----- Footer -------------------------------------------------- */}
         <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
-            {`\u00a9 ${COMPANY_NAME}`}
+            {`© ${COMPANY_NAME}`}
           </Text>
           <Text
             style={styles.pageNumber}
