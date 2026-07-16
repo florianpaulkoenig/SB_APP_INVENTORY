@@ -171,12 +171,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Session inactivity timeout (30 minutes)
+  // Proactively refresh the session when the tab becomes visible again.
+  // The access token expires after 1 hour; when the tab was backgrounded or
+  // the machine slept, timers were throttled and the token may be stale.
+  // Refreshing here means the token is already valid by the time the user
+  // clicks Save — instead of the save request triggering an inline refresh
+  // that can hang.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession().catch(() => {
+          // Errors surface through onAuthStateChange (SIGNED_OUT) — nothing
+          // to do here.
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
+
+  // Session inactivity timeout (8 hours — single-user app with MFA; the
+  // previous 30-minute limit silently logged the user out mid-work and made
+  // saves fail after any longer pause)
   useEffect(() => {
     if (!user) return;
 
     let timeoutId: ReturnType<typeof setTimeout>;
-    const INACTIVITY_LIMIT = 30 * 60 * 1000;
+    const INACTIVITY_LIMIT = 8 * 60 * 60 * 1000;
 
     const resetTimer = () => {
       clearTimeout(timeoutId);
