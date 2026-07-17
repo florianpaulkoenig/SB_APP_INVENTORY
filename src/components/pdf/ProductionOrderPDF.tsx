@@ -153,6 +153,7 @@ export interface ProductionOrderPDFProps {
     description: string;
     medium: string | null;
     dimensions: string;
+    weight?: number | null;
     quantity: number;
     notes: string | null;
     referenceImageUrls?: string[];
@@ -306,7 +307,9 @@ export function ProductionOrderPDF({
                     {item.description}
                   </Text>
                   <Text style={[styles.tableCell, { width: COL_DIMS }]}>
-                    {item.dimensions || '—'}
+                    {[item.dimensions, item.weight != null && item.weight > 0 ? `${item.weight} kg` : null]
+                      .filter(Boolean)
+                      .join('\n') || '—'}
                   </Text>
                   <Text style={[styles.tableCell, { width: COL_MEDIUM }]}>
                     {item.medium || '—'}

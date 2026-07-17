@@ -316,7 +316,7 @@ export function ProductionOrdersPage() {
       // Fetch items for this order (include id for image lookup)
       const { data: items } = await supabase
         .from('production_order_items')
-        .select('id, description, medium, height, width, depth, dimension_unit, quantity, notes, sort_order')
+        .select('id, description, medium, height, width, depth, dimension_unit, weight, quantity, notes, sort_order')
         .eq('production_order_id', order.id)
         .order('sort_order', { ascending: true });
 
@@ -366,6 +366,7 @@ export function ProductionOrdersPage() {
           description: item.description,
           medium: item.medium,
           dimensions: formatDimensions(item.height, item.width, item.depth, item.dimension_unit ?? 'cm'),
+          weight: item.weight,
           quantity: item.quantity,
           notes: item.notes,
           ...(itemImages.length > 0 ? {

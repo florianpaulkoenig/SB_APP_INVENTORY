@@ -291,6 +291,7 @@ export function ProductionOrderDetail({
           item.dimension_unit ?? 'cm',
           item.is_circular,
         ),
+        weight: item.weight,
         quantity: item.quantity,
         notes: item.notes,
         referenceImageUrls: refImageDataUrls_[item.id] ?? [],
