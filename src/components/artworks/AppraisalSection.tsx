@@ -57,6 +57,7 @@ interface AppraisalSectionProps {
   artworkId: string;
   artwork: {
     title: string;
+    title_secondary?: string | null;
     reference_code: string;
     medium: string | null;
     year: number | null;

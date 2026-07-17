@@ -18,6 +18,7 @@ interface TranslationStrings {
   appraisalNumber: string;
   artist: string;
   title: string;
+  titleOriginal: string;
   referenceCode: string;
   medium: string;
   year: string;
@@ -53,6 +54,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     appraisalNumber: 'Appraisal No.',
     artist: 'Artist',
     title: 'Title',
+    titleOriginal: 'Original Title',
     referenceCode: 'Reference Code',
     medium: 'Medium',
     year: 'Year',
@@ -101,6 +103,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     appraisalNumber: 'Gutachten-Nr.',
     artist: 'Künstler',
     title: 'Titel',
+    titleOriginal: 'Originaltitel',
     referenceCode: 'Referenzcode',
     medium: 'Technik',
     year: 'Jahr',
@@ -149,6 +152,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     appraisalNumber: "N° d'expertise",
     artist: 'Artiste',
     title: 'Titre',
+    titleOriginal: 'Titre original',
     referenceCode: 'Code de référence',
     medium: 'Technique',
     year: 'Année',
@@ -331,6 +335,7 @@ const s = StyleSheet.create({
 export interface AppraisalPDFProps {
   artwork: {
     title: string;
+    title_secondary?: string | null;
     reference_code: string;
     medium: string | null;
     year: number | null;
@@ -428,6 +433,11 @@ export function AppraisalPDF({ artwork, appraisal, artworkImageUrl, signatureUrl
     { label: t.title,         value: artwork.title },
     { label: t.referenceCode, value: artwork.reference_code },
   ];
+
+  if (artwork.title_secondary) {
+    // Own row so the original-script title renders in its script's font.
+    detailRows.splice(2, 0, { label: t.titleOriginal, value: artwork.title_secondary });
+  }
 
   if (artwork.medium)      detailRows.push({ label: t.medium,     value: artwork.medium });
   if (artwork.year != null) detailRows.push({ label: t.year,       value: String(artwork.year) });

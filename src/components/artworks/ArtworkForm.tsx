@@ -83,6 +83,7 @@ export function ArtworkForm({
 
   // Basic info
   const [title, setTitle] = useState(v?.title ?? '');
+  const [titleSecondary, setTitleSecondary] = useState(v?.title_secondary ?? '');
   const [year, setYear] = useState(v?.year != null ? String(v.year) : '');
   const [medium, setMedium] = useState(v?.medium ?? '');
 
@@ -260,6 +261,7 @@ export function ArtworkForm({
       inventory_number: displayInventoryNumber,
       reference_code: displayReferenceCode,
       title: title.trim(),
+      title_secondary: titleSecondary.trim() || null,
       medium: medium.trim() || null,
       year: year !== '' ? parseInt(year, 10) : null,
       height: height !== '' ? parseFloat(height) : null,
@@ -323,6 +325,16 @@ export function ArtworkForm({
             onChange={(e) => setTitle(e.target.value)}
             error={errors.title}
             maxLength={256}
+          />
+
+          <Input
+            label="Title — Original Script"
+            placeholder="e.g. 无题肖像7号 / لوحة بدون عنوان"
+            value={titleSecondary}
+            onChange={(e) => setTitleSecondary(e.target.value)}
+            dir="auto"
+            maxLength={256}
+            helperText="Optional title in Chinese, Arabic or another non-Latin script — shown alongside the Latin title and in PDF exports"
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

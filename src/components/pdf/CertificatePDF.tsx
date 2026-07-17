@@ -16,6 +16,7 @@ interface TranslationStrings {
   certificateTitle: string;
   artist: string;
   title: string;
+  titleOriginal: string;
   referenceCode: string;
   medium: string;
   year: string;
@@ -41,6 +42,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     certificateTitle: 'Certificate of Authenticity',
     artist: 'Artist',
     title: 'Title',
+    titleOriginal: 'Original Title',
     referenceCode: 'Reference Code',
     medium: 'Medium',
     year: 'Year',
@@ -65,6 +67,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     certificateTitle: 'Echtheitszertifikat',
     artist: 'K\u00fcnstler',
     title: 'Titel',
+    titleOriginal: 'Originaltitel',
     referenceCode: 'Referenzcode',
     medium: 'Technik',
     year: 'Jahr',
@@ -89,6 +92,7 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
     certificateTitle: "Certificat d'Authenticit\u00e9",
     artist: 'Artiste',
     title: 'Titre',
+    titleOriginal: 'Titre original',
     referenceCode: 'Code de r\u00e9f\u00e9rence',
     medium: 'Technique',
     year: 'Ann\u00e9e',
@@ -181,6 +185,7 @@ export interface CertificateProvenanceEntry {
 export interface CertificatePDFProps {
   artwork: {
     title: string;
+    title_secondary?: string | null;
     reference_code: string;
     medium: string | null;
     year: number | null;
@@ -318,6 +323,12 @@ export function CertificatePDF({
     { label: t.title, value: artwork.title },
     { label: t.referenceCode, value: artwork.reference_code },
   ];
+
+  if (artwork.title_secondary) {
+    // Own row so the original-script title renders in its script's font
+    // without switching the Latin title row's font.
+    detailRows.splice(2, 0, { label: t.titleOriginal, value: artwork.title_secondary });
+  }
 
   if (artwork.medium) {
     detailRows.push({ label: t.medium, value: artwork.medium });

@@ -84,7 +84,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       let query = supabase
         .from('artworks')
         .select(
-          'id, title, artist_name, inventory_number, reference_code, medium, year, height, width, depth, dimension_unit, price, currency, status, category, motif, series, edition_type, edition_number, edition_total, gallery_id, current_location, created_at, galleries:gallery_id(name)',
+          'id, title, title_secondary, artist_name, inventory_number, reference_code, medium, year, height, width, depth, dimension_unit, price, currency, status, category, motif, series, edition_type, edition_number, edition_total, gallery_id, current_location, created_at, galleries:gallery_id(name)',
           { count: 'exact' },
         )
         .eq('portfolio', portfolio);
@@ -94,7 +94,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         const term = `%${sanitizeFilterTerm(filters.search)}%`;
         const yearCondition = /^\d{4}$/.test(filters.search.trim()) ? `,year.eq.${Number(filters.search.trim())}` : '';
         query = query.or(
-          `title.ilike.${term},artist_name.ilike.${term},inventory_number.ilike.${term},reference_code.ilike.${term},medium.ilike.${term},notes.ilike.${term},current_location.ilike.${term},category.ilike.${term},motif.ilike.${term},series.ilike.${term},color.ilike.${term},edition_type.ilike.${term}${yearCondition}`,
+          `title.ilike.${term},title_secondary.ilike.${term},artist_name.ilike.${term},inventory_number.ilike.${term},reference_code.ilike.${term},medium.ilike.${term},notes.ilike.${term},current_location.ilike.${term},category.ilike.${term},motif.ilike.${term},series.ilike.${term},color.ilike.${term},edition_type.ilike.${term}${yearCondition}`,
         );
       }
 

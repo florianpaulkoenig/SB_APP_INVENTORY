@@ -201,6 +201,7 @@ export function ArtworkDetailPage() {
         <CertificatePDF
           artwork={{
             title: artwork.title,
+            title_secondary: artwork.title_secondary,
             reference_code: artwork.reference_code,
             medium: artwork.medium,
             year: artwork.year,
@@ -376,6 +377,7 @@ export function ArtworkDetailPage() {
         <CertificatePDF
           artwork={{
             title: artwork.title,
+            title_secondary: artwork.title_secondary,
             reference_code: artwork.reference_code,
             medium: artwork.medium,
             year: artwork.year,
@@ -803,6 +805,7 @@ export function ArtworkDetailPage() {
         artworkId={id!}
         artwork={{
           title: artwork.title,
+          title_secondary: artwork.title_secondary,
           reference_code: artwork.reference_code,
           medium: artwork.medium,
           year: artwork.year,

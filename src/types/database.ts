@@ -195,6 +195,7 @@ export type ArtworkRow = {
   inventory_number: string;
   reference_code: string;
   title: string;
+  title_secondary: string | null;
   medium: string | null;
   year: number | null;
   height: number | null;
@@ -248,6 +249,7 @@ export type ArtworkInsert = {
   inventory_number: string;
   reference_code: string;
   title: string;
+  title_secondary?: string | null;
   medium?: string | null;
   year?: number | null;
   height?: number | null;

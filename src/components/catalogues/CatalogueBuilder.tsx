@@ -85,6 +85,7 @@ interface CatalogueSettings {
 interface CatalogueArtwork {
   id: string;
   title: string;
+  title_secondary: string | null;
   reference_code: string;
   medium: string | null;
   year: number | null;
@@ -781,7 +782,7 @@ export function CatalogueBuilder({
       const { data: artworksData, error: fetchError } = await supabase
         .from('artworks')
         .select(
-          'id, title, reference_code, medium, year, height, width, depth, dimension_unit, weight, price, currency, edition_type, edition_number, edition_total, status, category, series',
+          'id, title, title_secondary, reference_code, medium, year, height, width, depth, dimension_unit, weight, price, currency, edition_type, edition_number, edition_total, status, category, series',
         )
         .in('id', selectedIds);
 
@@ -848,6 +849,7 @@ export function CatalogueBuilder({
       const catalogueArtworks: CatalogueArtwork[] = artworksData.map((a) => ({
         id: a.id,
         title: a.title,
+        title_secondary: a.title_secondary,
         reference_code: a.reference_code,
         medium: a.medium,
         year: a.year,

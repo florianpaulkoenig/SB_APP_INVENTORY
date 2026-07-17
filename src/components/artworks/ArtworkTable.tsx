@@ -148,6 +148,11 @@ const ArtworkRowItem = React.memo(function ArtworkRowItem({
       {/* Title */}
       <td className="px-2 py-2 text-sm font-medium text-primary-900 sm:px-4 sm:py-3">
         {artwork.title}
+        {artwork.title_secondary && (
+          <span dir="auto" className="block text-xs font-normal text-primary-500">
+            {artwork.title_secondary}
+          </span>
+        )}
       </td>
 
       {/* Artist (NOA Collection) */}

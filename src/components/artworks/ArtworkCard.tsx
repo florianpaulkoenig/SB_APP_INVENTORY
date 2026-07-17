@@ -105,6 +105,11 @@ export const ArtworkCard = React.memo(function ArtworkCard({ artwork, imageUrl, 
         <div className="flex items-baseline justify-between gap-2">
           <h3 className="text-sm font-medium text-primary-900 truncate">
             {artwork.title}
+            {artwork.title_secondary && (
+              <span dir="auto" className="block text-xs font-normal text-primary-500 truncate">
+                {artwork.title_secondary}
+              </span>
+            )}
           </h3>
           {artwork.reference_code && (
             <span className="shrink-0 text-xs text-primary-400">{artwork.reference_code}</span>

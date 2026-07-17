@@ -59,7 +59,7 @@ export interface UseCertificatesReturn {
 // Joined select string
 // ---------------------------------------------------------------------------
 
-const CERTIFICATE_SELECT = `*, artworks(title, reference_code, medium, year, height, width, depth, dimension_unit, framed_height, framed_width, framed_depth, edition_type, edition_number, edition_total)`;
+const CERTIFICATE_SELECT = `*, artworks(title, title_secondary, reference_code, medium, year, height, width, depth, dimension_unit, framed_height, framed_width, framed_depth, edition_type, edition_number, edition_total)`;
 
 // ---------------------------------------------------------------------------
 // Hook -- list all certificates with optional filters

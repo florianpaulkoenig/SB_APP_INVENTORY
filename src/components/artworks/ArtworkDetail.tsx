@@ -145,6 +145,11 @@ export function ArtworkDetail({
           <h1 className="font-display text-2xl font-bold text-primary-900">
             {artwork.title}
           </h1>
+          {artwork.title_secondary && (
+            <p dir="auto" className="mt-0.5 font-display text-lg text-primary-600">
+              {artwork.title_secondary}
+            </p>
+          )}
           <p className="mt-1 font-mono text-sm text-primary-400">
             {artwork.reference_code}
           </p>

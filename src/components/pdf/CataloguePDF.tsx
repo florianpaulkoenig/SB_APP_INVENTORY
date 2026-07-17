@@ -75,6 +75,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 export interface CatalogueArtwork {
   title: string;
+  title_secondary?: string | null;
   reference_code: string;
   medium: string | null;
   year: number | null;
@@ -749,6 +750,16 @@ function ListRow({
         const cellStyle = col.key === 'title' ? s.listCellBold : s.listCell;
         const align = col.key === 'price' ? 'right' as const : undefined;
         const cellVal = val(col.key);
+        if (col.key === 'title' && artwork.title_secondary) {
+          // Two stacked lines so Latin and original-script titles each get
+          // their own font instead of the whole cell switching fonts.
+          return (
+            <View key={col.key} style={{ width: col.width }}>
+              <MixedText style={cellStyle}>{cellVal}</MixedText>
+              <MixedText style={s.listCell}>{artwork.title_secondary}</MixedText>
+            </View>
+          );
+        }
         return (
           <MixedText key={col.key} style={[cellStyle, { width: col.width, textAlign: align }]}>
             {cellVal}
@@ -898,6 +909,11 @@ export function CataloguePDF({
             </View>
 
             <MixedText style={s.artworkTitle}>{aw.title}</MixedText>
+            {aw.title_secondary ? (
+              // Separate element so the whole original-script line gets its own
+              // font (NotoSansSC/NotoSansArabic) without affecting the Latin title.
+              <MixedText style={s.artworkTitle}>{aw.title_secondary}</MixedText>
+            ) : null}
             {visibility.showReferenceCode && (
               <Text style={s.artworkRefCode}>{aw.reference_code}</Text>
             )}
