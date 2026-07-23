@@ -623,7 +623,8 @@ export function ExhibitionDetailPage() {
     try {
       const { data, error } = await supabase
         .from('production_orders')
-        .select('id, title, order_number, deadline');
+        .select('id, title, order_number, deadline')
+        .eq('record_type', 'order');
       if (error) throw error;
       setPOOptions((data || []) as ProductionOrderOption[]);
     } catch {

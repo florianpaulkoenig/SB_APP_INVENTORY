@@ -81,6 +81,7 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
           .from('production_orders')
           .select('*, gallery:galleries(name), contact:contacts(first_name, last_name)')
           .eq('user_id', uid)
+          .eq('record_type', 'order')
           .not('status', 'eq', 'draft'),
         supabase
           .from('projects')

@@ -151,6 +151,7 @@ export interface ProductionOrderPDFProps {
   };
   items: Array<{
     description: string;
+    referenceCode?: string | null;
     medium: string | null;
     dimensions: string;
     weight?: number | null;
@@ -303,9 +304,16 @@ export function ProductionOrderPDF({
                     backgroundColor: bg,
                   }}
                 >
-                  <Text style={[styles.tableCell, { width: COL_ITEM, fontSize: 10, fontFamily: 'AnzianoPro', fontWeight: 'bold' as const }]}>
-                    {item.description}
-                  </Text>
+                  <View style={{ width: COL_ITEM }}>
+                    <Text style={[styles.tableCell, { width: '100%', fontSize: 10, fontFamily: 'AnzianoPro', fontWeight: 'bold' as const }]}>
+                      {item.description}
+                    </Text>
+                    {item.referenceCode && (
+                      <Text style={[styles.tableCell, { width: '100%', fontSize: 7, color: PDF_COLORS.primary400 }]}>
+                        {item.referenceCode}
+                      </Text>
+                    )}
+                  </View>
                   <Text style={[styles.tableCell, { width: COL_DIMS }]}>
                     {[item.dimensions, item.weight != null && item.weight > 0 ? `${item.weight} kg` : null]
                       .filter(Boolean)

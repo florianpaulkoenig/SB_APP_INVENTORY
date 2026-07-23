@@ -20,6 +20,7 @@ export const DOC_PREFIXES = {
   delivery: 'DEL',
   packing: 'PL',
   production: 'PO',
+  production_request: 'REQ',
   certificate: 'COA',
   invoice: 'INV',
   forwarding: 'GF',
@@ -152,6 +153,14 @@ export const PRODUCTION_STATUSES = [
   { value: 'pre_sold', label: 'Pre-Sold Order', color: 'bg-emerald-100 text-emerald-800' },
   { value: 'completed', label: 'Completed', color: 'bg-emerald-100 text-emerald-800' },
   { value: 'shipped', label: 'Shipped', color: 'bg-indigo-100 text-indigo-800' },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Production request statuses (production_orders with record_type 'request')
+// ---------------------------------------------------------------------------
+export const PRODUCTION_REQUEST_STATUSES = [
+  { value: 'requested', label: 'Requested', color: 'bg-amber-100 text-amber-800' },
+  { value: 'rejected', label: 'Rejected', color: 'bg-red-100 text-red-800' },
 ] as const;
 
 // ---------------------------------------------------------------------------

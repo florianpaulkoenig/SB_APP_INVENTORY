@@ -176,6 +176,7 @@ export function GalleryDetail({ gallery, onEdit, onDelete, onGalleryUpdate }: Ga
     const { data } = await supabase
       .from('production_orders')
       .select('*')
+      .eq('record_type', 'order')
       .eq('gallery_id', gallery.id)
       .order('created_at', { ascending: false });
 

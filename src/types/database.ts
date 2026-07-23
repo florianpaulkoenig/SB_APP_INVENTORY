@@ -83,7 +83,11 @@ export type ProductionStatus =
   | 'completed'
   | 'shipped'
   | 'consignment'    // ordered for consignment — exhibited & offered for sale
-  | 'pre_sold';      // pre-sold order — collector already purchased, revenue confirmed
+  | 'pre_sold'       // pre-sold order — collector already purchased, revenue confirmed
+  | 'requested'      // production request — enquiry not yet confirmed
+  | 'rejected';      // production request — declined
+
+export type ProductionRecordType = 'order' | 'request';
 
 export type ImageType = 'raw' | 'retouched' | 'detail';
 
@@ -608,6 +612,10 @@ export type ProductionOrderRow = {
   created_at: string;
   updated_at: string;
   payment_expected_date: string | null;
+  record_type: ProductionRecordType;
+  request_number: string | null;
+  converted_from_request_at: string | null;
+  rejected_at: string | null;
 }
 
 export type ProductionOrderInsert = {
@@ -629,6 +637,10 @@ export type ProductionOrderInsert = {
   created_at?: string;
   updated_at?: string;
   payment_expected_date?: string | null;
+  record_type?: ProductionRecordType;
+  request_number?: string | null;
+  converted_from_request_at?: string | null;
+  rejected_at?: string | null;
 }
 
 export type ProductionOrderUpdate = Partial<ProductionOrderInsert>;
@@ -662,6 +674,7 @@ export type ProductionOrderItemRow = {
   color: ArtworkColor | null;
   quantity: number;
   notes: string | null;
+  reference_code: string | null;
   reference_image_path: string | null;
   artwork_id: string | null;
   sort_order: number;
@@ -698,6 +711,7 @@ export type ProductionOrderItemInsert = {
   color?: ArtworkColor | null;
   quantity?: number;
   notes?: string | null;
+  reference_code?: string | null;
   reference_image_path?: string | null;
   artwork_id?: string | null;
   sort_order?: number;

@@ -109,6 +109,7 @@ export function useMonthlyReport(year: number, month: number) {
           supabase
             .from('production_orders')
             .select('id, order_number, title, status, gallery_id, created_at')
+            .eq('record_type', 'order')
             .gte('created_at', fromTs)
             .lte('created_at', toTs)
             .order('created_at', { ascending: false }),

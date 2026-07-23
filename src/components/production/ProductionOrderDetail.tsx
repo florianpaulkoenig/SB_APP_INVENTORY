@@ -55,6 +55,9 @@ export interface ProductionOrderDetailProps {
   onLinkArtwork: (itemId: string, referenceCode: string) => Promise<boolean>;
   onReorderItems?: (orderedIds: string[]) => Promise<void>;
   onUpdateShowPrice?: (showPrice: boolean) => Promise<void>;
+  /** Request-only actions (record_type 'request') — replace the status flow */
+  onConvertRequest?: () => void;
+  onRejectRequest?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -155,7 +158,10 @@ export function ProductionOrderDetail({
   onLinkArtwork,
   onReorderItems,
   onUpdateShowPrice,
+  onConvertRequest,
+  onRejectRequest,
 }: ProductionOrderDetailProps) {
+  const isRequest = order.record_type === 'request';
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
@@ -283,6 +289,7 @@ export function ProductionOrderDetail({
 
       const pdfItems = items.map((item) => ({
         description: item.description,
+        referenceCode: item.reference_code,
         medium: item.medium,
         dimensions: formatDimensions(
           item.height,
@@ -375,6 +382,16 @@ export function ProductionOrderDetail({
           </h1>
           <p className="mt-1 text-lg text-primary-700">{order.title}</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
+            {isRequest && (
+              <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
+                Request
+              </span>
+            )}
+            {order.request_number && (
+              <span className="text-xs text-primary-400">
+                from request {order.request_number}
+              </span>
+            )}
             <StatusBadge status={order.status} />
             {order.ordered_date && (
               <span className="text-sm text-primary-500">
@@ -405,10 +422,34 @@ export function ProductionOrderDetail({
         <h2 className="mb-4 font-display text-base font-semibold text-primary-900">
           Status
         </h2>
-        <ProductionStatusFlow
-          currentStatus={order.status}
-          onStatusChange={onStatusChange}
-        />
+        {isRequest ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <StatusBadge status={order.status} />
+            {order.status !== 'rejected' && (
+              <>
+                <Button variant="outline" size="sm" onClick={onConvertRequest}>
+                  Convert to Order
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700"
+                  onClick={onRejectRequest}
+                >
+                  Reject
+                </Button>
+              </>
+            )}
+            <p className="w-full text-xs text-primary-400">
+              Converting creates a production order with a new PO number; the request number is kept.
+            </p>
+          </div>
+        ) : (
+          <ProductionStatusFlow
+            currentStatus={order.status}
+            onStatusChange={onStatusChange}
+          />
+        )}
       </section>
 
       {/* ----------------------------------------------------------------- */}
@@ -580,7 +621,10 @@ export function ProductionOrderDetail({
                       </td>
                     )}
                     <td className="px-4 py-3 text-sm text-primary-800">
-                      {item.description}
+                      <div>{item.description}</div>
+                      {item.reference_code && (
+                        <div className="font-mono text-xs text-primary-400">{item.reference_code}</div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm text-primary-600">
                       {item.medium ?? '\u2014'}

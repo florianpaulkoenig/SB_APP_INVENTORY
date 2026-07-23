@@ -306,7 +306,7 @@ export function ProjectDetailPage() {
     setPOModalOpen(true);
     setPOLoading(true);
     try {
-      const { data, error } = await supabase.from('production_orders').select('id, title, order_number, deadline');
+      const { data, error } = await supabase.from('production_orders').select('id, title, order_number, deadline').eq('record_type', 'order');
       if (error) throw error;
       setPOOptions((data || []) as POOption[]);
     } catch {

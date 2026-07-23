@@ -59,7 +59,7 @@ export function useSupplyPlanning() {
       const [artworksRes, salesRes, productionRes] = await Promise.all([
         supabase.from('artworks').select('id, status, series, created_at'),
         supabase.from('sales').select('id, artwork_id, sale_date'),
-        supabase.from('production_orders').select('id, title, status, planned_release_date, ordered_date, deadline'),
+        supabase.from('production_orders').select('id, title, status, planned_release_date, ordered_date, deadline').eq('record_type', 'order'),
       ]);
 
       if (artworksRes.error) throw artworksRes.error;

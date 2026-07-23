@@ -160,6 +160,7 @@ export function useRevenueOverview() {
         supabase
           .from('production_orders')
           .select('id, price, currency, status, gallery_id, galleries(name)')
+          .eq('record_type', 'order')
           .not('status', 'in', '("draft","completed")'),
         supabase
           .from('galleries')

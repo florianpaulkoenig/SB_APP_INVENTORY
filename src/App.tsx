@@ -159,6 +159,12 @@ const ProductionOrderCreatePage = React.lazy(() =>
 const ProductionOrderDetailPage = React.lazy(() =>
   import('./pages/ProductionOrderDetailPage').then((m) => ({ default: m.ProductionOrderDetailPage })),
 );
+const ProductionRequestsPage = React.lazy(() =>
+  import('./pages/ProductionRequestsPage').then((m) => ({ default: m.ProductionRequestsPage })),
+);
+const ProductionRequestCreatePage = React.lazy(() =>
+  import('./pages/ProductionRequestCreatePage').then((m) => ({ default: m.ProductionRequestCreatePage })),
+);
 const GalleryForwardingOrdersPage = React.lazy(() =>
   import('./pages/GalleryForwardingOrdersPage').then((m) => ({ default: m.GalleryForwardingOrdersPage })),
 );
@@ -538,6 +544,24 @@ const router = createBrowserRouter(
           element: (
             <RoleGuard allowed={['admin']}>
               <LazyPage><ProductionOrderDetailPage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+
+        // Production Requests (admin only)
+        {
+          path: 'production-requests',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ProductionRequestsPage /></LazyPage>
+            </RoleGuard>
+          ),
+        },
+        {
+          path: 'production-requests/new',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <LazyPage><ProductionRequestCreatePage /></LazyPage>
             </RoleGuard>
           ),
         },

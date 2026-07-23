@@ -108,6 +108,7 @@ export function useLiquidityPlanning(year: number): UseLiquidityPlanningReturn {
         supabase
           .from('production_orders')
           .select('id, price, currency, deadline, status, gallery_id')
+          .eq('record_type', 'order')
           .gte('deadline', yearStart)
           .lte('deadline', yearEnd),
         // Galleries for commission splits

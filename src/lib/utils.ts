@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { format } from 'date-fns';
-import { ARTWORK_REF_PREFIX, ARTWORK_STATUSES, DELIVERY_STATUSES, PRODUCTION_STATUSES, INVOICE_STATUSES } from './constants';
+import { ARTWORK_REF_PREFIX, ARTWORK_STATUSES, DELIVERY_STATUSES, PRODUCTION_STATUSES, PRODUCTION_REQUEST_STATUSES, INVOICE_STATUSES } from './constants';
 
 // ---------------------------------------------------------------------------
 // Conditional class-name helper (clsx wrapper)
@@ -91,6 +91,7 @@ export function getStatusColor(status: string): string {
     ...ARTWORK_STATUSES,
     ...DELIVERY_STATUSES,
     ...PRODUCTION_STATUSES,
+    ...PRODUCTION_REQUEST_STATUSES,
     ...INVOICE_STATUSES,
   ];
 

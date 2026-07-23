@@ -217,6 +217,7 @@ export const navSections: NavSection[] = [
       { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin', 'gallery', 'collector'] },
       { label: 'Galleries', to: '/galleries', icon: icons.galleries, roles: ['admin'] },
       { label: 'Collections', to: '/collections', icon: icons.collections, roles: ['admin'] },
+      { label: 'Production Requests', to: '/production-requests', icon: icons.production, roles: ['admin'] },
       { label: 'Production Orders', to: '/production', icon: icons.production, roles: ['admin'] },
     ],
   },

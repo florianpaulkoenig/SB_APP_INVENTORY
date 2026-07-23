@@ -63,6 +63,7 @@ export function ContactDetailPage() {
     const { data } = await supabase
       .from('production_orders')
       .select('*')
+      .eq('record_type', 'order')
       .eq('contact_id', id)
       .order('created_at', { ascending: false });
 

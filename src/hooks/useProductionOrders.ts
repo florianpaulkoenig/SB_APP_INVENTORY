@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
-import { sanitizeFilterTerm } from '../lib/utils';
+import { sanitizeFilterTerm, generateArtworkRefCode } from '../lib/utils';
+import { DOC_PREFIXES } from '../lib/constants';
 import type {
   ProductionOrderRow,
   ProductionOrderInsert,
@@ -10,6 +11,7 @@ import type {
   ProductionOrderItemInsert,
   ProductionOrderItemUpdate,
   ProductionStatus,
+  ProductionRecordType,
 } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -32,6 +34,8 @@ export interface ProductionOrderFilters {
   status?: ProductionStatus;
   search?: string; // searches order_number or title
   galleryIds?: string[]; // gallery IDs matching search (resolved from gallery name)
+  /** 'order' (default) or 'request' — requests share the table but never mix into order lists */
+  recordType?: ProductionRecordType;
 }
 
 export interface UseProductionOrdersOptions {
@@ -49,6 +53,10 @@ export interface UseProductionOrdersReturn {
   createProductionOrder: (data: ProductionOrderInsert) => Promise<ProductionOrderRow | null>;
   updateProductionOrder: (id: string, data: ProductionOrderUpdate) => Promise<ProductionOrderRow | null>;
   deleteProductionOrder: (id: string) => Promise<boolean>;
+  /** Confirm a request: becomes a real order with a fresh PO number (REQ number kept in request_number) */
+  convertRequestToOrder: (id: string) => Promise<ProductionOrderRow | null>;
+  /** Decline a request: status 'rejected', stays in the requests list for sell-through analytics */
+  rejectRequest: (id: string) => Promise<ProductionOrderRow | null>;
 }
 
 // ---------------------------------------------------------------------------
@@ -85,7 +93,8 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
     try {
       let query = supabase
         .from('production_orders')
-        .select('id, order_number, title, gallery_id, contact_id, status, deadline, price, currency, created_at', { count: 'exact' });
+        .select('id, order_number, title, gallery_id, contact_id, status, deadline, price, currency, created_at, record_type, request_number, converted_from_request_at, rejected_at', { count: 'exact' })
+        .eq('record_type', filters.recordType ?? 'order');
 
       // Status filter
       if (filters.status) {
@@ -131,7 +140,7 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
       if (gen === fetchGenRef.current) setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.status, filters.search, JSON.stringify(filters.galleryIds), page, pageSize, toast]);
+  }, [filters.status, filters.search, filters.recordType, JSON.stringify(filters.galleryIds), page, pageSize, toast]);
 
   useEffect(() => {
     fetchProductionOrders();
@@ -202,6 +211,107 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
     [toast, fetchProductionOrders],
   );
 
+  // ---- Convert request -> order ---------------------------------------------
+
+  const convertRequestToOrder = useCallback(
+    async (id: string): Promise<ProductionOrderRow | null> => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.user) {
+          toast({ title: 'Error', description: 'You must be logged in', variant: 'error' });
+          return null;
+        }
+
+        const { data: current, error: fetchError } = await supabase
+          .from('production_orders')
+          .select('id, order_number, record_type')
+          .eq('id', id)
+          .single();
+
+        if (fetchError) throw fetchError;
+        if ((current as { record_type: string }).record_type !== 'request') {
+          toast({ title: 'Error', description: 'This entry is already an order.', variant: 'error' });
+          return null;
+        }
+
+        // Fresh PO number; the REQ number stays on the record as request_number
+        const { data: orderNumber, error: numberError } = await supabase.rpc('generate_document_number', {
+          p_user_id: session.user.id,
+          p_prefix: DOC_PREFIXES.production,
+        });
+
+        if (numberError || !orderNumber) throw numberError ?? new Error('Could not generate order number');
+
+        const { data: updated, error: updateError } = await supabase
+          .from('production_orders')
+          .update({
+            record_type: 'order',
+            order_number: orderNumber,
+            request_number: (current as { order_number: string }).order_number,
+            status: 'ordered',
+            ordered_date: new Date().toISOString().split('T')[0],
+            converted_from_request_at: new Date().toISOString(),
+            rejected_at: null,
+          } as never)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+
+        toast({
+          title: 'Request converted',
+          description: `Now production order ${orderNumber}.`,
+          variant: 'success',
+        });
+        await fetchProductionOrders();
+
+        return updated as ProductionOrderRow;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to convert request';
+        toast({ title: 'Error', description: message, variant: 'error' });
+        return null;
+      }
+    },
+    [toast, fetchProductionOrders],
+  );
+
+  // ---- Reject request -------------------------------------------------------
+
+  const rejectRequest = useCallback(
+    async (id: string): Promise<ProductionOrderRow | null> => {
+      try {
+        const { data: updated, error: updateError } = await supabase
+          .from('production_orders')
+          .update({
+            status: 'rejected',
+            rejected_at: new Date().toISOString(),
+          } as never)
+          .eq('id', id)
+          .eq('record_type', 'request')
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+
+        toast({ title: 'Request rejected', variant: 'success' });
+        await fetchProductionOrders();
+
+        return updated as ProductionOrderRow;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to reject request';
+        toast({ title: 'Error', description: message, variant: 'error' });
+        return null;
+      }
+    },
+    [toast, fetchProductionOrders],
+  );
+
   // ---- Delete production order ----------------------------------------------
 
   const deleteProductionOrder = useCallback(
@@ -237,7 +347,29 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
     createProductionOrder,
     updateProductionOrder,
     deleteProductionOrder,
+    convertRequestToOrder,
+    rejectRequest,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Unique reference code for a production item — same format & namespace as
+// artwork reference codes, since the code is carried over on conversion.
+// ---------------------------------------------------------------------------
+
+export async function generateUniqueItemRefCode(): Promise<string> {
+  let code = generateArtworkRefCode();
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const [artworkHit, itemHit] = await Promise.all([
+      supabase.from('artworks').select('id').eq('reference_code', code).maybeSingle(),
+      supabase.from('production_order_items').select('id').eq('reference_code', code).maybeSingle(),
+    ]);
+    if (!artworkHit.data && !itemHit.data) return code;
+    code = generateArtworkRefCode();
+  }
+
+  return code;
 }
 
 // ---------------------------------------------------------------------------
@@ -375,9 +507,13 @@ export function useProductionOrderItems(productionOrderId: string): UseProductio
           return null;
         }
 
+        // Every item gets its own reference code at creation — the artwork
+        // record itself is only created once production completes
+        const referenceCode = data.reference_code ?? (await generateUniqueItemRefCode());
+
         const { data: created, error: insertError } = await supabase
           .from('production_order_items')
-          .insert({ ...data, user_id: session.user.id })
+          .insert({ ...data, reference_code: referenceCode, user_id: session.user.id })
           .select()
           .single();
 

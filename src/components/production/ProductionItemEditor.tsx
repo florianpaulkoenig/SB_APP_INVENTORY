@@ -419,6 +419,15 @@ export function ProductionItemEditor({
           Basic Info
         </h3>
         <div className="space-y-4">
+          {item?.reference_code && (
+            <Input
+              label="Reference Code"
+              value={item.reference_code}
+              readOnly
+              disabled
+              helperText="Assigned at creation — carried over to the artwork after production"
+            />
+          )}
           <Input
             label="Title / Description *"
             placeholder="e.g. Portrait on glass, 120x80cm"

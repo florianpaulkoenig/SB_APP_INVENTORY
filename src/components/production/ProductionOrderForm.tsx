@@ -4,7 +4,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { GallerySelect } from '../galleries/GallerySelect';
-import { PRODUCTION_STATUSES, CURRENCIES, DOC_PREFIXES } from '../../lib/constants';
+import { PRODUCTION_STATUSES, PRODUCTION_REQUEST_STATUSES, CURRENCIES, DOC_PREFIXES } from '../../lib/constants';
 import { useDocumentNumber } from '../../hooks/useDocumentNumber';
 import { supabase } from '../../lib/supabase';
 import type {
@@ -24,6 +24,8 @@ export interface ProductionOrderFormProps {
   productionOrder?: ProductionOrderRow;
   onSubmit: (data: ProductionOrderInsert | ProductionOrderUpdate) => Promise<void>;
   loading?: boolean;
+  /** 'request' captures a gallery/collector enquiry (REQ number, request statuses) */
+  mode?: 'order' | 'request';
 }
 
 // ---------------------------------------------------------------------------
@@ -46,8 +48,11 @@ export function ProductionOrderForm({
   productionOrder,
   onSubmit,
   loading = false,
+  mode,
 }: ProductionOrderFormProps) {
   const isEdit = Boolean(productionOrder);
+  // When editing, the record itself knows whether it is a request
+  const isRequest = (mode ?? productionOrder?.record_type ?? 'order') === 'request';
   const { generateNumber } = useDocumentNumber();
 
   // ---- Form state ---------------------------------------------------------
@@ -55,7 +60,9 @@ export function ProductionOrderForm({
   const [orderNumber, setOrderNumber] = useState(productionOrder?.order_number ?? '');
   const [title, setTitle] = useState(productionOrder?.title ?? '');
   const [description, setDescription] = useState(productionOrder?.description ?? '');
-  const [status, setStatus] = useState<string>(productionOrder?.status ?? 'draft');
+  const [status, setStatus] = useState<string>(
+    productionOrder?.status ?? (isRequest ? 'requested' : 'draft'),
+  );
   const [orderedDate, setOrderedDate] = useState(
     productionOrder?.ordered_date ?? new Date().toISOString().split('T')[0],
   );
@@ -97,13 +104,15 @@ export function ProductionOrderForm({
     if (isEdit) return;
 
     async function generate() {
-      const num = await generateNumber(DOC_PREFIXES.production);
+      const num = await generateNumber(
+        isRequest ? DOC_PREFIXES.production_request : DOC_PREFIXES.production,
+      );
       if (num) setOrderNumber(num);
     }
 
     generate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEdit]);
+  }, [isEdit, isRequest]);
 
   // ---- Validation ---------------------------------------------------------
 
@@ -143,6 +152,7 @@ export function ProductionOrderForm({
       notes: notes.trim() || null,
       // Only set price on create; when editing it's auto-calculated from items
       ...(isEdit ? {} : { price: price !== '' ? parseFloat(price) : null }),
+      ...(isEdit ? {} : { record_type: isRequest ? ('request' as const) : ('order' as const) }),
     };
 
     await onSubmit(data);
@@ -156,11 +166,11 @@ export function ProductionOrderForm({
       {/* Section 1: Order Details                                           */}
       {/* ------------------------------------------------------------------ */}
       <section>
-        <SectionHeader>Order Details</SectionHeader>
+        <SectionHeader>{isRequest ? 'Request Details' : 'Order Details'}</SectionHeader>
 
         <div className="space-y-4">
           <Input
-            label="Order Number *"
+            label={isRequest ? 'Request Number *' : 'Order Number *'}
             value={orderNumber}
             onChange={(e) => setOrderNumber(e.target.value)}
             error={errors.orderNumber}
@@ -189,7 +199,7 @@ export function ProductionOrderForm({
 
           <Select
             label="Status"
-            options={PRODUCTION_STATUSES.map((s) => ({ value: s.value, label: s.label }))}
+            options={(isRequest ? PRODUCTION_REQUEST_STATUSES : PRODUCTION_STATUSES).map((s) => ({ value: s.value, label: s.label }))}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           />
@@ -204,7 +214,7 @@ export function ProductionOrderForm({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Ordered Date"
+            label={isRequest ? 'Request Date' : 'Ordered Date'}
             type="date"
             value={orderedDate}
             onChange={(e) => setOrderedDate(e.target.value)}
@@ -287,7 +297,7 @@ export function ProductionOrderForm({
       {/* ------------------------------------------------------------------ */}
       <div className="flex items-center justify-end gap-3 border-t border-primary-100 pt-6">
         <Button type="submit" loading={loading}>
-          {isEdit ? 'Save Changes' : 'Create Production Order'}
+          {isEdit ? 'Save Changes' : isRequest ? 'Create Production Request' : 'Create Production Order'}
         </Button>
       </div>
     </form>

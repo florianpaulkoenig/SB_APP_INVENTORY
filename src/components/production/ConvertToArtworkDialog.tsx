@@ -183,8 +183,9 @@ export function ConvertToArtworkDialog({
         );
       });
 
-    // Generate codes
-    setReferenceCode(generateArtworkRefCode());
+    // Carry over the item's reference code — the piece keeps one code for life.
+    // Only legacy items without a code get a freshly generated one.
+    setReferenceCode(item.reference_code ?? generateArtworkRefCode());
 
     async function generateInvNumber() {
       const num = await generateNumber(DOC_PREFIXES.artwork);

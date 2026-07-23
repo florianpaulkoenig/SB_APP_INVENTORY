@@ -101,6 +101,7 @@ export function GalleriesPage() {
       supabase
         .from('production_orders')
         .select('id, gallery_id, status')
+        .eq('record_type', 'order')
         .in('gallery_id', galleryIds)
         .not('status', 'in', '("draft","in_production","completed")'),
     ]);

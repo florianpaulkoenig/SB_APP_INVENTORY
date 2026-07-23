@@ -50,7 +50,7 @@ export function ProductionOrderDetailPage() {
     reorderItems,
     refetch: refetchItems,
   } = useProductionOrderItems(id!);
-  const { deleteProductionOrder, updateProductionOrder } = useProductionOrders();
+  const { deleteProductionOrder, updateProductionOrder, convertRequestToOrder, rejectRequest } = useProductionOrders();
   const { toast } = useToast();
 
   // ---- Resolve gallery & contact names -------------------------------------
@@ -213,8 +213,26 @@ export function ProductionOrderDetailPage() {
 
     const success = await deleteProductionOrder(id);
     if (success) {
-      navigate('/production');
+      navigate(isRequest ? '/production-requests' : '/production');
     }
+  }
+
+  // ---- Request actions (record_type 'request') ------------------------------
+
+  const isRequest = productionOrder?.record_type === 'request';
+
+  async function handleConvertRequest() {
+    if (!id || !productionOrder) return;
+    if (!window.confirm(`Convert request ${productionOrder.order_number} to a production order?`)) return;
+    const converted = await convertRequestToOrder(id);
+    if (converted) await refetchOrder();
+  }
+
+  async function handleRejectRequest() {
+    if (!id || !productionOrder) return;
+    if (!window.confirm(`Reject request ${productionOrder.order_number}?`)) return;
+    const rejected = await rejectRequest(id);
+    if (rejected) await refetchOrder();
   }
 
   async function handleEdit(data: ProductionOrderUpdate) {
@@ -293,7 +311,10 @@ export function ProductionOrderDetailPage() {
 
           if (!invNumber) continue;
 
-          const refCode = generateArtworkRefCode();
+          // First piece inherits the item's reference code; further pieces of
+          // a multi-quantity item get their own codes
+          const refCode =
+            i === 0 && item.reference_code ? item.reference_code : generateArtworkRefCode();
 
           // Determine edition numbering for multi-quantity items
           let editionType = (item.edition_type ?? 'unique') as EditionType;
@@ -492,7 +513,7 @@ export function ProductionOrderDetailPage() {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => navigate('/production')}
+        onClick={() => navigate(isRequest ? '/production-requests' : '/production')}
         className="mb-6"
       >
         <svg
@@ -508,7 +529,7 @@ export function ProductionOrderDetailPage() {
             d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
           />
         </svg>
-        Back to Production Orders
+        {isRequest ? 'Back to Production Requests' : 'Back to Production Orders'}
       </Button>
 
       {/* Production order detail */}
@@ -534,6 +555,8 @@ export function ProductionOrderDetailPage() {
         onLinkArtwork={handleLinkArtwork}
         onReorderItems={reorderItems}
         onUpdateShowPrice={handleToggleShowPrice}
+        onConvertRequest={handleConvertRequest}
+        onRejectRequest={handleRejectRequest}
       />
 
       {/* Linked Exhibitions & Projects */}
