@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Select } from '../ui/Select';
 import { SearchInput } from '../ui/SearchInput';
 import { GallerySelect } from '../galleries/GallerySelect';
+import { supabase } from '../../lib/supabase';
 import {
   ARTWORK_STATUSES,
   ARTWORK_CATEGORIES,
@@ -20,6 +21,7 @@ export interface ArtworkFiltersProps {
     color?: string;
     medium?: string;
     artist?: string;
+    owner?: string;
     minHeight?: number;
     maxHeight?: number;
     minWidth?: number;
@@ -53,9 +55,36 @@ export function ArtworkFilters({
 }: ArtworkFiltersProps) {
   const [expanded, setExpanded] = useState(false);
 
+  // Distinct provenance owners — populates the owner filter dropdown.
+  // Loaded once on expand; RLS limits what non-admin roles can see.
+  const [ownerOptions, setOwnerOptions] = useState<string[]>([]);
+  const [ownersLoaded, setOwnersLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!expanded || ownersLoaded) return;
+
+    let cancelled = false;
+
+    supabase
+      .from('artwork_provenance')
+      .select('owner_name')
+      .order('owner_name')
+      .then(({ data }) => {
+        if (cancelled) return;
+        const names = [
+          ...new Set(((data ?? []) as { owner_name: string }[]).map((r) => r.owner_name.trim())),
+        ].filter(Boolean);
+        setOwnerOptions(names);
+        setOwnersLoaded(true);
+      });
+
+    return () => { cancelled = true; };
+  }, [expanded, ownersLoaded]);
+
   const secondaryActive = Boolean(
     filters.category || filters.motif || filters.series ||
     filters.color || filters.medium || filters.artist ||
+    filters.owner ||
     filters.minHeight != null || filters.maxHeight != null ||
     filters.minWidth != null || filters.maxWidth != null ||
     noPhotoFilter ||
@@ -236,6 +265,19 @@ export function ArtworkFilters({
               className={inputCls}
             />
           )}
+
+          <Select
+            options={[
+              { value: '', label: 'All Owners' },
+              // Keep a URL-provided owner selectable even before the list loads
+              ...(filters.owner && !ownerOptions.includes(filters.owner)
+                ? [{ value: filters.owner, label: filters.owner }]
+                : []),
+              ...ownerOptions.map((name) => ({ value: name, label: name })),
+            ]}
+            value={filters.owner ?? ''}
+            onChange={(e) => update('owner', e.target.value)}
+          />
 
           <div className="flex items-center gap-1">
             <input type="number" placeholder="H min" value={filters.minHeight ?? ''} onChange={(e) => updateNum('minHeight', e.target.value)} className={inputCls} />

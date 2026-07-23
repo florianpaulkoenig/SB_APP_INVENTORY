@@ -30,6 +30,8 @@ export interface ArtworkFilters {
   color?: string;
   medium?: string;
   artist?: string;
+  /** Provenance owner name — matches artworks with a provenance entry for this owner */
+  owner?: string;
   minHeight?: number;
   maxHeight?: number;
   minWidth?: number;
@@ -145,6 +147,31 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         query = query.ilike('artist_name', `%${sanitizeFilterTerm(filters.artist)}%`);
       }
 
+      // Provenance owner filter — resolve matching artwork ids first
+      if (filters.owner) {
+        const { data: provRows, error: provError } = await supabase
+          .from('artwork_provenance')
+          .select('artwork_id')
+          .eq('owner_name', filters.owner);
+
+        if (provError) throw provError;
+
+        const ownerArtworkIds = [
+          ...new Set(((provRows ?? []) as { artwork_id: string }[]).map((r) => r.artwork_id)),
+        ];
+
+        if (ownerArtworkIds.length === 0) {
+          if (gen === fetchGenRef.current) {
+            setArtworks([]);
+            setTotalCount(0);
+            setLoading(false);
+          }
+          return;
+        }
+
+        query = query.in('id', ownerArtworkIds);
+      }
+
       // Height range filter
       if (filters.minHeight != null) {
         query = query.gte('height', filters.minHeight);
@@ -203,6 +230,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
     filters.color,
     filters.medium,
     filters.artist,
+    filters.owner,
     filters.minHeight,
     filters.maxHeight,
     filters.minWidth,

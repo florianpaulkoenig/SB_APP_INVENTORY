@@ -103,6 +103,7 @@ export function ArtworksPage() {
     color:      searchParams.get('color') || undefined,
     medium:     searchParams.get('medium') || undefined,
     artist:     searchParams.get('artist') || undefined,
+    owner:      searchParams.get('owner') || undefined,
     minHeight:  searchParams.get('mnh') ? Number(searchParams.get('mnh')) : undefined,
     maxHeight:  searchParams.get('mxh') ? Number(searchParams.get('mxh')) : undefined,
     minWidth:   searchParams.get('mnw') ? Number(searchParams.get('mnw')) : undefined,
@@ -421,7 +422,7 @@ export function ArtworksPage() {
     }, { replace: true });
   }
 
-  const FILTER_PARAM_KEYS = ['st','cat','motif','series','gal','color','medium','artist','mnh','mxh','mnw','mxw'];
+  const FILTER_PARAM_KEYS = ['st','cat','motif','series','gal','color','medium','artist','owner','mnh','mxh','mnw','mxw'];
 
   function handleSearchChange(value: string) {
     updateParams(p => {
@@ -430,7 +431,7 @@ export function ArtworksPage() {
     });
   }
 
-  function handleFiltersChange(newFilters: { status?: string; category?: string; motif?: string; series?: string; gallery_id?: string; color?: string; medium?: string; artist?: string; minHeight?: number; maxHeight?: number; minWidth?: number; maxWidth?: number }) {
+  function handleFiltersChange(newFilters: { status?: string; category?: string; motif?: string; series?: string; gallery_id?: string; color?: string; medium?: string; artist?: string; owner?: string; minHeight?: number; maxHeight?: number; minWidth?: number; maxWidth?: number }) {
     updateParams(p => {
       FILTER_PARAM_KEYS.forEach(k => p.delete(k));
       if (newFilters.status)     p.set('st',     newFilters.status);
@@ -441,6 +442,7 @@ export function ArtworksPage() {
       if (newFilters.color)      p.set('color',  newFilters.color);
       if (newFilters.medium)     p.set('medium', newFilters.medium);
       if (newFilters.artist)     p.set('artist', newFilters.artist);
+      if (newFilters.owner)      p.set('owner',  newFilters.owner);
       if (newFilters.minHeight != null) p.set('mnh', String(newFilters.minHeight));
       if (newFilters.maxHeight != null) p.set('mxh', String(newFilters.maxHeight));
       if (newFilters.minWidth  != null) p.set('mnw', String(newFilters.minWidth));
