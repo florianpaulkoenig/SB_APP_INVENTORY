@@ -212,6 +212,10 @@ export interface CertificatePDFProps {
   provenanceEntries?: CertificateProvenanceEntry[];
   currentOwner?: string | null;
   currentOwnerDate?: string | null;
+  /** Show the provenance block (entries + current owner). Default true. */
+  showProvenance?: boolean;
+  /** Show the artist signature row. Default true. */
+  showSignature?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -291,6 +295,8 @@ export function CertificatePDF({
   provenanceEntries,
   currentOwner,
   currentOwnerDate,
+  showProvenance = true,
+  showSignature = true,
 }: CertificatePDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
 
@@ -347,9 +353,21 @@ export function CertificatePDF({
   detailRows.push({ label: t.edition, value: editionText });
   detailRows.push({ label: t.issueDate, value: formattedIssueDate });
 
+  // ---- One-page layout ------------------------------------------------------
+  // The image gets whatever vertical space the text rows leave over on a
+  // single A4 page (842pt): page padding + header + grid margins + divider +
+  // disclaimer are ~308pt fixed; each info row is ~24pt, the signature row
+  // ~52pt. wrap={false} on the Page hard-guarantees a single page.
+  const provenanceRowCount = showProvenance
+    ? (provenanceEntries?.length ?? 0) + (currentOwner ? 1 : 0)
+    : 0;
+  const rowsHeight =
+    detailRows.length * 24 + (showSignature ? 52 : 0) + provenanceRowCount * 24;
+  const imageMaxHeight = Math.max(140, Math.min(420, 842 - 308 - rowsHeight));
+
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" style={styles.page} wrap={false}>
         {/* ----- Header --------------------------------------------------- */}
         <PDFHeader
           title={t.certificateTitle}
@@ -357,10 +375,10 @@ export function CertificatePDF({
           companyName={ARTIST_NAME}
         />
 
-        {/* ----- Artwork Image (large, full width) ------------------------ */}
+        {/* ----- Artwork Image (sized so everything fits on one page) ----- */}
         {artworkImageUrl && (
           <View style={s.imageContainer}>
-            <Image src={artworkImageUrl} style={s.artworkImage} />
+            <Image src={artworkImageUrl} style={[s.artworkImage, { maxHeight: imageMaxHeight }]} />
           </View>
         )}
 
@@ -374,20 +392,22 @@ export function CertificatePDF({
           ))}
 
           {/* Signature row — inline in the data table */}
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t.signature}</Text>
-            <View style={{ flex: 1 }}>
-              {signatureUrl ? (
-                <Image src={signatureUrl} style={s.signatureImage} />
-              ) : (
-                <Text style={styles.infoValue}>{ARTIST_NAME}</Text>
-              )}
+          {showSignature && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>{t.signature}</Text>
+              <View style={{ flex: 1 }}>
+                {signatureUrl ? (
+                  <Image src={signatureUrl} style={s.signatureImage} />
+                ) : (
+                  <Text style={styles.infoValue}>{ARTIST_NAME}</Text>
+                )}
+              </View>
             </View>
-          </View>
+          )}
         </View>
 
         {/* ----- Provenance ----------------------------------------------- */}
-        {((provenanceEntries && provenanceEntries.length > 0) || currentOwner) && (() => {
+        {showProvenance && ((provenanceEntries && provenanceEntries.length > 0) || currentOwner) && (() => {
           // Build combined list: provenance entries + optional current owner at end
           const allEntries: Array<{ label: string; value: string; isCurrent: boolean }> = [
             ...(provenanceEntries ?? []).map((e, i) => {

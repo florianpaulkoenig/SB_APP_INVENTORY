@@ -78,6 +78,8 @@ export function ArtworkDetailPage() {
   const [certificate, setCertificate] = useState<CertificateInfo | null>(null);
   const [language, setLanguage] = useState<Language>('en');
   const [placeOfCreation, setPlaceOfCreation] = useState('Switzerland');
+  const [certShowProvenance, setCertShowProvenance] = useState(true);
+  const [certShowSignature, setCertShowSignature] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [generating, setGenerating] = useState(false);
 
@@ -182,19 +184,21 @@ export function ArtworkDetailPage() {
 
       // Download signature as blob and convert to data URL (keeps bucket private)
       let signatureUrl: string | null = null;
-      try {
-        const { data: sigBlob, error: sigError } = await supabase.storage
-          .from('assets')
-          .download('signature.png');
-        if (sigBlob && !sigError) {
-          signatureUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(sigBlob);
-          });
+      if (certShowSignature) {
+        try {
+          const { data: sigBlob, error: sigError } = await supabase.storage
+            .from('assets')
+            .download('signature.png');
+          if (sigBlob && !sigError) {
+            signatureUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(sigBlob);
+            });
+          }
+        } catch {
+          // Signature is optional
         }
-      } catch {
-        // Signature is optional
       }
 
       const blob = await pdf(
@@ -228,6 +232,8 @@ export function ArtworkDetailPage() {
           provenanceEntries={provenanceEntries.filter((e) => e.confirmed)}
           currentOwner={currentOwner}
           currentOwnerDate={currentOwnerDate}
+          showProvenance={certShowProvenance}
+          showSignature={certShowSignature}
         />,
       ).toBlob();
 
@@ -235,7 +241,7 @@ export function ArtworkDetailPage() {
     } finally {
       setDownloading(false);
     }
-  }, [artwork, certificate, language, placeOfCreation, provenanceEntries, currentOwner, currentOwnerDate]);
+  }, [artwork, certificate, language, placeOfCreation, provenanceEntries, currentOwner, currentOwnerDate, certShowProvenance, certShowSignature]);
 
   // ---- Certificate PDF upload -----------------------------------------------
 
@@ -359,18 +365,20 @@ export function ArtworkDetailPage() {
       }
 
       let signatureUrl: string | null = null;
-      try {
-        const { data: sigBlob, error: sigError } = await supabase.storage
-          .from('assets')
-          .download('signature.png');
-        if (sigBlob && !sigError) {
-          signatureUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(sigBlob);
-          });
-        }
-      } catch { /* signature is optional */ }
+      if (certShowSignature) {
+        try {
+          const { data: sigBlob, error: sigError } = await supabase.storage
+            .from('assets')
+            .download('signature.png');
+          if (sigBlob && !sigError) {
+            signatureUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(sigBlob);
+            });
+          }
+        } catch { /* signature is optional */ }
+      }
 
       const cert = newCert as CertificateInfo;
       const blob = await pdf(
@@ -404,6 +412,8 @@ export function ArtworkDetailPage() {
           provenanceEntries={provenanceEntries.filter((e) => e.confirmed)}
           currentOwner={currentOwner}
           currentOwnerDate={currentOwnerDate}
+          showProvenance={certShowProvenance}
+          showSignature={certShowSignature}
         />,
       ).toBlob();
 
@@ -705,6 +715,28 @@ export function ArtworkDetailPage() {
               </Button>
             </div>
 
+            {/* Certificate content options */}
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-primary-600">
+                <input
+                  type="checkbox"
+                  checked={certShowProvenance}
+                  onChange={(e) => setCertShowProvenance(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded-none border-primary-300 text-primary-900 focus:ring-0"
+                />
+                Show provenance
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-primary-600">
+                <input
+                  type="checkbox"
+                  checked={certShowSignature}
+                  onChange={(e) => setCertShowSignature(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded-none border-primary-300 text-primary-900 focus:ring-0"
+                />
+                Show artist signature
+              </label>
+            </div>
+
             {/* Uploaded PDF */}
             {certificate.pdf_path && (
               <div className="flex items-center gap-2 rounded-md border border-primary-100 bg-primary-50 px-3 py-2">
@@ -766,6 +798,28 @@ export function ArtworkDetailPage() {
                 </svg>
                 Generate Certificate
               </Button>
+            </div>
+
+            {/* Certificate content options */}
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-primary-600">
+                <input
+                  type="checkbox"
+                  checked={certShowProvenance}
+                  onChange={(e) => setCertShowProvenance(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded-none border-primary-300 text-primary-900 focus:ring-0"
+                />
+                Show provenance
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-primary-600">
+                <input
+                  type="checkbox"
+                  checked={certShowSignature}
+                  onChange={(e) => setCertShowSignature(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded-none border-primary-300 text-primary-900 focus:ring-0"
+                />
+                Show artist signature
+              </label>
             </div>
 
             {/* Upload existing certificate PDF */}
