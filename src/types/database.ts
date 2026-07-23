@@ -1309,6 +1309,26 @@ export type ProductionOrderDocumentInsert = {
   created_at?: string | null;
 }
 
+// -- delivery_documents ------------------------------------------------------
+
+export type DeliveryDocumentRow = {
+  id: string;
+  user_id: string;
+  delivery_id: string;
+  file_name: string;
+  storage_path: string;
+  created_at: string;
+}
+
+export type DeliveryDocumentInsert = {
+  id?: string;
+  user_id?: string;
+  delivery_id: string;
+  file_name: string;
+  storage_path: string;
+  created_at?: string | null;
+}
+
 // -- loans -------------------------------------------------------------------
 
 export type LoanStatus = 'pending' | 'active' | 'returned';
@@ -2547,6 +2567,19 @@ export type Database = {
             foreignKeyName: 'deliveries_gallery_id_fkey';
             columns: ['gallery_id'];
             referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      delivery_documents: {
+        Row: DeliveryDocumentRow;
+        Insert: DeliveryDocumentInsert;
+        Update: DeliveryDocumentUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'delivery_documents_delivery_id_fkey';
+            columns: ['delivery_id'];
+            referencedRelation: 'deliveries';
             referencedColumns: ['id'];
           },
         ];
@@ -3850,5 +3883,6 @@ export type ViewingRoomViewUpdate = Partial<ViewingRoomViewInsert>;
 export type ExhibitionFloorPlanUpdate = Partial<ExhibitionFloorPlanInsert>;
 export type ExhibitionProductionOrderUpdate = Partial<ExhibitionProductionOrderInsert>;
 export type ProductionOrderDocumentUpdate = Partial<ProductionOrderDocumentInsert>;
+export type DeliveryDocumentUpdate = Partial<DeliveryDocumentInsert>;
 export type ProjectArtworkUpdate = Partial<ProjectArtworkInsert>;
 export type ProjectProductionOrderUpdate = Partial<ProjectProductionOrderInsert>;

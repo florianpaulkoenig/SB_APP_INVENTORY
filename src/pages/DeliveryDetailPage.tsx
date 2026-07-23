@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDelivery, useDeliveryItems, useDeliveries } from '../hooks/useDeliveries';
 import { DeliveryDetail } from '../components/deliveries/DeliveryDetail';
+import { DeliveryDocuments } from '../components/deliveries/DeliveryDocuments';
 import { DeliveryItemPicker } from '../components/deliveries/DeliveryItemPicker';
 import { DeliveryForm } from '../components/deliveries/DeliveryForm';
 import { Button } from '../components/ui/Button';
@@ -177,6 +178,11 @@ export function DeliveryDetailPage() {
         onRemoveItem={handleRemoveItem}
         onStatusChange={handleStatusChange}
       />
+
+      {/* Import/Export Documents */}
+      <div className="mt-8">
+        <DeliveryDocuments deliveryId={id!} />
+      </div>
 
       {/* Add Item Modal */}
       <Modal
