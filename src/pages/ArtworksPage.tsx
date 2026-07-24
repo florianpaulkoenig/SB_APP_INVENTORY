@@ -94,6 +94,7 @@ export function ArtworksPage() {
   const sortOrder   = (searchParams.get('so') as 'asc' | 'desc') ?? 'desc';
   const noPhotoFilter  = searchParams.get('np') === '1';
   const withPhotoFilter = searchParams.get('wp') === '1';
+  const noPriceFilter  = searchParams.get('npr') === '1';
   const filters: ArtworkFiltersType = {
     status:     (searchParams.get('st') as ArtworkFiltersType['status'])   || undefined,
     category:   (searchParams.get('cat') as ArtworkFiltersType['category']) || undefined,
@@ -122,6 +123,7 @@ export function ArtworksPage() {
       search,
       sortBy,
       sortOrder,
+      ...(noPriceFilter ? { noPrice: true } : {}),
       // Exclude archived from main list unless explicitly filtering by archived
       ...(!isFilteringByStatus ? { excludeStatus: 'archived' as const } : {}),
     },
@@ -131,7 +133,7 @@ export function ArtworksPage() {
 
   // Separate query for archived artworks (only when not filtering by a specific status)
   const { artworks: archivedArtworks, loading: archivedLoading } = useArtworks({
-    filters: { ...filters, search, status: 'archived' as const, sortBy, sortOrder },
+    filters: { ...filters, search, status: 'archived' as const, sortBy, sortOrder, ...(noPriceFilter ? { noPrice: true } : {}) },
     page: 1,
     pageSize: 100,
   });
@@ -501,6 +503,7 @@ export function ArtworksPage() {
       if (filters.series) query = query.eq('series', filters.series);
       if (filters.gallery_id) query = query.eq('gallery_id', filters.gallery_id);
       if (filters.color) query = query.eq('color', filters.color as ArtworkColor);
+      if (noPriceFilter) query = query.or('price.is.null,price.eq.0');
       if (search) {
         const term = `%${search}%`;
         query = query.or(`title.ilike.${term},reference_code.ilike.${term},medium.ilike.${term}`);
@@ -604,6 +607,8 @@ export function ArtworksPage() {
           onWithPhotoChange={(v) => updateParams(p => { if (v) p.set('wp','1'); else p.delete('wp'); p.delete('pg'); })}
           noPhotoFilter={noPhotoFilter}
           onNoPhotoChange={(v) => updateParams(p => { if (v) p.set('np','1'); else p.delete('np'); p.delete('pg'); })}
+          noPriceFilter={noPriceFilter}
+          onNoPriceChange={(v) => updateParams(p => { if (v) p.set('npr','1'); else p.delete('npr'); p.delete('pg'); })}
           viewMode={viewMode}
           onViewModeChange={(v) => updateParams(p => { if (v === 'grid') p.delete('view'); else p.set('view', v); })}
           sortValue={`${sortBy}:${sortOrder}`}

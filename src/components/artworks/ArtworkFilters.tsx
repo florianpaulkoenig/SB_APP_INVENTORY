@@ -37,6 +37,8 @@ export interface ArtworkFiltersProps {
   onNoPhotoChange?: (value: boolean) => void;
   withPhotoFilter?: boolean;
   onWithPhotoChange?: (value: boolean) => void;
+  noPriceFilter?: boolean;
+  onNoPriceChange?: (value: boolean) => void;
   viewMode?: string;
   onViewModeChange?: (mode: string) => void;
   sortValue?: string;
@@ -49,6 +51,7 @@ export function ArtworkFilters({
   search, onSearchChange, shouldFocusSearch,
   noPhotoFilter, onNoPhotoChange,
   withPhotoFilter, onWithPhotoChange,
+  noPriceFilter, onNoPriceChange,
   viewMode, onViewModeChange,
   sortValue, onSortChange, sortOptions,
   showArtistFilter,
@@ -88,7 +91,8 @@ export function ArtworkFilters({
     filters.minHeight != null || filters.maxHeight != null ||
     filters.minWidth != null || filters.maxWidth != null ||
     noPhotoFilter ||
-    withPhotoFilter,
+    withPhotoFilter ||
+    noPriceFilter,
   );
   const hasActiveFilters = Boolean(filters.status || filters.gallery_id) || secondaryActive;
 
@@ -311,6 +315,17 @@ export function ArtworkFilters({
                 className="h-3.5 w-3.5 rounded-none border-primary-300 text-primary-900 focus:ring-0"
               />
               No photo
+            </label>
+          )}
+          {onNoPriceChange && (
+            <label className="flex items-center gap-2 text-xs text-primary-500 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={noPriceFilter ?? false}
+                onChange={(e) => onNoPriceChange(e.target.checked)}
+                className="h-3.5 w-3.5 rounded-none border-primary-300 text-primary-900 focus:ring-0"
+              />
+              No price set
             </label>
           )}
         </div>

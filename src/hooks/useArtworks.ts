@@ -36,6 +36,8 @@ export interface ArtworkFilters {
   maxHeight?: number;
   minWidth?: number;
   maxWidth?: number;
+  /** Only artworks without a price (null or 0) */
+  noPrice?: boolean;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
@@ -188,6 +190,11 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         query = query.lte('width', filters.maxWidth);
       }
 
+      // No-price filter
+      if (filters.noPrice) {
+        query = query.or('price.is.null,price.eq.0');
+      }
+
       // Sorting (whitelist to prevent SQL injection via arbitrary column names)
       const VALID_SORT_COLUMNS: readonly string[] = ['created_at', 'title', 'artist_name', 'inventory_number', 'reference_code', 'medium', 'year', 'status', 'price', 'current_location', 'category', 'color', 'edition_type', 'motif', 'series'];
       const rawSortBy = filters.sortBy || 'created_at';
@@ -235,6 +242,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
     filters.maxHeight,
     filters.minWidth,
     filters.maxWidth,
+    filters.noPrice,
     filters.sortBy,
     filters.sortOrder,
     page,
