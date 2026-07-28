@@ -115,10 +115,12 @@ export function getInitials(name: string): string {
 // Artwork reference code  --  "NOA-SB-2026-K7M2"
 // Generates a unique 4-char code: 2 uppercase letters + 2 digits, randomly
 // interleaved. This code is immutable once assigned.
+// The year segment is the artwork's creation year (pass it in); it falls back
+// to the current year only when no year is known yet.
 // Uses crypto.getRandomValues for secure randomness.
 // ---------------------------------------------------------------------------
-export function generateArtworkRefCode(prefix?: string): string {
-  const year = new Date().getFullYear();
+export function generateArtworkRefCode(prefix?: string, artworkYear?: number): string {
+  const year = artworkYear ?? new Date().getFullYear();
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I, O to avoid confusion with 1, 0
   const digits = '23456789'; // no 0, 1 to avoid confusion with O, I
 
@@ -134,6 +136,13 @@ export function generateArtworkRefCode(prefix?: string): string {
   const resolvedPrefix = prefix ?? ARTWORK_REF_PREFIX;
 
   return `${resolvedPrefix}-${year}-${code}`;
+}
+
+// Swap the year segment of a "PREFIX-YYYY-XXXX" reference code to the
+// artwork's creation year. Codes in other formats are returned unchanged.
+export function applyRefCodeYear(code: string, year: number | null | undefined): string {
+  if (!year || !/^.+-\d{4}-[^-]+$/.test(code)) return code;
+  return code.replace(/-(\d{4})-([^-]+)$/, `-${year}-$2`);
 }
 
 // ---------------------------------------------------------------------------

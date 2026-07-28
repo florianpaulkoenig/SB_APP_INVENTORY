@@ -544,7 +544,7 @@ export function ArtworkDetailPage() {
       // Generate new inventory number and reference code
       const [inventoryNumber, referenceCode] = await Promise.all([
         generateNumber(DOC_PREFIXES.artwork),
-        Promise.resolve(generateArtworkRefCode()),
+        Promise.resolve(generateArtworkRefCode(undefined, artwork.year ?? undefined)),
       ]);
 
       // Copy all artwork data except: id, reference_code, inventory_number, images, status

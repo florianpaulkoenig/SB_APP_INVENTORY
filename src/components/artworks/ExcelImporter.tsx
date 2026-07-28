@@ -221,8 +221,8 @@ export function ExcelImporter({
           throw new Error('Failed to generate inventory number');
         }
 
-        // Generate reference code
-        const referenceCode = generateArtworkRefCode();
+        // Generate reference code (year segment = artwork year when present)
+        const referenceCode = generateArtworkRefCode(undefined, mapped.year ?? undefined);
 
         // Build the full insert payload
         const artworkData: ArtworkInsert = {

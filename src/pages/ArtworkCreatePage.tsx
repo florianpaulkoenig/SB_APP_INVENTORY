@@ -9,7 +9,7 @@ import { ArtworkTemplateManager } from '../components/artworks/ArtworkTemplateMa
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { generateArtworkRefCode } from '../lib/utils';
+import { generateArtworkRefCode, applyRefCodeYear } from '../lib/utils';
 import { DOC_PREFIXES } from '../lib/constants';
 import type { ArtworkInsert, ArtworkTemplateRow } from '../types/database';
 
@@ -71,10 +71,13 @@ export function ArtworkCreatePage() {
 
   async function handleSubmit(data: ArtworkInsert) {
     setLoading(true);
+    // The code was generated on mount with the current year; the artwork's
+    // creation year is only known now, so align the year segment with it.
+    const refCode = referenceCode ?? data.reference_code;
     const created = await createArtwork({
       ...data,
       inventory_number: inventoryNumber ?? data.inventory_number,
-      reference_code: referenceCode ?? data.reference_code,
+      reference_code: refCode ? applyRefCodeYear(refCode, data.year) : refCode,
     });
     setLoading(false);
 
