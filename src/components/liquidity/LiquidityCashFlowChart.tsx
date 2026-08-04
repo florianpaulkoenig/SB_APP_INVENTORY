@@ -155,11 +155,11 @@ export function LiquidityCashFlowChart({
 
   return (
     <div className="rounded-lg border border-primary-100 bg-white p-4 mb-6">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 gap-y-2">
         <h2 className="text-sm font-semibold text-primary-700 uppercase tracking-wide">
           Cashflow &amp; Saldo
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {pastMonths.length > 0 && (
             <button
               onClick={() => setShowPast((v) => !v)}

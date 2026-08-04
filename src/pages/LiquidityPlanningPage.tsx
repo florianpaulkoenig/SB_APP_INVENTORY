@@ -912,7 +912,7 @@ function ProjectsPanel({
 
             return (
               <div key={project.id} className="rounded-lg border border-primary-100">
-                <div className="flex items-center gap-3 border-b border-primary-50 px-3 py-2.5">
+                <div className="flex flex-wrap items-center gap-3 gap-y-1.5 border-b border-primary-50 px-3 py-2.5">
                   {renamingId === project.id ? (
                     <span className="flex min-w-0 flex-1 items-center gap-2">
                       <input
@@ -995,7 +995,7 @@ function ProjectsPanel({
 
                 <div className="px-3 py-1">
                   {items.map((item) => (
-                    <div key={item.key} className={`flex items-center gap-2 py-1.5 border-b border-primary-50 last:border-0 ${item.paid ? 'opacity-60' : ''}`}>
+                    <div key={item.key} className={`flex flex-wrap items-center gap-2 gap-y-1 py-1.5 border-b border-primary-50 last:border-0 ${item.paid ? 'opacity-60' : ''}`}>
                       {item.paid ? (
                         <svg className="h-3.5 w-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" aria-label="Bezahlt">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -1118,7 +1118,7 @@ function IncomeEntryRow({
   }
 
   return (
-    <div className={`flex items-center gap-2 py-2.5 border-b border-primary-50 last:border-0 ${isLate ? 'text-red-600' : ''}`}>
+    <div className={`flex flex-wrap items-center gap-2 gap-y-1 py-2.5 border-b border-primary-50 last:border-0 ${isLate ? 'text-red-600' : ''}`}>
       {/* Late badge */}
       {isLate && (
         <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
@@ -1145,7 +1145,7 @@ function IncomeEntryRow({
       {entry.provisional && <ProvBadge />}
 
       {/* Description + notes */}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-[12rem] flex-1">
         <span className={`text-sm ${isLate ? 'font-medium text-red-700' : 'text-primary-900'}`}>
           {stripProjectPrefix(entry.description, projectName)}
         </span>
@@ -1271,11 +1271,11 @@ function CarriedIncomeRow({
   projectName?: string | null;
 }) {
   return (
-    <div className="flex items-center gap-2 py-2.5 border-b border-primary-50 last:border-0 opacity-60">
+    <div className="flex flex-wrap items-center gap-2 gap-y-1 py-2.5 border-b border-primary-50 last:border-0 opacity-60">
       <span className="w-20 shrink-0 text-xs text-primary-300 tabular-nums">{formatDate(entry.expected_date)}</span>
       {projectName && <ProjectBadge name={projectName} />}
       {entry.provisional && <ProvBadge />}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-[12rem] flex-1">
         <span className="text-sm text-primary-400">{stripProjectPrefix(entry.description, projectName)}</span>
         {entry.notes && <span className="ml-2 text-xs text-primary-300">{entry.notes}</span>}
         {entry.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {entry.invoice_number}</span>}
@@ -1304,11 +1304,11 @@ function CarriedExpenseRow({
 }) {
   const badge = RECURRENCE_BADGES[expense.type];
   return (
-    <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0 opacity-60">
+    <div className="flex flex-wrap items-center gap-3 gap-y-1 py-2 border-b border-primary-50 last:border-0 opacity-60">
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
       {projectName && <ProjectBadge name={projectName} />}
       {expense.provisional && <ProvBadge />}
-      <span className="min-w-0 flex-1 text-sm text-primary-400">
+      <span className="min-w-[12rem] flex-1 text-sm text-primary-400">
         {stripProjectPrefix(expense.description, projectName)}
         {expense.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {expense.invoice_number}</span>}
       </span>
@@ -1355,7 +1355,7 @@ function PaidIncomeRow({
   }
 
   return (
-    <div className="flex items-center gap-2 py-2 border-b border-primary-50 last:border-0 opacity-60">
+    <div className="flex flex-wrap items-center gap-2 gap-y-1 py-2 border-b border-primary-50 last:border-0 opacity-60">
       {/* Paid check */}
       <svg className="h-3.5 w-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -1368,7 +1368,7 @@ function PaidIncomeRow({
       {entry.provisional && <ProvBadge />}
 
       {/* Description */}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-[12rem] flex-1">
         <span className="text-sm text-primary-600 line-through">{stripProjectPrefix(entry.description, projectName)}</span>
         {entry.notes && <span className="ml-2 text-xs text-primary-300">{entry.notes}</span>}
         {entry.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {entry.invoice_number}</span>}
@@ -1441,11 +1441,11 @@ function MonthExpenseRow({
   }
 
   return (
-    <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0">
+    <div className="flex flex-wrap items-center gap-3 gap-y-1 py-2 border-b border-primary-50 last:border-0">
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
       {projectName && <ProjectBadge name={projectName} />}
       {expense.provisional && <ProvBadge />}
-      <span className="min-w-0 flex-1 text-sm text-primary-700">
+      <span className="min-w-[12rem] flex-1 text-sm text-primary-700">
         {stripProjectPrefix(expense.description, projectName)}
         {expense.invoice_number && <span className="ml-2 text-xs text-primary-400 tabular-nums">Rg. {expense.invoice_number}</span>}
       </span>
@@ -1512,7 +1512,7 @@ function LateExpenseRow({
     .toLocaleDateString('de-CH', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="flex items-center gap-2 py-2.5 border-b border-primary-50 last:border-0">
+    <div className="flex flex-wrap items-center gap-2 gap-y-1 py-2.5 border-b border-primary-50 last:border-0">
       <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
         Überfällig
       </span>
@@ -1520,7 +1520,7 @@ function LateExpenseRow({
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
       {projectName && <ProjectBadge name={projectName} />}
       {e.provisional && <ProvBadge />}
-      <span className="min-w-0 flex-1 text-sm font-medium text-red-700">
+      <span className="min-w-[12rem] flex-1 text-sm font-medium text-red-700">
         {stripProjectPrefix(e.description, projectName)}
         {e.invoice_number && <span className="ml-2 text-xs font-normal text-red-400 tabular-nums">Rg. {e.invoice_number}</span>}
       </span>
@@ -1581,7 +1581,7 @@ function ProvCarryExpenseRow({
     .toLocaleDateString('de-CH', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="flex items-center gap-2 py-2.5 border-b border-primary-50 last:border-0">
+    <div className="flex flex-wrap items-center gap-2 gap-y-1 py-2.5 border-b border-primary-50 last:border-0">
       <span
         className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
         title="Provisorisch — aus Vormonat übertragen"
@@ -1592,7 +1592,7 @@ function ProvCarryExpenseRow({
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
       {projectName && <ProjectBadge name={projectName} />}
       <ProvBadge />
-      <span className="min-w-0 flex-1 text-sm text-primary-900">
+      <span className="min-w-[12rem] flex-1 text-sm text-primary-900">
         {stripProjectPrefix(e.description, projectName)}
         {e.invoice_number && <span className="ml-2 text-xs font-normal text-primary-400 tabular-nums">Rg. {e.invoice_number}</span>}
       </span>
@@ -1647,14 +1647,14 @@ function PaidExpenseRow({
 }) {
   const badge = RECURRENCE_BADGES[expense.type];
   return (
-    <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0 opacity-60">
+    <div className="flex flex-wrap items-center gap-3 gap-y-1 py-2 border-b border-primary-50 last:border-0 opacity-60">
       <svg className="h-3.5 w-3.5 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
       </svg>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
       {projectName && <ProjectBadge name={projectName} />}
       {expense.provisional && <ProvBadge />}
-      <span className="min-w-0 flex-1 text-sm text-primary-500 line-through">
+      <span className="min-w-[12rem] flex-1 text-sm text-primary-500 line-through">
         {stripProjectPrefix(expense.description, projectName)}
         {expense.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {expense.invoice_number}</span>}
       </span>
@@ -1753,10 +1753,10 @@ function ExpenseManagementRow({
   }
 
   return (
-    <div className={`flex items-center gap-3 py-2.5 border-b border-primary-50 last:border-0 ${!expense.active ? 'opacity-50' : ''}`}>
+    <div className={`flex flex-wrap items-center gap-3 gap-y-1 py-2.5 border-b border-primary-50 last:border-0 ${!expense.active ? 'opacity-50' : ''}`}>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
       {expense.provisional && <ProvBadge />}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-[12rem] flex-1">
         <span className="text-sm text-primary-900">{expense.description}</span>
         {expense.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {expense.invoice_number}</span>}
         {expense.due_date && (
@@ -1939,7 +1939,7 @@ function ExpenseManagementCard({
       {open && (
         <>
           {/* Sort controls */}
-          <div className="flex items-center gap-1 border-t border-primary-50 px-4 py-2">
+          <div className="flex flex-wrap items-center gap-1 border-t border-primary-50 px-4 py-2">
             <span className="mr-1 text-xs text-primary-400 shrink-0">Sortieren:</span>
             <SortButton label="Bezeichnung" active={sortKey === 'description'} dir={sortDir} onClick={() => handleSort('description')} />
             <SortButton label="Betrag"      active={sortKey === 'amount'}      dir={sortDir} onClick={() => handleSort('amount')} />
@@ -2011,7 +2011,7 @@ function BalanceRow({
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 border-t border-primary-50 bg-primary-50/40 px-4 py-2">
+    <div className="flex flex-wrap items-center justify-between gap-3 gap-y-1 border-t border-primary-50 bg-primary-50/40 px-4 py-2">
       <span className="shrink-0 text-xs font-medium text-primary-500">Saldo per Ende Monat</span>
       <div className="flex items-center gap-3">
         <span className={`text-sm font-semibold tabular-nums ${projectedBalance >= 0 ? 'text-primary-800' : 'text-red-700'}`}>
@@ -2112,9 +2112,9 @@ function MonthSummaryFooter({
   return (
     <div className="grid grid-cols-3 divide-x divide-primary-100 border-t border-primary-100 bg-primary-50/60">
       {/* Einnahmen */}
-      <div className="px-4 py-3">
+      <div className="px-2 py-2 sm:px-4 sm:py-3">
         <p className="text-xs text-primary-400 mb-1">Einnahmen</p>
-        <p className={`text-base font-semibold tabular-nums ${incomeDef > 0 ? 'text-emerald-700' : 'text-primary-300'}`}>
+        <p className={`text-sm sm:text-base font-semibold tabular-nums ${incomeDef > 0 ? 'text-emerald-700' : 'text-primary-300'}`}>
           {incomeDef > 0 ? '+' : ''}{formatCurrency(incomeDef, currency)}
         </p>
         {incomeProv !== incomeDef && (
@@ -2125,9 +2125,9 @@ function MonthSummaryFooter({
       </div>
 
       {/* Ausgaben */}
-      <div className="px-4 py-3">
+      <div className="px-2 py-2 sm:px-4 sm:py-3">
         <p className="text-xs text-primary-400 mb-1">Ausgaben</p>
-        <p className={`text-base font-semibold tabular-nums ${expenseDef > 0 ? 'text-red-500' : 'text-primary-300'}`}>
+        <p className={`text-sm sm:text-base font-semibold tabular-nums ${expenseDef > 0 ? 'text-red-500' : 'text-primary-300'}`}>
           {expenseDef > 0 ? '-' : ''}{formatCurrency(expenseDef, currency)}
         </p>
         {expenseProv !== expenseDef && (
@@ -2138,9 +2138,9 @@ function MonthSummaryFooter({
       </div>
 
       {/* Netto */}
-      <div className="px-4 py-3">
+      <div className="px-2 py-2 sm:px-4 sm:py-3">
         <p className="text-xs text-primary-400 mb-1">Netto</p>
-        <p className={`text-base font-semibold tabular-nums ${netDef > 0 ? 'text-primary-800' : netDef < 0 ? 'text-red-600' : 'text-primary-300'}`}>
+        <p className={`text-sm sm:text-base font-semibold tabular-nums ${netDef > 0 ? 'text-primary-800' : netDef < 0 ? 'text-red-600' : 'text-primary-300'}`}>
           {netDef !== 0 ? (netDef > 0 ? '+' : '') : ''}{formatCurrency(netDef, currency)}
         </p>
         {netProv !== netDef && (
@@ -2274,7 +2274,7 @@ function MonthSection({
       isCurrentMonth ? 'border-primary-300 bg-white' : hasAny ? 'border-primary-100 bg-white' : 'border-primary-50 bg-primary-50/40'
     }`}>
       {/* Month header */}
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 gap-y-1.5 px-4 py-3">
         {isCurrentMonth && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />}
         <span className={`text-sm font-semibold ${hasAny ? 'text-primary-900' : 'text-primary-400'}`}>
           {bucket.label}
@@ -2597,13 +2597,13 @@ export function LiquidityPlanningPage() {
     <ProjectFilterContext.Provider value={setFilterByName}>
     <div>
       {/* Page header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <h1 className="font-display text-2xl font-semibold text-primary-900">Liquiditätsplanung</h1>
           <p className="mt-1 text-sm text-primary-500">Einnahmen und Ausgaben der nächsten 12 Monate</p>
         </div>
         {!showingAForm && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
