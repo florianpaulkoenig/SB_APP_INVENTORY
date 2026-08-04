@@ -966,16 +966,16 @@ function ProjectsPanel({
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => { onDeleteProject(project.id); setConfirmingId(null); }}
-                        className="text-xs text-red-600 hover:text-red-800 font-medium"
+                        className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors"
                       >
                         {items.length} Position{items.length !== 1 ? 'en' : ''} löschen
                       </button>
-                      <button onClick={() => setConfirmingId(null)} className="text-xs text-primary-400 hover:text-primary-600">Nein</button>
+                      <button onClick={() => setConfirmingId(null)} className="rounded-md border border-primary-200 px-2.5 py-1.5 text-xs font-medium text-primary-500 hover:bg-primary-50 transition-colors">Nein</button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setConfirmingId(project.id)}
-                      className="p-1 text-primary-300 hover:text-red-400 transition-colors shrink-0"
+                      className="rounded-md border border-primary-100 p-1.5 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors shrink-0"
                       aria-label="Projekt löschen"
                       title="Projekt inkl. aller Positionen löschen"
                     >
@@ -1167,7 +1167,7 @@ function IncomeEntryRow({
         {/* Paid button */}
         <button
           onClick={() => onMarkPaid(entry.id)}
-          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50 transition-colors"
+          className="flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50/70 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
           title="Als bezahlt markieren"
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -1211,7 +1211,7 @@ function IncomeEntryRow({
           ) : (
             <button
               onClick={() => setPartialMode(true)}
-              className="rounded px-1.5 py-1 text-xs text-emerald-600/70 hover:bg-emerald-50 hover:text-emerald-800 transition-colors"
+              className="rounded-md border border-emerald-200 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 transition-colors"
               title="Teilzahlung erfassen — Teilbetrag wird bezahlt, Rest bleibt offen"
             >
               Teilz.
@@ -1223,7 +1223,7 @@ function IncomeEntryRow({
         {!locked && (
           <button
             onClick={() => setEditing(true)}
-            className="p-1 text-primary-300 hover:text-primary-600 transition-colors"
+            className="rounded-md border border-primary-100 p-1.5 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors"
             title="Bearbeiten"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -1237,13 +1237,13 @@ function IncomeEntryRow({
         {(!locked || isLate || fromPastMonth) && (
           confirming ? (
             <div className="flex items-center gap-1">
-              <button onClick={() => onDelete(entry.id)} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
-              <button onClick={() => setConfirming(false)} className="text-xs text-primary-400 hover:text-primary-600">Nein</button>
+              <button onClick={() => onDelete(entry.id)} className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors">Löschen</button>
+              <button onClick={() => setConfirming(false)} className="rounded-md border border-primary-200 px-2.5 py-1.5 text-xs font-medium text-primary-500 hover:bg-primary-50 transition-colors">Nein</button>
             </div>
           ) : (
             <button
               onClick={() => setConfirming(true)}
-              className="p-1 text-primary-300 hover:text-red-400 transition-colors"
+              className="rounded-md border border-primary-100 p-1.5 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors"
               aria-label="Löschen"
               title="Stornieren / löschen"
             >
@@ -1388,23 +1388,23 @@ function PaidIncomeRow({
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => onMarkUnpaid(entry.id)}
-            className="text-xs text-primary-400 hover:text-primary-700 transition-colors"
+            className="rounded-md border border-primary-200 px-2.5 py-1.5 text-xs font-medium text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors"
             title="Als unbezahlt markieren"
           >
             Rückgängig
           </button>
-          <button onClick={() => setEditing(true)} className="p-1 text-primary-300 hover:text-primary-600 transition-colors">
+          <button onClick={() => setEditing(true)} className="rounded-md border border-primary-100 p-1.5 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
             </svg>
           </button>
           {confirming ? (
             <div className="flex items-center gap-1">
-              <button onClick={() => onDelete(entry.id)} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
+              <button onClick={() => onDelete(entry.id)} className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors">Löschen</button>
               <button onClick={() => setConfirming(false)} className="text-xs text-primary-400">Nein</button>
             </div>
           ) : (
-            <button onClick={() => setConfirming(true)} className="p-1 text-primary-300 hover:text-red-400 transition-colors">
+            <button onClick={() => setConfirming(true)} className="rounded-md border border-primary-100 p-1.5 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors">
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -1454,7 +1454,7 @@ function MonthExpenseRow({
       </span>
       <button
         onClick={() => onMarkPaid(expense.id)}
-        className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-50 transition-colors shrink-0"
+        className="flex items-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-100 transition-colors shrink-0"
         title="Als bezahlt markieren"
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -1466,7 +1466,7 @@ function MonthExpenseRow({
       {isOneTime && onUpdate && (
         <button
           onClick={() => setEditing(true)}
-          className="shrink-0 p-1 text-primary-300 hover:text-primary-600 transition-colors"
+          className="shrink-0 rounded-md border border-primary-100 p-1.5 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors"
           title="Bearbeiten"
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -1477,7 +1477,7 @@ function MonthExpenseRow({
       {isOneTime && onDelete && (
         confirming ? (
           <div className="flex items-center gap-1 shrink-0">
-            <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
+            <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors">Löschen</button>
             <button onClick={() => setConfirming(false)} className="text-xs text-primary-400">Nein</button>
           </div>
         ) : (
@@ -1529,7 +1529,7 @@ function LateExpenseRow({
       </span>
       <button
         onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
-        className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-50 transition-colors shrink-0"
+        className="flex items-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-100 transition-colors shrink-0"
         title={`Als bezahlt markieren (wird ${originLabel} zugeordnet)`}
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -1539,13 +1539,13 @@ function LateExpenseRow({
       </button>
       {confirming ? (
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={onCancel} className="text-xs text-red-600 hover:text-red-800 font-medium">Stornieren</button>
-          <button onClick={() => setConfirming(false)} className="text-xs text-primary-400 hover:text-primary-600">Nein</button>
+          <button onClick={onCancel} className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors">Stornieren</button>
+          <button onClick={() => setConfirming(false)} className="rounded-md border border-primary-200 px-2.5 py-1.5 text-xs font-medium text-primary-500 hover:bg-primary-50 transition-colors">Nein</button>
         </div>
       ) : (
         <button
           onClick={() => setConfirming(true)}
-          className="p-1 text-primary-300 hover:text-red-400 transition-colors shrink-0"
+          className="rounded-md border border-primary-100 p-1.5 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors shrink-0"
           aria-label="Stornieren"
           title={e.type === 'one_time'
             ? 'Stornieren — Ausgabe wird gelöscht'
@@ -1601,7 +1601,7 @@ function ProvCarryExpenseRow({
       </span>
       <button
         onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
-        className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-primary-400 hover:bg-primary-50 hover:text-primary-700 transition-colors shrink-0"
+        className="flex items-center gap-1 rounded-md border border-primary-200 bg-white px-3 py-1.5 text-xs font-semibold text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors shrink-0"
         title={`Als bezahlt markieren (wird ${originLabel} zugeordnet)`}
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -1611,13 +1611,13 @@ function ProvCarryExpenseRow({
       </button>
       {confirming ? (
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={onCancel} className="text-xs text-red-600 hover:text-red-800 font-medium">Stornieren</button>
-          <button onClick={() => setConfirming(false)} className="text-xs text-primary-400 hover:text-primary-600">Nein</button>
+          <button onClick={onCancel} className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors">Stornieren</button>
+          <button onClick={() => setConfirming(false)} className="rounded-md border border-primary-200 px-2.5 py-1.5 text-xs font-medium text-primary-500 hover:bg-primary-50 transition-colors">Nein</button>
         </div>
       ) : (
         <button
           onClick={() => setConfirming(true)}
-          className="p-1 text-primary-300 hover:text-red-400 transition-colors shrink-0"
+          className="rounded-md border border-primary-100 p-1.5 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors shrink-0"
           aria-label="Stornieren"
           title={e.type === 'one_time'
             ? 'Stornieren — Ausgabe wird gelöscht'
@@ -1668,7 +1668,7 @@ function PaidExpenseRow({
       ) : (
         <button
           onClick={() => onMarkUnpaid(expense.id)}
-          className="text-xs text-primary-400 hover:text-primary-700 transition-colors shrink-0"
+          className="shrink-0 rounded-md border border-primary-200 px-2.5 py-1.5 text-xs font-medium text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors"
           title="Als unbezahlt markieren"
         >
           Rückgängig
@@ -1778,7 +1778,7 @@ function ExpenseManagementRow({
       {/* Edit button */}
       <button
         onClick={() => setEditing(true)}
-        className="shrink-0 p-1 text-primary-300 hover:text-primary-600 transition-colors"
+        className="shrink-0 rounded-md border border-primary-100 p-1.5 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors"
         title="Bearbeiten"
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -1787,7 +1787,7 @@ function ExpenseManagementRow({
       </button>
       {confirming ? (
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
+          <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors">Löschen</button>
           <button onClick={() => setConfirming(false)} className="text-xs text-primary-400">Nein</button>
         </div>
       ) : (
@@ -2109,46 +2109,44 @@ function MonthSummaryFooter({
   const netDef  = incomeDef - expenseDef;
   const netProv = incomeProv - expenseProv;
 
+  const signed = (v: number) => `${v < 0 ? '-' : v > 0 ? '+' : ''}${formatCurrency(Math.abs(v), currency)}`;
+
+  // Mobile: one full-width row per figure (label left, value right, large);
+  // ≥sm: the classic 3-column block.
+  const Cell = ({ label, def, defClass, prov }: { label: string; def: string; defClass: string; prov: string | null }) => (
+    <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:block sm:py-3">
+      <p className="text-xs text-primary-400 sm:mb-1">{label}</p>
+      <div className="text-right sm:text-left">
+        <p className={`text-lg sm:text-base font-semibold tabular-nums ${defClass}`}>{def}</p>
+        {prov !== null && (
+          <p className="text-xs text-amber-600 tabular-nums" title="Inklusive provisorischer Positionen">
+            prov. {prov}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="grid grid-cols-3 divide-x divide-primary-100 border-t border-primary-100 bg-primary-50/60">
-      {/* Einnahmen */}
-      <div className="px-2 py-2 sm:px-4 sm:py-3">
-        <p className="text-xs text-primary-400 mb-1">Einnahmen</p>
-        <p className={`text-sm sm:text-base font-semibold tabular-nums ${incomeDef > 0 ? 'text-emerald-700' : 'text-primary-300'}`}>
-          {incomeDef > 0 ? '+' : ''}{formatCurrency(incomeDef, currency)}
-        </p>
-        {incomeProv !== incomeDef && (
-          <p className="text-xs text-amber-600 tabular-nums" title="Inklusive provisorischer Positionen">
-            prov. {incomeProv > 0 ? '+' : ''}{formatCurrency(incomeProv, currency)}
-          </p>
-        )}
-      </div>
-
-      {/* Ausgaben */}
-      <div className="px-2 py-2 sm:px-4 sm:py-3">
-        <p className="text-xs text-primary-400 mb-1">Ausgaben</p>
-        <p className={`text-sm sm:text-base font-semibold tabular-nums ${expenseDef > 0 ? 'text-red-500' : 'text-primary-300'}`}>
-          {expenseDef > 0 ? '-' : ''}{formatCurrency(expenseDef, currency)}
-        </p>
-        {expenseProv !== expenseDef && (
-          <p className="text-xs text-amber-600 tabular-nums" title="Inklusive provisorischer Positionen">
-            prov. -{formatCurrency(expenseProv, currency)}
-          </p>
-        )}
-      </div>
-
-      {/* Netto */}
-      <div className="px-2 py-2 sm:px-4 sm:py-3">
-        <p className="text-xs text-primary-400 mb-1">Netto</p>
-        <p className={`text-sm sm:text-base font-semibold tabular-nums ${netDef > 0 ? 'text-primary-800' : netDef < 0 ? 'text-red-600' : 'text-primary-300'}`}>
-          {netDef !== 0 ? (netDef > 0 ? '+' : '') : ''}{formatCurrency(netDef, currency)}
-        </p>
-        {netProv !== netDef && (
-          <p className="text-xs text-amber-600 tabular-nums" title="Inklusive provisorischer Positionen">
-            prov. {netProv > 0 ? '+' : ''}{formatCurrency(netProv, currency)}
-          </p>
-        )}
-      </div>
+    <div className="grid grid-cols-1 divide-y divide-primary-100 border-t border-primary-100 bg-primary-50/60 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <Cell
+        label="Einnahmen"
+        def={incomeDef > 0 ? `+${formatCurrency(incomeDef, currency)}` : formatCurrency(0, currency)}
+        defClass={incomeDef > 0 ? 'text-emerald-700' : 'text-primary-300'}
+        prov={incomeProv !== incomeDef ? `+${formatCurrency(incomeProv, currency)}` : null}
+      />
+      <Cell
+        label="Ausgaben"
+        def={expenseDef > 0 ? `-${formatCurrency(expenseDef, currency)}` : formatCurrency(0, currency)}
+        defClass={expenseDef > 0 ? 'text-red-500' : 'text-primary-300'}
+        prov={expenseProv !== expenseDef ? `-${formatCurrency(expenseProv, currency)}` : null}
+      />
+      <Cell
+        label="Netto"
+        def={signed(netDef)}
+        defClass={netDef > 0 ? 'text-primary-800' : netDef < 0 ? 'text-red-600' : 'text-primary-300'}
+        prov={netProv !== netDef ? signed(netProv) : null}
+      />
     </div>
   );
 }

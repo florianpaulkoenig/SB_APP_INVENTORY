@@ -135,7 +135,10 @@ export function LiquidityCashFlowChart({
   pastMonths?: MonthBucket[];
   currency?: string;
 }) {
-  const [range, setRange]       = useState<Range>(12);
+  // Static at mount — phones don't change width class mid-session
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
+  const [range, setRange]       = useState<Range>(isMobile ? 6 : 12);
   const [showPast, setShowPast] = useState(false);
   const { toCHF } = useExchangeRates();
 
@@ -152,6 +155,8 @@ export function LiquidityCashFlowChart({
     if (Math.abs(v) >= 1_000)     return `${(v / 1_000).toFixed(0)}k`;
     return String(v);
   };
+
+  const tickFont = { fill: '#a3a09a', fontSize: isMobile ? 12 : 11 };
 
   return (
     <div className="rounded-lg border border-primary-100 bg-white p-4 mb-6">
@@ -193,22 +198,25 @@ export function LiquidityCashFlowChart({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 4 }}>
+      <ResponsiveContainer width="100%" height={isMobile ? 340 : 300}>
+        <ComposedChart data={data} margin={{ top: 8, right: isMobile ? 8 : 16, left: 4, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0eeec" vertical={false} />
 
           <XAxis
             dataKey="label"
-            tick={{ fill: '#a3a09a', fontSize: 11 }}
+            tick={tickFont}
             axisLine={false}
             tickLine={false}
+            interval={data.length <= 8 ? 0 : 'preserveStartEnd'}
           />
 
-          {/* Left axis — profit */}
+          {/* Left axis — profit (hidden on mobile: one axis is enough there,
+              the tooltip carries the exact numbers) */}
           <YAxis
             yAxisId="left"
+            hide={isMobile}
             tickFormatter={tickFmt}
-            tick={{ fill: '#a3a09a', fontSize: 11 }}
+            tick={tickFont}
             axisLine={false}
             tickLine={false}
             width={56}
@@ -219,16 +227,16 @@ export function LiquidityCashFlowChart({
             yAxisId="right"
             orientation="right"
             tickFormatter={tickFmt}
-            tick={{ fill: '#a3a09a', fontSize: 11 }}
+            tick={tickFont}
             axisLine={false}
             tickLine={false}
-            width={56}
+            width={isMobile ? 48 : 56}
           />
 
           <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f7f6f4' }} />
 
           <Legend
-            wrapperStyle={{ fontSize: 11, paddingTop: 12, color: '#737066' }}
+            wrapperStyle={{ fontSize: isMobile ? 12 : 11, paddingTop: 12, color: '#737066' }}
             formatter={(value) => (
               <span style={{ color: '#737066' }}>{value}</span>
             )}
@@ -284,9 +292,9 @@ export function LiquidityCashFlowChart({
             dataKey="saldo"
             name="Saldo (definitiv)"
             stroke="#c9a96e"
-            strokeWidth={2.5}
-            dot={{ r: 3, fill: '#c9a96e', strokeWidth: 0 }}
-            activeDot={{ r: 5 }}
+            strokeWidth={isMobile ? 3 : 2.5}
+            dot={{ r: isMobile ? 4 : 3, fill: '#c9a96e', strokeWidth: 0 }}
+            activeDot={{ r: isMobile ? 6 : 5 }}
           />
 
           {/* Ist-Saldo dots */}
