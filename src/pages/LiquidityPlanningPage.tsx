@@ -1119,46 +1119,45 @@ function IncomeEntryRow({
 
   return (
     <div className={`flex flex-wrap items-center gap-2 gap-y-1.5 py-3 sm:py-2.5 border-b border-primary-50 last:border-0 ${isLate ? 'text-red-600' : ''}`}>
-      {/* Late badge */}
-      {isLate && (
-        <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
-          Überfällig
-        </span>
-      )}
+      {/* Left block — mobile: badges/date and description stacked; ≥sm inline */}
+      <div className="min-w-0 flex-1 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          {isLate && (
+            <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
+              Überfällig
+            </span>
+          )}
+          {fromPastMonth && (
+            <span
+              className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
+              title="Provisorisch — aus Vormonat übertragen"
+            >
+              aus Vormonat
+            </span>
+          )}
+          <span className={`shrink-0 text-xs tabular-nums ${isLate ? 'text-red-400' : 'text-primary-400'}`}>
+            {formatDate(entry.expected_date)}
+          </span>
+          {projectName && <ProjectBadge name={projectName} />}
+          {entry.provisional && <ProvBadge />}
+        </div>
 
-      {/* Carried-from-past badge — provisional items are never überfällig */}
-      {fromPastMonth && (
-        <span
-          className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
-          title="Provisorisch — aus Vormonat übertragen"
-        >
-          aus Vormonat
-        </span>
-      )}
-
-      {/* Date */}
-      <span className={`w-20 shrink-0 text-xs tabular-nums ${isLate ? 'text-red-400' : 'text-primary-400'}`}>
-        {formatDate(entry.expected_date)}
-      </span>
-
-      {projectName && <ProjectBadge name={projectName} />}
-      {entry.provisional && <ProvBadge />}
-
-      {/* Description + notes */}
-      <div className="min-w-[12rem] flex-1">
-        <span className={`text-sm ${isLate ? 'font-medium text-red-700' : 'text-primary-900'}`}>
-          {stripProjectPrefix(entry.description, projectName)}
-        </span>
-        {entry.notes && (
-          <span className={`ml-2 text-xs ${isLate ? 'text-red-400' : 'text-primary-400'}`}>{entry.notes}</span>
-        )}
-        {entry.invoice_number && (
-          <span className={`ml-2 text-xs tabular-nums ${isLate ? 'text-red-300' : 'text-primary-300'}`}>Rg. {entry.invoice_number}</span>
-        )}
+        {/* Description + notes */}
+        <div className="mt-1 min-w-0 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
+          <span className={`text-sm ${isLate ? 'font-medium text-red-700' : 'text-primary-900'}`}>
+            {stripProjectPrefix(entry.description, projectName)}
+          </span>
+          {entry.notes && (
+            <span className={`ml-2 text-xs ${isLate ? 'text-red-400' : 'text-primary-400'}`}>{entry.notes}</span>
+          )}
+          {entry.invoice_number && (
+            <span className={`ml-2 text-xs tabular-nums ${isLate ? 'text-red-300' : 'text-primary-300'}`}>Rg. {entry.invoice_number}</span>
+          )}
+        </div>
       </div>
 
-      {/* Amount */}
-      <span className={`ml-auto shrink-0 text-base sm:text-sm font-semibold sm:font-medium tabular-nums ${isLate ? 'text-red-600' : 'text-emerald-700'}`}>
+      {/* Amount — big and right on mobile */}
+      <span className={`shrink-0 self-center text-right text-xl sm:text-sm font-semibold sm:font-medium tabular-nums ${isLate ? 'text-red-600' : 'text-emerald-700'}`}>
         +{formatCurrency(entry.amount, entry.currency)}
       </span>
 
@@ -1442,52 +1441,67 @@ function MonthExpenseRow({
 
   return (
     <div className="flex flex-wrap items-center gap-3 gap-y-1.5 py-3 sm:py-2 border-b border-primary-50 last:border-0">
-      <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
-      {projectName && <ProjectBadge name={projectName} />}
-      {expense.provisional && <ProvBadge />}
-      <span className="min-w-[12rem] flex-1 text-sm text-primary-700">
-        {stripProjectPrefix(expense.description, projectName)}
-        {expense.invoice_number && <span className="ml-2 text-xs text-primary-400 tabular-nums">Rg. {expense.invoice_number}</span>}
-      </span>
-      <span className="ml-auto shrink-0 text-base sm:text-sm font-semibold sm:font-medium text-red-500 tabular-nums">
+      {/* Left block — mobile: badges and description stacked; ≥sm inline */}
+      <div className="min-w-0 flex-1 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+          {projectName && <ProjectBadge name={projectName} />}
+          {expense.provisional && <ProvBadge />}
+        </div>
+        <div className="mt-1 min-w-0 text-sm text-primary-700 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
+          {stripProjectPrefix(expense.description, projectName)}
+          {expense.invoice_number && <span className="ml-2 text-xs text-primary-400 tabular-nums">Rg. {expense.invoice_number}</span>}
+        </div>
+      </div>
+
+      {/* Amount — big and right on mobile */}
+      <span className="shrink-0 self-center text-right text-xl sm:text-sm font-semibold sm:font-medium text-red-500 tabular-nums">
         -{formatCurrency(expense.amount, expense.currency)}
       </span>
-      <button
-        onClick={() => onMarkPaid(expense.id)}
-        className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 text-sm font-semibold text-red-500 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
-        title="Als bezahlt markieren"
-      >
-        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-        </svg>
-        Bezahlt
-      </button>
-      {/* Edit/Delete only for one-time expenses */}
-      {isOneTime && onUpdate && (
+
+      {/* Actions */}
+      <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
         <button
-          onClick={() => setEditing(true)}
-          className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:p-1.5"
-          title="Bearbeiten"
+          onClick={() => onMarkPaid(expense.id)}
+          className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 text-sm font-semibold text-red-500 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
+          title="Als bezahlt markieren"
         >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
+          Bezahlt
         </button>
-      )}
-      {isOneTime && onDelete && (
-        confirming ? (
-          <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
-            <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Löschen</button>
-            <button onClick={() => setConfirming(false)} className="text-xs text-primary-400">Nein</button>
-          </div>
-        ) : (
-          <button onClick={() => setConfirming(true)} className="shrink-0 p-1 text-primary-300 hover:text-red-400 transition-colors">
+        {/* Edit/Delete only for one-time expenses */}
+        {isOneTime && onUpdate && (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:p-1.5"
+            title="Bearbeiten"
+          >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
             </svg>
           </button>
-        )
-      )}
+        )}
+        {isOneTime && onDelete && (
+          confirming ? (
+            <>
+              <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Löschen</button>
+              <button onClick={() => setConfirming(false)} className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
+            </>
+          ) : (
+            <button
+              onClick={() => setConfirming(true)}
+              className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5 shrink-0"
+              aria-label="Löschen"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )
+        )}
+      </div>
     </div>
   );
 }
@@ -1513,49 +1527,56 @@ function LateExpenseRow({
 
   return (
     <div className="flex flex-wrap items-center gap-2 gap-y-1.5 py-3 sm:py-2.5 border-b border-primary-50 last:border-0">
-      <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
-        Überfällig
-      </span>
-      <span className="w-28 shrink-0 text-xs text-red-400">{originLabel}</span>
-      <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
-      {projectName && <ProjectBadge name={projectName} />}
-      {e.provisional && <ProvBadge />}
-      <span className="min-w-[12rem] flex-1 text-sm font-medium text-red-700">
-        {stripProjectPrefix(e.description, projectName)}
-        {e.invoice_number && <span className="ml-2 text-xs font-normal text-red-400 tabular-nums">Rg. {e.invoice_number}</span>}
-      </span>
-      <span className="ml-auto shrink-0 text-base sm:text-sm font-semibold sm:font-medium text-red-600 tabular-nums">
+      {/* Left block — mobile: badges/date and description stacked; ≥sm inline */}
+      <div className="min-w-0 flex-1 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
+            Überfällig
+          </span>
+          <span className="shrink-0 text-xs text-red-400">{originLabel}</span>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+          {projectName && <ProjectBadge name={projectName} />}
+          {e.provisional && <ProvBadge />}
+        </div>
+        <div className="mt-1 min-w-0 text-sm font-medium text-red-700 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
+          {stripProjectPrefix(e.description, projectName)}
+          {e.invoice_number && <span className="ml-2 text-xs font-normal text-red-400 tabular-nums">Rg. {e.invoice_number}</span>}
+        </div>
+      </div>
+      <span className="shrink-0 self-center text-right text-xl sm:text-sm font-semibold sm:font-medium text-red-600 tabular-nums">
         -{formatCurrency(e.amount, e.currency)}
       </span>
-      <button
-        onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
-        className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 text-sm font-semibold text-red-500 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
-        title={`Als bezahlt markieren (wird ${originLabel} zugeordnet)`}
-      >
-        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-        </svg>
-        Bezahlt
-      </button>
-      {confirming ? (
-        <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
-          <button onClick={onCancel} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Stornieren</button>
-          <button onClick={() => setConfirming(false)} className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
-        </div>
-      ) : (
+      <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
         <button
-          onClick={() => setConfirming(true)}
-          className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5 shrink-0"
-          aria-label="Stornieren"
-          title={e.type === 'one_time'
-            ? 'Stornieren — Ausgabe wird gelöscht'
-            : `Stornieren — nur die Fälligkeit ${originLabel} entfällt`}
+          onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
+          className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 text-sm font-semibold text-red-500 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
+          title={`Als bezahlt markieren (wird ${originLabel} zugeordnet)`}
         >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
+          Bezahlt
         </button>
-      )}
+        {confirming ? (
+          <>
+            <button onClick={onCancel} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Stornieren</button>
+            <button onClick={() => setConfirming(false)} className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
+          </>
+        ) : (
+          <button
+            onClick={() => setConfirming(true)}
+            className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5 shrink-0"
+            aria-label="Stornieren"
+            title={e.type === 'one_time'
+              ? 'Stornieren — Ausgabe wird gelöscht'
+              : `Stornieren — nur die Fälligkeit ${originLabel} entfällt`}
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -1582,52 +1603,59 @@ function ProvCarryExpenseRow({
 
   return (
     <div className="flex flex-wrap items-center gap-2 gap-y-1.5 py-3 sm:py-2.5 border-b border-primary-50 last:border-0">
-      <span
-        className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
-        title="Provisorisch — aus Vormonat übertragen"
-      >
-        aus Vormonat
-      </span>
-      <span className="w-28 shrink-0 text-xs text-primary-400">{originLabel}</span>
-      <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
-      {projectName && <ProjectBadge name={projectName} />}
-      <ProvBadge />
-      <span className="min-w-[12rem] flex-1 text-sm text-primary-900">
-        {stripProjectPrefix(e.description, projectName)}
-        {e.invoice_number && <span className="ml-2 text-xs font-normal text-primary-400 tabular-nums">Rg. {e.invoice_number}</span>}
-      </span>
-      <span className="ml-auto shrink-0 text-base sm:text-sm font-semibold sm:font-medium text-red-500 tabular-nums">
+      {/* Left block — mobile: badges/date and description stacked; ≥sm inline */}
+      <div className="min-w-0 flex-1 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span
+            className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
+            title="Provisorisch — aus Vormonat übertragen"
+          >
+            aus Vormonat
+          </span>
+          <span className="shrink-0 text-xs text-primary-400">{originLabel}</span>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+          {projectName && <ProjectBadge name={projectName} />}
+          <ProvBadge />
+        </div>
+        <div className="mt-1 min-w-0 text-sm text-primary-900 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
+          {stripProjectPrefix(e.description, projectName)}
+          {e.invoice_number && <span className="ml-2 text-xs font-normal text-primary-400 tabular-nums">Rg. {e.invoice_number}</span>}
+        </div>
+      </div>
+      <span className="shrink-0 self-center text-right text-xl sm:text-sm font-semibold sm:font-medium text-red-500 tabular-nums">
         -{formatCurrency(e.amount, e.currency)}
       </span>
-      <button
-        onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
-        className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-primary-200 bg-white px-3 text-sm font-semibold text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
-        title={`Als bezahlt markieren (wird ${originLabel} zugeordnet)`}
-      >
-        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-        </svg>
-        Bezahlt
-      </button>
-      {confirming ? (
-        <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
-          <button onClick={onCancel} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Stornieren</button>
-          <button onClick={() => setConfirming(false)} className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
-        </div>
-      ) : (
+      <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
         <button
-          onClick={() => setConfirming(true)}
-          className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5 shrink-0"
-          aria-label="Stornieren"
-          title={e.type === 'one_time'
-            ? 'Stornieren — Ausgabe wird gelöscht'
-            : `Stornieren — nur die Fälligkeit ${originLabel} entfällt`}
+          onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
+          className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-primary-200 bg-white px-3 text-sm font-semibold text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
+          title={`Als bezahlt markieren (wird ${originLabel} zugeordnet)`}
         >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
+          Bezahlt
         </button>
-      )}
+        {confirming ? (
+          <>
+            <button onClick={onCancel} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Stornieren</button>
+            <button onClick={() => setConfirming(false)} className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
+          </>
+        ) : (
+          <button
+            onClick={() => setConfirming(true)}
+            className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5 shrink-0"
+            aria-label="Stornieren"
+            title={e.type === 'one_time'
+              ? 'Stornieren — Ausgabe wird gelöscht'
+              : `Stornieren — nur die Fälligkeit ${originLabel} entfällt`}
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
