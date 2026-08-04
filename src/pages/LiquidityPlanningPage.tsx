@@ -1922,11 +1922,18 @@ function MonthSection({
   const hasProvCarryInc  = bucket.provCarryIncome.length > 0;
   const hasProvCarryExp  = bucket.provCarryExpenses.length > 0;
   const hasPaidIncome    = bucket.paidEntries.length > 0;
-  const hasUnpaidExpenses = unpaidExpenses.length > 0;
   const hasPaidExpenses  = paidExpenses.length > 0;
   const hasExpenses      = bucket.expenses.length > 0;
   const hasAny           = hasUnpaid || hasLate || hasLateExpenses || hasProvCarryInc || hasProvCarryExp || hasPaidIncome || hasExpenses;
   const lateCount        = bucket.lateEntries.length + bucket.lateExpenses.length;
+
+  // ---- Definitiv/Provisorisch split of the month's open positions ----------
+  const defIncome     = bucket.entries.filter((e) => !e.provisional);
+  const provIncome    = bucket.entries.filter((e) =>  e.provisional);
+  const defExpenses   = unpaidExpenses.filter((e) => !e.provisional);
+  const provExpenses  = unpaidExpenses.filter((e) =>  e.provisional);
+  const hasDefSection  = defIncome.length > 0 || defExpenses.length > 0;
+  const hasProvSection = provIncome.length > 0 || provExpenses.length > 0 || hasProvCarryInc || hasProvCarryExp;
 
   return (
     <div className={`rounded-lg border overflow-hidden ${
@@ -2008,37 +2015,15 @@ function MonthSection({
             </div>
           )}
 
-          {/* Provisional income carried over from past months */}
-          {hasProvCarryInc && (
-            <div>
-              {bucket.provCarryIncome.map((e) => (
-                <IncomeEntryRow
-                  key={e.id} entry={e} fromPastMonth locked={incomeLocked(e)} projectName={projName(e.project_id)}
-                  onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Provisional expense instances carried over from past months */}
-          {hasProvCarryExp && (
-            <div className={hasProvCarryInc ? 'border-t border-primary-50 pt-0.5' : ''}>
-              {bucket.provCarryExpenses.map((le) => (
-                <ProvCarryExpenseRow
-                  key={`${le.expense.id}:${le.year}-${le.month}`}
-                  instance={le}
-                  projectName={projName(le.expense.project_id)}
-                  onMarkPaid={onMarkExpensePaid}
-                  onCancel={() => onCancelExpenseInstance(le.expense, le.year, le.month)}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Unpaid income entries for this month */}
-          {hasUnpaid && (
-            <div className={hasProvCarryInc || hasProvCarryExp ? 'border-t border-primary-50 pt-0.5' : ''}>
-              {bucket.entries.map((e) => (
+          {/* Definitive Positionen des Monats */}
+          {hasDefSection && (
+            <div className={hasLate || hasLateExpenses ? 'border-t border-primary-50 pt-0.5' : ''}>
+              {hasProvSection && (
+                <p className="pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-400">
+                  Definitiv
+                </p>
+              )}
+              {defIncome.map((e) => (
                 carriedToLabel !== null ? (
                   <CarriedIncomeRow key={e.id} entry={e} targetLabel={carriedToLabel} projectName={projName(e.project_id)} />
                 ) : (
@@ -2048,13 +2033,53 @@ function MonthSection({
                   />
                 )
               ))}
+              {defExpenses.map((e) => (
+                carriedToLabel !== null ? (
+                  <CarriedExpenseRow key={e.id} expense={e} targetLabel={carriedToLabel} projectName={projName(e.project_id)} />
+                ) : (
+                  <MonthExpenseRow
+                    key={e.id} expense={e} locked={expenseLocked(e)} projectName={projName(e.project_id)}
+                    onMarkPaid={(id) => onMarkExpensePaid(id, bucket.year, bucket.month + 1)}
+                    onUpdate={onUpdateExpense}
+                    onDelete={onDeleteExpense}
+                  />
+                )
+              ))}
             </div>
           )}
 
-          {/* Unpaid expenses */}
-          {hasUnpaidExpenses && (
-            <div className={hasUnpaid || hasLate || hasProvCarryInc || hasProvCarryExp ? 'border-t border-primary-50 pt-0.5' : ''}>
-              {unpaidExpenses.map((e) => (
+          {/* Provisorische Positionen — inkl. Überträge aus Vormonaten */}
+          {hasProvSection && (
+            <div className="my-1.5 rounded-md bg-amber-50/60 px-2">
+              <p className="pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
+                Provisorisch
+              </p>
+              {bucket.provCarryIncome.map((e) => (
+                <IncomeEntryRow
+                  key={e.id} entry={e} fromPastMonth locked={incomeLocked(e)} projectName={projName(e.project_id)}
+                  onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
+                />
+              ))}
+              {bucket.provCarryExpenses.map((le) => (
+                <ProvCarryExpenseRow
+                  key={`${le.expense.id}:${le.year}-${le.month}`}
+                  instance={le}
+                  projectName={projName(le.expense.project_id)}
+                  onMarkPaid={onMarkExpensePaid}
+                  onCancel={() => onCancelExpenseInstance(le.expense, le.year, le.month)}
+                />
+              ))}
+              {provIncome.map((e) => (
+                carriedToLabel !== null ? (
+                  <CarriedIncomeRow key={e.id} entry={e} targetLabel={carriedToLabel} projectName={projName(e.project_id)} />
+                ) : (
+                  <IncomeEntryRow
+                    key={e.id} entry={e} locked={incomeLocked(e)} projectName={projName(e.project_id)}
+                    onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
+                  />
+                )
+              ))}
+              {provExpenses.map((e) => (
                 carriedToLabel !== null ? (
                   <CarriedExpenseRow key={e.id} expense={e} targetLabel={carriedToLabel} projectName={projName(e.project_id)} />
                 ) : (
