@@ -963,7 +963,7 @@ function ProjectsPanel({
                     + Position
                   </button>
                   {confirmingId === project.id ? (
-                    <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
+                    <div className="mt-3 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
                       <button
                         onClick={() => { onDeleteProject(project.id); setConfirmingId(null); }}
                         className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs"
@@ -1118,7 +1118,7 @@ function IncomeEntryRow({
   }
 
   return (
-    <div className={`flex flex-wrap items-center gap-2 gap-y-1.5 py-3 sm:py-2.5 border-b border-primary-50 last:border-0 ${isLate ? 'text-red-600' : ''}`}>
+    <div className={`flex flex-wrap items-center gap-2 gap-y-2.5 sm:gap-y-1.5 py-5 sm:py-2.5 border-b border-primary-50 last:border-0 ${isLate ? 'text-red-600' : ''}`}>
       {/* Left block — mobile: badges/date and description stacked; ≥sm inline */}
       <div className="min-w-0 flex-1 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -1143,7 +1143,7 @@ function IncomeEntryRow({
         </div>
 
         {/* Description + notes */}
-        <div className="mt-1 min-w-0 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
+        <div className="mt-2 min-w-0 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
           <span className={`text-base font-medium sm:text-sm ${isLate ? 'text-red-700' : 'text-primary-900 sm:font-normal'}`}>
             {stripProjectPrefix(entry.description, projectName)}
           </span>
@@ -1162,7 +1162,7 @@ function IncomeEntryRow({
       </span>
 
       {/* Action buttons */}
-      <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
+      <div className="mt-3 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
         {/* Paid button */}
         <button
           onClick={() => onMarkPaid(entry.id)}
@@ -1384,7 +1384,7 @@ function PaidIncomeRow({
           <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
         </svg>
       ) : (
-        <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
+        <div className="mt-3 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
           <button
             onClick={() => onMarkUnpaid(entry.id)}
             className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs"
@@ -1440,7 +1440,7 @@ function MonthExpenseRow({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 gap-y-1.5 py-3 sm:py-2 border-b border-primary-50 last:border-0">
+    <div className="flex flex-wrap items-center gap-3 gap-y-2.5 sm:gap-y-1.5 py-5 sm:py-2 border-b border-primary-50 last:border-0">
       {/* Left block — mobile: badges and description stacked; ≥sm inline */}
       <div className="min-w-0 flex-1 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -1448,7 +1448,7 @@ function MonthExpenseRow({
           {projectName && <ProjectBadge name={projectName} />}
           {expense.provisional && <ProvBadge />}
         </div>
-        <div className="mt-1 min-w-0 text-base font-medium sm:text-sm sm:font-normal text-primary-700 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
+        <div className="mt-2 min-w-0 text-base font-medium sm:text-sm sm:font-normal text-primary-700 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
           {stripProjectPrefix(expense.description, projectName)}
           {expense.invoice_number && <span className="ml-2 text-xs text-primary-400 tabular-nums">Rg. {expense.invoice_number}</span>}
         </div>
@@ -1460,7 +1460,7 @@ function MonthExpenseRow({
       </span>
 
       {/* Actions */}
-      <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
+      <div className="mt-3 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
         <button
           onClick={() => onMarkPaid(expense.id)}
           className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 text-sm font-semibold text-red-500 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
@@ -1526,7 +1526,7 @@ function LateExpenseRow({
     .toLocaleDateString('de-CH', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="flex flex-wrap items-center gap-2 gap-y-1.5 py-3 sm:py-2.5 border-b border-primary-50 last:border-0">
+    <div className="flex flex-wrap items-center gap-2 gap-y-2.5 sm:gap-y-1.5 py-5 sm:py-2.5 border-b border-primary-50 last:border-0">
       {/* Left block — mobile: badges/date and description stacked; ≥sm inline */}
       <div className="min-w-0 flex-1 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -1538,7 +1538,7 @@ function LateExpenseRow({
           {projectName && <ProjectBadge name={projectName} />}
           {e.provisional && <ProvBadge />}
         </div>
-        <div className="mt-1 min-w-0 text-base sm:text-sm font-medium text-red-700 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
+        <div className="mt-2 min-w-0 text-base sm:text-sm font-medium text-red-700 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
           {stripProjectPrefix(e.description, projectName)}
           {e.invoice_number && <span className="ml-2 text-xs font-normal text-red-400 tabular-nums">Rg. {e.invoice_number}</span>}
         </div>
@@ -1546,7 +1546,7 @@ function LateExpenseRow({
       <span className="shrink-0 self-center text-right text-xl sm:text-sm font-semibold sm:font-medium text-red-600 tabular-nums">
         -{formatCurrency(e.amount, e.currency)}
       </span>
-      <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
+      <div className="mt-3 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
         <button
           onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
           className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 text-sm font-semibold text-red-500 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
@@ -1602,7 +1602,7 @@ function ProvCarryExpenseRow({
     .toLocaleDateString('de-CH', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="flex flex-wrap items-center gap-2 gap-y-1.5 py-3 sm:py-2.5 border-b border-primary-50 last:border-0">
+    <div className="flex flex-wrap items-center gap-2 gap-y-2.5 sm:gap-y-1.5 py-5 sm:py-2.5 border-b border-primary-50 last:border-0">
       {/* Left block — mobile: badges/date and description stacked; ≥sm inline */}
       <div className="min-w-0 flex-1 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -1617,7 +1617,7 @@ function ProvCarryExpenseRow({
           {projectName && <ProjectBadge name={projectName} />}
           <ProvBadge />
         </div>
-        <div className="mt-1 min-w-0 text-base font-medium sm:text-sm sm:font-normal text-primary-900 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
+        <div className="mt-2 min-w-0 text-base font-medium sm:text-sm sm:font-normal text-primary-900 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
           {stripProjectPrefix(e.description, projectName)}
           {e.invoice_number && <span className="ml-2 text-xs font-normal text-primary-400 tabular-nums">Rg. {e.invoice_number}</span>}
         </div>
@@ -1625,7 +1625,7 @@ function ProvCarryExpenseRow({
       <span className="shrink-0 self-center text-right text-xl sm:text-sm font-semibold sm:font-medium text-red-500 tabular-nums">
         -{formatCurrency(e.amount, e.currency)}
       </span>
-      <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
+      <div className="mt-3 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
         <button
           onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
           className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-primary-200 bg-white px-3 text-sm font-semibold text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
@@ -1814,7 +1814,7 @@ function ExpenseManagementRow({
         </svg>
       </button>
       {confirming ? (
-        <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
+        <div className="mt-3 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
           <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Löschen</button>
           <button onClick={() => setConfirming(false)} className="text-xs text-primary-400">Nein</button>
         </div>
