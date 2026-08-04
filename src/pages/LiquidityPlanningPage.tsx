@@ -2111,9 +2111,41 @@ function MonthSummaryFooter({
 
   const signed = (v: number) => `${v < 0 ? '-' : v > 0 ? '+' : ''}${formatCurrency(Math.abs(v), currency)}`;
 
-  // Mobile: one full-width row per figure (label left, value right, large);
-  // ≥sm: the classic 3-column block.
-  const Cell = ({ label, def, defClass, prov }: { label: string; def: string; defClass: string; prov: string | null }) => (
+  return (
+    <div className="grid grid-cols-1 divide-y divide-primary-100 border-t border-primary-100 bg-primary-50/60 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <SummaryCell
+        label="Einnahmen"
+        def={incomeDef > 0 ? `+${formatCurrency(incomeDef, currency)}` : formatCurrency(0, currency)}
+        defClass={incomeDef > 0 ? 'text-emerald-700' : 'text-primary-300'}
+        prov={incomeProv !== incomeDef ? `+${formatCurrency(incomeProv, currency)}` : null}
+      />
+      <SummaryCell
+        label="Ausgaben"
+        def={expenseDef > 0 ? `-${formatCurrency(expenseDef, currency)}` : formatCurrency(0, currency)}
+        defClass={expenseDef > 0 ? 'text-red-500' : 'text-primary-300'}
+        prov={expenseProv !== expenseDef ? `-${formatCurrency(expenseProv, currency)}` : null}
+      />
+      <SummaryCell
+        label="Netto"
+        def={signed(netDef)}
+        defClass={netDef > 0 ? 'text-primary-800' : netDef < 0 ? 'text-red-600' : 'text-primary-300'}
+        prov={netProv !== netDef ? signed(netProv) : null}
+      />
+    </div>
+  );
+}
+
+// Mobile: one full-width row per figure (label left, value right, large);
+// ≥sm: the classic 3-column block.
+function SummaryCell({
+  label, def, defClass, prov,
+}: {
+  label: string;
+  def: string;
+  defClass: string;
+  prov: string | null;
+}) {
+  return (
     <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:block sm:py-3">
       <p className="text-xs text-primary-400 sm:mb-1">{label}</p>
       <div className="text-right sm:text-left">
@@ -2124,29 +2156,6 @@ function MonthSummaryFooter({
           </p>
         )}
       </div>
-    </div>
-  );
-
-  return (
-    <div className="grid grid-cols-1 divide-y divide-primary-100 border-t border-primary-100 bg-primary-50/60 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-      <Cell
-        label="Einnahmen"
-        def={incomeDef > 0 ? `+${formatCurrency(incomeDef, currency)}` : formatCurrency(0, currency)}
-        defClass={incomeDef > 0 ? 'text-emerald-700' : 'text-primary-300'}
-        prov={incomeProv !== incomeDef ? `+${formatCurrency(incomeProv, currency)}` : null}
-      />
-      <Cell
-        label="Ausgaben"
-        def={expenseDef > 0 ? `-${formatCurrency(expenseDef, currency)}` : formatCurrency(0, currency)}
-        defClass={expenseDef > 0 ? 'text-red-500' : 'text-primary-300'}
-        prov={expenseProv !== expenseDef ? `-${formatCurrency(expenseProv, currency)}` : null}
-      />
-      <Cell
-        label="Netto"
-        def={signed(netDef)}
-        defClass={netDef > 0 ? 'text-primary-800' : netDef < 0 ? 'text-red-600' : 'text-primary-300'}
-        prov={netProv !== netDef ? signed(netProv) : null}
-      />
     </div>
   );
 }
