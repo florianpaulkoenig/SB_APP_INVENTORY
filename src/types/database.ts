@@ -2373,6 +2373,7 @@ export type NOALiquidityExpenseRow = {
   due_date: string | null;
   invoice_number: string | null;
   provisional: boolean;
+  project_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -2403,6 +2404,7 @@ export type NOALiquidityIncomeRow = {
   invoice_number: string | null;
   paid_at: string | null;   // null = unpaid, ISO string = paid timestamp
   provisional: boolean;
+  project_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -2421,6 +2423,15 @@ export type NOALiquidityIncomeInsert = {
 }
 
 export type NOALiquidityIncomeUpdate = Partial<NOALiquidityIncomeInsert>;
+
+export type NOALiquidityProjectRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export type NOALiquidityBalanceCorrectionRow = {
   id: string;

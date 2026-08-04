@@ -14,6 +14,7 @@ import type {
   NOALiquiditySettingsRow,
   NOALiquidityActualBalanceRow,
   NOALiquidityBalanceCorrectionRow,
+  NOALiquidityProjectRow,
   LiquidityExpenseType,
 } from '../types/database';
 
@@ -26,6 +27,22 @@ export interface LateExpenseInstance {
   expense: NOALiquidityExpenseRow;
   year: number;
   month: number; // 1-indexed
+}
+
+/** Position inputs for addProject */
+export interface ProjectIncomeInput {
+  description: string;
+  amount: number;
+  currency: string;
+  expected_date: string;
+  provisional?: boolean;
+}
+export interface ProjectExpenseInput {
+  description: string;
+  amount: number;
+  currency: string;
+  due_date: string;
+  provisional?: boolean;
 }
 
 export interface MonthBucket {
@@ -79,6 +96,11 @@ export interface UseNOALiquidityReturn {
   /** Months before the current one that contain data — ascending (oldest first) */
   pastMonths: MonthBucket[];
   expenses: NOALiquidityExpenseRow[];
+  /** All fetched income rows (window + past) — for the projects panel */
+  incomes: NOALiquidityIncomeRow[];
+  /** All expense payment rows — for paid/skipped status in the projects panel */
+  expensePayments: NOALiquidityExpensePaymentRow[];
+  projects: NOALiquidityProjectRow[];
   startsaldo: number;
   startsaldoCurrency: string;
   /** Date the Startsaldo was recorded (YYYY-MM-DD, null if never set) */
@@ -144,6 +166,15 @@ export interface UseNOALiquidityReturn {
   markExpenseUnpaid: (paymentId: string) => Promise<boolean>;
   /** Storno a single (recurring) expense instance — resolved without payment */
   skipExpenseInstance: (expenseId: string, year: number, month: number) => Promise<boolean>;
+  // Projekte
+  addProject: (data: {
+    name: string;
+    notes?: string | null;
+    incomes: ProjectIncomeInput[];
+    expenses: ProjectExpenseInput[];
+  }) => Promise<boolean>;
+  /** Deletes the project AND all its income/expense positions (cascade) */
+  deleteProject: (id: string) => Promise<boolean>;
   // Startsaldo
   upsertStartsaldo: (amount: number, currency: string, date: string) => Promise<boolean>;
   // Effektiver Konto-Saldo
@@ -203,6 +234,9 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
   const [months, setMonths]         = useState<MonthBucket[]>([]);
   const [pastMonths, setPastMonths] = useState<MonthBucket[]>([]);
   const [expenses, setExpenses]     = useState<NOALiquidityExpenseRow[]>([]);
+  const [incomes, setIncomes]       = useState<NOALiquidityIncomeRow[]>([]);
+  const [expensePayments, setExpensePayments] = useState<NOALiquidityExpensePaymentRow[]>([]);
+  const [projects, setProjects]     = useState<NOALiquidityProjectRow[]>([]);
   const [startsaldo, setStartsaldo]                 = useState(0);
   const [startsaldoCurrency, setStartsaldoCurrency] = useState('CHF');
   const [startsaldoDate, setStartsaldoDate]         = useState<string | null>(null);
@@ -223,17 +257,16 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
 
       const today       = new Date();
       const windowStart = new Date(today.getFullYear(), today.getMonth(), 1);
-      const windowEnd   = new Date(today.getFullYear(), today.getMonth() + 12, 0);
       const wsStr = windowStart.toISOString().slice(0, 10);
-      const weStr = windowEnd.toISOString().slice(0, 10);
 
-      const [incomeRes, pastIncomeRes, expensesRes, settingsRes, actualBalancesRes, expPaymentsRes, correctionsRes] = await Promise.all([
-        // Income within the 12-month window (paid or unpaid)
+      const [incomeRes, pastIncomeRes, expensesRes, settingsRes, actualBalancesRes, expPaymentsRes, correctionsRes, projectsRes] = await Promise.all([
+        // Income from the window start onwards (paid or unpaid) — no upper
+        // bound so project positions beyond the 12-month view stay visible
+        // in the projects panel
         supabase
           .from('noa_liquidity_income' as never)
           .select('*')
           .gte('expected_date', wsStr)
-          .lte('expected_date', weStr)
           .order('expected_date', { ascending: true }),
 
         // ALL income from BEFORE the window (paid + unpaid) — for the
@@ -268,6 +301,12 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           .from('noa_liquidity_balance_corrections' as never)
           .select('*')
           .order('correction_date', { ascending: false }),
+
+        // Projekte (missing table pre-migration → empty)
+        supabase
+          .from('noa_liquidity_projects' as never)
+          .select('*')
+          .order('created_at', { ascending: false }),
       ]);
 
       if (incomeRes.error) {
@@ -289,6 +328,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       const corrections    = (correctionsRes.data   ?? []) as NOALiquidityBalanceCorrectionRow[];
       const correction     = corrections[0] ?? null; // newest
       setLastCorrection(correction);
+      setProjects((projectsRes.data ?? []) as NOALiquidityProjectRow[]);
+      setExpensePayments(expPaymentList);
 
       // Expense payment lookup: "expenseId:year-MM" → payment_id / paid_at.
       // Skipped rows (storniert) are kept separate: the instance is resolved
@@ -613,6 +654,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       setMonths(buckets);
       setPastMonths(pastBuckets);
       setExpenses(allExpenses);
+      setIncomes(allIncome);
       setLoading(false);
     }
 
@@ -854,6 +896,94 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     return true;
   }, [toast, refetch]);
 
+  // ---- Projekte -------------------------------------------------------------
+
+  const addProject = useCallback(async (data: {
+    name: string;
+    notes?: string | null;
+    incomes: ProjectIncomeInput[];
+    expenses: ProjectExpenseInput[];
+  }): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return false;
+
+    const { data: project, error: projErr } = await supabase
+      .from('noa_liquidity_projects' as never)
+      .insert({
+        user_id: session.user.id,
+        name:    data.name,
+        notes:   data.notes ?? null,
+      } as never)
+      .select()
+      .single();
+
+    if (projErr || !project) {
+      toast({ title: 'Fehler', description: projErr?.message ?? 'Projekt konnte nicht erstellt werden', variant: 'error' });
+      return false;
+    }
+
+    const projectId = (project as NOALiquidityProjectRow).id;
+    const label = (desc: string) => (desc.trim() ? `${data.name} — ${desc.trim()}` : data.name);
+
+    // Insert all positions; roll the project back if anything fails so the
+    // form can be resubmitted without leaving half a project behind.
+    let insertError: string | null = null;
+
+    if (data.incomes.length > 0) {
+      const { error } = await supabase
+        .from('noa_liquidity_income' as never)
+        .insert(data.incomes.map((i) => ({
+          user_id:       session.user.id,
+          project_id:    projectId,
+          description:   label(i.description),
+          amount:        i.amount,
+          currency:      i.currency,
+          expected_date: i.expected_date,
+          provisional:   i.provisional ?? false,
+        })) as never);
+      if (error) insertError = error.message;
+    }
+
+    if (!insertError && data.expenses.length > 0) {
+      const { error } = await supabase
+        .from('noa_liquidity_expenses' as never)
+        .insert(data.expenses.map((e) => ({
+          user_id:     session.user.id,
+          project_id:  projectId,
+          description: label(e.description),
+          amount:      e.amount,
+          currency:    e.currency,
+          type:        'one_time',
+          due_date:    e.due_date,
+          active:      true,
+          provisional: e.provisional ?? false,
+        })) as never);
+      if (error) insertError = error.message;
+    }
+
+    if (insertError) {
+      await supabase.from('noa_liquidity_projects' as never).delete().eq('id', projectId);
+      toast({ title: 'Fehler', description: insertError, variant: 'error' });
+      return false;
+    }
+
+    toast({ title: 'Projekt erfasst', variant: 'success' });
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
+  const deleteProject = useCallback(async (id: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('noa_liquidity_projects' as never)
+      .delete()
+      .eq('id', id);
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+    toast({ title: 'Projekt inkl. aller Positionen gelöscht', variant: 'success' });
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
   // ---- Startsaldo -----------------------------------------------------------
 
   const upsertStartsaldo = useCallback(async (amount: number, currency: string, date: string): Promise<boolean> => {
@@ -1023,6 +1153,9 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     months,
     pastMonths,
     expenses,
+    incomes,
+    expensePayments,
+    projects,
     startsaldo,
     startsaldoCurrency,
     startsaldoDate,
@@ -1046,6 +1179,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     markExpensePaid,
     markExpenseUnpaid,
     skipExpenseInstance,
+    addProject,
+    deleteProject,
     upsertStartsaldo,
     upsertEffectiveBalance,
     clearEffectiveBalance,

@@ -11,7 +11,7 @@ import { formatCurrency, formatDate } from '../lib/utils';
 import { CURRENCIES } from '../lib/constants';
 import { useNOALiquidity } from '../hooks/useNOALiquidity';
 import type { MonthBucket, LateExpenseInstance } from '../hooks/useNOALiquidity';
-import type { NOALiquidityIncomeRow, NOALiquidityExpenseRow, LiquidityExpenseType } from '../types/database';
+import type { NOALiquidityIncomeRow, NOALiquidityExpenseRow, NOALiquidityExpensePaymentRow, NOALiquidityProjectRow, LiquidityExpenseType } from '../types/database';
 import { LiquidityCashFlowChart } from '../components/liquidity/LiquidityCashFlowChart';
 
 // ---------------------------------------------------------------------------
@@ -410,6 +410,310 @@ function AddExpenseForm({
         <Button onClick={handleSubmit} loading={saving} disabled={!description.trim() || !amount || !dueDate}>Speichern</Button>
         <Button variant="ghost" size="sm" onClick={onCancel}>Abbrechen</Button>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Project form — capture a group of income & expense positions in one go
+// ---------------------------------------------------------------------------
+
+interface ProjectPositionDraft {
+  kind: 'income' | 'expense';
+  description: string;
+  amount: string;
+  currency: string;
+  date: string;
+  provisional: boolean;
+}
+
+const emptyPosition = (kind: 'income' | 'expense' = 'income'): ProjectPositionDraft =>
+  ({ kind, description: '', amount: '', currency: 'CHF', date: '', provisional: false });
+
+// Typical positions when an artwork is commissioned
+const WERKBESTELLUNG_TEMPLATE: ProjectPositionDraft[] = [
+  { ...emptyPosition('income'),  description: 'Anzahlung' },
+  { ...emptyPosition('income'),  description: 'Abschlusszahlung' },
+  { ...emptyPosition('income'),  description: 'Transporteinnahme' },
+  { ...emptyPosition('expense'), description: 'Transportkosten' },
+  { ...emptyPosition('expense'), description: 'Zahlung Künstler' },
+];
+
+const KIND_OPTIONS = [
+  { value: 'income',  label: 'Einnahme' },
+  { value: 'expense', label: 'Ausgabe' },
+];
+
+function AddProjectForm({
+  onSave, onCancel,
+}: {
+  onSave: (data: {
+    name: string;
+    incomes:  { description: string; amount: number; currency: string; expected_date: string; provisional?: boolean }[];
+    expenses: { description: string; amount: number; currency: string; due_date: string; provisional?: boolean }[];
+  }) => Promise<boolean>;
+  onCancel: () => void;
+}) {
+  const [name, setName]           = useState('');
+  const [positions, setPositions] = useState<ProjectPositionDraft[]>([emptyPosition()]);
+  const [saving, setSaving]       = useState(false);
+
+  const setPos = (i: number, patch: Partial<ProjectPositionDraft>) =>
+    setPositions((ps) => ps.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+  const removePos = (i: number) => setPositions((ps) => ps.filter((_, j) => j !== i));
+
+  // Rows the user actually filled in (empty leftover rows are ignored)
+  const filled  = positions.filter((p) => p.description.trim() || p.amount || p.date);
+  const invalid = filled.filter((p) => {
+    const n = parseFloat(p.amount);
+    return isNaN(n) || n <= 0 || !p.date;
+  });
+  const canSave = name.trim().length > 0 && filled.length > 0 && invalid.length === 0;
+
+  async function handleSubmit() {
+    if (!canSave) return;
+    setSaving(true);
+    const ok = await onSave({
+      name: name.trim(),
+      incomes: filled.filter((p) => p.kind === 'income').map((p) => ({
+        description:   p.description,
+        amount:        parseFloat(p.amount),
+        currency:      p.currency,
+        expected_date: p.date,
+        provisional:   p.provisional,
+      })),
+      expenses: filled.filter((p) => p.kind === 'expense').map((p) => ({
+        description: p.description,
+        amount:      parseFloat(p.amount),
+        currency:    p.currency,
+        due_date:    p.date,
+        provisional: p.provisional,
+      })),
+    });
+    setSaving(false);
+    if (ok) { setName(''); setPositions([emptyPosition()]); }
+  }
+
+  return (
+    <div className="mb-6 rounded-lg border border-indigo-100 bg-indigo-50/40 p-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-indigo-800">Neues Projekt</h3>
+        <button
+          onClick={() => setPositions(WERKBESTELLUNG_TEMPLATE.map((p) => ({ ...p })))}
+          className="rounded border border-indigo-200 px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-100 transition-colors"
+          title="Anzahlung, Abschlusszahlung, Transporteinnahme, Transportkosten, Zahlung Künstler"
+        >
+          Vorlage Werkbestellung
+        </button>
+      </div>
+
+      <div className="mb-4">
+        <Input
+          label="Projektname *"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="z. B. David Cerdy — Comm. Selbstportrait 150/150 cm"
+        />
+        <p className="mt-1 text-xs text-primary-400">
+          Der Projektname wird jeder Position vorangestellt. Positionen erscheinen einzeln
+          in den Monaten und können einzeln bezahlt werden; das Projekt lässt sich als
+          Ganzes löschen.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {positions.map((p, i) => (
+          <div key={i} className="flex flex-wrap items-end gap-2 rounded border border-indigo-100/80 bg-white p-2">
+            <div className="w-28">
+              <Select label="Art" options={KIND_OPTIONS} value={p.kind} onChange={(e) => setPos(i, { kind: e.target.value as 'income' | 'expense' })} />
+            </div>
+            <div className="min-w-40 flex-1">
+              <Input label="Beschreibung" value={p.description} onChange={(e) => setPos(i, { description: e.target.value })} placeholder="z. B. Anzahlung" />
+            </div>
+            <div className="w-28">
+              <Input label="Betrag *" type="number" min="0" step="100" value={p.amount} onChange={(e) => setPos(i, { amount: e.target.value })} />
+            </div>
+            <div className="w-24">
+              <Select label="Währung" options={CURRENCY_OPTIONS} value={p.currency} onChange={(e) => setPos(i, { currency: e.target.value })} />
+            </div>
+            <div className="w-36">
+              <Input label="Datum *" type="date" value={p.date} onChange={(e) => setPos(i, { date: e.target.value })} />
+            </div>
+            <label className="mb-2 flex items-center gap-1.5 text-xs text-primary-600 cursor-pointer select-none" title="Provisorisch — zählt nur zur provisorischen Kurve">
+              <input
+                type="checkbox"
+                checked={p.provisional}
+                onChange={(e) => setPos(i, { provisional: e.target.checked })}
+                className="h-3.5 w-3.5 rounded border-primary-300 accent-amber-600"
+              />
+              Prov.
+            </label>
+            <button
+              onClick={() => removePos(i)}
+              className="mb-1.5 p-1 text-primary-300 hover:text-red-400 transition-colors"
+              aria-label="Position entfernen"
+              title="Position entfernen"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={() => setPositions((ps) => [...ps, emptyPosition()])}
+        className="mt-2 flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-100 transition-colors"
+      >
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Position hinzufügen
+      </button>
+
+      <div className="mt-4 flex items-center gap-3">
+        <Button onClick={handleSubmit} loading={saving} disabled={!canSave}>Projekt speichern</Button>
+        <Button variant="ghost" size="sm" onClick={onCancel}>Abbrechen</Button>
+        {invalid.length > 0 && (
+          <span className="text-xs text-red-500">Jede Position braucht Betrag und Datum.</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Projects panel — grouped view of all project positions with paid status
+// ---------------------------------------------------------------------------
+
+function ProjectsPanel({
+  projects, incomes, expenses, expensePayments, onDeleteProject,
+}: {
+  projects: NOALiquidityProjectRow[];
+  incomes: NOALiquidityIncomeRow[];
+  expenses: NOALiquidityExpenseRow[];
+  expensePayments: NOALiquidityExpensePaymentRow[];
+  onDeleteProject: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  if (projects.length === 0) return null;
+
+  const expensePaid = (expenseId: string) =>
+    expensePayments.some((p) => p.expense_id === expenseId && !p.skipped);
+
+  return (
+    <div className="mb-6 rounded-lg border border-primary-100 bg-white overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-4 py-3 hover:bg-primary-50/60 transition-colors"
+      >
+        <span className="text-sm font-semibold text-primary-600">
+          Projekte
+          <span className="ml-2 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500">
+            {projects.length}
+          </span>
+        </span>
+        <svg className={`h-4 w-4 text-primary-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="space-y-3 border-t border-primary-100 p-3">
+          {projects.map((project) => {
+            const projIncomes  = incomes.filter((e) => e.project_id === project.id);
+            const projExpenses = expenses.filter((e) => e.project_id === project.id);
+            const items = [
+              ...projIncomes.map((e) => ({
+                key:  `i:${e.id}`,
+                kind: 'income' as const,
+                description: e.description,
+                amount: e.amount,
+                currency: e.currency,
+                date: e.expected_date,
+                provisional: !!e.provisional,
+                paid: e.paid_at !== null,
+              })),
+              ...projExpenses.map((e) => ({
+                key:  `e:${e.id}`,
+                kind: 'expense' as const,
+                description: e.description,
+                amount: e.amount,
+                currency: e.currency,
+                date: e.due_date ?? '',
+                provisional: !!e.provisional,
+                paid: expensePaid(e.id),
+              })),
+            ].sort((a, b) => a.date.localeCompare(b.date));
+
+            const openIncome  = projIncomes.filter((e) => !e.paid_at).reduce((s, e) => s + e.amount, 0);
+            const openExpense = projExpenses.filter((e) => !expensePaid(e.id)).reduce((s, e) => s + e.amount, 0);
+            const currency = items[0]?.currency ?? 'CHF';
+
+            return (
+              <div key={project.id} className="rounded-lg border border-primary-100">
+                <div className="flex items-center gap-3 border-b border-primary-50 px-3 py-2.5">
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-primary-900">
+                    {project.name}
+                  </span>
+                  <span className="shrink-0 text-xs text-primary-400 tabular-nums" title="Noch offene Einnahmen / Ausgaben">
+                    offen +{formatCurrency(openIncome, currency)} / -{formatCurrency(openExpense, currency)}
+                  </span>
+                  {confirmingId === project.id ? (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => { onDeleteProject(project.id); setConfirmingId(null); }}
+                        className="text-xs text-red-600 hover:text-red-800 font-medium"
+                      >
+                        {items.length} Position{items.length !== 1 ? 'en' : ''} löschen
+                      </button>
+                      <button onClick={() => setConfirmingId(null)} className="text-xs text-primary-400 hover:text-primary-600">Nein</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmingId(project.id)}
+                      className="p-1 text-primary-300 hover:text-red-400 transition-colors shrink-0"
+                      aria-label="Projekt löschen"
+                      title="Projekt inkl. aller Positionen löschen"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
+                <div className="px-3 py-1">
+                  {items.map((item) => (
+                    <div key={item.key} className={`flex items-center gap-2 py-1.5 border-b border-primary-50 last:border-0 ${item.paid ? 'opacity-60' : ''}`}>
+                      {item.paid ? (
+                        <svg className="h-3.5 w-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" aria-label="Bezahlt">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      ) : (
+                        <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-primary-200" title="Offen" />
+                      )}
+                      <span className="w-20 shrink-0 text-xs text-primary-400 tabular-nums">
+                        {item.date ? formatDate(item.date) : '—'}
+                      </span>
+                      {item.provisional && <ProvBadge />}
+                      <span className={`min-w-0 flex-1 truncate text-sm ${item.paid ? 'text-primary-400 line-through' : 'text-primary-800'}`}>
+                        {item.description}
+                      </span>
+                      <span className={`shrink-0 text-sm font-medium tabular-nums ${item.kind === 'income' ? 'text-emerald-700' : 'text-red-500'}`}>
+                        {item.kind === 'income' ? '+' : '-'}{formatCurrency(item.amount, item.currency)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1777,7 +2081,7 @@ function MonthSection({
 
 export function LiquidityPlanningPage() {
   const {
-    months, pastMonths, expenses,
+    months, pastMonths, expenses, incomes, expensePayments, projects,
     startsaldo, startsaldoCurrency, startsaldoDate,
     paidIncomeSinceStart, paidExpensesSinceStart,
     effectiveBalance, effectiveBalanceDate,
@@ -1786,6 +2090,7 @@ export function LiquidityPlanningPage() {
     addIncome, updateIncome, deleteIncome, markIncomePaid, markIncomeUnpaid,
     addExpense, updateExpense, deleteExpense, toggleExpenseActive, markExpensePaid, markExpenseUnpaid,
     skipExpenseInstance,
+    addProject, deleteProject,
     upsertStartsaldo, upsertEffectiveBalance, clearEffectiveBalance, acceptEffectiveBalance,
     upsertActualBalance, deleteActualBalance,
   } = useNOALiquidity();
@@ -1803,6 +2108,7 @@ export function LiquidityPlanningPage() {
 
   const [showIncomeForm, setShowIncomeForm]   = useState(false);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [showProjectForm, setShowProjectForm] = useState(false);
   const [showPastMonths, setShowPastMonths]   = useState(false);
 
   const today = new Date();
@@ -1820,7 +2126,13 @@ export function LiquidityPlanningPage() {
     return ok;
   }
 
-  const showingAForm = showIncomeForm || showExpenseForm;
+  async function handleAddProject(data: Parameters<typeof addProject>[0]) {
+    const ok = await addProject(data);
+    if (ok) setShowProjectForm(false);
+    return ok;
+  }
+
+  const showingAForm = showIncomeForm || showExpenseForm || showProjectForm;
 
   return (
     <div>
@@ -1832,6 +2144,12 @@ export function LiquidityPlanningPage() {
         </div>
         {!showingAForm && (
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowProjectForm(true)}>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Neues Projekt
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setShowExpenseForm(true)}>
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -1850,6 +2168,7 @@ export function LiquidityPlanningPage() {
 
       {showIncomeForm  && <AddIncomeForm  onSave={handleAddIncome}  onCancel={() => setShowIncomeForm(false)} />}
       {showExpenseForm && <AddExpenseForm onSave={handleAddExpense} onCancel={() => setShowExpenseForm(false)} />}
+      {showProjectForm && <AddProjectForm onSave={handleAddProject} onCancel={() => setShowProjectForm(false)} />}
 
       {!showingAForm && (
         <>
@@ -1881,6 +2200,17 @@ export function LiquidityPlanningPage() {
       {/* Cashflow chart */}
       {!loading && !showingAForm && (
         <LiquidityCashFlowChart months={months} currency={startsaldoCurrency} />
+      )}
+
+      {/* Projekte — grouped positions with paid status + delete-all */}
+      {!loading && !showingAForm && (
+        <ProjectsPanel
+          projects={projects}
+          incomes={incomes}
+          expenses={expenses}
+          expensePayments={expensePayments}
+          onDeleteProject={deleteProject}
+        />
       )}
 
       {loading ? (
