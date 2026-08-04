@@ -105,10 +105,11 @@ export function LiquidityCashFlowChart({
   const [range, setRange] = useState<Range>(12);
 
   const allData: ChartPoint[] = months.map((bucket) => {
-    const allIncome  = [...bucket.entries, ...bucket.lateEntries, ...bucket.paidEntries];
+    const allIncome  = [...bucket.entries, ...bucket.lateEntries, ...bucket.provCarryIncome, ...bucket.paidEntries];
     const incomeSum  = allIncome.reduce((s, e) => s + e.amount, 0);
     const expenseSum = bucket.expenses.reduce((s, e) => s + e.amount, 0)
-                     + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0);
+                     + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0)
+                     + bucket.provCarryExpenses.reduce((s, le) => s + le.expense.amount, 0);
     return {
       label:     shortLabel(bucket.label),
       profit:    incomeSum - expenseSum,

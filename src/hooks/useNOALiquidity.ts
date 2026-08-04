@@ -46,6 +46,17 @@ export interface MonthBucket {
    * first (current) month bucket.
    */
   lateExpenses: LateExpenseInstance[];
+  /**
+   * Provisional unpaid income from past months. Provisional items never
+   * become überfällig — they stay provisional and are simply carried into
+   * the current month. Only populated on the first (current) month bucket.
+   */
+  provCarryIncome: NOALiquidityIncomeRow[];
+  /**
+   * Provisional unpaid expense instances carried from past months — same
+   * rule as provCarryIncome. Only populated on the first (current) bucket.
+   */
+  provCarryExpenses: LateExpenseInstance[];
   expenses: NOALiquidityExpenseRow[];
   /**
    * Map from expense_id → payment_id for expenses paid in this month.
@@ -265,7 +276,10 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
 
       const windowEntries  = (incomeRes.data       ?? []) as NOALiquidityIncomeRow[];
       const pastIncome     = (pastIncomeRes.data    ?? []) as NOALiquidityIncomeRow[];
-      const lateEntries    = pastIncome.filter((e) => !e.paid_at);
+      // Provisional items never become überfällig — they stay provisional
+      // and are carried into the current month instead.
+      const lateEntries     = pastIncome.filter((e) => !e.paid_at && !e.provisional);
+      const provCarryIncome = pastIncome.filter((e) => !e.paid_at &&  e.provisional);
       const allExpenses    = (expensesRes.data      ?? []) as NOALiquidityExpenseRow[];
       const settings       = settingsRes.data             as NOALiquiditySettingsRow | null;
       const actualBalList  = (actualBalancesRes.data ?? []) as NOALiquidityActualBalanceRow[];
@@ -379,6 +393,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
 
       const pastBuckets: MonthBucket[] = [];
       const lateExpenses: LateExpenseInstance[] = [];
+      const provCarryExpenses: LateExpenseInstance[] = [];
       if (rangeStart !== null) {
         const nPast =
           (windowStart.getFullYear() - rangeStart.getFullYear()) * 12 +
@@ -419,6 +434,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
             paidEntries:     paid,
             lateEntries:     [],
             lateExpenses:    [],
+            provCarryIncome:   [],
+            provCarryExpenses: [],
             expenses:        monthExpenses,
             paidExpenseMap,
             paidExpenseAtMap,
@@ -429,11 +446,13 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           });
         }
 
-        // Unpaid past expense instances carry over into the current month
+        // Unpaid past expense instances carry over into the current month —
+        // definitive ones as überfällig, provisional ones as provisional carry
         for (const b of pastBuckets) {
           for (const e of b.expenses) {
             if (!b.paidExpenseMap[e.id]) {
-              lateExpenses.push({ expense: e, year: b.year, month: b.month + 1 });
+              (e.provisional ? provCarryExpenses : lateExpenses)
+                .push({ expense: e, year: b.year, month: b.month + 1 });
             }
           }
         }
@@ -510,6 +529,9 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         // Late income & expenses only in the first (current) bucket
         const late       = i === 0 ? lateEntries  : [];
         const lateExp    = i === 0 ? lateExpenses : [];
+        // Provisional carries from past months — also first bucket only
+        const carryInc   = i === 0 ? provCarryIncome   : [];
+        const carryExp   = i === 0 ? provCarryExpenses : [];
 
         const monthExpenses = allExpenses.filter((e) => expenseAppliesTo(e, year, month));
 
@@ -547,8 +569,10 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         const projectedBalanceProv =
           (i === 0 ? tagessaldoBase : runningBalanceProv)
           + sumIncome(unpaidIncomeAll)
+          + sumIncome(carryInc)
           - sumExpense(unpaidExpAll)
-          - sumLateExp(lateExp);
+          - sumLateExp(lateExp)
+          - sumLateExp(carryExp);
 
         const abEntry = actualMap[key] ?? null;
         runningBalance     = abEntry !== null ? abEntry.balance : projectedBalance;
@@ -562,6 +586,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           paidEntries:     paid,
           lateEntries:     late,
           lateExpenses:    lateExp,
+          provCarryIncome:   carryInc,
+          provCarryExpenses: carryExp,
           expenses:        monthExpenses,
           paidExpenseMap,
           paidExpenseAtMap,

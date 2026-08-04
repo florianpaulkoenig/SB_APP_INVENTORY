@@ -475,6 +475,7 @@ function InlineIncomeEditForm({
 function IncomeEntryRow({
   entry,
   isLate = false,
+  fromPastMonth = false,
   locked = false,
   onUpdate,
   onDelete,
@@ -482,6 +483,8 @@ function IncomeEntryRow({
 }: {
   entry: NOALiquidityIncomeRow;
   isLate?: boolean;
+  /** Provisional entry carried over from a past month (not überfällig) */
+  fromPastMonth?: boolean;
   /** Locked by a Saldokorrektur: no edit/delete — settling (Bezahlt) stays possible */
   locked?: boolean;
   onUpdate: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
@@ -501,6 +504,16 @@ function IncomeEntryRow({
       {isLate && (
         <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
           Überfällig
+        </span>
+      )}
+
+      {/* Carried-from-past badge — provisional items are never überfällig */}
+      {fromPastMonth && (
+        <span
+          className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
+          title="Provisorisch — aus Vormonat übertragen"
+        >
+          aus Vormonat
         </span>
       )}
 
@@ -597,7 +610,9 @@ function CarriedIncomeRow({
       </div>
       <span
         className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
-        title={`Offen — wird in ${targetLabel} als überfällig geführt`}
+        title={entry.provisional
+          ? `Provisorisch — wird in ${targetLabel} provisorisch weitergeführt`
+          : `Offen — wird in ${targetLabel} als überfällig geführt`}
       >
         → übertragen nach {targetLabel}
       </span>
@@ -625,7 +640,9 @@ function CarriedExpenseRow({
       </span>
       <span
         className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
-        title={`Offen — wird in ${targetLabel} als überfällig geführt`}
+        title={expense.provisional
+          ? `Provisorisch — wird in ${targetLabel} provisorisch weitergeführt`
+          : `Offen — wird in ${targetLabel} als überfällig geführt`}
       >
         → übertragen nach {targetLabel}
       </span>
@@ -829,6 +846,54 @@ function LateExpenseRow({
       <button
         onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
         className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-50 transition-colors shrink-0"
+        title={`Als bezahlt markieren (wird ${originLabel} zugeordnet)`}
+      >
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+        Bezahlt
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Provisional carry expense row — provisional unpaid instance from a past
+// month, carried into the current month (stays provisional, not überfällig)
+// ---------------------------------------------------------------------------
+
+function ProvCarryExpenseRow({
+  instance, onMarkPaid,
+}: {
+  instance: LateExpenseInstance;
+  onMarkPaid: (expenseId: string, year: number, month: number) => void;
+}) {
+  const e = instance.expense;
+  const badge = RECURRENCE_BADGES[e.type];
+  const originLabel = new Date(instance.year, instance.month - 1, 1)
+    .toLocaleDateString('de-CH', { month: 'long', year: 'numeric' });
+
+  return (
+    <div className="flex items-center gap-2 py-2.5 border-b border-primary-50 last:border-0">
+      <span
+        className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
+        title="Provisorisch — aus Vormonat übertragen"
+      >
+        aus Vormonat
+      </span>
+      <span className="w-28 shrink-0 text-xs text-primary-400">{originLabel}</span>
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      <ProvBadge />
+      <span className="min-w-0 flex-1 text-sm text-primary-900">
+        {e.description}
+        {e.invoice_number && <span className="ml-2 text-xs font-normal text-primary-400 tabular-nums">Rg. {e.invoice_number}</span>}
+      </span>
+      <span className="shrink-0 text-sm font-medium text-red-500 tabular-nums">
+        -{formatCurrency(e.amount, e.currency)}
+      </span>
+      <button
+        onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
+        className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-primary-400 hover:bg-primary-50 hover:text-primary-700 transition-colors shrink-0"
         title={`Als bezahlt markieren (wird ${originLabel} zugeordnet)`}
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -1300,11 +1365,12 @@ function MonthSummaryFooter({
 }) {
   // Sum ALL income (unpaid + late + paid) as face value — split into
   // definitive (without provisional items) and incl.-provisional totals
-  const allIncome = [...bucket.entries, ...bucket.lateEntries, ...bucket.paidEntries];
+  const allIncome = [...bucket.entries, ...bucket.lateEntries, ...bucket.provCarryIncome, ...bucket.paidEntries];
   const incomeProv  = allIncome.reduce((s, e) => s + e.amount, 0);
   const incomeDef   = allIncome.filter((e) => !e.provisional).reduce((s, e) => s + e.amount, 0);
   const expenseProv = bucket.expenses.reduce((s, e) => s + e.amount, 0)
-                    + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0);
+                    + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0)
+                    + bucket.provCarryExpenses.reduce((s, le) => s + le.expense.amount, 0);
   const expenseDef  = bucket.expenses.filter((e) => !e.provisional).reduce((s, e) => s + e.amount, 0)
                     + bucket.lateExpenses.filter((le) => !le.expense.provisional).reduce((s, le) => s + le.expense.amount, 0);
   const netDef  = incomeDef - expenseDef;
@@ -1444,11 +1510,13 @@ function MonthSection({
   const hasUnpaid        = bucket.entries.length > 0;
   const hasLate          = bucket.lateEntries.length > 0;
   const hasLateExpenses  = bucket.lateExpenses.length > 0;
+  const hasProvCarryInc  = bucket.provCarryIncome.length > 0;
+  const hasProvCarryExp  = bucket.provCarryExpenses.length > 0;
   const hasPaidIncome    = bucket.paidEntries.length > 0;
   const hasUnpaidExpenses = unpaidExpenses.length > 0;
   const hasPaidExpenses  = paidExpenses.length > 0;
   const hasExpenses      = bucket.expenses.length > 0;
-  const hasAny           = hasUnpaid || hasLate || hasLateExpenses || hasPaidIncome || hasExpenses;
+  const hasAny           = hasUnpaid || hasLate || hasLateExpenses || hasProvCarryInc || hasProvCarryExp || hasPaidIncome || hasExpenses;
   const lateCount        = bucket.lateEntries.length + bucket.lateExpenses.length;
 
   return (
@@ -1529,9 +1597,34 @@ function MonthSection({
             </div>
           )}
 
+          {/* Provisional income carried over from past months */}
+          {hasProvCarryInc && (
+            <div>
+              {bucket.provCarryIncome.map((e) => (
+                <IncomeEntryRow
+                  key={e.id} entry={e} fromPastMonth locked={incomeLocked(e)}
+                  onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Provisional expense instances carried over from past months */}
+          {hasProvCarryExp && (
+            <div className={hasProvCarryInc ? 'border-t border-primary-50 pt-0.5' : ''}>
+              {bucket.provCarryExpenses.map((le) => (
+                <ProvCarryExpenseRow
+                  key={`${le.expense.id}:${le.year}-${le.month}`}
+                  instance={le}
+                  onMarkPaid={onMarkExpensePaid}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Unpaid income entries for this month */}
           {hasUnpaid && (
-            <div>
+            <div className={hasProvCarryInc || hasProvCarryExp ? 'border-t border-primary-50 pt-0.5' : ''}>
               {bucket.entries.map((e) => (
                 carriedToLabel !== null ? (
                   <CarriedIncomeRow key={e.id} entry={e} targetLabel={carriedToLabel} />
@@ -1547,7 +1640,7 @@ function MonthSection({
 
           {/* Unpaid expenses */}
           {hasUnpaidExpenses && (
-            <div className={hasUnpaid || hasLate ? 'border-t border-primary-50 pt-0.5' : ''}>
+            <div className={hasUnpaid || hasLate || hasProvCarryInc || hasProvCarryExp ? 'border-t border-primary-50 pt-0.5' : ''}>
               {unpaidExpenses.map((e) => (
                 carriedToLabel !== null ? (
                   <CarriedExpenseRow key={e.id} expense={e} targetLabel={carriedToLabel} />
