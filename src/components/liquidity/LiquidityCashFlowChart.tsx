@@ -96,31 +96,49 @@ function IstSaldoActiveDot(props: { cx?: number; cy?: number; payload?: Record<s
 const RANGE_OPTIONS = [3, 6, 9, 12] as const;
 type Range = typeof RANGE_OPTIONS[number];
 
+/**
+ * paidOnly (past months): bars show only what was effectively paid — unpaid
+ * (überfällige/provisorische) items are carried into the current month by the
+ * hook and therefore count in the current month's bar instead.
+ */
+function toChartPoint(bucket: MonthBucket, paidOnly = false): ChartPoint {
+  const incomeSum = paidOnly
+    ? bucket.paidEntries.reduce((s, e) => s + e.amount, 0)
+    : [...bucket.entries, ...bucket.lateEntries, ...bucket.provCarryIncome, ...bucket.paidEntries]
+        .reduce((s, e) => s + e.amount, 0);
+  const expenseSum = paidOnly
+    ? bucket.expenses.filter((e) => !!bucket.paidExpenseMap[e.id]).reduce((s, e) => s + e.amount, 0)
+    : bucket.expenses.reduce((s, e) => s + e.amount, 0)
+      + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0)
+      + bucket.provCarryExpenses.reduce((s, le) => s + le.expense.amount, 0);
+  return {
+    label:     shortLabel(bucket.label),
+    profit:    incomeSum - expenseSum,
+    saldo:     bucket.projectedBalance,
+    saldoProv: bucket.projectedBalanceProv,
+    istSaldo:  bucket.actualBalance,
+  };
+}
+
 export function LiquidityCashFlowChart({
   months,
+  pastMonths = [],
 }: {
   months: MonthBucket[];
+  /** Past-month buckets (oldest first) — shown when the user toggles them on */
+  pastMonths?: MonthBucket[];
   currency?: string;
 }) {
-  const [range, setRange] = useState<Range>(12);
+  const [range, setRange]       = useState<Range>(12);
+  const [showPast, setShowPast] = useState(false);
 
-  const allData: ChartPoint[] = months.map((bucket) => {
-    const allIncome  = [...bucket.entries, ...bucket.lateEntries, ...bucket.provCarryIncome, ...bucket.paidEntries];
-    const incomeSum  = allIncome.reduce((s, e) => s + e.amount, 0);
-    const expenseSum = bucket.expenses.reduce((s, e) => s + e.amount, 0)
-                     + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0)
-                     + bucket.provCarryExpenses.reduce((s, le) => s + le.expense.amount, 0);
-    return {
-      label:     shortLabel(bucket.label),
-      profit:    incomeSum - expenseSum,
-      saldo:     bucket.projectedBalance,
-      saldoProv: bucket.projectedBalanceProv,
-      istSaldo:  bucket.actualBalance,
-    };
-  });
+  const futureData = months.map((b) => toChartPoint(b)).slice(0, range);
+  const pastData   = showPast ? pastMonths.map((b) => toChartPoint(b, true)) : [];
+  const data       = [...pastData, ...futureData];
 
-  const data = allData.slice(0, range);
-  const hasProvisional = data.some((d) => d.saldoProv !== d.saldo);
+  const hasProvisional    = data.some((d) => d.saldoProv !== d.saldo);
+  // Boundary marker: the current month's label (first future bucket)
+  const currentMonthLabel = pastData.length > 0 && months.length > 0 ? shortLabel(months[0].label) : null;
 
   const tickFmt = (v: number) => {
     if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
@@ -134,20 +152,37 @@ export function LiquidityCashFlowChart({
         <h2 className="text-sm font-semibold text-primary-700 uppercase tracking-wide">
           Cashflow &amp; Saldo
         </h2>
-        <div className="flex items-center gap-1 rounded-lg border border-primary-100 bg-primary-50 p-0.5">
-          {RANGE_OPTIONS.map((r) => (
+        <div className="flex items-center gap-2">
+          {pastMonths.length > 0 && (
             <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                range === r
-                  ? 'bg-white text-primary-900 shadow-sm'
-                  : 'text-primary-400 hover:text-primary-700'
+              onClick={() => setShowPast((v) => !v)}
+              className={`rounded-lg border px-3 py-1 text-xs font-medium transition-colors ${
+                showPast
+                  ? 'border-primary-300 bg-white text-primary-900 shadow-sm'
+                  : 'border-primary-100 bg-primary-50 text-primary-400 hover:text-primary-700'
               }`}
+              title={showPast
+                ? 'Vergangene Monate ausblenden'
+                : `${pastMonths.length} vergangene${pastMonths.length === 1 ? 'r' : ''} Monat${pastMonths.length === 1 ? '' : 'e'} einblenden`}
             >
-              {r} M
+              + Vergangenheit
             </button>
-          ))}
+          )}
+          <div className="flex items-center gap-1 rounded-lg border border-primary-100 bg-primary-50 p-0.5">
+            {RANGE_OPTIONS.map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                  range === r
+                    ? 'bg-white text-primary-900 shadow-sm'
+                    : 'text-primary-400 hover:text-primary-700'
+                }`}
+              >
+                {r} M
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -194,6 +229,18 @@ export function LiquidityCashFlowChart({
 
           {/* Zero reference line for profit axis */}
           <ReferenceLine yAxisId="left" y={0} stroke="#d6d3ce" strokeWidth={1} />
+
+          {/* Boundary between past and future — marks the current month */}
+          {currentMonthLabel && (
+            <ReferenceLine
+              yAxisId="left"
+              x={currentMonthLabel}
+              stroke="#c9a96e"
+              strokeWidth={1}
+              strokeDasharray="4 3"
+              label={{ value: 'aktuell', position: 'top', fill: '#c9a96e', fontSize: 10 }}
+            />
+          )}
 
           {/* Profit bars — colored per value */}
           <Bar
@@ -254,6 +301,7 @@ export function LiquidityCashFlowChart({
       <p className="mt-2 text-[10px] text-primary-400 text-right">
         Balken: Einnahmen − Ausgaben pro Monat · Linie: definitiver Saldo per Monatsende
         {hasProvisional ? ' · gestrichelt: inkl. provisorischer Positionen' : ''} · Punkte: eingetragener Ist-Saldo
+        {pastData.length > 0 ? ' · Vergangenheit: nur effektiv bezahlte Beträge (Offenes zählt im aktuellen Monat)' : ''}
       </p>
     </div>
   );

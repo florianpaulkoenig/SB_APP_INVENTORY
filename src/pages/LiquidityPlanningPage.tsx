@@ -2256,7 +2256,7 @@ export function LiquidityPlanningPage() {
 
       {/* Cashflow chart */}
       {!loading && !showingAForm && (
-        <LiquidityCashFlowChart months={months} currency={startsaldoCurrency} />
+        <LiquidityCashFlowChart months={months} pastMonths={pastMonths} currency={startsaldoCurrency} />
       )}
 
       {/* Projekte — grouped positions with paid status + delete-all */}
