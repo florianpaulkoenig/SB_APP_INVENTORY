@@ -12,6 +12,7 @@ import {
   ResponsiveContainer, ReferenceLine, Cell, Legend,
 } from 'recharts';
 import type { MonthBucket } from '../../hooks/useNOALiquidity';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,17 +101,22 @@ type Range = typeof RANGE_OPTIONS[number];
  * paidOnly (past months): bars show only what was effectively paid — unpaid
  * (überfällige/provisorische) items are carried into the current month by the
  * hook and therefore count in the current month's bar instead.
+ * All sums are converted to CHF via `chf`.
  */
-function toChartPoint(bucket: MonthBucket, paidOnly = false): ChartPoint {
+function toChartPoint(
+  bucket: MonthBucket,
+  chf: (amount: number, currency: string) => number,
+  paidOnly = false,
+): ChartPoint {
   const incomeSum = paidOnly
-    ? bucket.paidEntries.reduce((s, e) => s + e.amount, 0)
+    ? bucket.paidEntries.reduce((s, e) => s + chf(e.amount, e.currency), 0)
     : [...bucket.entries, ...bucket.lateEntries, ...bucket.provCarryIncome, ...bucket.paidEntries]
-        .reduce((s, e) => s + e.amount, 0);
+        .reduce((s, e) => s + chf(e.amount, e.currency), 0);
   const expenseSum = paidOnly
-    ? bucket.expenses.filter((e) => !!bucket.paidExpenseMap[e.id]).reduce((s, e) => s + e.amount, 0)
-    : bucket.expenses.reduce((s, e) => s + e.amount, 0)
-      + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0)
-      + bucket.provCarryExpenses.reduce((s, le) => s + le.expense.amount, 0);
+    ? bucket.expenses.filter((e) => !!bucket.paidExpenseMap[e.id]).reduce((s, e) => s + chf(e.amount, e.currency), 0)
+    : bucket.expenses.reduce((s, e) => s + chf(e.amount, e.currency), 0)
+      + bucket.lateExpenses.reduce((s, le) => s + chf(le.expense.amount, le.expense.currency), 0)
+      + bucket.provCarryExpenses.reduce((s, le) => s + chf(le.expense.amount, le.expense.currency), 0);
   return {
     label:     shortLabel(bucket.label),
     profit:    incomeSum - expenseSum,
@@ -131,9 +137,10 @@ export function LiquidityCashFlowChart({
 }) {
   const [range, setRange]       = useState<Range>(12);
   const [showPast, setShowPast] = useState(false);
+  const { toCHF } = useExchangeRates();
 
-  const futureData = months.map((b) => toChartPoint(b)).slice(0, range);
-  const pastData   = showPast ? pastMonths.map((b) => toChartPoint(b, true)) : [];
+  const futureData = months.map((b) => toChartPoint(b, toCHF)).slice(0, range);
+  const pastData   = showPast ? pastMonths.map((b) => toChartPoint(b, toCHF, true)) : [];
   const data       = [...pastData, ...futureData];
 
   const hasProvisional    = data.some((d) => d.saldoProv !== d.saldo);

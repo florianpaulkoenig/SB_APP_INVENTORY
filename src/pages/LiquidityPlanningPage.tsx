@@ -2,7 +2,7 @@
 // Liquidity Planning — income, expenses, 12-month view with Saldo
 // ---------------------------------------------------------------------------
 
-import { useState } from 'react';
+import { useState, createContext, useContext } from 'react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
@@ -13,6 +13,8 @@ import { useNOALiquidity } from '../hooks/useNOALiquidity';
 import type { MonthBucket, LateExpenseInstance } from '../hooks/useNOALiquidity';
 import type { NOALiquidityIncomeRow, NOALiquidityExpenseRow, NOALiquidityExpensePaymentRow, NOALiquidityProjectRow, LiquidityExpenseType } from '../types/database';
 import { LiquidityCashFlowChart } from '../components/liquidity/LiquidityCashFlowChart';
+import { useExchangeRates } from '../hooks/useExchangeRates';
+import { exportLiquidityToExcel } from '../lib/liquidityExport';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -55,20 +57,65 @@ function ProvBadge() {
 }
 
 // ---------------------------------------------------------------------------
-// Project badge — prominent marker on every row that belongs to a project
+// Project badge — prominent marker on every row that belongs to a project.
+// Clicking it filters the month lists to that project (via context).
 // ---------------------------------------------------------------------------
 
+const ProjectFilterContext = createContext<(name: string) => void>(() => {});
+
 function ProjectBadge({ name }: { name: string }) {
+  const setFilter = useContext(ProjectFilterContext);
   return (
-    <span
-      className="inline-flex max-w-56 shrink-0 items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700"
-      title={`Projekt: ${name}`}
+    <button
+      type="button"
+      onClick={() => setFilter(name)}
+      className="inline-flex max-w-56 shrink-0 items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors cursor-pointer"
+      title={`Projekt: ${name} — klicken zum Filtern`}
     >
       <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
       </svg>
       <span className="truncate">{name}</span>
-    </span>
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Duplicate detection — warns while capturing when a similar OPEN entry exists
+// ---------------------------------------------------------------------------
+
+const DUP_STOPWORDS = new Set(['eine', 'einer', 'eines', 'für', 'from', 'nach', 'ohne', 'zahlung', 'rechnung']);
+
+function significantTokens(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/[^a-zà-ÿäöü0-9]+/i)
+    .filter((t) => t.length >= 4 && !DUP_STOPWORDS.has(t));
+}
+
+/** A similar open item: shares a significant word OR same amount in the same month */
+function findSimilarOpen(
+  description: string,
+  amount: number,
+  dateStr: string,
+  candidates: { description: string; amount: number; date: string }[],
+): { description: string; amount: number; date: string } | null {
+  const tokens = new Set(significantTokens(description));
+  const month = dateStr.slice(0, 7);
+  for (const c of candidates) {
+    const sharesToken = tokens.size > 0 && significantTokens(c.description).some((t) => tokens.has(t));
+    const sameAmountMonth = amount > 0 && c.amount === amount && month.length === 7 && c.date.startsWith(month);
+    if (sharesToken || sameAmountMonth) return c;
+  }
+  return null;
+}
+
+function DuplicateWarning({ match }: { match: { description: string; amount: number; date: string } | null }) {
+  if (!match) return null;
+  return (
+    <div className="sm:col-span-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+      ⚠ Ähnlicher offener Eintrag existiert bereits: «{match.description}» ({match.amount.toLocaleString('de-CH')}, {formatDate(match.date)}) — bitte prüfen, ob es sich um eine Doppelerfassung handelt.
+    </div>
   );
 }
 
@@ -341,11 +388,21 @@ function StartsaldoCard({
 // Add-income form
 // ---------------------------------------------------------------------------
 
+const INCOME_REPEAT_OPTIONS = [
+  { value: 'once',        label: 'Einmalig' },
+  { value: 'monthly',     label: 'Monatlich' },
+  { value: 'quarterly',   label: 'Pro Quartal' },
+  { value: 'semi_annual', label: 'Pro Halbjahr' },
+  { value: 'annual',      label: 'Pro Jahr' },
+];
+
 function AddIncomeForm({
-  onSave, onCancel,
+  onSave, onCancel, existingOpen = [],
 }: {
-  onSave: (data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null; invoice_number?: string | null; provisional?: boolean }) => Promise<boolean>;
+  onSave: (data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null; invoice_number?: string | null; provisional?: boolean; repeat?: { interval: 'monthly' | 'quarterly' | 'semi_annual' | 'annual'; count: number } }) => Promise<boolean>;
   onCancel: () => void;
+  /** Open entries for duplicate detection */
+  existingOpen?: { description: string; amount: number; date: string }[];
 }) {
   const [description, setDescription] = useState('');
   const [amount, setAmount]           = useState('');
@@ -354,15 +411,28 @@ function AddIncomeForm({
   const [notes, setNotes]             = useState('');
   const [invoiceNo, setInvoiceNo]     = useState('');
   const [provisional, setProvisional] = useState(false);
+  const [repeat, setRepeat]           = useState('once');
+  const [repeatCount, setRepeatCount] = useState('12');
   const [saving, setSaving]           = useState(false);
+
+  const dupMatch = description.trim().length >= 4 || amount
+    ? findSimilarOpen(description, parseFloat(amount) || 0, expectedDate, existingOpen)
+    : null;
 
   async function handleSubmit() {
     const n = parseFloat(amount);
     if (!description.trim() || isNaN(n) || n <= 0 || !expectedDate) return;
+    const cnt = parseInt(repeatCount, 10);
     setSaving(true);
-    const ok = await onSave({ description: description.trim(), amount: n, currency, expected_date: expectedDate, notes: notes.trim() || null, invoice_number: invoiceNo.trim() || null, provisional });
+    const ok = await onSave({
+      description: description.trim(), amount: n, currency, expected_date: expectedDate,
+      notes: notes.trim() || null, invoice_number: invoiceNo.trim() || null, provisional,
+      repeat: repeat !== 'once' && cnt > 1
+        ? { interval: repeat as 'monthly' | 'quarterly' | 'semi_annual' | 'annual', count: cnt }
+        : undefined,
+    });
     setSaving(false);
-    if (ok) { setDescription(''); setAmount(''); setExpectedDate(''); setNotes(''); setInvoiceNo(''); setProvisional(false); }
+    if (ok) { setDescription(''); setAmount(''); setExpectedDate(''); setNotes(''); setInvoiceNo(''); setProvisional(false); setRepeat('once'); setRepeatCount('12'); }
   }
 
   return (
@@ -372,9 +442,16 @@ function AddIncomeForm({
         <div className="sm:col-span-2">
           <Input label="Beschreibung *" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="z. B. Provision Gallery X …" />
         </div>
+        <DuplicateWarning match={dupMatch} />
         <Input label="Betrag *" type="number" min="0" step="100" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="z. B. 25000" />
         <Select label="Währung" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
-        <Input label="Erwartetes Datum *" type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
+        <Input label={repeat !== 'once' ? 'Erstes Datum *' : 'Erwartetes Datum *'} type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
+        <div className="grid grid-cols-2 gap-3">
+          <Select label="Wiederholung" options={INCOME_REPEAT_OPTIONS} value={repeat} onChange={(e) => setRepeat(e.target.value)} />
+          {repeat !== 'once' && (
+            <Input label="Anzahl Termine" type="number" min="2" max="36" value={repeatCount} onChange={(e) => setRepeatCount(e.target.value)} />
+          )}
+        </div>
         <Input label="Notiz (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Interne Notiz …" />
         <Input label="Rechnungsnr. (optional)" value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="z. B. 2026-042" />
         <div className="sm:col-span-2">
@@ -394,10 +471,12 @@ function AddIncomeForm({
 // ---------------------------------------------------------------------------
 
 function AddExpenseForm({
-  onSave, onCancel,
+  onSave, onCancel, existingOpen = [],
 }: {
   onSave: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string; invoice_number?: string | null; provisional?: boolean }) => Promise<boolean>;
   onCancel: () => void;
+  /** Open entries for duplicate detection */
+  existingOpen?: { description: string; amount: number; date: string }[];
 }) {
   const [description, setDescription] = useState('');
   const [amount, setAmount]           = useState('');
@@ -424,6 +503,9 @@ function AddExpenseForm({
         <div className="sm:col-span-2">
           <Input label="Beschreibung *" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="z. B. Atelier-Miete, Versicherung …" />
         </div>
+        <DuplicateWarning match={description.trim().length >= 4 || amount
+          ? findSimilarOpen(description, parseFloat(amount) || 0, dueDate, existingOpen)
+          : null} />
         <Input label="Betrag *" type="number" min="0" step="100" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="z. B. 1500" />
         <Select label="Währung" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
         <Select label="Wiederholung *" options={RECURRING_OPTIONS} value={type} onChange={(e) => setType(e.target.value as LiquidityExpenseType)} />
@@ -471,8 +553,25 @@ const KIND_OPTIONS = [
   { value: 'expense', label: 'Ausgabe' },
 ];
 
+// Saved project templates — per browser (localStorage)
+type SavedTemplate = { name: string; positions: ProjectPositionDraft[] };
+const TEMPLATES_KEY = 'noa_liquidity_project_templates';
+
+function loadTemplates(): SavedTemplate[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TEMPLATES_KEY) ?? '[]');
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistTemplates(templates: SavedTemplate[]) {
+  try { localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates)); } catch { /* quota — ignore */ }
+}
+
 function AddProjectForm({
-  onSave, onCancel,
+  onSave, onCancel, existingOpen = [],
 }: {
   onSave: (data: {
     name: string;
@@ -480,10 +579,36 @@ function AddProjectForm({
     expenses: { description: string; amount: number; currency: string; due_date: string; provisional?: boolean }[];
   }) => Promise<boolean>;
   onCancel: () => void;
+  /** Open entries for duplicate detection against the project name */
+  existingOpen?: { description: string; amount: number; date: string }[];
 }) {
   const [name, setName]           = useState('');
   const [positions, setPositions] = useState<ProjectPositionDraft[]>([emptyPosition()]);
   const [saving, setSaving]       = useState(false);
+  const [templates, setTemplates] = useState<SavedTemplate[]>(loadTemplates);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateName, setTemplateName]     = useState('');
+
+  const dupMatch = name.trim().length >= 4 ? findSimilarOpen(name, 0, '', existingOpen) : null;
+
+  function saveAsTemplate() {
+    const tName = templateName.trim();
+    if (!tName) return;
+    const next = [
+      ...templates.filter((t) => t.name !== tName),
+      { name: tName, positions: positions.map((p) => ({ ...p, amount: p.amount, date: '' })) },
+    ];
+    setTemplates(next);
+    persistTemplates(next);
+    setSavingTemplate(false);
+    setTemplateName('');
+  }
+
+  function deleteTemplate(tName: string) {
+    const next = templates.filter((t) => t.name !== tName);
+    setTemplates(next);
+    persistTemplates(next);
+  }
 
   const setPos = (i: number, patch: Partial<ProjectPositionDraft>) =>
     setPositions((ps) => ps.map((p, j) => (j === i ? { ...p, ...patch } : p)));
@@ -525,13 +650,56 @@ function AddProjectForm({
     <div className="mb-6 rounded-lg border border-indigo-100 bg-indigo-50/40 p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-indigo-800">Neues Projekt</h3>
-        <button
-          onClick={() => setPositions(WERKBESTELLUNG_TEMPLATE.map((p) => ({ ...p })))}
-          className="rounded border border-indigo-200 px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-100 transition-colors"
-          title="Anzahlung, Abschlusszahlung, Transporteinnahme, Transportkosten, Zahlung Künstler"
-        >
-          Vorlage Werkbestellung
-        </button>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => setPositions(WERKBESTELLUNG_TEMPLATE.map((p) => ({ ...p })))}
+            className="rounded border border-indigo-200 px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-100 transition-colors"
+            title="Anzahlung, Abschlusszahlung, Transporteinnahme, Transportkosten, Zahlung Künstler"
+          >
+            Vorlage Werkbestellung
+          </button>
+          {templates.map((t) => (
+            <span key={t.name} className="inline-flex items-center rounded border border-indigo-200 text-xs font-medium text-indigo-600">
+              <button
+                onClick={() => setPositions(t.positions.map((p) => ({ ...p })))}
+                className="px-2 py-1 hover:bg-indigo-100 transition-colors"
+                title={`Vorlage «${t.name}» laden (${t.positions.length} Positionen)`}
+              >
+                {t.name}
+              </button>
+              <button
+                onClick={() => deleteTemplate(t.name)}
+                className="px-1 py-1 text-indigo-300 hover:text-red-500 transition-colors"
+                aria-label={`Vorlage ${t.name} löschen`}
+                title="Vorlage löschen"
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+          {savingTemplate ? (
+            <span className="inline-flex items-center gap-1">
+              <input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') saveAsTemplate(); if (e.key === 'Escape') setSavingTemplate(false); }}
+                placeholder="Vorlagenname"
+                autoFocus
+                className="w-36 rounded border border-indigo-200 px-2 py-1 text-xs focus:border-indigo-400 focus:outline-none"
+              />
+              <button onClick={saveAsTemplate} disabled={!templateName.trim()} className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:opacity-40">Speichern</button>
+              <button onClick={() => setSavingTemplate(false)} className="text-xs text-primary-400 hover:text-primary-600">✕</button>
+            </span>
+          ) : (
+            <button
+              onClick={() => setSavingTemplate(true)}
+              className="rounded px-2 py-1 text-xs text-indigo-400 hover:text-indigo-700 transition-colors"
+              title="Aktuelle Positionen (ohne Daten) als eigene Vorlage speichern — pro Gerät gespeichert"
+            >
+              + Als Vorlage speichern
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="mb-4">
@@ -546,6 +714,11 @@ function AddProjectForm({
           in den Monaten und können einzeln bezahlt werden; das Projekt lässt sich als
           Ganzes löschen.
         </p>
+        {dupMatch && (
+          <div className="mt-2">
+            <DuplicateWarning match={dupMatch} />
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -614,17 +787,75 @@ function AddProjectForm({
 // Projects panel — grouped view of all project positions with paid status
 // ---------------------------------------------------------------------------
 
+function ProjectPositionForm({
+  onSave, onCancel,
+}: {
+  onSave: (position: { kind: 'income' | 'expense'; description: string; amount: number; currency: string; date: string; provisional?: boolean }) => Promise<boolean>;
+  onCancel: () => void;
+}) {
+  const [pos, setPos]       = useState<ProjectPositionDraft>(emptyPosition());
+  const [saving, setSaving] = useState(false);
+
+  const n = parseFloat(pos.amount);
+  const canSave = !isNaN(n) && n > 0 && !!pos.date;
+
+  async function handleSave() {
+    if (!canSave) return;
+    setSaving(true);
+    const ok = await onSave({
+      kind: pos.kind, description: pos.description, amount: n,
+      currency: pos.currency, date: pos.date, provisional: pos.provisional,
+    });
+    setSaving(false);
+    if (ok) onCancel();
+  }
+
+  return (
+    <div className="flex flex-wrap items-end gap-2 border-t border-primary-50 bg-indigo-50/40 px-3 py-2">
+      <div className="w-28">
+        <Select label="Art" options={KIND_OPTIONS} value={pos.kind} onChange={(e) => setPos({ ...pos, kind: e.target.value as 'income' | 'expense' })} />
+      </div>
+      <div className="min-w-36 flex-1">
+        <Input label="Beschreibung" value={pos.description} onChange={(e) => setPos({ ...pos, description: e.target.value })} placeholder="z. B. Nachlieferung" />
+      </div>
+      <div className="w-28">
+        <Input label="Betrag *" type="number" min="0" step="100" value={pos.amount} onChange={(e) => setPos({ ...pos, amount: e.target.value })} />
+      </div>
+      <div className="w-24">
+        <Select label="Währung" options={CURRENCY_OPTIONS} value={pos.currency} onChange={(e) => setPos({ ...pos, currency: e.target.value })} />
+      </div>
+      <div className="w-36">
+        <Input label="Datum *" type="date" value={pos.date} onChange={(e) => setPos({ ...pos, date: e.target.value })} />
+      </div>
+      <label className="mb-2 flex items-center gap-1.5 text-xs text-primary-600 cursor-pointer select-none">
+        <input type="checkbox" checked={pos.provisional} onChange={(e) => setPos({ ...pos, provisional: e.target.checked })} className="h-3.5 w-3.5 rounded border-primary-300 accent-amber-600" />
+        Prov.
+      </label>
+      <div className="mb-1 flex items-center gap-2">
+        <Button size="sm" onClick={handleSave} loading={saving} disabled={!canSave}>Hinzufügen</Button>
+        <Button variant="ghost" size="sm" onClick={onCancel}>Abbrechen</Button>
+      </div>
+    </div>
+  );
+}
+
 function ProjectsPanel({
-  projects, incomes, expenses, expensePayments, onDeleteProject,
+  projects, incomes, expenses, expensePayments, onDeleteProject, onRenameProject, onAddPosition,
 }: {
   projects: NOALiquidityProjectRow[];
   incomes: NOALiquidityIncomeRow[];
   expenses: NOALiquidityExpenseRow[];
   expensePayments: NOALiquidityExpensePaymentRow[];
   onDeleteProject: (id: string) => void;
+  onRenameProject: (id: string, newName: string) => Promise<boolean>;
+  onAddPosition: (project: NOALiquidityProjectRow, position: { kind: 'income' | 'expense'; description: string; amount: number; currency: string; date: string; provisional?: boolean }) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(true);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [renamingId, setRenamingId]     = useState<string | null>(null);
+  const [renameValue, setRenameValue]   = useState('');
+  const [addingToId, setAddingToId]     = useState<string | null>(null);
+  const { toCHF } = useExchangeRates();
 
   if (projects.length === 0) return null;
 
@@ -676,19 +907,61 @@ function ProjectsPanel({
               })),
             ].sort((a, b) => a.date.localeCompare(b.date));
 
-            const openIncome  = projIncomes.filter((e) => !e.paid_at).reduce((s, e) => s + e.amount, 0);
-            const openExpense = projExpenses.filter((e) => !expensePaid(e.id)).reduce((s, e) => s + e.amount, 0);
-            const currency = items[0]?.currency ?? 'CHF';
+            const openIncome  = projIncomes.filter((e) => !e.paid_at).reduce((s, e) => s + toCHF(e.amount, e.currency), 0);
+            const openExpense = projExpenses.filter((e) => !expensePaid(e.id)).reduce((s, e) => s + toCHF(e.amount, e.currency), 0);
 
             return (
               <div key={project.id} className="rounded-lg border border-primary-100">
                 <div className="flex items-center gap-3 border-b border-primary-50 px-3 py-2.5">
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-primary-900">
-                    {project.name}
+                  {renamingId === project.id ? (
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <input
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={async (e) => {
+                          if (e.key === 'Enter' && renameValue.trim()) {
+                            const ok = await onRenameProject(project.id, renameValue);
+                            if (ok) setRenamingId(null);
+                          }
+                          if (e.key === 'Escape') setRenamingId(null);
+                        }}
+                        autoFocus
+                        className="min-w-0 flex-1 rounded border border-primary-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
+                      />
+                      <button
+                        onClick={async () => { const ok = await onRenameProject(project.id, renameValue); if (ok) setRenamingId(null); }}
+                        disabled={!renameValue.trim()}
+                        className="text-xs font-medium text-primary-600 hover:text-primary-900 disabled:opacity-40"
+                      >
+                        Speichern
+                      </button>
+                      <button onClick={() => setRenamingId(null)} className="text-xs text-primary-400 hover:text-primary-600">✕</button>
+                    </span>
+                  ) : (
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                      <span className="min-w-0 truncate text-sm font-semibold text-primary-900">{project.name}</span>
+                      <button
+                        onClick={() => { setRenamingId(project.id); setRenameValue(project.name); }}
+                        className="shrink-0 p-0.5 text-primary-300 hover:text-primary-600 transition-colors"
+                        aria-label="Projekt umbenennen"
+                        title="Projekt umbenennen (Präfix aller Positionen wird angepasst)"
+                      >
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                        </svg>
+                      </button>
+                    </span>
+                  )}
+                  <span className="shrink-0 text-xs text-primary-400 tabular-nums" title="Noch offene Einnahmen / Ausgaben (in CHF)">
+                    offen +{formatCurrency(openIncome, 'CHF')} / -{formatCurrency(openExpense, 'CHF')}
                   </span>
-                  <span className="shrink-0 text-xs text-primary-400 tabular-nums" title="Noch offene Einnahmen / Ausgaben">
-                    offen +{formatCurrency(openIncome, currency)} / -{formatCurrency(openExpense, currency)}
-                  </span>
+                  <button
+                    onClick={() => setAddingToId(addingToId === project.id ? null : project.id)}
+                    className="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                    title="Position zu diesem Projekt hinzufügen"
+                  >
+                    + Position
+                  </button>
                   {confirmingId === project.id ? (
                     <div className="flex items-center gap-1 shrink-0">
                       <button
@@ -712,6 +985,13 @@ function ProjectsPanel({
                     </button>
                   )}
                 </div>
+
+                {addingToId === project.id && (
+                  <ProjectPositionForm
+                    onSave={(position) => onAddPosition(project, position)}
+                    onCancel={() => setAddingToId(null)}
+                  />
+                )}
 
                 <div className="px-3 py-1">
                   {items.map((item) => (
@@ -812,6 +1092,7 @@ function IncomeEntryRow({
   onUpdate,
   onDelete,
   onMarkPaid,
+  onPartialPaid,
 }: {
   entry: NOALiquidityIncomeRow;
   isLate?: boolean;
@@ -824,9 +1105,13 @@ function IncomeEntryRow({
   onUpdate: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
   onDelete: (id: string) => void;
   onMarkPaid: (id: string) => void;
+  /** Enables the Teilzahlung action: books part of the amount as paid */
+  onPartialPaid?: (id: string, amount: number) => void;
 }) {
   const [editing, setEditing]       = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [partialMode, setPartialMode]     = useState(false);
+  const [partialAmount, setPartialAmount] = useState('');
 
   if (editing) {
     return <InlineIncomeEditForm entry={entry} onSave={onUpdate} onCancel={() => setEditing(false)} />;
@@ -890,6 +1175,49 @@ function IncomeEntryRow({
           </svg>
           Bezahlt
         </button>
+
+        {/* Partial payment */}
+        {onPartialPaid && (
+          partialMode ? (
+            <span className="flex items-center gap-1">
+              <input
+                type="number"
+                min="0"
+                max={entry.amount}
+                step="100"
+                value={partialAmount}
+                onChange={(e) => setPartialAmount(e.target.value)}
+                onKeyDown={(e) => {
+                  const n = parseFloat(partialAmount);
+                  if (e.key === 'Enter' && n > 0 && n < entry.amount) { onPartialPaid(entry.id, n); setPartialMode(false); setPartialAmount(''); }
+                  if (e.key === 'Escape') setPartialMode(false);
+                }}
+                placeholder="Betrag"
+                autoFocus
+                className="w-24 rounded border border-emerald-200 px-2 py-1 text-xs tabular-nums focus:border-emerald-400 focus:outline-none"
+              />
+              <button
+                onClick={() => {
+                  const n = parseFloat(partialAmount);
+                  if (n > 0 && n < entry.amount) { onPartialPaid(entry.id, n); setPartialMode(false); setPartialAmount(''); }
+                }}
+                disabled={!(parseFloat(partialAmount) > 0 && parseFloat(partialAmount) < entry.amount)}
+                className="text-xs font-medium text-emerald-700 hover:text-emerald-900 disabled:opacity-40"
+              >
+                OK
+              </button>
+              <button onClick={() => setPartialMode(false)} className="text-xs text-primary-400 hover:text-primary-600">✕</button>
+            </span>
+          ) : (
+            <button
+              onClick={() => setPartialMode(true)}
+              className="rounded px-1.5 py-1 text-xs text-emerald-600/70 hover:bg-emerald-50 hover:text-emerald-800 transition-colors"
+              title="Teilzahlung erfassen — Teilbetrag wird bezahlt, Rest bleibt offen"
+            >
+              Teilz.
+            </button>
+          )
+        )}
 
         {/* Edit — hidden when locked by a Saldokorrektur */}
         {!locked && (
@@ -1764,16 +2092,20 @@ function MonthSummaryFooter({
   bucket: MonthBucket;
   currency: string;
 }) {
-  // Sum ALL income (unpaid + late + paid) as face value — split into
-  // definitive (without provisional items) and incl.-provisional totals
+  const { toCHF } = useExchangeRates();
+
+  // Sum ALL income (unpaid + late + paid) in CHF — split into definitive
+  // (without provisional items) and incl.-provisional totals
   const allIncome = [...bucket.entries, ...bucket.lateEntries, ...bucket.provCarryIncome, ...bucket.paidEntries];
-  const incomeProv  = allIncome.reduce((s, e) => s + e.amount, 0);
-  const incomeDef   = allIncome.filter((e) => !e.provisional).reduce((s, e) => s + e.amount, 0);
-  const expenseProv = bucket.expenses.reduce((s, e) => s + e.amount, 0)
-                    + bucket.lateExpenses.reduce((s, le) => s + le.expense.amount, 0)
-                    + bucket.provCarryExpenses.reduce((s, le) => s + le.expense.amount, 0);
-  const expenseDef  = bucket.expenses.filter((e) => !e.provisional).reduce((s, e) => s + e.amount, 0)
-                    + bucket.lateExpenses.filter((le) => !le.expense.provisional).reduce((s, le) => s + le.expense.amount, 0);
+  const chfSum = (arr: { amount: number; currency: string }[]) =>
+    arr.reduce((s, e) => s + toCHF(e.amount, e.currency), 0);
+  const incomeProv  = chfSum(allIncome);
+  const incomeDef   = chfSum(allIncome.filter((e) => !e.provisional));
+  const expenseProv = chfSum(bucket.expenses)
+                    + chfSum(bucket.lateExpenses.map((le) => le.expense))
+                    + chfSum(bucket.provCarryExpenses.map((le) => le.expense));
+  const expenseDef  = chfSum(bucket.expenses.filter((e) => !e.provisional))
+                    + chfSum(bucket.lateExpenses.map((le) => le.expense).filter((e) => !e.provisional));
   const netDef  = incomeDef - expenseDef;
   const netProv = incomeProv - expenseProv;
 
@@ -1843,6 +2175,7 @@ function MonthSection({
   onUpdateIncome,
   onDeleteIncome,
   onMarkIncomePaid,
+  onPartialIncomePaid,
   onMarkIncomeUnpaid,
   onMarkExpensePaid,
   onMarkExpenseUnpaid,
@@ -1870,6 +2203,7 @@ function MonthSection({
   onUpdateIncome: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
   onDeleteIncome: (id: string) => void;
   onMarkIncomePaid: (id: string) => void;
+  onPartialIncomePaid?: (id: string, amount: number) => void;
   onMarkIncomeUnpaid: (id: string) => void;
   onMarkExpensePaid: (expenseId: string, year: number, month: number) => void;
   onMarkExpenseUnpaid: (paymentId: string) => void;
@@ -1995,6 +2329,7 @@ function MonthSection({
                 <IncomeEntryRow
                   key={e.id} entry={e} isLate locked={incomeLocked(e)} projectName={projName(e.project_id)}
                   onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
+                  onPartialPaid={onPartialIncomePaid}
                 />
               ))}
             </div>
@@ -2030,6 +2365,7 @@ function MonthSection({
                   <IncomeEntryRow
                     key={e.id} entry={e} locked={incomeLocked(e)} projectName={projName(e.project_id)}
                     onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
+                    onPartialPaid={onPartialIncomePaid}
                   />
                 )
               ))}
@@ -2058,6 +2394,7 @@ function MonthSection({
                 <IncomeEntryRow
                   key={e.id} entry={e} fromPastMonth locked={incomeLocked(e)} projectName={projName(e.project_id)}
                   onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
+                  onPartialPaid={onPartialIncomePaid}
                 />
               ))}
               {bucket.provCarryExpenses.map((le) => (
@@ -2076,6 +2413,7 @@ function MonthSection({
                   <IncomeEntryRow
                     key={e.id} entry={e} locked={incomeLocked(e)} projectName={projName(e.project_id)}
                     onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
+                    onPartialPaid={onPartialIncomePaid}
                   />
                 )
               ))}
@@ -2165,10 +2503,10 @@ export function LiquidityPlanningPage() {
     effectiveBalance, effectiveBalanceDate,
     lastCorrection, lockDate, lockTs,
     loading,
-    addIncome, updateIncome, deleteIncome, markIncomePaid, markIncomeUnpaid,
+    addIncome, updateIncome, deleteIncome, markIncomePaid, markIncomeUnpaid, recordPartialIncomePayment,
     addExpense, updateExpense, deleteExpense, toggleExpenseActive, markExpensePaid, markExpenseUnpaid,
     skipExpenseInstance,
-    addProject, deleteProject,
+    addProject, deleteProject, renameProject, addProjectPosition,
     upsertStartsaldo, upsertEffectiveBalance, clearEffectiveBalance, acceptEffectiveBalance,
     upsertActualBalance, deleteActualBalance,
   } = useNOALiquidity();
@@ -2196,6 +2534,45 @@ export function LiquidityPlanningPage() {
   const projectNames: Record<string, string> = {};
   for (const p of projects) projectNames[p.id] = p.name;
 
+  // ---- Project filter (set by clicking a project badge) --------------------
+  const [projectFilter, setProjectFilter] = useState<string | null>(null); // project id
+  const filterProjectName = projectFilter ? projectNames[projectFilter] ?? null : null;
+  const setFilterByName = (name: string) => {
+    const p = projects.find((pp) => pp.name === name);
+    if (p) setProjectFilter(p.id);
+  };
+
+  const filterBucket = (b: MonthBucket): MonthBucket => (projectFilter === null ? b : {
+    ...b,
+    entries:           b.entries.filter((e) => e.project_id === projectFilter),
+    paidEntries:       b.paidEntries.filter((e) => e.project_id === projectFilter),
+    lateEntries:       b.lateEntries.filter((e) => e.project_id === projectFilter),
+    provCarryIncome:   b.provCarryIncome.filter((e) => e.project_id === projectFilter),
+    expenses:          b.expenses.filter((e) => e.project_id === projectFilter),
+    lateExpenses:      b.lateExpenses.filter((le) => le.expense.project_id === projectFilter),
+    provCarryExpenses: b.provCarryExpenses.filter((le) => le.expense.project_id === projectFilter),
+  });
+  const bucketHasItems = (b: MonthBucket) =>
+    b.entries.length + b.paidEntries.length + b.lateEntries.length + b.provCarryIncome.length +
+    b.expenses.length + b.lateExpenses.length + b.provCarryExpenses.length > 0;
+
+  const displayMonths = projectFilter ? months.map(filterBucket).filter(bucketHasItems) : months;
+  const displayPastMonths = projectFilter ? pastMonths.map(filterBucket).filter(bucketHasItems) : pastMonths;
+
+  // ---- Prognosegüte: Ist-Saldo vs. berechneter Saldo in der Vergangenheit --
+  const accuracySamples = pastMonths.filter((b) => b.actualBalance !== null);
+  const avgDeviation = accuracySamples.length >= 2
+    ? accuracySamples.reduce((s, b) => s + ((b.actualBalance as number) - b.projectedBalance), 0) / accuracySamples.length
+    : null;
+
+  // Open entries for duplicate detection in the capture forms
+  const openIncomeCandidates = incomes
+    .filter((e) => !e.paid_at)
+    .map((e) => ({ description: e.description, amount: e.amount, date: e.expected_date }));
+  const openExpenseCandidates = expenses
+    .filter((e) => e.active)
+    .map((e) => ({ description: e.description, amount: e.amount, date: e.due_date ?? '' }));
+
   async function handleAddIncome(data: Parameters<typeof addIncome>[0]) {
     const ok = await addIncome(data);
     if (ok) setShowIncomeForm(false);
@@ -2217,6 +2594,7 @@ export function LiquidityPlanningPage() {
   const showingAForm = showIncomeForm || showExpenseForm || showProjectForm;
 
   return (
+    <ProjectFilterContext.Provider value={setFilterByName}>
     <div>
       {/* Page header */}
       <div className="mb-6 flex items-start justify-between gap-4">
@@ -2226,6 +2604,17 @@ export function LiquidityPlanningPage() {
         </div>
         {!showingAForm && (
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportLiquidityToExcel(months, pastMonths, projectNames)}
+              title="Planung inkl. Vergangenheit als Excel exportieren"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              Export
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setShowProjectForm(true)}>
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -2248,9 +2637,9 @@ export function LiquidityPlanningPage() {
         )}
       </div>
 
-      {showIncomeForm  && <AddIncomeForm  onSave={handleAddIncome}  onCancel={() => setShowIncomeForm(false)} />}
-      {showExpenseForm && <AddExpenseForm onSave={handleAddExpense} onCancel={() => setShowExpenseForm(false)} />}
-      {showProjectForm && <AddProjectForm onSave={handleAddProject} onCancel={() => setShowProjectForm(false)} />}
+      {showIncomeForm  && <AddIncomeForm  onSave={handleAddIncome}  onCancel={() => setShowIncomeForm(false)} existingOpen={openIncomeCandidates} />}
+      {showExpenseForm && <AddExpenseForm onSave={handleAddExpense} onCancel={() => setShowExpenseForm(false)} existingOpen={openExpenseCandidates} />}
+      {showProjectForm && <AddProjectForm onSave={handleAddProject} onCancel={() => setShowProjectForm(false)} existingOpen={[...openIncomeCandidates, ...openExpenseCandidates]} />}
 
       {!showingAForm && (
         <>
@@ -2281,7 +2670,16 @@ export function LiquidityPlanningPage() {
 
       {/* Cashflow chart */}
       {!loading && !showingAForm && (
-        <LiquidityCashFlowChart months={months} pastMonths={pastMonths} currency={startsaldoCurrency} />
+        <>
+          <LiquidityCashFlowChart months={months} pastMonths={pastMonths} currency={startsaldoCurrency} />
+          {avgDeviation !== null && (
+            <p className="-mt-4 mb-6 px-1 text-right text-[10px] text-primary-400">
+              Prognosegüte: Ist-Saldo lag im Ø {formatCurrency(Math.abs(avgDeviation), 'CHF')}{' '}
+              {avgDeviation >= 0 ? 'über' : 'unter'} dem berechneten Saldo
+              ({accuracySamples.length} Monate mit Ist-Saldo{avgDeviation < 0 ? ' — Planung tendenziell zu optimistisch' : ''})
+            </p>
+          )}
+        </>
       )}
 
       {/* Projekte — grouped positions with paid status + delete-all */}
@@ -2292,7 +2690,27 @@ export function LiquidityPlanningPage() {
           expenses={expenses}
           expensePayments={expensePayments}
           onDeleteProject={deleteProject}
+          onRenameProject={renameProject}
+          onAddPosition={addProjectPosition}
         />
+      )}
+
+      {/* Active project filter banner */}
+      {!loading && !showingAForm && filterProjectName && (
+        <div className="mb-3 flex items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm text-indigo-700">
+          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+          </svg>
+          <span className="min-w-0 flex-1 truncate">
+            Gefiltert nach Projekt <strong>{filterProjectName}</strong> — leere Monate sind ausgeblendet, Saldozeilen zeigen weiterhin Gesamtwerte.
+          </span>
+          <button
+            onClick={() => setProjectFilter(null)}
+            className="shrink-0 rounded px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-100 transition-colors"
+          >
+            Filter aufheben ✕
+          </button>
+        </div>
       )}
 
       {loading ? (
@@ -2300,7 +2718,7 @@ export function LiquidityPlanningPage() {
       ) : (
         <div className="space-y-2">
           {/* Past months — collapsed by default, newest first */}
-          {pastMonths.length > 0 && (
+          {displayPastMonths.length > 0 && (
             <div className="rounded-lg border border-primary-100 bg-primary-50/40 overflow-hidden">
               <button
                 onClick={() => setShowPastMonths((v) => !v)}
@@ -2309,7 +2727,7 @@ export function LiquidityPlanningPage() {
                 <span className="text-sm font-semibold text-primary-600">
                   Vergangene Monate
                   <span className="ml-2 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500">
-                    {pastMonths.length}
+                    {displayPastMonths.length}
                   </span>
                 </span>
                 <svg className={`h-4 w-4 text-primary-400 transition-transform ${showPastMonths ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -2318,7 +2736,7 @@ export function LiquidityPlanningPage() {
               </button>
               {showPastMonths && (
                 <div className="space-y-2 border-t border-primary-100 p-2">
-                  {[...pastMonths].reverse().map((bucket) => {
+                  {[...displayPastMonths].reverse().map((bucket) => {
                     const key = `${bucket.year}-${String(bucket.month + 1).padStart(2, '0')}`;
                     return (
                       <MonthSection
@@ -2333,6 +2751,7 @@ export function LiquidityPlanningPage() {
                         onUpdateIncome={updateIncome}
                         onDeleteIncome={deleteIncome}
                         onMarkIncomePaid={markIncomePaid}
+                        onPartialIncomePaid={recordPartialIncomePayment}
                         onMarkIncomeUnpaid={markIncomeUnpaid}
                         onMarkExpensePaid={markExpensePaid}
                         onMarkExpenseUnpaid={markExpenseUnpaid}
@@ -2350,7 +2769,7 @@ export function LiquidityPlanningPage() {
             </div>
           )}
 
-          {months.map((bucket) => {
+          {displayMonths.map((bucket) => {
             const key = `${bucket.year}-${String(bucket.month + 1).padStart(2, '0')}`;
             return (
               <MonthSection
@@ -2364,6 +2783,7 @@ export function LiquidityPlanningPage() {
                 onUpdateIncome={updateIncome}
                 onDeleteIncome={deleteIncome}
                 onMarkIncomePaid={markIncomePaid}
+                onPartialIncomePaid={recordPartialIncomePayment}
                 onMarkIncomeUnpaid={markIncomeUnpaid}
                 onMarkExpensePaid={markExpensePaid}
                 onMarkExpenseUnpaid={markExpenseUnpaid}
@@ -2379,5 +2799,6 @@ export function LiquidityPlanningPage() {
         </div>
       )}
     </div>
+    </ProjectFilterContext.Provider>
   );
 }

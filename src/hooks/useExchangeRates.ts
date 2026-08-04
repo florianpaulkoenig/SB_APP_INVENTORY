@@ -11,6 +11,29 @@ let cachedRates: Record<string, number> | null = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 
+/**
+ * Non-React access to the CHF exchange rates — same module-level cache as
+ * useExchangeRates. Falls back to FALLBACK_RATES when the API is unreachable.
+ */
+export async function getRatesCHF(): Promise<Record<string, number>> {
+  if (cachedRates && Date.now() - cacheTimestamp < CACHE_DURATION) return cachedRates;
+  try {
+    const res = await fetch('https://api.exchangerate-api.com/v4/latest/CHF');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data?.rates) {
+      cachedRates = data.rates;
+      cacheTimestamp = Date.now();
+      return data.rates;
+    }
+  } catch {
+    // fall through to fallback
+  }
+  cachedRates = FALLBACK_RATES;
+  cacheTimestamp = Date.now();
+  return FALLBACK_RATES;
+}
+
 export interface ExchangeRates {
   /** Convert an amount from a given currency to CHF */
   toCHF: (amount: number, fromCurrency: string) => number;
