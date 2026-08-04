@@ -966,16 +966,16 @@ function ProjectsPanel({
                     <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
                       <button
                         onClick={() => { onDeleteProject(project.id); setConfirmingId(null); }}
-                        className="flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:flex-none sm:py-1.5 sm:text-xs"
+                        className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs"
                       >
                         {items.length} Position{items.length !== 1 ? 'en' : ''} löschen
                       </button>
-                      <button onClick={() => setConfirmingId(null)} className="flex-1 rounded-md border border-primary-200 px-2.5 py-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
+                      <button onClick={() => setConfirmingId(null)} className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setConfirmingId(project.id)}
-                      className="flex flex-1 items-center justify-center rounded-md border border-primary-100 p-2.5 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:flex-none sm:p-1.5 shrink-0"
+                      className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5 shrink-0"
                       aria-label="Projekt löschen"
                       title="Projekt inkl. aller Positionen löschen"
                     >
@@ -1118,7 +1118,7 @@ function IncomeEntryRow({
   }
 
   return (
-    <div className={`flex flex-wrap items-center gap-2 gap-y-1 py-2.5 border-b border-primary-50 last:border-0 ${isLate ? 'text-red-600' : ''}`}>
+    <div className={`flex flex-wrap items-center gap-2 gap-y-1.5 py-3 sm:py-2.5 border-b border-primary-50 last:border-0 ${isLate ? 'text-red-600' : ''}`}>
       {/* Late badge */}
       {isLate && (
         <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
@@ -1158,7 +1158,7 @@ function IncomeEntryRow({
       </div>
 
       {/* Amount */}
-      <span className={`shrink-0 text-sm font-medium tabular-nums ${isLate ? 'text-red-600' : 'text-emerald-700'}`}>
+      <span className={`ml-auto shrink-0 text-base sm:text-sm font-semibold sm:font-medium tabular-nums ${isLate ? 'text-red-600' : 'text-emerald-700'}`}>
         +{formatCurrency(entry.amount, entry.currency)}
       </span>
 
@@ -1167,7 +1167,7 @@ function IncomeEntryRow({
         {/* Paid button */}
         <button
           onClick={() => onMarkPaid(entry.id)}
-          className="flex flex-1 items-center justify-center gap-1 rounded-md border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
+          className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-emerald-200 bg-emerald-50/70 px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
           title="Als bezahlt markieren"
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -1194,7 +1194,7 @@ function IncomeEntryRow({
                 }}
                 placeholder="Betrag"
                 autoFocus
-                className="w-24 rounded border border-emerald-200 px-2 py-1 text-xs tabular-nums focus:border-emerald-400 focus:outline-none"
+                className="h-11 min-w-0 flex-1 rounded-md border border-emerald-200 px-2 text-sm tabular-nums focus:border-emerald-400 focus:outline-none sm:h-auto sm:w-24 sm:flex-none sm:py-1 sm:text-xs"
               />
               <button
                 onClick={() => {
@@ -1202,16 +1202,16 @@ function IncomeEntryRow({
                   if (n > 0 && n < entry.amount) { onPartialPaid(entry.id, n); setPartialMode(false); setPartialAmount(''); }
                 }}
                 disabled={!(parseFloat(partialAmount) > 0 && parseFloat(partialAmount) < entry.amount)}
-                className="text-xs font-medium text-emerald-700 hover:text-emerald-900 disabled:opacity-40"
+                className="h-11 rounded-md border border-emerald-200 px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40 transition-colors sm:h-auto sm:border-0 sm:px-1 sm:py-1 sm:text-xs"
               >
                 OK
               </button>
-              <button onClick={() => setPartialMode(false)} className="text-xs text-primary-400 hover:text-primary-600">✕</button>
+              <button onClick={() => setPartialMode(false)} className="h-11 rounded-md border border-primary-200 px-3 text-sm text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:border-0 sm:px-1 sm:py-1 sm:text-xs">✕</button>
             </span>
           ) : (
             <button
               onClick={() => setPartialMode(true)}
-              className="flex-1 rounded-md border border-emerald-200 px-2.5 py-2.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 transition-colors sm:flex-none sm:py-1.5 sm:text-xs"
+              className="h-11 flex-1 rounded-md border border-emerald-200 px-2.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs"
               title="Teilzahlung erfassen — Teilbetrag wird bezahlt, Rest bleibt offen"
             >
               Teilz.
@@ -1223,7 +1223,7 @@ function IncomeEntryRow({
         {!locked && (
           <button
             onClick={() => setEditing(true)}
-            className="flex flex-1 items-center justify-center rounded-md border border-primary-100 p-2.5 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors sm:flex-none sm:p-1.5"
+            className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:p-1.5"
             title="Bearbeiten"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -1237,13 +1237,13 @@ function IncomeEntryRow({
         {(!locked || isLate || fromPastMonth) && (
           confirming ? (
             <div className="flex flex-1 items-center gap-2 sm:flex-none sm:gap-1">
-              <button onClick={() => onDelete(entry.id)} className="flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:flex-none sm:py-1.5 sm:text-xs">Löschen</button>
-              <button onClick={() => setConfirming(false)} className="flex-1 rounded-md border border-primary-200 px-2.5 py-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
+              <button onClick={() => onDelete(entry.id)} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Löschen</button>
+              <button onClick={() => setConfirming(false)} className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
             </div>
           ) : (
             <button
               onClick={() => setConfirming(true)}
-              className="flex flex-1 items-center justify-center rounded-md border border-primary-100 p-2.5 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:flex-none sm:p-1.5"
+              className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5"
               aria-label="Löschen"
               title="Stornieren / löschen"
             >
@@ -1388,23 +1388,23 @@ function PaidIncomeRow({
         <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
           <button
             onClick={() => onMarkUnpaid(entry.id)}
-            className="flex-1 rounded-md border border-primary-200 px-2.5 py-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors sm:flex-none sm:py-1.5 sm:text-xs"
+            className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs"
             title="Als unbezahlt markieren"
           >
             Rückgängig
           </button>
-          <button onClick={() => setEditing(true)} className="flex flex-1 items-center justify-center rounded-md border border-primary-100 p-2.5 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors sm:flex-none sm:p-1.5">
+          <button onClick={() => setEditing(true)} className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:p-1.5">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
             </svg>
           </button>
           {confirming ? (
             <div className="flex flex-1 items-center gap-2 sm:flex-none sm:gap-1">
-              <button onClick={() => onDelete(entry.id)} className="flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:flex-none sm:py-1.5 sm:text-xs">Löschen</button>
+              <button onClick={() => onDelete(entry.id)} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Löschen</button>
               <button onClick={() => setConfirming(false)} className="text-xs text-primary-400">Nein</button>
             </div>
           ) : (
-            <button onClick={() => setConfirming(true)} className="flex flex-1 items-center justify-center rounded-md border border-primary-100 p-2.5 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:flex-none sm:p-1.5">
+            <button onClick={() => setConfirming(true)} className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5">
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -1441,7 +1441,7 @@ function MonthExpenseRow({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 gap-y-1 py-2 border-b border-primary-50 last:border-0">
+    <div className="flex flex-wrap items-center gap-3 gap-y-1.5 py-3 sm:py-2 border-b border-primary-50 last:border-0">
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
       {projectName && <ProjectBadge name={projectName} />}
       {expense.provisional && <ProvBadge />}
@@ -1449,12 +1449,12 @@ function MonthExpenseRow({
         {stripProjectPrefix(expense.description, projectName)}
         {expense.invoice_number && <span className="ml-2 text-xs text-primary-400 tabular-nums">Rg. {expense.invoice_number}</span>}
       </span>
-      <span className="shrink-0 text-sm font-medium text-red-500 tabular-nums">
+      <span className="ml-auto shrink-0 text-base sm:text-sm font-semibold sm:font-medium text-red-500 tabular-nums">
         -{formatCurrency(expense.amount, expense.currency)}
       </span>
       <button
         onClick={() => onMarkPaid(expense.id)}
-        className="flex flex-1 items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-100 transition-colors sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
+        className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 text-sm font-semibold text-red-500 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
         title="Als bezahlt markieren"
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -1466,7 +1466,7 @@ function MonthExpenseRow({
       {isOneTime && onUpdate && (
         <button
           onClick={() => setEditing(true)}
-          className="flex flex-1 items-center justify-center rounded-md border border-primary-100 p-2.5 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors sm:flex-none sm:p-1.5"
+          className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:p-1.5"
           title="Bearbeiten"
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -1477,7 +1477,7 @@ function MonthExpenseRow({
       {isOneTime && onDelete && (
         confirming ? (
           <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
-            <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:flex-none sm:py-1.5 sm:text-xs">Löschen</button>
+            <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Löschen</button>
             <button onClick={() => setConfirming(false)} className="text-xs text-primary-400">Nein</button>
           </div>
         ) : (
@@ -1512,7 +1512,7 @@ function LateExpenseRow({
     .toLocaleDateString('de-CH', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="flex flex-wrap items-center gap-2 gap-y-1 py-2.5 border-b border-primary-50 last:border-0">
+    <div className="flex flex-wrap items-center gap-2 gap-y-1.5 py-3 sm:py-2.5 border-b border-primary-50 last:border-0">
       <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
         Überfällig
       </span>
@@ -1524,12 +1524,12 @@ function LateExpenseRow({
         {stripProjectPrefix(e.description, projectName)}
         {e.invoice_number && <span className="ml-2 text-xs font-normal text-red-400 tabular-nums">Rg. {e.invoice_number}</span>}
       </span>
-      <span className="shrink-0 text-sm font-medium text-red-600 tabular-nums">
+      <span className="ml-auto shrink-0 text-base sm:text-sm font-semibold sm:font-medium text-red-600 tabular-nums">
         -{formatCurrency(e.amount, e.currency)}
       </span>
       <button
         onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
-        className="flex flex-1 items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-100 transition-colors sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
+        className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50/60 px-3 text-sm font-semibold text-red-500 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
         title={`Als bezahlt markieren (wird ${originLabel} zugeordnet)`}
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -1539,13 +1539,13 @@ function LateExpenseRow({
       </button>
       {confirming ? (
         <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
-          <button onClick={onCancel} className="flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:flex-none sm:py-1.5 sm:text-xs">Stornieren</button>
-          <button onClick={() => setConfirming(false)} className="flex-1 rounded-md border border-primary-200 px-2.5 py-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
+          <button onClick={onCancel} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Stornieren</button>
+          <button onClick={() => setConfirming(false)} className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
         </div>
       ) : (
         <button
           onClick={() => setConfirming(true)}
-          className="flex flex-1 items-center justify-center rounded-md border border-primary-100 p-2.5 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:flex-none sm:p-1.5 shrink-0"
+          className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5 shrink-0"
           aria-label="Stornieren"
           title={e.type === 'one_time'
             ? 'Stornieren — Ausgabe wird gelöscht'
@@ -1581,7 +1581,7 @@ function ProvCarryExpenseRow({
     .toLocaleDateString('de-CH', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="flex flex-wrap items-center gap-2 gap-y-1 py-2.5 border-b border-primary-50 last:border-0">
+    <div className="flex flex-wrap items-center gap-2 gap-y-1.5 py-3 sm:py-2.5 border-b border-primary-50 last:border-0">
       <span
         className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500"
         title="Provisorisch — aus Vormonat übertragen"
@@ -1596,12 +1596,12 @@ function ProvCarryExpenseRow({
         {stripProjectPrefix(e.description, projectName)}
         {e.invoice_number && <span className="ml-2 text-xs font-normal text-primary-400 tabular-nums">Rg. {e.invoice_number}</span>}
       </span>
-      <span className="shrink-0 text-sm font-medium text-red-500 tabular-nums">
+      <span className="ml-auto shrink-0 text-base sm:text-sm font-semibold sm:font-medium text-red-500 tabular-nums">
         -{formatCurrency(e.amount, e.currency)}
       </span>
       <button
         onClick={() => onMarkPaid(e.id, instance.year, instance.month)}
-        className="flex flex-1 items-center justify-center gap-1 rounded-md border border-primary-200 bg-white px-3 py-2.5 text-sm font-semibold text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
+        className="flex h-11 flex-1 items-center justify-center gap-1 rounded-md border border-primary-200 bg-white px-3 text-sm font-semibold text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:justify-start sm:py-1.5 sm:text-xs"
         title={`Als bezahlt markieren (wird ${originLabel} zugeordnet)`}
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -1611,13 +1611,13 @@ function ProvCarryExpenseRow({
       </button>
       {confirming ? (
         <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
-          <button onClick={onCancel} className="flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:flex-none sm:py-1.5 sm:text-xs">Stornieren</button>
-          <button onClick={() => setConfirming(false)} className="flex-1 rounded-md border border-primary-200 px-2.5 py-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
+          <button onClick={onCancel} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Stornieren</button>
+          <button onClick={() => setConfirming(false)} className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
         </div>
       ) : (
         <button
           onClick={() => setConfirming(true)}
-          className="flex flex-1 items-center justify-center rounded-md border border-primary-100 p-2.5 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:flex-none sm:p-1.5 shrink-0"
+          className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5 shrink-0"
           aria-label="Stornieren"
           title={e.type === 'one_time'
             ? 'Stornieren — Ausgabe wird gelöscht'
@@ -1668,7 +1668,7 @@ function PaidExpenseRow({
       ) : (
         <button
           onClick={() => onMarkUnpaid(expense.id)}
-          className="flex-1 rounded-md border border-primary-200 px-2.5 py-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors sm:flex-none sm:py-1.5 sm:text-xs shrink-0"
+          className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs shrink-0"
           title="Als unbezahlt markieren"
         >
           Rückgängig
@@ -1778,7 +1778,7 @@ function ExpenseManagementRow({
       {/* Edit button */}
       <button
         onClick={() => setEditing(true)}
-        className="flex flex-1 items-center justify-center rounded-md border border-primary-100 p-2.5 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors sm:flex-none sm:p-1.5"
+        className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-primary-300 hover:text-primary-700 transition-colors sm:h-auto sm:flex-none sm:p-1.5"
         title="Bearbeiten"
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -1787,7 +1787,7 @@ function ExpenseManagementRow({
       </button>
       {confirming ? (
         <div className="mt-1 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
-          <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:flex-none sm:py-1.5 sm:text-xs">Löschen</button>
+          <button onClick={() => { onDelete(expense.id); setConfirming(false); }} className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Löschen</button>
           <button onClick={() => setConfirming(false)} className="text-xs text-primary-400">Nein</button>
         </div>
       ) : (
