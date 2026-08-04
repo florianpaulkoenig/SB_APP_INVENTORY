@@ -54,6 +54,33 @@ function ProvBadge() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Project badge — prominent marker on every row that belongs to a project
+// ---------------------------------------------------------------------------
+
+function ProjectBadge({ name }: { name: string }) {
+  return (
+    <span
+      className="inline-flex max-w-56 shrink-0 items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700"
+      title={`Projekt: ${name}`}
+    >
+      <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+      </svg>
+      <span className="truncate">{name}</span>
+    </span>
+  );
+}
+
+/** Positions are saved as "Projektname — Beschreibung"; with the badge shown,
+ *  the prefix is redundant — strip it for display. */
+function stripProjectPrefix(description: string, projectName?: string | null): string {
+  if (projectName && description.startsWith(`${projectName} — `)) {
+    return description.slice(projectName.length + 3);
+  }
+  return description;
+}
+
 function ProvCheckbox({
   checked, onChange,
 }: {
@@ -701,7 +728,7 @@ function ProjectsPanel({
                       </span>
                       {item.provisional && <ProvBadge />}
                       <span className={`min-w-0 flex-1 truncate text-sm ${item.paid ? 'text-primary-400 line-through' : 'text-primary-800'}`}>
-                        {item.description}
+                        {stripProjectPrefix(item.description, project.name)}
                       </span>
                       <span className={`shrink-0 text-sm font-medium tabular-nums ${item.kind === 'income' ? 'text-emerald-700' : 'text-red-500'}`}>
                         {item.kind === 'income' ? '+' : '-'}{formatCurrency(item.amount, item.currency)}
@@ -781,6 +808,7 @@ function IncomeEntryRow({
   isLate = false,
   fromPastMonth = false,
   locked = false,
+  projectName = null,
   onUpdate,
   onDelete,
   onMarkPaid,
@@ -789,6 +817,8 @@ function IncomeEntryRow({
   isLate?: boolean;
   /** Provisional entry carried over from a past month (not überfällig) */
   fromPastMonth?: boolean;
+  /** Name of the project this entry belongs to (renders a badge) */
+  projectName?: string | null;
   /** Locked by a Saldokorrektur: no edit/delete — settling (Bezahlt) stays possible */
   locked?: boolean;
   onUpdate: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
@@ -826,12 +856,13 @@ function IncomeEntryRow({
         {formatDate(entry.expected_date)}
       </span>
 
+      {projectName && <ProjectBadge name={projectName} />}
       {entry.provisional && <ProvBadge />}
 
       {/* Description + notes */}
       <div className="min-w-0 flex-1">
         <span className={`text-sm ${isLate ? 'font-medium text-red-700' : 'text-primary-900'}`}>
-          {entry.description}
+          {stripProjectPrefix(entry.description, projectName)}
         </span>
         {entry.notes && (
           <span className={`ml-2 text-xs ${isLate ? 'text-red-400' : 'text-primary-400'}`}>{entry.notes}</span>
@@ -905,17 +936,19 @@ function IncomeEntryRow({
 // ---------------------------------------------------------------------------
 
 function CarriedIncomeRow({
-  entry, targetLabel,
+  entry, targetLabel, projectName = null,
 }: {
   entry: NOALiquidityIncomeRow;
   targetLabel: string;
+  projectName?: string | null;
 }) {
   return (
     <div className="flex items-center gap-2 py-2.5 border-b border-primary-50 last:border-0 opacity-60">
       <span className="w-20 shrink-0 text-xs text-primary-300 tabular-nums">{formatDate(entry.expected_date)}</span>
+      {projectName && <ProjectBadge name={projectName} />}
       {entry.provisional && <ProvBadge />}
       <div className="min-w-0 flex-1">
-        <span className="text-sm text-primary-400">{entry.description}</span>
+        <span className="text-sm text-primary-400">{stripProjectPrefix(entry.description, projectName)}</span>
         {entry.notes && <span className="ml-2 text-xs text-primary-300">{entry.notes}</span>}
         {entry.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {entry.invoice_number}</span>}
       </div>
@@ -935,18 +968,20 @@ function CarriedIncomeRow({
 }
 
 function CarriedExpenseRow({
-  expense, targetLabel,
+  expense, targetLabel, projectName = null,
 }: {
   expense: NOALiquidityExpenseRow;
   targetLabel: string;
+  projectName?: string | null;
 }) {
   const badge = RECURRENCE_BADGES[expense.type];
   return (
     <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0 opacity-60">
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      {projectName && <ProjectBadge name={projectName} />}
       {expense.provisional && <ProvBadge />}
       <span className="min-w-0 flex-1 text-sm text-primary-400">
-        {expense.description}
+        {stripProjectPrefix(expense.description, projectName)}
         {expense.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {expense.invoice_number}</span>}
       </span>
       <span
@@ -971,6 +1006,7 @@ function CarriedExpenseRow({
 function PaidIncomeRow({
   entry,
   locked = false,
+  projectName = null,
   onUpdate,
   onDelete,
   onMarkUnpaid,
@@ -978,6 +1014,7 @@ function PaidIncomeRow({
   entry: NOALiquidityIncomeRow;
   /** Locked by a Saldokorrektur: paid state and data are final */
   locked?: boolean;
+  projectName?: string | null;
   onUpdate: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
   onDelete: (id: string) => void;
   onMarkUnpaid: (id: string) => void;
@@ -999,11 +1036,12 @@ function PaidIncomeRow({
       {/* Date */}
       <span className="w-20 shrink-0 text-xs text-primary-400 tabular-nums">{formatDate(entry.expected_date)}</span>
 
+      {projectName && <ProjectBadge name={projectName} />}
       {entry.provisional && <ProvBadge />}
 
       {/* Description */}
       <div className="min-w-0 flex-1">
-        <span className="text-sm text-primary-600 line-through">{entry.description}</span>
+        <span className="text-sm text-primary-600 line-through">{stripProjectPrefix(entry.description, projectName)}</span>
         {entry.notes && <span className="ml-2 text-xs text-primary-300">{entry.notes}</span>}
         {entry.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {entry.invoice_number}</span>}
       </div>
@@ -1055,11 +1093,12 @@ function PaidIncomeRow({
 // ---------------------------------------------------------------------------
 
 function MonthExpenseRow({
-  expense, locked = false, onMarkPaid, onUpdate, onDelete,
+  expense, locked = false, projectName = null, onMarkPaid, onUpdate, onDelete,
 }: {
   expense: NOALiquidityExpenseRow;
   /** Locked by a Saldokorrektur: no edit/delete — settling (Bezahlt) stays possible */
   locked?: boolean;
+  projectName?: string | null;
   onMarkPaid: (expenseId: string) => void;
   onUpdate?: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
   onDelete?: (id: string) => void;
@@ -1076,9 +1115,10 @@ function MonthExpenseRow({
   return (
     <div className="flex items-center gap-3 py-2 border-b border-primary-50 last:border-0">
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      {projectName && <ProjectBadge name={projectName} />}
       {expense.provisional && <ProvBadge />}
       <span className="min-w-0 flex-1 text-sm text-primary-700">
-        {expense.description}
+        {stripProjectPrefix(expense.description, projectName)}
         {expense.invoice_number && <span className="ml-2 text-xs text-primary-400 tabular-nums">Rg. {expense.invoice_number}</span>}
       </span>
       <span className="shrink-0 text-sm font-medium text-red-500 tabular-nums">
@@ -1129,9 +1169,10 @@ function MonthExpenseRow({
 // ---------------------------------------------------------------------------
 
 function LateExpenseRow({
-  instance, onMarkPaid, onCancel,
+  instance, projectName = null, onMarkPaid, onCancel,
 }: {
   instance: LateExpenseInstance;
+  projectName?: string | null;
   onMarkPaid: (expenseId: string, year: number, month: number) => void;
   /** Storno: one_time → delete the expense, recurring → skip this instance */
   onCancel: () => void;
@@ -1149,9 +1190,10 @@ function LateExpenseRow({
       </span>
       <span className="w-28 shrink-0 text-xs text-red-400">{originLabel}</span>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      {projectName && <ProjectBadge name={projectName} />}
       {e.provisional && <ProvBadge />}
       <span className="min-w-0 flex-1 text-sm font-medium text-red-700">
-        {e.description}
+        {stripProjectPrefix(e.description, projectName)}
         {e.invoice_number && <span className="ml-2 text-xs font-normal text-red-400 tabular-nums">Rg. {e.invoice_number}</span>}
       </span>
       <span className="shrink-0 text-sm font-medium text-red-600 tabular-nums">
@@ -1196,9 +1238,10 @@ function LateExpenseRow({
 // ---------------------------------------------------------------------------
 
 function ProvCarryExpenseRow({
-  instance, onMarkPaid, onCancel,
+  instance, projectName = null, onMarkPaid, onCancel,
 }: {
   instance: LateExpenseInstance;
+  projectName?: string | null;
   onMarkPaid: (expenseId: string, year: number, month: number) => void;
   /** Storno: one_time → delete the expense, recurring → skip this instance */
   onCancel: () => void;
@@ -1219,9 +1262,10 @@ function ProvCarryExpenseRow({
       </span>
       <span className="w-28 shrink-0 text-xs text-primary-400">{originLabel}</span>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      {projectName && <ProjectBadge name={projectName} />}
       <ProvBadge />
       <span className="min-w-0 flex-1 text-sm text-primary-900">
-        {e.description}
+        {stripProjectPrefix(e.description, projectName)}
         {e.invoice_number && <span className="ml-2 text-xs font-normal text-primary-400 tabular-nums">Rg. {e.invoice_number}</span>}
       </span>
       <span className="shrink-0 text-sm font-medium text-red-500 tabular-nums">
@@ -1265,11 +1309,12 @@ function ProvCarryExpenseRow({
 // ---------------------------------------------------------------------------
 
 function PaidExpenseRow({
-  expense, locked = false, onMarkUnpaid,
+  expense, locked = false, projectName = null, onMarkUnpaid,
 }: {
   expense: NOALiquidityExpenseRow;
   /** Locked by a Saldokorrektur: paid state is final */
   locked?: boolean;
+  projectName?: string | null;
   onMarkUnpaid: (expenseId: string) => void;
 }) {
   const badge = RECURRENCE_BADGES[expense.type];
@@ -1279,9 +1324,10 @@ function PaidExpenseRow({
         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
       </svg>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+      {projectName && <ProjectBadge name={projectName} />}
       {expense.provisional && <ProvBadge />}
       <span className="min-w-0 flex-1 text-sm text-primary-500 line-through">
-        {expense.description}
+        {stripProjectPrefix(expense.description, projectName)}
         {expense.invoice_number && <span className="ml-2 text-xs text-primary-300 tabular-nums">Rg. {expense.invoice_number}</span>}
       </span>
       <span className="shrink-0 text-sm text-primary-400 tabular-nums line-through">
@@ -1793,6 +1839,7 @@ function MonthSection({
   lockDate,
   lockTs,
   carriedToLabel = null,
+  projectNames = {},
   onUpdateIncome,
   onDeleteIncome,
   onMarkIncomePaid,
@@ -1818,6 +1865,8 @@ function MonthSection({
    * (the current month). Unpaid rows then render greyed with a note.
    */
   carriedToLabel?: string | null;
+  /** project_id → project name, for the project badges on rows */
+  projectNames?: Record<string, string>;
   onUpdateIncome: (id: string, data: { description: string; amount: number; currency: string; expected_date: string; notes?: string | null }) => Promise<boolean>;
   onDeleteIncome: (id: string) => void;
   onMarkIncomePaid: (id: string) => void;
@@ -1864,6 +1913,8 @@ function MonthSection({
     const paidAt = bucket.paidExpenseAtMap[e.id];
     return !paidAt || lockTs === null || new Date(paidAt).getTime() < lockTs;
   };
+
+  const projName = (pid?: string | null) => (pid ? projectNames[pid] ?? null : null);
 
   const hasUnpaid        = bucket.entries.length > 0;
   const hasLate          = bucket.lateEntries.length > 0;
@@ -1935,7 +1986,7 @@ function MonthSection({
             <div className="border-b border-red-50 pb-0.5 mb-0.5">
               {bucket.lateEntries.map((e) => (
                 <IncomeEntryRow
-                  key={e.id} entry={e} isLate locked={incomeLocked(e)}
+                  key={e.id} entry={e} isLate locked={incomeLocked(e)} projectName={projName(e.project_id)}
                   onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
                 />
               ))}
@@ -1949,6 +2000,7 @@ function MonthSection({
                 <LateExpenseRow
                   key={`${le.expense.id}:${le.year}-${le.month}`}
                   instance={le}
+                  projectName={projName(le.expense.project_id)}
                   onMarkPaid={onMarkExpensePaid}
                   onCancel={() => onCancelExpenseInstance(le.expense, le.year, le.month)}
                 />
@@ -1961,7 +2013,7 @@ function MonthSection({
             <div>
               {bucket.provCarryIncome.map((e) => (
                 <IncomeEntryRow
-                  key={e.id} entry={e} fromPastMonth locked={incomeLocked(e)}
+                  key={e.id} entry={e} fromPastMonth locked={incomeLocked(e)} projectName={projName(e.project_id)}
                   onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
                 />
               ))}
@@ -1975,6 +2027,7 @@ function MonthSection({
                 <ProvCarryExpenseRow
                   key={`${le.expense.id}:${le.year}-${le.month}`}
                   instance={le}
+                  projectName={projName(le.expense.project_id)}
                   onMarkPaid={onMarkExpensePaid}
                   onCancel={() => onCancelExpenseInstance(le.expense, le.year, le.month)}
                 />
@@ -1987,10 +2040,10 @@ function MonthSection({
             <div className={hasProvCarryInc || hasProvCarryExp ? 'border-t border-primary-50 pt-0.5' : ''}>
               {bucket.entries.map((e) => (
                 carriedToLabel !== null ? (
-                  <CarriedIncomeRow key={e.id} entry={e} targetLabel={carriedToLabel} />
+                  <CarriedIncomeRow key={e.id} entry={e} targetLabel={carriedToLabel} projectName={projName(e.project_id)} />
                 ) : (
                   <IncomeEntryRow
-                    key={e.id} entry={e} locked={incomeLocked(e)}
+                    key={e.id} entry={e} locked={incomeLocked(e)} projectName={projName(e.project_id)}
                     onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkPaid={onMarkIncomePaid}
                   />
                 )
@@ -2003,10 +2056,10 @@ function MonthSection({
             <div className={hasUnpaid || hasLate || hasProvCarryInc || hasProvCarryExp ? 'border-t border-primary-50 pt-0.5' : ''}>
               {unpaidExpenses.map((e) => (
                 carriedToLabel !== null ? (
-                  <CarriedExpenseRow key={e.id} expense={e} targetLabel={carriedToLabel} />
+                  <CarriedExpenseRow key={e.id} expense={e} targetLabel={carriedToLabel} projectName={projName(e.project_id)} />
                 ) : (
                   <MonthExpenseRow
-                    key={e.id} expense={e} locked={expenseLocked(e)}
+                    key={e.id} expense={e} locked={expenseLocked(e)} projectName={projName(e.project_id)}
                     onMarkPaid={(id) => onMarkExpensePaid(id, bucket.year, bucket.month + 1)}
                     onUpdate={onUpdateExpense}
                     onDelete={onDeleteExpense}
@@ -2030,7 +2083,7 @@ function MonthSection({
               </button>
               {showPaidIncome && bucket.paidEntries.map((e) => (
                 <PaidIncomeRow
-                  key={e.id} entry={e} locked={paidIncomeLocked(e)}
+                  key={e.id} entry={e} locked={paidIncomeLocked(e)} projectName={projName(e.project_id)}
                   onUpdate={onUpdateIncome} onDelete={onDeleteIncome} onMarkUnpaid={onMarkIncomeUnpaid}
                 />
               ))}
@@ -2051,7 +2104,7 @@ function MonthSection({
               </button>
               {showPaidExpenses && paidExpenses.map((e) => (
                 <PaidExpenseRow
-                  key={e.id} expense={e} locked={paidExpenseLocked(e)}
+                  key={e.id} expense={e} locked={paidExpenseLocked(e)} projectName={projName(e.project_id)}
                   onMarkUnpaid={(id) => onMarkExpenseUnpaid(bucket.paidExpenseMap[id])}
                 />
               ))}
@@ -2113,6 +2166,10 @@ export function LiquidityPlanningPage() {
 
   const today = new Date();
   const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+  // project_id → name, for the project badges on all rows
+  const projectNames: Record<string, string> = {};
+  for (const p of projects) projectNames[p.id] = p.name;
 
   async function handleAddIncome(data: Parameters<typeof addIncome>[0]) {
     const ok = await addIncome(data);
@@ -2247,6 +2304,7 @@ export function LiquidityPlanningPage() {
                         lockDate={lockDate}
                         lockTs={lockTs}
                         carriedToLabel={months[0]?.label ?? null}
+                        projectNames={projectNames}
                         onUpdateIncome={updateIncome}
                         onDeleteIncome={deleteIncome}
                         onMarkIncomePaid={markIncomePaid}
@@ -2277,6 +2335,7 @@ export function LiquidityPlanningPage() {
                 balanceCurrency={startsaldoCurrency}
                 lockDate={lockDate}
                 lockTs={lockTs}
+                projectNames={projectNames}
                 onUpdateIncome={updateIncome}
                 onDeleteIncome={deleteIncome}
                 onMarkIncomePaid={markIncomePaid}
