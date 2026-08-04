@@ -1135,7 +1135,7 @@ function IncomeEntryRow({
               aus Vormonat
             </span>
           )}
-          <span className={`shrink-0 text-xs tabular-nums ${isLate ? 'text-red-400' : 'text-primary-400'}`}>
+          <span className={`shrink-0 text-[11px] sm:text-xs tabular-nums ${isLate ? 'text-red-400' : 'text-primary-400'}`}>
             {formatDate(entry.expected_date)}
           </span>
           {projectName && <ProjectBadge name={projectName} />}
@@ -1144,7 +1144,7 @@ function IncomeEntryRow({
 
         {/* Description + notes */}
         <div className="mt-1 min-w-0 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
-          <span className={`text-sm ${isLate ? 'font-medium text-red-700' : 'text-primary-900'}`}>
+          <span className={`text-base font-medium sm:text-sm ${isLate ? 'text-red-700' : 'text-primary-900 sm:font-normal'}`}>
             {stripProjectPrefix(entry.description, projectName)}
           </span>
           {entry.notes && (
@@ -1448,7 +1448,7 @@ function MonthExpenseRow({
           {projectName && <ProjectBadge name={projectName} />}
           {expense.provisional && <ProvBadge />}
         </div>
-        <div className="mt-1 min-w-0 text-sm text-primary-700 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
+        <div className="mt-1 min-w-0 text-base font-medium sm:text-sm sm:font-normal text-primary-700 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
           {stripProjectPrefix(expense.description, projectName)}
           {expense.invoice_number && <span className="ml-2 text-xs text-primary-400 tabular-nums">Rg. {expense.invoice_number}</span>}
         </div>
@@ -1533,12 +1533,12 @@ function LateExpenseRow({
           <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
             Überfällig
           </span>
-          <span className="shrink-0 text-xs text-red-400">{originLabel}</span>
+          <span className="shrink-0 text-[11px] sm:text-xs text-red-400">{originLabel}</span>
           <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
           {projectName && <ProjectBadge name={projectName} />}
           {e.provisional && <ProvBadge />}
         </div>
-        <div className="mt-1 min-w-0 text-sm font-medium text-red-700 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
+        <div className="mt-1 min-w-0 text-base sm:text-sm font-medium text-red-700 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
           {stripProjectPrefix(e.description, projectName)}
           {e.invoice_number && <span className="ml-2 text-xs font-normal text-red-400 tabular-nums">Rg. {e.invoice_number}</span>}
         </div>
@@ -1612,12 +1612,12 @@ function ProvCarryExpenseRow({
           >
             aus Vormonat
           </span>
-          <span className="shrink-0 text-xs text-primary-400">{originLabel}</span>
+          <span className="shrink-0 text-[11px] sm:text-xs text-primary-400">{originLabel}</span>
           <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
           {projectName && <ProjectBadge name={projectName} />}
           <ProvBadge />
         </div>
-        <div className="mt-1 min-w-0 text-sm text-primary-900 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
+        <div className="mt-1 min-w-0 text-base font-medium sm:text-sm sm:font-normal text-primary-900 sm:mt-0 sm:min-w-[12rem] sm:flex-1">
           {stripProjectPrefix(e.description, projectName)}
           {e.invoice_number && <span className="ml-2 text-xs font-normal text-primary-400 tabular-nums">Rg. {e.invoice_number}</span>}
         </div>
