@@ -361,6 +361,39 @@ export type ArtworkMovementInsert = {
 
 export type ArtworkMovementUpdate = Partial<ArtworkMovementInsert>;
 
+// -- artwork_mutations -------------------------------------------------------
+
+export type ArtworkMutationField =
+  | 'created'
+  | 'status'
+  | 'gallery'
+  | 'location'
+  | 'price'
+  | 'estimated_value'
+  | 'purchase_price';
+
+export type ArtworkMutationRow = {
+  id: string;
+  artwork_id: string;
+  field: string;
+  old_value: string | null;
+  new_value: string | null;
+  changed_by: string | null;
+  changed_at: string;
+}
+
+export type ArtworkMutationInsert = {
+  id?: string;
+  artwork_id: string;
+  field: string;
+  old_value?: string | null;
+  new_value?: string | null;
+  changed_by?: string | null;
+  changed_at?: string;
+}
+
+export type ArtworkMutationUpdate = Partial<ArtworkMutationInsert>;
+
 // -- sales -------------------------------------------------------------------
 
 export type SaleType = 'art_fair' | 'exhibition' | 'direct';
@@ -2523,6 +2556,19 @@ export type Database = {
             foreignKeyName: 'artwork_movements_gallery_id_fkey';
             columns: ['gallery_id'];
             referencedRelation: 'galleries';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      artwork_mutations: {
+        Row: ArtworkMutationRow;
+        Insert: ArtworkMutationInsert;
+        Update: ArtworkMutationUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'artwork_mutations_artwork_id_fkey';
+            columns: ['artwork_id'];
+            referencedRelation: 'artworks';
             referencedColumns: ['id'];
           },
         ];

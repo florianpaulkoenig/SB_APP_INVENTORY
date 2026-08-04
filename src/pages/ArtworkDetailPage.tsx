@@ -10,6 +10,7 @@ import { ArtworkDetail } from '../components/artworks/ArtworkDetail';
 import { ArtworkImageGallery } from '../components/artworks/ArtworkImageGallery';
 import { ArtworkImageUpload } from '../components/artworks/ArtworkImageUpload';
 import { ArtworkMovementHistory } from '../components/artworks/ArtworkMovementHistory';
+import { ArtworkMutationLog } from '../components/artworks/ArtworkMutationLog';
 import { ConditionReportPanel } from '../components/artworks/ConditionReportPanel';
 import { AppraisalSection } from '../components/artworks/AppraisalSection';
 import { InsurancePanel } from '../components/artworks/InsurancePanel';
@@ -895,6 +896,13 @@ export function ArtworkDetailPage() {
       <div className="mt-8">
         <ArtworkMovementHistory artworkId={id!} />
       </div>
+
+      {/* Mutation log (admin only) */}
+      {isAdmin && (
+        <div className="mt-8">
+          <ArtworkMutationLog artworkId={id!} />
+        </div>
+      )}
 
       {/* Exhibition history */}
       <div className="mt-8">
