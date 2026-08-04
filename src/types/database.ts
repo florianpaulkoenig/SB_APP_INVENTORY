@@ -2447,6 +2447,8 @@ export type NOALiquidityExpensePaymentRow = {
   year: number;
   month: number;   // 1-indexed
   paid_at: string; // ISO timestamp
+  /** true = instance storniert (resolved without cash movement) */
+  skipped?: boolean;
   created_at: string;
 }
 

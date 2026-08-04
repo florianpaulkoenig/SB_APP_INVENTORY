@@ -142,6 +142,8 @@ export interface UseNOALiquidityReturn {
   toggleExpenseActive: (id: string, active: boolean) => Promise<boolean>;
   markExpensePaid:   (expenseId: string, year: number, month: number) => Promise<boolean>;
   markExpenseUnpaid: (paymentId: string) => Promise<boolean>;
+  /** Storno a single (recurring) expense instance — resolved without payment */
+  skipExpenseInstance: (expenseId: string, year: number, month: number) => Promise<boolean>;
   // Startsaldo
   upsertStartsaldo: (amount: number, currency: string, date: string) => Promise<boolean>;
   // Effektiver Konto-Saldo
@@ -288,11 +290,15 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       const correction     = corrections[0] ?? null; // newest
       setLastCorrection(correction);
 
-      // Expense payment lookup: "expenseId:year-MM" → payment_id / paid_at
+      // Expense payment lookup: "expenseId:year-MM" → payment_id / paid_at.
+      // Skipped rows (storniert) are kept separate: the instance is resolved
+      // but no money moved, so it must not count as a payment anywhere.
       const expPaymentMap: Record<string, string> = {};
       const expPaymentAtMap: Record<string, string> = {};
+      const skippedInstances = new Set<string>();
       for (const p of expPaymentList) {
         const key = `${p.expense_id}:${p.year}-${String(p.month).padStart(2, '0')}`;
+        if (p.skipped) { skippedInstances.add(key); continue; }
         expPaymentMap[key] = p.id;
         expPaymentAtMap[key] = p.paid_at;
       }
@@ -349,6 +355,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       const expenseById = new Map(allExpenses.map((e) => [e.id, e]));
       const paidExpensesSince = expPaymentList
         .filter((p) => {
+          if (p.skipped) return false; // storniert — no cash movement
           const exp = expenseById.get(p.expense_id);
           if (!exp) return false;
           // Instance due date = due day of the expense within the paid month
@@ -410,9 +417,12 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           const paid   = pastIncome.filter((e) => e.expected_date.startsWith(key) &&  e.paid_at);
 
           // Applicable expenses — plus expenses with a recorded payment for
-          // this month even if they no longer apply (e.g. deactivated since)
+          // this month even if they no longer apply (e.g. deactivated since).
+          // Skipped (stornierte) instances are hidden entirely.
           const monthExpenses = allExpenses.filter(
-            (e) => expenseAppliesTo(e, year, month) || !!expPaymentMap[`${e.id}:${year}-${monthKey1}`],
+            (e) =>
+              (expenseAppliesTo(e, year, month) || !!expPaymentMap[`${e.id}:${year}-${monthKey1}`]) &&
+              !skippedInstances.has(`${e.id}:${year}-${monthKey1}`),
           );
           const paidExpenseMap: Record<string, string> = {};
           const paidExpenseAtMap: Record<string, string> = {};
@@ -533,10 +543,12 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         const carryInc   = i === 0 ? provCarryIncome   : [];
         const carryExp   = i === 0 ? provCarryExpenses : [];
 
-        const monthExpenses = allExpenses.filter((e) => expenseAppliesTo(e, year, month));
+        const monthKey1 = String(month + 1).padStart(2, '0'); // 1-indexed month string
+        const monthExpenses = allExpenses.filter(
+          (e) => expenseAppliesTo(e, year, month) && !skippedInstances.has(`${e.id}:${year}-${monthKey1}`),
+        );
 
         // Build paidExpenseMap for this month: expenseId → paymentId
-        const monthKey1 = String(month + 1).padStart(2, '0'); // 1-indexed month string
         const paidExpenseMap: Record<string, string> = {};
         const paidExpenseAtMap: Record<string, string> = {};
         for (const e of monthExpenses) {
@@ -810,6 +822,27 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     return true;
   }, [toast, refetch]);
 
+  const skipExpenseInstance = useCallback(async (expenseId: string, year: number, month: number): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return false;
+
+    const { error } = await supabase
+      .from('noa_liquidity_expense_payments' as never)
+      .upsert({
+        user_id:    session.user.id,
+        expense_id: expenseId,
+        year,
+        month,
+        paid_at:    new Date().toISOString(),
+        skipped:    true,
+      } as never, { onConflict: 'user_id,expense_id,year,month' } as never);
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+    toast({ title: 'Fälligkeit storniert', variant: 'success' });
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
   const markExpenseUnpaid = useCallback(async (paymentId: string): Promise<boolean> => {
     const { error } = await supabase
       .from('noa_liquidity_expense_payments' as never)
@@ -1012,6 +1045,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     toggleExpenseActive,
     markExpensePaid,
     markExpenseUnpaid,
+    skipExpenseInstance,
     upsertStartsaldo,
     upsertEffectiveBalance,
     clearEffectiveBalance,

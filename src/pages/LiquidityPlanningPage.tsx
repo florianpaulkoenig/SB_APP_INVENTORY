@@ -556,32 +556,39 @@ function IncomeEntryRow({
           Bezahlt
         </button>
 
-        {/* Edit + Delete — hidden when locked by a Saldokorrektur */}
+        {/* Edit — hidden when locked by a Saldokorrektur */}
         {!locked && (
-          <>
+          <button
+            onClick={() => setEditing(true)}
+            className="p-1 text-primary-300 hover:text-primary-600 transition-colors"
+            title="Bearbeiten"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+            </svg>
+          </button>
+        )}
+
+        {/* Delete/Storno — locked entries stay deletable while überfällig or
+            carried over: cancelling an open item never moves booked money */}
+        {(!locked || isLate || fromPastMonth) && (
+          confirming ? (
+            <div className="flex items-center gap-1">
+              <button onClick={() => onDelete(entry.id)} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
+              <button onClick={() => setConfirming(false)} className="text-xs text-primary-400 hover:text-primary-600">Nein</button>
+            </div>
+          ) : (
             <button
-              onClick={() => setEditing(true)}
-              className="p-1 text-primary-300 hover:text-primary-600 transition-colors"
-              title="Bearbeiten"
+              onClick={() => setConfirming(true)}
+              className="p-1 text-primary-300 hover:text-red-400 transition-colors"
+              aria-label="Löschen"
+              title="Stornieren / löschen"
             >
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-
-            {confirming ? (
-              <div className="flex items-center gap-1">
-                <button onClick={() => onDelete(entry.id)} className="text-xs text-red-600 hover:text-red-800 font-medium">Löschen</button>
-                <button onClick={() => setConfirming(false)} className="text-xs text-primary-400 hover:text-primary-600">Nein</button>
-              </div>
-            ) : (
-              <button onClick={() => setConfirming(true)} className="p-1 text-primary-300 hover:text-red-400 transition-colors" aria-label="Löschen">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </>
+          )
         )}
       </div>
     </div>
@@ -818,11 +825,14 @@ function MonthExpenseRow({
 // ---------------------------------------------------------------------------
 
 function LateExpenseRow({
-  instance, onMarkPaid,
+  instance, onMarkPaid, onCancel,
 }: {
   instance: LateExpenseInstance;
   onMarkPaid: (expenseId: string, year: number, month: number) => void;
+  /** Storno: one_time → delete the expense, recurring → skip this instance */
+  onCancel: () => void;
 }) {
+  const [confirming, setConfirming] = useState(false);
   const e = instance.expense;
   const badge = RECURRENCE_BADGES[e.type];
   const originLabel = new Date(instance.year, instance.month - 1, 1)
@@ -853,6 +863,25 @@ function LateExpenseRow({
         </svg>
         Bezahlt
       </button>
+      {confirming ? (
+        <div className="flex items-center gap-1 shrink-0">
+          <button onClick={onCancel} className="text-xs text-red-600 hover:text-red-800 font-medium">Stornieren</button>
+          <button onClick={() => setConfirming(false)} className="text-xs text-primary-400 hover:text-primary-600">Nein</button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setConfirming(true)}
+          className="p-1 text-primary-300 hover:text-red-400 transition-colors shrink-0"
+          aria-label="Stornieren"
+          title={e.type === 'one_time'
+            ? 'Stornieren — Ausgabe wird gelöscht'
+            : `Stornieren — nur die Fälligkeit ${originLabel} entfällt`}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
@@ -863,11 +892,14 @@ function LateExpenseRow({
 // ---------------------------------------------------------------------------
 
 function ProvCarryExpenseRow({
-  instance, onMarkPaid,
+  instance, onMarkPaid, onCancel,
 }: {
   instance: LateExpenseInstance;
   onMarkPaid: (expenseId: string, year: number, month: number) => void;
+  /** Storno: one_time → delete the expense, recurring → skip this instance */
+  onCancel: () => void;
 }) {
+  const [confirming, setConfirming] = useState(false);
   const e = instance.expense;
   const badge = RECURRENCE_BADGES[e.type];
   const originLabel = new Date(instance.year, instance.month - 1, 1)
@@ -901,6 +933,25 @@ function ProvCarryExpenseRow({
         </svg>
         Bezahlt
       </button>
+      {confirming ? (
+        <div className="flex items-center gap-1 shrink-0">
+          <button onClick={onCancel} className="text-xs text-red-600 hover:text-red-800 font-medium">Stornieren</button>
+          <button onClick={() => setConfirming(false)} className="text-xs text-primary-400 hover:text-primary-600">Nein</button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setConfirming(true)}
+          className="p-1 text-primary-300 hover:text-red-400 transition-colors shrink-0"
+          aria-label="Stornieren"
+          title={e.type === 'one_time'
+            ? 'Stornieren — Ausgabe wird gelöscht'
+            : `Stornieren — nur die Fälligkeit ${originLabel} entfällt`}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
@@ -1444,6 +1495,7 @@ function MonthSection({
   onMarkIncomeUnpaid,
   onMarkExpensePaid,
   onMarkExpenseUnpaid,
+  onCancelExpenseInstance,
   onUpdateExpense,
   onDeleteExpense,
   onAddExpense,
@@ -1468,6 +1520,8 @@ function MonthSection({
   onMarkIncomeUnpaid: (id: string) => void;
   onMarkExpensePaid: (expenseId: string, year: number, month: number) => void;
   onMarkExpenseUnpaid: (paymentId: string) => void;
+  /** Storno an overdue/carried expense instance (one_time → delete, recurring → skip) */
+  onCancelExpenseInstance: (expense: NOALiquidityExpenseRow, year: number, month: number) => void;
   onUpdateExpense: (id: string, data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
   onDeleteExpense: (id: string) => void;
   onAddExpense: (data: { description: string; amount: number; currency: string; type: LiquidityExpenseType; due_date: string }) => Promise<boolean>;
@@ -1592,6 +1646,7 @@ function MonthSection({
                   key={`${le.expense.id}:${le.year}-${le.month}`}
                   instance={le}
                   onMarkPaid={onMarkExpensePaid}
+                  onCancel={() => onCancelExpenseInstance(le.expense, le.year, le.month)}
                 />
               ))}
             </div>
@@ -1617,6 +1672,7 @@ function MonthSection({
                   key={`${le.expense.id}:${le.year}-${le.month}`}
                   instance={le}
                   onMarkPaid={onMarkExpensePaid}
+                  onCancel={() => onCancelExpenseInstance(le.expense, le.year, le.month)}
                 />
               ))}
             </div>
@@ -1729,9 +1785,21 @@ export function LiquidityPlanningPage() {
     loading,
     addIncome, updateIncome, deleteIncome, markIncomePaid, markIncomeUnpaid,
     addExpense, updateExpense, deleteExpense, toggleExpenseActive, markExpensePaid, markExpenseUnpaid,
+    skipExpenseInstance,
     upsertStartsaldo, upsertEffectiveBalance, clearEffectiveBalance, acceptEffectiveBalance,
     upsertActualBalance, deleteActualBalance,
   } = useNOALiquidity();
+
+  // Storno of an overdue/carried expense instance: a one_time expense IS its
+  // single instance (delete it); for recurring ones only this Fälligkeit
+  // is skipped — future instances stay planned.
+  const cancelExpenseInstance = (expense: NOALiquidityExpenseRow, year: number, month: number) => {
+    if (expense.type === 'one_time') {
+      deleteExpense(expense.id);
+    } else {
+      skipExpenseInstance(expense.id, year, month);
+    }
+  };
 
   const [showIncomeForm, setShowIncomeForm]   = useState(false);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -1855,6 +1923,7 @@ export function LiquidityPlanningPage() {
                         onMarkIncomeUnpaid={markIncomeUnpaid}
                         onMarkExpensePaid={markExpensePaid}
                         onMarkExpenseUnpaid={markExpenseUnpaid}
+                        onCancelExpenseInstance={cancelExpenseInstance}
                         onUpdateExpense={updateExpense}
                         onDeleteExpense={deleteExpense}
                         onAddExpense={addExpense}
@@ -1884,6 +1953,7 @@ export function LiquidityPlanningPage() {
                 onMarkIncomeUnpaid={markIncomeUnpaid}
                 onMarkExpensePaid={markExpensePaid}
                 onMarkExpenseUnpaid={markExpenseUnpaid}
+                onCancelExpenseInstance={cancelExpenseInstance}
                 onUpdateExpense={updateExpense}
                 onDeleteExpense={deleteExpense}
                 onAddExpense={addExpense}
