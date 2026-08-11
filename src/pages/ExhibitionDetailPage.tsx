@@ -22,6 +22,9 @@ const MapView = React.lazy(() =>
   import('../components/maps/MapView').then((m) => ({ default: m.MapView })),
 );
 import { getCoordinates } from '../lib/geocoding';
+import { getSignedUrl } from '../lib/signedUrlCache';
+import { ArtworkCard } from '../components/artworks/ArtworkCard';
+import type { ArtworkRow } from '../types/database';
 import { CatalogueArtworkPicker } from '../components/catalogues/CatalogueArtworkPicker';
 import { TaskList } from '../components/crm/TaskList';
 import { useExhibitionImages } from '../hooks/useExhibitionImages';
@@ -62,21 +65,7 @@ interface ExhibitionArtwork {
   id: string;
   exhibition_id: string;
   artwork_id: string;
-  artworks: {
-    id: string;
-    title: string;
-    reference_code: string | null;
-    medium: string | null;
-    year: number | null;
-    height: number | null;
-    width: number | null;
-    depth: number | null;
-    dimension_unit: string | null;
-    is_circular: boolean | null;
-    price: number | null;
-    currency: string | null;
-    status: string | null;
-  };
+  artworks: ArtworkRow;
 }
 
 interface GalleryOption {
@@ -126,6 +115,7 @@ export function ExhibitionDetailPage() {
   const [selectedArtworkIds, setSelectedArtworkIds] = useState<string[]>([]);
   const [artworkSaving, setArtworkSaving] = useState(false);
   const initialArtworkIdsRef = useRef<string[]>([]);
+  const [artworkImageUrls, setArtworkImageUrls] = useState<Record<string, string>>({});
 
   // Exhibition images
   const {
@@ -221,7 +211,7 @@ export function ExhibitionDetailPage() {
     try {
       const { data, error } = await supabase
         .from('exhibition_artworks')
-        .select('*, artworks(id, title, reference_code, medium, year, height, width, depth, dimension_unit, is_circular, price, currency, status)')
+        .select('*, artworks(*)')
         .eq('exhibition_id', id);
       if (error) throw error;
       const list = (data || []) as ExhibitionArtwork[];
@@ -233,6 +223,40 @@ export function ExhibitionDetailPage() {
       toast({ title: 'Failed to load artworks', variant: 'error' });
     }
   }, [id, toast]);
+
+  // Thumbnails for the artwork grid — best image per artwork (primary
+  // preferred), served as a resized transform like on the Artworks page.
+  const fetchArtworkThumbnails = useCallback(async () => {
+    const ids = artworks.map((ea) => ea.artwork_id);
+    if (ids.length === 0) { setArtworkImageUrls({}); return; }
+    const { data: awImages } = await supabase
+      .from('artwork_images')
+      .select('artwork_id, storage_path, is_primary, sort_order')
+      .in('artwork_id', ids)
+      .order('is_primary', { ascending: false })
+      .order('sort_order', { ascending: true });
+    const bestImageMap: Record<string, string> = {};
+    for (const img of awImages ?? []) {
+      if (!bestImageMap[img.artwork_id]) bestImageMap[img.artwork_id] = img.storage_path;
+    }
+    const results = await Promise.all(
+      Object.entries(bestImageMap).map(async ([artworkId, path]) => {
+        const url = await getSignedUrl('artwork-images', path, 600, {
+          width: 600,
+          quality: 65,
+          resize: 'contain',
+        });
+        return { artworkId, url };
+      }),
+    );
+    const urlMap: Record<string, string> = {};
+    for (const { artworkId, url } of results) {
+      if (url) urlMap[artworkId] = url;
+    }
+    setArtworkImageUrls(urlMap);
+  }, [artworks]);
+
+  useEffect(() => { fetchArtworkThumbnails(); }, [fetchArtworkThumbnails]);
 
   const fetchLinkedPOs = useCallback(async () => {
     if (!id) return;
@@ -1027,33 +1051,15 @@ export function ExhibitionDetailPage() {
         ) : artworks.length === 0 ? (
           <p className="text-gray-500 text-center py-6">No artworks added yet.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Medium</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {artworks.map((ea) => (
-                  <tr key={ea.id}>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{ea.artworks.title}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{ea.artworks.medium || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{ea.artworks.year || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {ea.artworks.price ? formatCurrency(ea.artworks.price, ea.artworks.currency ?? 'EUR') : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {ea.artworks.status ? <Badge variant="default">{ea.artworks.status}</Badge> : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="columns-2 gap-3 sm:columns-3 xl:columns-4 [&>*]:mb-3 [&>*]:break-inside-avoid">
+            {artworks.map((ea) => (
+              <ArtworkCard
+                key={ea.id}
+                artwork={ea.artworks}
+                imageUrl={artworkImageUrls[ea.artwork_id]}
+                onClick={() => navigate(`/artworks/${ea.artwork_id}`)}
+              />
+            ))}
           </div>
         )}
       </Card>
