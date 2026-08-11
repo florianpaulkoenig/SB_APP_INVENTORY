@@ -51,6 +51,7 @@ interface PdfSettings {
   language?: string;
   createdBy?: string;
   titleExhibitionText?: string;
+  titleArtworks?: string;
   titleFloorPlans?: string;
   titleVenuePhotos?: string;
   titleExhibitionPhotos?: string;
@@ -64,8 +65,14 @@ interface ExhibitionArtwork {
   artworks: {
     id: string;
     title: string;
+    reference_code: string | null;
     medium: string | null;
     year: number | null;
+    height: number | null;
+    width: number | null;
+    depth: number | null;
+    dimension_unit: string | null;
+    is_circular: boolean | null;
     price: number | null;
     currency: string | null;
     status: string | null;
@@ -161,6 +168,7 @@ export function ExhibitionDetailPage() {
   );
   const [dossierLanguage, setDossierLanguage] = useState<DossierLanguage>('en');
   const [pdfTitlesOpen, setPdfTitlesOpen] = useState(false);
+  const [pdfTitleArtworks, setPdfTitleArtworks] = useState('');
   const [pdfTitleFloorPlans, setPdfTitleFloorPlans] = useState('');
   const [pdfTitleVenuePhotos, setPdfTitleVenuePhotos] = useState('');
   const [pdfTitleExhibitionPhotos, setPdfTitleExhibitionPhotos] = useState('');
@@ -195,6 +203,7 @@ export function ExhibitionDetailPage() {
       if (ps.language) setDossierLanguage(ps.language as DossierLanguage);
       if (ps.createdBy !== undefined) setDossierCreatedBy(ps.createdBy);
       if (ps.titleExhibitionText !== undefined) setDescTextTitle(ps.titleExhibitionText);
+      if (ps.titleArtworks !== undefined) setPdfTitleArtworks(ps.titleArtworks);
       if (ps.titleFloorPlans !== undefined) setPdfTitleFloorPlans(ps.titleFloorPlans);
       if (ps.titleVenuePhotos !== undefined) setPdfTitleVenuePhotos(ps.titleVenuePhotos);
       if (ps.titleExhibitionPhotos !== undefined) setPdfTitleExhibitionPhotos(ps.titleExhibitionPhotos);
@@ -212,7 +221,7 @@ export function ExhibitionDetailPage() {
     try {
       const { data, error } = await supabase
         .from('exhibition_artworks')
-        .select('*, artworks(id, title, medium, year, price, currency, status)')
+        .select('*, artworks(id, title, reference_code, medium, year, height, width, depth, dimension_unit, is_circular, price, currency, status)')
         .eq('exhibition_id', id);
       if (error) throw error;
       const list = (data || []) as ExhibitionArtwork[];
@@ -265,6 +274,7 @@ export function ExhibitionDetailPage() {
       language: dossierLanguage,
       createdBy: dossierCreatedBy,
       titleExhibitionText: descTextTitle,
+      titleArtworks: pdfTitleArtworks,
       titleFloorPlans: pdfTitleFloorPlans,
       titleVenuePhotos: pdfTitleVenuePhotos,
       titleExhibitionPhotos: pdfTitleExhibitionPhotos,
@@ -277,7 +287,7 @@ export function ExhibitionDetailPage() {
         .eq('id', id);
     }, 800);
      
-  }, [id, pdfSettingsReady, dossierLanguage, dossierCreatedBy, descTextTitle, pdfTitleFloorPlans, pdfTitleVenuePhotos, pdfTitleExhibitionPhotos, pdfTitleProductionOrders]);
+  }, [id, pdfSettingsReady, dossierLanguage, dossierCreatedBy, descTextTitle, pdfTitleArtworks, pdfTitleFloorPlans, pdfTitleVenuePhotos, pdfTitleExhibitionPhotos, pdfTitleProductionOrders]);
 
   // ---- Debounced description_text save ------------------------------------
 
@@ -437,6 +447,61 @@ export function ExhibitionDetailPage() {
         }
       }
 
+      // 3. Artworks in exhibition — best image per artwork (primary preferred) as thumbnail
+      const dossierArtworks: Array<{
+        title: string;
+        reference_code?: string | null;
+        medium?: string | null;
+        year?: number | null;
+        dimensions?: string | null;
+        thumbnailDataUrl?: string | null;
+      }> = [];
+      if (artworks.length > 0) {
+        const artworkIds = artworks.map((ea) => ea.artwork_id);
+        const { data: awImages } = await supabase
+          .from('artwork_images')
+          .select('artwork_id, storage_path, is_primary, sort_order')
+          .in('artwork_id', artworkIds)
+          .order('is_primary', { ascending: false })
+          .order('sort_order', { ascending: true });
+        const bestImageMap: Record<string, string> = {};
+        for (const img of awImages ?? []) {
+          if (!bestImageMap[img.artwork_id]) bestImageMap[img.artwork_id] = img.storage_path;
+        }
+
+        const { blobToJpegDataUrl } = await import('../lib/pdfToDataUrls');
+        const withThumbs = await Promise.all(
+          artworks.map(async (ea) => {
+            let thumbnailDataUrl: string | null = null;
+            const path = bestImageMap[ea.artwork_id];
+            if (path) {
+              try {
+                const { data: imgBlob } = await supabase.storage
+                  .from('artwork-images')
+                  .download(path);
+                if (imgBlob) thumbnailDataUrl = await blobToJpegDataUrl(imgBlob, 0.85, 480);
+              } catch {
+                // skip thumbnails that fail to load — row still renders without image
+              }
+            }
+            const a = ea.artworks;
+            return {
+              title: a.title,
+              reference_code: a.reference_code,
+              medium: a.medium,
+              year: a.year,
+              dimensions: formatDimensions(
+                a.height, a.width, a.depth,
+                (a.dimension_unit as string) ?? 'cm',
+                a.is_circular ?? false,
+              ),
+              thumbnailDataUrl,
+            };
+          }),
+        );
+        dossierArtworks.push(...withThumbs);
+      }
+
       // 4. Fetch items (+ ref images) for each linked production order
       const { data: { session: dossierSession } } = await supabase.auth.getSession();
       const dossierUserId = dossierSession?.user?.id;
@@ -519,6 +584,7 @@ export function ExhibitionDetailPage() {
             description_text: exhibition.description_text ?? descText,
             notes: exhibition.notes,
           }}
+          artworks={dossierArtworks}
           floorPlanImages={floorPlanImages}
           venuePhotos={venuePhotos}
           exhibitionPhotos={exhibitionPhotos}
@@ -526,6 +592,7 @@ export function ExhibitionDetailPage() {
           createdBy={dossierCreatedBy}
           language={dossierLanguage}
           exhibitionTextTitle={descTextTitle}
+          artworksTitle={pdfTitleArtworks}
           floorPlansTitle={pdfTitleFloorPlans}
           venuePhotosTitle={pdfTitleVenuePhotos}
           exhibitionPhotosTitle={pdfTitleExhibitionPhotos}
@@ -772,6 +839,7 @@ export function ExhibitionDetailPage() {
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 w-full">
               {([
                 ['Ausstellungstext', descTextTitle, setDescTextTitle],
+                ['Kunstwerke', pdfTitleArtworks, setPdfTitleArtworks],
                 ['Grundrisse', pdfTitleFloorPlans, setPdfTitleFloorPlans],
                 ['Location-Fotos', pdfTitleVenuePhotos, setPdfTitleVenuePhotos],
                 ['Ausstellungsfotos', pdfTitleExhibitionPhotos, setPdfTitleExhibitionPhotos],

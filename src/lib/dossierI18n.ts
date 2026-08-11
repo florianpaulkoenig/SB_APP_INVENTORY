@@ -12,6 +12,7 @@ export interface DossierStrings {
   labelDates: string;
   labelCreatedBy: string;
   sectionExhibitionText: string;
+  sectionArtworks: string;
   sectionFloorPlans: string;
   sectionFloorPlansShort: string;
   sectionVenuePhotos: string;
@@ -34,6 +35,7 @@ const EN: DossierStrings = {
   labelDates: 'Dates',
   labelCreatedBy: 'Created by',
   sectionExhibitionText: 'Exhibition Text',
+  sectionArtworks: 'Artworks',
   sectionFloorPlans: 'Floor Plans / 3D Model',
   sectionFloorPlansShort: 'Floor Plans / 3D Model',
   sectionVenuePhotos: 'Venue Photos',
@@ -64,6 +66,7 @@ const DE: DossierStrings = {
   labelDates: 'Zeitraum',
   labelCreatedBy: 'Erstellt von',
   sectionExhibitionText: 'Ausstellungstext',
+  sectionArtworks: 'Kunstwerke',
   sectionFloorPlans: 'Grundrisse / 3D-Modell',
   sectionFloorPlansShort: 'Grundrisse / 3D-Modell',
   sectionVenuePhotos: 'Location-Fotos',
@@ -94,6 +97,7 @@ const FR: DossierStrings = {
   labelDates: 'Dates',
   labelCreatedBy: 'Créé par',
   sectionExhibitionText: "Texte d'exposition",
+  sectionArtworks: 'Œuvres',
   sectionFloorPlans: 'Plans / Modèle 3D',
   sectionFloorPlansShort: 'Plans / Modèle 3D',
   sectionVenuePhotos: 'Photos du lieu',

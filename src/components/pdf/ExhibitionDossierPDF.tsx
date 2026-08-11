@@ -3,6 +3,7 @@
 // Structure:
 //   Page 1  — Title page (exhibition name, venue, dates)
 //   Page 2+ — Exhibition text (if present)
+//   Page N+ — Artworks in exhibition (list with thumbnails)
 //   Page N+ — Floor plan / 3D model pages (one per uploaded file)
 //   Page N+ — Venue photos (space shots without artwork)
 //   Page N+ — Exhibition photos (installation views, 2-column grid)
@@ -38,6 +39,16 @@ export interface DossierProductionOrder {
   }>;
 }
 
+export interface DossierArtwork {
+  title: string;
+  reference_code?: string | null;
+  medium?: string | null;
+  year?: number | null;
+  dimensions?: string | null;
+  /** JPEG data URL of the artwork's primary image (already downscaled) */
+  thumbnailDataUrl?: string | null;
+}
+
 export interface ExhibitionDossierPDFProps {
   exhibition: {
     title: string;
@@ -50,6 +61,8 @@ export interface ExhibitionDossierPDFProps {
     description_text?: string | null;
     notes?: string | null;
   };
+  /** Artworks linked to the exhibition — rendered as a list with thumbnails */
+  artworks?: DossierArtwork[];
   /** One entry per rendered floor plan page */
   floorPlanImages: Array<{ dataUrl: string; description?: string | null; isLandscape?: boolean }>;
   /** Venue photos — space shots without artwork, shown before exhibition photos */
@@ -62,6 +75,7 @@ export interface ExhibitionDossierPDFProps {
   language?: DossierLanguage;
   /** Custom section titles (each overrides the i18n default when non-empty) */
   exhibitionTextTitle?: string;
+  artworksTitle?: string;
   floorPlansTitle?: string;
   venuePhotosTitle?: string;
   exhibitionPhotosTitle?: string;
@@ -220,6 +234,64 @@ const d = StyleSheet.create({
     color: PDF_COLORS.primary700,
     lineHeight: 1.7,
     marginBottom: 14,
+  },
+
+  // ---------- Artworks list ------------------------------------------------
+  awRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderTopWidth: 0.5,
+    borderTopColor: PDF_COLORS.border,
+  },
+  awRowAlt: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderTopWidth: 0.5,
+    borderTopColor: PDF_COLORS.border,
+    backgroundColor: PDF_COLORS.backgroundLight,
+  },
+  awThumbBox: {
+    width: 56,
+    height: 56,
+    backgroundColor: '#F4F3F1',
+    borderRadius: 2,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  awThumb: {
+    width: 52,
+    height: 52,
+    objectFit: 'contain' as const,
+  },
+  awInfo: {
+    flex: 1,
+    flexDirection: 'column' as const,
+  },
+  awTitle: {
+    fontFamily: 'AnzianoPro',
+    fontWeight: 'bold' as const,
+    fontSize: 9,
+    color: PDF_COLORS.primary900,
+    marginBottom: 2,
+  },
+  awMeta: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 8,
+    color: PDF_COLORS.primary700,
+    lineHeight: 1.4,
+  },
+  awRef: {
+    fontFamily: 'AnzianoPro',
+    fontSize: 7,
+    color: PDF_COLORS.primary400,
+    letterSpacing: 0.5,
+    marginTop: 2,
   },
 
   // ---------- Floor plan pages ---------------------------------------------
@@ -521,6 +593,7 @@ const IMG_H_PAIR = (IMG_AREA_H - IMG_GAP) / 2 - IMG_CAPTION_H;
 
 export function ExhibitionDossierPDF({
   exhibition,
+  artworks = [],
   floorPlanImages,
   venuePhotos = [],
   exhibitionPhotos = [],
@@ -528,6 +601,7 @@ export function ExhibitionDossierPDF({
   createdBy,
   language = 'en',
   exhibitionTextTitle,
+  artworksTitle,
   floorPlansTitle,
   venuePhotosTitle,
   exhibitionPhotosTitle,
@@ -542,7 +616,8 @@ export function ExhibitionDossierPDF({
     exhibition.end_date   ? formatDateLocalized(exhibition.end_date,   language) : null,
   ].filter(Boolean).join(' — ');
 
-  const hasText   = !!exhibition.description_text?.trim();
+  const hasText     = !!exhibition.description_text?.trim();
+  const hasArtworks = artworks.length > 0;
   const hasFloors = floorPlanImages.length > 0;
   const hasVenue  = venuePhotos.length > 0;
   const hasPhotos = exhibitionPhotos.length > 0;
@@ -643,6 +718,56 @@ export function ExhibitionDossierPDF({
           <FootnotesSection footnotes={richText.footnotes} />
 
           {/* Standard footer */}
+          <View style={styles.footer} fixed>
+            <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
+            <Text
+              style={styles.pageNumber}
+              render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+            />
+          </View>
+        </Page>
+      )}
+
+      {/* ================================================================ */}
+      {/* ARTWORKS IN EXHIBITION — list with thumbnails                    */}
+      {/* ================================================================ */}
+      {hasArtworks && (
+        <Page size="A4" style={d.contentPage}>
+          <View style={d.pageHeader} fixed>
+            <Text style={d.pageHeaderText}>{ARTIST_NAME}</Text>
+            <Text style={d.pageHeaderText}>{exhibition.title}</Text>
+          </View>
+
+          <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>
+            {`${artworksTitle?.trim() || t.sectionArtworks} (${artworks.length})`}
+          </Text>
+
+          {artworks.map((aw, idx) => {
+            const meta = [
+              aw.medium?.trim() || null,
+              aw.year != null ? String(aw.year) : null,
+              aw.dimensions?.trim() || null,
+            ].filter(Boolean).join('  ·  ');
+            return (
+              <View key={idx} style={idx % 2 === 1 ? d.awRowAlt : d.awRow} wrap={false}>
+                <View style={d.awThumbBox}>
+                  {aw.thumbnailDataUrl ? (
+                    <Image src={aw.thumbnailDataUrl} style={d.awThumb} />
+                  ) : null}
+                </View>
+                <View style={d.awInfo}>
+                  <Text style={[d.awTitle, containsArabic(aw.title) ? { fontFamily: 'NotoSansArabic' } : {}]}>
+                    {prepareForPDF(aw.title)}
+                  </Text>
+                  {meta ? <Text style={d.awMeta}>{meta}</Text> : null}
+                  {aw.reference_code?.trim() ? (
+                    <Text style={d.awRef}>{aw.reference_code}</Text>
+                  ) : null}
+                </View>
+              </View>
+            );
+          })}
+
           <View style={styles.footer} fixed>
             <Text style={styles.footerText}>{`© ${COMPANY_NAME}`}</Text>
             <Text
