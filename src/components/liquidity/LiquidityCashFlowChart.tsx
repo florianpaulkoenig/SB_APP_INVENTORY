@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
 // LiquidityCashFlowChart
 // Combined bar + line chart for the liquidity planning page.
-//   Bars  (left Y-axis)  — net profit per month, stacked into a definitive and a
-//                           provisional segment (green = positive, red = negative)
+//   Bars  (left Y-axis)  — net profit per month, split into a definitive and a
+//                           provisional bar (green = positive, red = negative)
 //   Line  (right Y-axis) — projected end-of-month Saldo
 //   Dots  (right Y-axis) — Ist-Saldo where entered (green filled dots)
 // ---------------------------------------------------------------------------
@@ -23,17 +23,6 @@ const fmt = new Intl.NumberFormat('de-CH', {
   style: 'currency', currency: 'CHF',
   minimumFractionDigits: 0, maximumFractionDigits: 0,
 });
-
-/**
- * Cell forwards unknown props to the underlying Rectangle, but its SVG-typed
- * `radius` doesn't cover recharts' per-corner array form — hence the cast.
- */
-const TOP_RADIUS = [3, 3, 0, 0] as unknown as number;
-
-/** Do both stack segments point the same way? Then the second one sits on top. */
-function sameSign(a: number, b: number): boolean {
-  return b !== 0 && (a >= 0) === (b >= 0);
-}
 
 function shortLabel(label: string): string {
   // "Mai 2026" → "Mai '26"
@@ -325,36 +314,30 @@ export function LiquidityCashFlowChart({
             />
           )}
 
-          {/* Profit bars — stacked: definitive (solid) + provisional (light, dashed) */}
+          {/* Profit bars — side by side: definitive (solid) + provisional (light,
+              dashed). Grouped rather than stacked: both can point in opposite
+              directions, which a stack renders as one confusing overlap. */}
           <Bar
             yAxisId="left"
-            stackId="profit"
             dataKey="profitDef"
             name={hasProvProfit ? 'Profit (definitiv)' : 'Profit / Monat'}
             fill="#10b981"
             radius={[3, 3, 0, 0]}
-            maxBarSize={40}
+            maxBarSize={hasProvProfit ? 18 : 40}
           >
             {data.map((d, i) => (
-              <Cell
-                key={i}
-                fill={d.profitDef >= 0 ? '#10b981' : '#ef4444'}
-                opacity={0.85}
-                // Rounded top only when no provisional segment stacks on top
-                radius={sameSign(d.profitDef, d.profitProv) ? 0 : TOP_RADIUS}
-              />
+              <Cell key={i} fill={d.profitDef >= 0 ? '#10b981' : '#ef4444'} opacity={0.85} />
             ))}
           </Bar>
 
           {hasProvProfit && (
             <Bar
               yAxisId="left"
-              stackId="profit"
               dataKey="profitProv"
               name="Profit (provisorisch)"
               fill="#6ee7b7"
               radius={[3, 3, 0, 0]}
-              maxBarSize={40}
+              maxBarSize={18}
             >
               {data.map((d, i) => (
                 <Cell
@@ -412,7 +395,7 @@ export function LiquidityCashFlowChart({
 
       {/* Legend note */}
       <p className="mt-2 text-[10px] text-primary-400 text-right">
-        Balken: Einnahmen − Ausgaben pro Monat{hasProvProfit ? ' (heller Abschnitt: provisorische Positionen)' : ''} · Linie: definitiver Saldo per Monatsende
+        Balken: Einnahmen − Ausgaben pro Monat{hasProvProfit ? ' (heller Balken: nur provisorische Positionen)' : ''} · Linie: definitiver Saldo per Monatsende
         {hasProvisional ? ' · gestrichelt: inkl. provisorischer Positionen' : ''} · Punkte: eingetragener Ist-Saldo
         {pastData.length > 0 ? ' · Vergangenheit: nur effektiv bezahlte Beträge (Offenes zählt im aktuellen Monat)' : ''}
       </p>
