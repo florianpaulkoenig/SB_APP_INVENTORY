@@ -13,6 +13,7 @@ import {
   ResponsiveContainer, ReferenceLine, Cell, Legend,
 } from 'recharts';
 import type { MonthBucket } from '../../hooks/useNOALiquidity';
+import { alignZero } from '../../lib/chartAxis';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 // ---------------------------------------------------------------------------
@@ -204,6 +205,13 @@ export function LiquidityCashFlowChart({
 
   const hasProvisional    = data.some((d) => d.saldoProv !== d.saldo);
   const hasProvProfit     = data.some((d) => d.profitProv !== 0);
+
+  // Bars and Saldo live on separate axes — align their zeros so a positive
+  // Saldo always sits above the zero line
+  const axes = alignZero(
+    data.flatMap((d) => [d.profitDef, d.profitProv]),
+    data.flatMap((d) => [d.saldo, d.saldoProv, d.istSaldo ?? NaN]),
+  );
   // Boundary marker: the current month's label (first future bucket)
   const currentMonthLabel = pastData.length > 0 && months.length > 0 ? shortLabel(months[0].label) : null;
 
@@ -272,6 +280,8 @@ export function LiquidityCashFlowChart({
           <YAxis
             yAxisId="left"
             hide={isMobile}
+            domain={axes.left.domain}
+            ticks={axes.left.ticks}
             tickFormatter={tickFmt}
             tick={tickFont}
             axisLine={false}
@@ -283,6 +293,8 @@ export function LiquidityCashFlowChart({
           <YAxis
             yAxisId="right"
             orientation="right"
+            domain={axes.right.domain}
+            ticks={axes.right.ticks}
             tickFormatter={tickFmt}
             tick={tickFont}
             axisLine={false}
