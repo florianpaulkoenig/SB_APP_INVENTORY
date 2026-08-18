@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
 // LiquidityCashFlowChart
 // Combined bar + line chart for the liquidity planning page.
-//   Bars  (left Y-axis)  — net profit per month (green = positive, red = negative)
+//   Bars  (left Y-axis)  — net profit per month, stacked into a definitive and a
+//                           provisional segment (green = positive, red = negative)
 //   Line  (right Y-axis) — projected end-of-month Saldo
 //   Dots  (right Y-axis) — Ist-Saldo where entered (green filled dots)
 // ---------------------------------------------------------------------------
@@ -23,6 +24,17 @@ const fmt = new Intl.NumberFormat('de-CH', {
   minimumFractionDigits: 0, maximumFractionDigits: 0,
 });
 
+/**
+ * Cell forwards unknown props to the underlying Rectangle, but its SVG-typed
+ * `radius` doesn't cover recharts' per-corner array form — hence the cast.
+ */
+const TOP_RADIUS = [3, 3, 0, 0] as unknown as number;
+
+/** Do both stack segments point the same way? Then the second one sits on top. */
+function sameSign(a: number, b: number): boolean {
+  return b !== 0 && (a >= 0) === (b >= 0);
+}
+
 function shortLabel(label: string): string {
   // "Mai 2026" → "Mai '26"
   const [month, year] = label.split(' ');
@@ -34,11 +46,13 @@ function shortLabel(label: string): string {
 // ---------------------------------------------------------------------------
 
 interface ChartPoint {
-  label:     string;
-  profit:    number;          // net (income − expenses) for this month
-  saldo:     number;          // projected end-of-month balance (definitive)
-  saldoProv: number;          // projected balance incl. provisional items
-  istSaldo:  number | null;   // actual balance if entered
+  label:      string;
+  profit:     number;         // net (income − expenses) for this month — total
+  profitDef:  number;         // net from definitive (non-provisional / paid) items
+  profitProv: number;         // net from provisional items
+  saldo:      number;         // projected end-of-month balance (definitive)
+  saldoProv:  number;         // projected balance incl. provisional items
+  istSaldo:   number | null;  // actual balance if entered
 }
 
 // ---------------------------------------------------------------------------
@@ -47,6 +61,10 @@ interface ChartPoint {
 
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { name?: string; value?: number; color?: string; dataKey?: string; payload?: Record<string, unknown> }[]; label?: string }) {
   if (!active || !payload?.length) return null;
+
+  // When the profit bar is split, show the combined figure as well
+  const point       = payload[0]?.payload as ChartPoint | undefined;
+  const splitProfit = payload.some((p) => p.dataKey === 'profitProv') && !!point;
 
   return (
     <div className="rounded-lg border border-primary-100 bg-white px-3 py-2.5 shadow-lg text-xs">
@@ -60,6 +78,15 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
           </span>
         </div>
       ))}
+      {splitProfit && (
+        <div className="mt-1 flex items-center gap-2 border-t border-primary-100 pt-1">
+          <span className="inline-block h-2.5 w-2.5 shrink-0" />
+          <span className="text-primary-500">Profit total:</span>
+          <span className="font-semibold tabular-nums text-primary-700">
+            {fmt.format(point.profit)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -108,21 +135,61 @@ function toChartPoint(
   chf: (amount: number, currency: string) => number,
   paidOnly = false,
 ): ChartPoint {
-  const incomeSum = paidOnly
-    ? bucket.paidEntries.reduce((s, e) => s + chf(e.amount, e.currency), 0)
-    : [...bucket.entries, ...bucket.lateEntries, ...bucket.provCarryIncome, ...bucket.paidEntries]
-        .reduce((s, e) => s + chf(e.amount, e.currency), 0);
-  const expenseSum = paidOnly
-    ? bucket.expenses.filter((e) => !!bucket.paidExpenseMap[e.id]).reduce((s, e) => s + chf(e.amount, e.currency), 0)
-    : bucket.expenses.reduce((s, e) => s + chf(e.amount, e.currency), 0)
-      + bucket.lateExpenses.reduce((s, le) => s + chf(le.expense.amount, le.expense.currency), 0)
-      + bucket.provCarryExpenses.reduce((s, le) => s + chf(le.expense.amount, le.expense.currency), 0);
+  const sumInc  = (arr: { amount: number; currency: string }[]) =>
+    arr.reduce((s, e) => s + chf(e.amount, e.currency), 0);
+  const sumLate = (arr: { expense: { amount: number; currency: string } }[]) =>
+    arr.reduce((s, le) => s + chf(le.expense.amount, le.expense.currency), 0);
+
+  // Paid items count as definitive even when the position was flagged
+  // provisional — the money has effectively moved.
+  const paidExpenses   = bucket.expenses.filter((e) =>  bucket.paidExpenseMap[e.id]);
+  const unpaidExpenses = bucket.expenses.filter((e) => !bucket.paidExpenseMap[e.id]);
+
+  if (paidOnly) {
+    // Past months: only effectively paid amounts — nothing provisional left.
+    const profit = sumInc(bucket.paidEntries) - sumInc(paidExpenses);
+    return {
+      label:      shortLabel(bucket.label),
+      profit,
+      profitDef:  profit,
+      profitProv: 0,
+      saldo:      bucket.projectedBalance,
+      saldoProv:  bucket.projectedBalanceProv,
+      istSaldo:   bucket.actualBalance,
+    };
+  }
+
+  // Definitive: paid entries, unpaid non-provisional entries, überfällige
+  // (lateEntries/lateExpenses are definitive by construction).
+  const incomeDef =
+    sumInc(bucket.paidEntries)
+    + sumInc(bucket.entries.filter((e) => !e.provisional))
+    + sumInc(bucket.lateEntries);
+  const expenseDef =
+    sumInc(paidExpenses)
+    + sumInc(unpaidExpenses.filter((e) => !e.provisional))
+    + sumLate(bucket.lateExpenses);
+
+  // Provisional: unpaid provisional positions of this month plus the
+  // provisional carries from past months (first bucket only).
+  const incomeProv =
+    sumInc(bucket.entries.filter((e) => e.provisional))
+    + sumInc(bucket.provCarryIncome);
+  const expenseProv =
+    sumInc(unpaidExpenses.filter((e) => e.provisional))
+    + sumLate(bucket.provCarryExpenses);
+
+  const profitDef  = incomeDef  - expenseDef;
+  const profitProv = incomeProv - expenseProv;
+
   return {
-    label:     shortLabel(bucket.label),
-    profit:    incomeSum - expenseSum,
-    saldo:     bucket.projectedBalance,
-    saldoProv: bucket.projectedBalanceProv,
-    istSaldo:  bucket.actualBalance,
+    label:      shortLabel(bucket.label),
+    profit:     profitDef + profitProv,
+    profitDef,
+    profitProv,
+    saldo:      bucket.projectedBalance,
+    saldoProv:  bucket.projectedBalanceProv,
+    istSaldo:   bucket.actualBalance,
   };
 }
 
@@ -147,6 +214,7 @@ export function LiquidityCashFlowChart({
   const data       = [...pastData, ...futureData];
 
   const hasProvisional    = data.some((d) => d.saldoProv !== d.saldo);
+  const hasProvProfit     = data.some((d) => d.profitProv !== 0);
   // Boundary marker: the current month's label (first future bucket)
   const currentMonthLabel = pastData.length > 0 && months.length > 0 ? shortLabel(months[0].label) : null;
 
@@ -257,18 +325,48 @@ export function LiquidityCashFlowChart({
             />
           )}
 
-          {/* Profit bars — colored per value */}
+          {/* Profit bars — stacked: definitive (solid) + provisional (light, dashed) */}
           <Bar
             yAxisId="left"
-            dataKey="profit"
-            name="Profit / Monat"
+            stackId="profit"
+            dataKey="profitDef"
+            name={hasProvProfit ? 'Profit (definitiv)' : 'Profit / Monat'}
+            fill="#10b981"
             radius={[3, 3, 0, 0]}
             maxBarSize={40}
           >
             {data.map((d, i) => (
-              <Cell key={i} fill={d.profit >= 0 ? '#10b981' : '#ef4444'} opacity={0.85} />
+              <Cell
+                key={i}
+                fill={d.profitDef >= 0 ? '#10b981' : '#ef4444'}
+                opacity={0.85}
+                // Rounded top only when no provisional segment stacks on top
+                radius={sameSign(d.profitDef, d.profitProv) ? 0 : TOP_RADIUS}
+              />
             ))}
           </Bar>
+
+          {hasProvProfit && (
+            <Bar
+              yAxisId="left"
+              stackId="profit"
+              dataKey="profitProv"
+              name="Profit (provisorisch)"
+              fill="#6ee7b7"
+              radius={[3, 3, 0, 0]}
+              maxBarSize={40}
+            >
+              {data.map((d, i) => (
+                <Cell
+                  key={i}
+                  fill={d.profitProv >= 0 ? '#6ee7b7' : '#fca5a5'}
+                  stroke={d.profitProv >= 0 ? '#10b981' : '#ef4444'}
+                  strokeWidth={1}
+                  strokeDasharray="3 2"
+                />
+              ))}
+            </Bar>
+          )}
 
           {/* Provisional Saldo line (dashed) — only when provisional items exist */}
           {hasProvisional && (
@@ -314,7 +412,7 @@ export function LiquidityCashFlowChart({
 
       {/* Legend note */}
       <p className="mt-2 text-[10px] text-primary-400 text-right">
-        Balken: Einnahmen − Ausgaben pro Monat · Linie: definitiver Saldo per Monatsende
+        Balken: Einnahmen − Ausgaben pro Monat{hasProvProfit ? ' (heller Abschnitt: provisorische Positionen)' : ''} · Linie: definitiver Saldo per Monatsende
         {hasProvisional ? ' · gestrichelt: inkl. provisorischer Positionen' : ''} · Punkte: eingetragener Ist-Saldo
         {pastData.length > 0 ? ' · Vergangenheit: nur effektiv bezahlte Beträge (Offenes zählt im aktuellen Monat)' : ''}
       </p>
