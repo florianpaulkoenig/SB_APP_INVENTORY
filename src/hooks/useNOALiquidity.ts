@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { convertToCHF } from '../lib/currency';
+import { todayLocal } from '../lib/utils';
 import { getRatesCHF } from './useExchangeRates';
 import type {
   NOALiquidityIncomeRow,
@@ -29,6 +30,24 @@ export interface LateExpenseInstance {
   expense: NOALiquidityExpenseRow;
   year: number;
   month: number; // 1-indexed
+}
+
+/**
+ * A row that ended up in NO month column at all — neither in the 12-month
+ * window, nor in the past-months review, nor in an overdue carry list. This
+ * is a safety net: instead of chasing every individual cause, the hook
+ * reports the symptom so nothing can vanish silently again.
+ */
+export interface UnbucketedItem {
+  kind: 'income' | 'expense';
+  id: string;
+  description: string;
+  amount: number;
+  currency: string;
+  date: string | null;
+  project_id: string | null;
+  /** beyond_window: date lies past the horizon cap (10 years out) */
+  reason: 'beyond_window' | 'inactive' | 'no_due_date' | 'unknown';
 }
 
 /** Position inputs for addProject */
@@ -103,6 +122,8 @@ export interface UseNOALiquidityReturn {
   /** All expense payment rows — for paid/skipped status in the projects panel */
   expensePayments: NOALiquidityExpensePaymentRow[];
   projects: NOALiquidityProjectRow[];
+  /** Rows that landed in no month column — surfaced so none can go missing */
+  unbucketed: UnbucketedItem[];
   startsaldo: number;
   startsaldoCurrency: string;
   /** Date the Startsaldo was recorded (YYYY-MM-DD, null if never set) */
@@ -183,6 +204,13 @@ export interface UseNOALiquidityReturn {
   deleteProject: (id: string) => Promise<boolean>;
   /** Renames a project and rewrites the "Name — " prefix on all its positions */
   renameProject: (id: string, newName: string) => Promise<boolean>;
+  /** Edits a single position of a project (keeps the "Name — " prefix in sync) */
+  updateProjectPosition: (
+    project: NOALiquidityProjectRow,
+    position: { kind: 'income' | 'expense'; id: string; description: string; amount: number; currency: string; date: string; provisional?: boolean },
+  ) => Promise<boolean>;
+  /** Deletes a single position of a project */
+  deleteProjectPosition: (kind: 'income' | 'expense', id: string) => Promise<boolean>;
   /** Adds a single position to an existing project */
   addProjectPosition: (
     project: NOALiquidityProjectRow,
@@ -214,9 +242,11 @@ const MONTH_LABELS_DE = [
 // Helper — does a recurring expense apply to a given calendar month?
 // ---------------------------------------------------------------------------
 
-/** Local calendar date as YYYY-MM-DD (toISOString() would shift by the UTC offset) */
-function ymd(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+/** Due date of an expense instance in a given month (YYYY-MM-DD) */
+function expenseInstanceDate(e: NOALiquidityExpenseRow, year: number, month: number): string {
+  const dueDay      = e.due_date ? Number(e.due_date.slice(8, 10)) : 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(Math.min(dueDay, daysInMonth)).padStart(2, '0')}`;
 }
 
 function expenseAppliesTo(
@@ -224,7 +254,7 @@ function expenseAppliesTo(
   year: number,
   month: number, // 0-indexed
 ): boolean {
-  if (!e.active || !e.due_date) return false;
+  if (!e.due_date) return false;
 
   const anchor = new Date(e.due_date + 'T00:00:00');
   const aY = anchor.getFullYear();
@@ -234,14 +264,25 @@ function expenseAppliesTo(
 
   const diff = (year - aY) * 12 + (month - aM);
 
-  switch (e.type) {
-    case 'one_time':    return diff === 0;
-    case 'monthly':     return true;
-    case 'quarterly':   return diff % 3 === 0;
-    case 'semi_annual': return diff % 6 === 0;
-    case 'annual':      return diff % 12 === 0;
-    default:            return false;
-  }
+  const recurs = (() => {
+    switch (e.type) {
+      case 'one_time':    return diff === 0;
+      case 'monthly':     return true;
+      case 'quarterly':   return diff % 3 === 0;
+      case 'semi_annual': return diff % 6 === 0;
+      case 'annual':      return diff % 12 === 0;
+      default:            return false;
+    }
+  })();
+  if (!recurs) return false;
+  if (e.active) return true;
+
+  // Deactivating means "from now on": instances due BEFORE the deactivation
+  // date keep applying, so open past Fälligkeiten stay visible as überfällig.
+  // Rows deactivated before this column existed have no date and keep the old
+  // behaviour (they apply nowhere) rather than resurfacing years of history.
+  if (!e.deactivated_at) return false;
+  return expenseInstanceDate(e, year, month) < e.deactivated_at;
 }
 
 // ---------------------------------------------------------------------------
@@ -255,6 +296,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
   const [incomes, setIncomes]       = useState<NOALiquidityIncomeRow[]>([]);
   const [expensePayments, setExpensePayments] = useState<NOALiquidityExpensePaymentRow[]>([]);
   const [projects, setProjects]     = useState<NOALiquidityProjectRow[]>([]);
+  const [unbucketed, setUnbucketed] = useState<UnbucketedItem[]>([]);
   const [startsaldo, setStartsaldo]                 = useState(0);
   const [startsaldoCurrency, setStartsaldoCurrency] = useState('CHF');
   const [startsaldoDate, setStartsaldoDate]         = useState<string | null>(null);
@@ -279,7 +321,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       // into the previous day for every UTC+x zone (CET/CEST), so the first
       // of the month became the last of the previous one. Income dated on
       // that day then landed in neither pastIncome nor any month bucket.
-      const wsStr = ymd(windowStart);
+      const wsStr = todayLocal(windowStart);
 
       // Exchange rates — all balance math runs in CHF; foreign-currency
       // amounts are converted instead of being summed at face value.
@@ -603,11 +645,13 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       // ever tracked, and generating them back to the anchor would flood the
       // current month.
       for (const e of allExpenses) {
-        if (e.type !== 'one_time' || !e.active || !e.due_date) continue;
+        if (e.type !== 'one_time' || !e.due_date) continue;
         const d  = new Date(e.due_date + 'T00:00:00');
         const dm = new Date(d.getFullYear(), d.getMonth(), 1);
         if (dm >= windowStart) continue;                       // not in the past
         if (rangeStart !== null && dm >= rangeStart) continue;  // a past bucket already handled it
+        // Same applicability rule as the buckets — honours deactivated_at
+        if (!expenseAppliesTo(e, d.getFullYear(), d.getMonth())) continue;
         const pKey = `${e.id}:${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         if (expPaymentMap[pKey] || skippedInstances.has(pKey)) continue;
         (e.provisional ? provCarryExpenses : lateExpenses)
@@ -627,7 +671,31 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       let runningBalance     = tagessaldoBase; // definitive
       let runningBalanceProv = tagessaldoBase; // incl. provisional items
 
-      const buckets: MonthBucket[] = Array.from({ length: 12 }, (_, i) => {
+      // ---- Horizon -----------------------------------------------------------
+      // No fixed 12-month window: the view reaches as far as the data does, so
+      // every position lands in a column and counts towards the balance. At
+      // least 12 months, and capped at 10 years so a mistyped date cannot
+      // render hundreds of month sections — anything beyond still surfaces via
+      // the unbucketed safety net below.
+      const monthsBetween = (d: Date) =>
+        (d.getFullYear() - windowStart.getFullYear()) * 12 + (d.getMonth() - windowStart.getMonth());
+
+      const futureDates: Date[] = [
+        ...windowEntries.map((e) => new Date(e.expected_date + 'T00:00:00')),
+        // Recurring expenses repeat forever — only dated (one_time) ones extend
+        // the horizon; the recurring ones simply fill whatever range results.
+        ...allExpenses
+          .filter((e) => e.type === 'one_time' && e.due_date)
+          .map((e) => new Date((e.due_date as string) + 'T00:00:00')),
+      ];
+      const HORIZON_MIN = 12;
+      const HORIZON_MAX = 120;
+      const horizonMonths = Math.min(
+        HORIZON_MAX,
+        Math.max(HORIZON_MIN, ...futureDates.map((d) => monthsBetween(d) + 1)),
+      );
+
+      const buckets: MonthBucket[] = Array.from({ length: horizonMonths }, (_, i) => {
         const d     = new Date(today.getFullYear(), today.getMonth() + i, 1);
         const year  = d.getFullYear();
         const month = d.getMonth(); // 0-indexed
@@ -710,6 +778,44 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         };
       });
 
+      // ---- Safety net: anything that landed in no column at all --------------
+      const shownIncome = new Set<string>();
+      const shownExpense = new Set<string>();
+      for (const b of [...pastBuckets, ...buckets]) {
+        for (const e of [...b.entries, ...b.paidEntries, ...b.lateEntries, ...b.provCarryIncome]) shownIncome.add(e.id);
+        for (const e of b.expenses) shownExpense.add(e.id);
+        for (const le of [...b.lateExpenses, ...b.provCarryExpenses]) shownExpense.add(le.expense.id);
+      }
+
+      const lastBucket = buckets[buckets.length - 1];
+      const windowEndStr = todayLocal(new Date(lastBucket.year, lastBucket.month + 1, 0));
+
+      const missing: UnbucketedItem[] = [
+        ...allIncome
+          .filter((e) => !shownIncome.has(e.id))
+          .map((e) => ({
+            kind: 'income' as const,
+            id: e.id, description: e.description, amount: e.amount, currency: e.currency,
+            date: e.expected_date, project_id: e.project_id ?? null,
+            reason: (e.expected_date > windowEndStr ? 'beyond_window' : 'unknown') as UnbucketedItem['reason'],
+          })),
+        ...allExpenses
+          .filter((e) => !shownExpense.has(e.id))
+          .map((e) => ({
+            kind: 'expense' as const,
+            id: e.id, description: e.description, amount: e.amount, currency: e.currency,
+            date: e.due_date, project_id: e.project_id ?? null,
+            reason: (!e.due_date
+              ? 'no_due_date'
+              : !e.active
+                ? 'inactive'
+                : e.due_date > windowEndStr
+                  ? 'beyond_window'
+                  : 'unknown') as UnbucketedItem['reason'],
+          })),
+      ].sort((x, y) => (x.date ?? '').localeCompare(y.date ?? ''));
+
+      setUnbucketed(missing);
       setMonths(buckets);
       setPastMonths(pastBuckets);
       setExpenses(allExpenses);
@@ -936,7 +1042,11 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
   const toggleExpenseActive = useCallback(async (id: string, active: boolean): Promise<boolean> => {
     const { error } = await supabase
       .from('noa_liquidity_expenses' as never)
-      .update({ active } as never)
+      .update({
+        active,
+        deactivated_at: active ? null : todayLocal(new Date()),
+        updated_at:     new Date().toISOString(),
+      } as never)
       .eq('id', id);
 
     if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
@@ -1146,6 +1256,51 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     return true;
   }, [projects, toast, refetch]);
 
+  const updateProjectPosition = useCallback(async (
+    project: NOALiquidityProjectRow,
+    position: { kind: 'income' | 'expense'; id: string; description: string; amount: number; currency: string; date: string; provisional?: boolean },
+  ): Promise<boolean> => {
+    // Positions are stored with a "Projektname — " prefix; the panel edits the
+    // bare text, so the prefix is re-applied here.
+    const description = position.description.trim()
+      ? `${project.name} — ${position.description.trim()}`
+      : project.name;
+
+    const { error } = position.kind === 'income'
+      ? await supabase.from('noa_liquidity_income' as never).update({
+          description,
+          amount:        position.amount,
+          currency:      position.currency,
+          expected_date: position.date,
+          provisional:   position.provisional ?? false,
+          updated_at:    new Date().toISOString(),
+        } as never).eq('id', position.id)
+      : await supabase.from('noa_liquidity_expenses' as never).update({
+          description,
+          amount:      position.amount,
+          currency:    position.currency,
+          due_date:    position.date,
+          provisional: position.provisional ?? false,
+          updated_at:  new Date().toISOString(),
+        } as never).eq('id', position.id);
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+    toast({ title: 'Position aktualisiert', variant: 'success' });
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
+  const deleteProjectPosition = useCallback(async (kind: 'income' | 'expense', id: string): Promise<boolean> => {
+    const { error } = kind === 'income'
+      ? await supabase.from('noa_liquidity_income' as never).delete().eq('id', id)
+      : await supabase.from('noa_liquidity_expenses' as never).delete().eq('id', id);
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+    toast({ title: 'Position gelöscht', variant: 'success' });
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
   const addProjectPosition = useCallback(async (
     project: NOALiquidityProjectRow,
     position: { kind: 'income' | 'expense'; description: string; amount: number; currency: string; date: string; provisional?: boolean },
@@ -1214,7 +1369,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return false;
 
-    const today = ymd(new Date());
+    const today = todayLocal(new Date());
 
     const { data, error } = await supabase
       .from('noa_liquidity_settings' as never)
@@ -1357,6 +1512,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     incomes,
     expensePayments,
     projects,
+    unbucketed,
     startsaldo,
     startsaldoCurrency,
     startsaldoDate,
@@ -1385,6 +1541,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     deleteProject,
     renameProject,
     addProjectPosition,
+    updateProjectPosition,
+    deleteProjectPosition,
     upsertStartsaldo,
     upsertEffectiveBalance,
     clearEffectiveBalance,

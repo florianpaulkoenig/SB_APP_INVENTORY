@@ -7,10 +7,10 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { formatCurrency, formatDate } from '../lib/utils';
+import { formatCurrency, formatDate, todayLocal } from '../lib/utils';
 import { CURRENCIES } from '../lib/constants';
 import { useNOALiquidity } from '../hooks/useNOALiquidity';
-import type { MonthBucket, LateExpenseInstance } from '../hooks/useNOALiquidity';
+import type { MonthBucket, LateExpenseInstance, UnbucketedItem } from '../hooks/useNOALiquidity';
 import type { NOALiquidityIncomeRow, NOALiquidityExpenseRow, NOALiquidityExpensePaymentRow, NOALiquidityProjectRow, LiquidityExpenseType } from '../types/database';
 import { LiquidityCashFlowChart } from '../components/liquidity/LiquidityCashFlowChart';
 import { useExchangeRates } from '../hooks/useExchangeRates';
@@ -328,7 +328,7 @@ function StartsaldoCard({
   function openEdit() {
     setAmount(startsaldo > 0 ? String(startsaldo) : '');
     setCur(currency);
-    setDate(startsaldoDate ?? new Date().toISOString().slice(0, 10));
+    setDate(startsaldoDate ?? todayLocal());
     setEditing(true);
   }
 
@@ -839,8 +839,117 @@ function ProjectPositionForm({
   );
 }
 
+const UNBUCKETED_REASONS: Record<UnbucketedItem['reason'], string> = {
+  beyond_window: 'mehr als 10 Jahre in der Zukunft',
+  inactive:      'deaktiviert',
+  no_due_date:   'kein Fälligkeitsdatum',
+  unknown:       'Grund unklar — bitte melden',
+};
+
+// Safety net: every row the hook could not place in any month column. Without
+// this, such a position is only visible in the projects panel and silently
+// missing from the plan and the balance.
+function UnbucketedPanel({
+  items, projectNames,
+}: {
+  items: UnbucketedItem[];
+  projectNames: Record<string, string>;
+}) {
+  const [open, setOpen] = useState(false);
+  if (items.length === 0) return null;
+
+  const hasUnexplained = items.some((i) => i.reason !== 'beyond_window');
+
+  return (
+    <div className={`mb-6 rounded-lg border ${hasUnexplained ? 'border-red-200 bg-red-50/50' : 'border-amber-200 bg-amber-50/50'}`}>
+      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between px-4 py-2.5 text-left">
+        <span className={`text-sm font-medium ${hasUnexplained ? 'text-red-700' : 'text-amber-700'}`}>
+          {items.length} Position{items.length !== 1 ? 'en' : ''} erschein{items.length !== 1 ? 'en' : 't'} in keiner Monatsspalte
+        </span>
+        <svg className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''} ${hasUnexplained ? 'text-red-400' : 'text-amber-400'}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+      {open && (
+        <div className="border-t border-primary-100/60 px-4 py-1">
+          {items.map((i) => (
+            <div key={`${i.kind}:${i.id}`} className="flex flex-wrap items-center gap-2 gap-y-1 border-b border-primary-100/40 py-1.5 last:border-0">
+              <span className="w-20 shrink-0 text-xs text-primary-400 tabular-nums">{i.date ? formatDate(i.date) : '—'}</span>
+              {i.project_id && projectNames[i.project_id] && <ProjectBadge name={projectNames[i.project_id]} />}
+              <span className="min-w-0 flex-1 truncate text-sm text-primary-800">{i.description}</span>
+              <span className="shrink-0 rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-medium text-primary-500">
+                {UNBUCKETED_REASONS[i.reason]}
+              </span>
+              <span className={`shrink-0 text-sm font-medium tabular-nums ${i.kind === 'income' ? 'text-emerald-700' : 'text-red-500'}`}>
+                {i.kind === 'income' ? '+' : '-'}{formatCurrency(i.amount, i.currency)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Inline edit form for a single project position. `kind` is fixed — income and
+// expenses live in different tables, so switching would mean delete + recreate.
+function ProjectPositionEditForm({
+  initial, onSave, onCancel,
+}: {
+  initial: { kind: 'income' | 'expense'; description: string; amount: number; currency: string; date: string; provisional: boolean };
+  onSave: (data: { description: string; amount: number; currency: string; date: string; provisional: boolean }) => Promise<boolean>;
+  onCancel: () => void;
+}) {
+  const [description, setDescription] = useState(initial.description);
+  const [amount, setAmount]           = useState(String(initial.amount));
+  const [currency, setCurrency]       = useState(initial.currency);
+  const [date, setDate]               = useState(initial.date);
+  const [provisional, setProvisional] = useState(initial.provisional);
+  const [saving, setSaving]           = useState(false);
+
+  const n = parseFloat(amount);
+  const canSave = !isNaN(n) && n > 0 && !!date;
+
+  async function handleSave() {
+    if (!canSave) return;
+    setSaving(true);
+    const ok = await onSave({ description, amount: n, currency, date, provisional });
+    setSaving(false);
+    if (ok) onCancel();
+  }
+
+  return (
+    <div className="flex flex-wrap items-end gap-2 border-y border-primary-100 bg-primary-50/60 px-1 py-2">
+      <span className={`mb-2 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${initial.kind === 'income' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+        {initial.kind === 'income' ? 'Einnahme' : 'Ausgabe'}
+      </span>
+      <div className="min-w-36 flex-1">
+        <Input label="Beschreibung" value={description} onChange={(e) => setDescription(e.target.value)} />
+      </div>
+      <div className="w-28">
+        <Input label="Betrag *" type="number" min="0" step="100" value={amount} onChange={(e) => setAmount(e.target.value)} />
+      </div>
+      <div className="w-24">
+        <Select label="Währung" options={CURRENCY_OPTIONS} value={currency} onChange={(e) => setCurrency(e.target.value)} />
+      </div>
+      <div className="w-36">
+        <Input label="Datum *" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      </div>
+      <label className="mb-2 flex items-center gap-1.5 text-xs text-primary-600 cursor-pointer select-none">
+        <input type="checkbox" checked={provisional} onChange={(e) => setProvisional(e.target.checked)} className="h-3.5 w-3.5 rounded border-primary-300 accent-amber-600" />
+        Prov.
+      </label>
+      <div className="mb-1 flex items-center gap-2">
+        <Button size="sm" onClick={handleSave} loading={saving} disabled={!canSave}>Speichern</Button>
+        <Button variant="ghost" size="sm" onClick={onCancel}>Abbrechen</Button>
+      </div>
+    </div>
+  );
+}
+
 function ProjectsPanel({
   projects, incomes, expenses, expensePayments, onDeleteProject, onRenameProject, onAddPosition,
+  onUpdatePosition, onDeletePosition, outOfWindowIds,
 }: {
   projects: NOALiquidityProjectRow[];
   incomes: NOALiquidityIncomeRow[];
@@ -849,8 +958,14 @@ function ProjectsPanel({
   onDeleteProject: (id: string) => void;
   onRenameProject: (id: string, newName: string) => Promise<boolean>;
   onAddPosition: (project: NOALiquidityProjectRow, position: { kind: 'income' | 'expense'; description: string; amount: number; currency: string; date: string; provisional?: boolean }) => Promise<boolean>;
+  onUpdatePosition: (project: NOALiquidityProjectRow, position: { kind: 'income' | 'expense'; id: string; description: string; amount: number; currency: string; date: string; provisional?: boolean }) => Promise<boolean>;
+  onDeletePosition: (kind: 'income' | 'expense', id: string) => Promise<boolean>;
+  /** Row ids that appear in no month column (outside the 12-month view etc.) */
+  outOfWindowIds: Set<string>;
 }) {
   const [open, setOpen] = useState(true);
+  const [editingKey, setEditingKey]     = useState<string | null>(null);
+  const [confirmingPos, setConfirmingPos] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [renamingId, setRenamingId]     = useState<string | null>(null);
   const [renameValue, setRenameValue]   = useState('');
@@ -994,7 +1109,14 @@ function ProjectsPanel({
                 )}
 
                 <div className="px-3 py-1">
-                  {items.map((item) => (
+                  {items.map((item) => (editingKey === item.key ? (
+                    <ProjectPositionEditForm
+                      key={item.key}
+                      initial={{ kind: item.kind, description: stripProjectPrefix(item.description, project.name), amount: item.amount, currency: item.currency, date: item.date, provisional: item.provisional }}
+                      onSave={(data) => onUpdatePosition(project, { kind: item.kind, id: item.key.slice(2), ...data })}
+                      onCancel={() => setEditingKey(null)}
+                    />
+                  ) : (
                     <div key={item.key} className={`flex flex-wrap items-center gap-2 gap-y-1 py-1.5 border-b border-primary-50 last:border-0 ${item.paid ? 'opacity-60' : ''}`}>
                       {item.paid ? (
                         <svg className="h-3.5 w-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" aria-label="Bezahlt">
@@ -1010,11 +1132,53 @@ function ProjectsPanel({
                       <span className={`min-w-0 flex-1 truncate text-sm ${item.paid ? 'text-primary-400 line-through' : 'text-primary-800'}`}>
                         {stripProjectPrefix(item.description, project.name)}
                       </span>
+                      {outOfWindowIds.has(item.key.slice(2)) && (
+                        <span
+                          className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                          title="Erscheint in keiner Monatsspalte — siehe Hinweis über der Projektliste"
+                        >
+                          nicht im Plan
+                        </span>
+                      )}
                       <span className={`shrink-0 text-sm font-medium tabular-nums ${item.kind === 'income' ? 'text-emerald-700' : 'text-red-500'}`}>
                         {item.kind === 'income' ? '+' : '-'}{formatCurrency(item.amount, item.currency)}
                       </span>
+                      <span className="flex shrink-0 items-center gap-1">
+                        <button
+                          onClick={() => { setEditingKey(item.key); setConfirmingPos(null); }}
+                          className="p-1 text-primary-300 hover:text-primary-700 transition-colors"
+                          aria-label="Position bearbeiten"
+                          title="Position bearbeiten"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                          </svg>
+                        </button>
+                        {confirmingPos === item.key ? (
+                          <>
+                            <button
+                              onClick={async () => { await onDeletePosition(item.kind, item.key.slice(2)); setConfirmingPos(null); }}
+                              className="rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
+                            >
+                              Löschen
+                            </button>
+                            <button onClick={() => setConfirmingPos(null)} className="px-1 text-[11px] text-primary-400 hover:text-primary-600">Nein</button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmingPos(item.key)}
+                            className="p-1 text-primary-300 hover:text-red-500 transition-colors"
+                            aria-label="Position löschen"
+                            title="Position löschen"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </span>
                     </div>
-                  ))}
+                  )))}
                 </div>
               </div>
             );
@@ -2564,7 +2728,7 @@ function MonthSection({
 
 export function LiquidityPlanningPage() {
   const {
-    months, pastMonths, expenses, incomes, expensePayments, projects,
+    months, pastMonths, expenses, incomes, expensePayments, projects, unbucketed,
     startsaldo, startsaldoCurrency, startsaldoDate,
     paidIncomeSinceStart, paidExpensesSinceStart,
     effectiveBalance, effectiveBalanceDate,
@@ -2574,9 +2738,14 @@ export function LiquidityPlanningPage() {
     addExpense, updateExpense, deleteExpense, toggleExpenseActive, markExpensePaid, markExpenseUnpaid,
     skipExpenseInstance,
     addProject, deleteProject, renameProject, addProjectPosition,
+    updateProjectPosition, deleteProjectPosition,
     upsertStartsaldo, upsertEffectiveBalance, clearEffectiveBalance, acceptEffectiveBalance,
     upsertActualBalance, deleteActualBalance,
   } = useNOALiquidity();
+
+  // Ids of rows that appear in no month column — drives the panel badge and
+  // the warning banner below.
+  const outOfWindowIds = new Set(unbucketed.map((u) => u.id));
 
   // Storno of an overdue/carried expense instance: a one_time expense IS its
   // single instance (delete it); for recurring ones only this Fälligkeit
@@ -2749,6 +2918,11 @@ export function LiquidityPlanningPage() {
         </>
       )}
 
+      {/* Sicherheitsnetz: Positionen, die in keiner Monatsspalte landen */}
+      {!loading && !showingAForm && (
+        <UnbucketedPanel items={unbucketed} projectNames={projectNames} />
+      )}
+
       {/* Projekte — grouped positions with paid status + delete-all */}
       {!loading && !showingAForm && (
         <ProjectsPanel
@@ -2759,6 +2933,9 @@ export function LiquidityPlanningPage() {
           onDeleteProject={deleteProject}
           onRenameProject={renameProject}
           onAddPosition={addProjectPosition}
+          onUpdatePosition={updateProjectPosition}
+          onDeletePosition={deleteProjectPosition}
+          outOfWindowIds={outOfWindowIds}
         />
       )}
 
