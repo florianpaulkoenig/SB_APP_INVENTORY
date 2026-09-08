@@ -214,6 +214,11 @@ const MONTH_LABELS_DE = [
 // Helper — does a recurring expense apply to a given calendar month?
 // ---------------------------------------------------------------------------
 
+/** Local calendar date as YYYY-MM-DD (toISOString() would shift by the UTC offset) */
+function ymd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function expenseAppliesTo(
   e: NOALiquidityExpenseRow,
   year: number,
@@ -270,7 +275,11 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
 
       const today       = new Date();
       const windowStart = new Date(today.getFullYear(), today.getMonth(), 1);
-      const wsStr = windowStart.toISOString().slice(0, 10);
+      // Local calendar date — toISOString() would shift local midnight back
+      // into the previous day for every UTC+x zone (CET/CEST), so the first
+      // of the month became the last of the previous one. Income dated on
+      // that day then landed in neither pastIncome nor any month bucket.
+      const wsStr = ymd(windowStart);
 
       // Exchange rates — all balance math runs in CHF; foreign-currency
       // amounts are converted instead of being summed at face value.
@@ -1205,7 +1214,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return false;
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = ymd(new Date());
 
     const { data, error } = await supabase
       .from('noa_liquidity_settings' as never)
