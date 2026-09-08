@@ -584,6 +584,34 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         }
       }
 
+      // One-time expenses due BEFORE the review range (or with no range at
+      // all) must still carry into the current month. The past-months range
+      // is derived from income / expense payments / Ist-Saldi only — an
+      // expense whose due month predates all of those gets no bucket, so
+      // without this pass a project position would silently vanish from
+      // every month and from the balance. Recurring expenses stay bound to
+      // the review range: outside it there is no evidence the instance was
+      // ever tracked, and generating them back to the anchor would flood the
+      // current month.
+      for (const e of allExpenses) {
+        if (e.type !== 'one_time' || !e.active || !e.due_date) continue;
+        const d  = new Date(e.due_date + 'T00:00:00');
+        const dm = new Date(d.getFullYear(), d.getMonth(), 1);
+        if (dm >= windowStart) continue;                       // not in the past
+        if (rangeStart !== null && dm >= rangeStart) continue;  // a past bucket already handled it
+        const pKey = `${e.id}:${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (expPaymentMap[pKey] || skippedInstances.has(pKey)) continue;
+        (e.provisional ? provCarryExpenses : lateExpenses)
+          .push({ expense: e, year: d.getFullYear(), month: d.getMonth() + 1 });
+      }
+
+      // Chronological by origin month — the recovery pass appends older
+      // instances after the bucket-derived ones.
+      const byOrigin = (a: LateExpenseInstance, b: LateExpenseInstance) =>
+        a.year - b.year || a.month - b.month;
+      lateExpenses.sort(byOrigin);
+      provCarryExpenses.sort(byOrigin);
+
       // ---- Current + next 11 months ------------------------------------------
       // Chains: bucket 0 starts at the Tagessaldo base (anchor + paid since),
       // every month adds only its outstanding (unpaid) amounts.
