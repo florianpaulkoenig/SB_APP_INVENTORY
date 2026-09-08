@@ -45,7 +45,12 @@ function hasOverlap(a: string[], b: string[]): boolean {
   return a.some((id) => setB.has(id));
 }
 
-/** Format date as YYYY-MM-DD */
+/**
+ * Format date as YYYY-MM-DD in UTC — deliberately NOT the local-calendar
+ * todayLocal(): the trend buckets are keyed by `viewed_at.slice(0, 10)`, which
+ * is the UTC day of the timestamp. Both key spaces have to agree, so this one
+ * stays UTC.
+ */
 function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }

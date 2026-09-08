@@ -16,7 +16,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { PRODUCTION_STATUSES } from '../lib/constants';
-import { formatDate, formatDimensions, formatCurrency, sanitizeFilterTerm, downloadBlob } from '../lib/utils';
+import { formatDate, formatDimensions, formatCurrency, sanitizeFilterTerm, downloadBlob, todayLocal } from '../lib/utils';
 import { createThumbnailBlob } from '../lib/imageThumbnails';
 import { useExchangeRates } from '../hooks/useExchangeRates';
 import type { ProductionStatus, ProductionOrderRow } from '../types/database';
@@ -411,7 +411,7 @@ export function ProductionOrdersPage() {
         />,
       ).toBlob();
 
-      downloadBlob(blob, `NOA_SB_Production_${new Date().toISOString().slice(0, 10)}.pdf`);
+      downloadBlob(blob, `NOA_SB_Production_${todayLocal()}.pdf`);
     } finally {
       setDownloadingId(null);
     }
@@ -662,7 +662,7 @@ export function ProductionOrdersPage() {
         />,
       ).toBlob();
 
-      const dateSuffix = new Date().toISOString().slice(0, 10);
+      const dateSuffix = todayLocal();
 
       // Build ZIP with PDF + reference images
       const zip = new JSZip();
@@ -894,7 +894,7 @@ export function ProductionOrdersPage() {
         />,
       ).toBlob();
 
-      downloadBlob(pdfBlob, `NOA_SB_Production_Artist_List_${new Date().toISOString().slice(0, 10)}.pdf`);
+      downloadBlob(pdfBlob, `NOA_SB_Production_Artist_List_${todayLocal()}.pdf`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       toast({ title: 'Export failed', description: msg, variant: 'error' });
@@ -995,7 +995,7 @@ export function ProductionOrdersPage() {
         />,
       ).toBlob();
 
-      downloadBlob(blob, `NOA_SB_Production_Overview_${new Date().toISOString().slice(0, 10)}.pdf`);
+      downloadBlob(blob, `NOA_SB_Production_Overview_${todayLocal()}.pdf`);
     } finally {
       setDownloadingOverview(false);
     }

@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { todayLocal } from '../lib/utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -107,7 +108,7 @@ export function useSupplyPlanning() {
         });
 
       // Upcoming releases
-      const now = new Date().toISOString().slice(0, 10);
+      const now = todayLocal();
       const upcomingReleases: UpcomingRelease[] = orders
         .filter((o) => (o.planned_release_date && o.planned_release_date >= now) || (o.deadline && o.deadline >= now))
         .sort((a, b) => (a.planned_release_date ?? a.deadline ?? '').localeCompare(b.planned_release_date ?? b.deadline ?? ''))

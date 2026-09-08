@@ -9,7 +9,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { EmptyState } from '../ui/EmptyState';
 import { useExpenses } from '../../hooks/useExpenses';
 import { EXPENSE_CATEGORIES, CURRENCIES } from '../../lib/constants';
-import { formatCurrency, formatDate } from '../../lib/utils';
+import { formatCurrency, formatDate, todayLocal } from '../../lib/utils';
 import type { ExpenseCategory, Currency } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -48,7 +48,7 @@ export function ExpenseTracker({ artworkId }: ExpenseTrackerProps) {
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<string>('EUR');
   const [expenseDate, setExpenseDate] = useState(
-    new Date().toISOString().slice(0, 10),
+    todayLocal(),
   );
   const [vendor, setVendor] = useState('');
   const [notes, setNotes] = useState('');
@@ -62,7 +62,7 @@ export function ExpenseTracker({ artworkId }: ExpenseTrackerProps) {
     setCategory('other');
     setAmount('');
     setCurrency('EUR');
-    setExpenseDate(new Date().toISOString().slice(0, 10));
+    setExpenseDate(todayLocal());
     setVendor('');
     setNotes('');
   }

@@ -10,7 +10,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { EmptyState } from '../ui/EmptyState';
 import { useLoans } from '../../hooks/useLoans';
 import { LOAN_STATUSES } from '../../lib/constants';
-import { formatDate } from '../../lib/utils';
+import { formatDate, todayLocal } from '../../lib/utils';
 import type { LoanStatus, LoanRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -28,7 +28,7 @@ export interface LoanPanelProps {
 function isOverdue(loan: LoanRow): boolean {
   if (loan.status !== 'active') return false;
   if (!loan.loan_end) return false;
-  return loan.loan_end < new Date().toISOString().slice(0, 10);
+  return loan.loan_end < todayLocal();
 }
 
 // ---------------------------------------------------------------------------
@@ -47,7 +47,7 @@ export function LoanPanel({ artworkId }: LoanPanelProps) {
   // Form state
   const [borrower, setBorrower] = useState('');
   const [loanStart, setLoanStart] = useState(
-    new Date().toISOString().slice(0, 10),
+    todayLocal(),
   );
   const [loanEnd, setLoanEnd] = useState('');
   const [status, setStatus] = useState<string>('pending');
@@ -63,7 +63,7 @@ export function LoanPanel({ artworkId }: LoanPanelProps) {
 
   function resetForm() {
     setBorrower('');
-    setLoanStart(new Date().toISOString().slice(0, 10));
+    setLoanStart(todayLocal());
     setLoanEnd('');
     setStatus('pending');
     setInsuranceRequired(false);

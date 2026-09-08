@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { todayLocal } from '../lib/utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -62,7 +63,7 @@ export function useProductionRecommendations() {
 
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const sixMonthsAgoStr = sixMonthsAgo.toISOString().slice(0, 10);
+      const sixMonthsAgoStr = todayLocal(sixMonthsAgo);
 
       // Parallel data fetches
       const [artworksRes, salesRes, enquiriesRes, wishListRes, prodOrdersRes, prodItemsRes, galleriesRes] = await Promise.all([

@@ -3,6 +3,7 @@ import type { ArtworkStatus, ArtworkCategory, ArtworkSeries } from '../types/dat
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { ArtworkRow } from '../types/database';
+import { todayLocal } from '../lib/utils';
 
 interface PricePreview {
   id: string;
@@ -77,7 +78,7 @@ export function useBulkPriceUpdate() {
       } = await supabase.auth.getSession();
       if (!session) return false;
 
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayLocal();
       let successCount = 0;
 
       for (const p of previews) {

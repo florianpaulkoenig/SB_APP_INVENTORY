@@ -10,7 +10,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { EmptyState } from '../ui/EmptyState';
 import { useInsuranceRecords } from '../../hooks/useInsuranceRecords';
 import { CURRENCIES } from '../../lib/constants';
-import { formatCurrency, formatDate } from '../../lib/utils';
+import { formatCurrency, formatDate, todayLocal } from '../../lib/utils';
 import type { Currency, InsuranceRecordRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -29,7 +29,7 @@ function getInsuranceStatus(
   record: InsuranceRecordRow,
 ): 'active' | 'expired' | 'unknown' {
   if (!record.valid_from || !record.valid_to) return 'unknown';
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocal();
   if (record.valid_to < today) return 'expired';
   if (record.valid_from <= today && record.valid_to >= today) return 'active';
   return 'unknown';

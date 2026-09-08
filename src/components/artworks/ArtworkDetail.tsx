@@ -5,7 +5,7 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
-import { formatCurrency, formatDimensions } from '../../lib/utils';
+import { formatCurrency, formatDimensions, todayLocal } from '../../lib/utils';
 import {
   EDITION_TYPES,
   ARTWORK_CATEGORIES,
@@ -82,7 +82,7 @@ export function ArtworkDetail({
   const [showSoldDialog, setShowSoldDialog] = useState(false);
   const [salePrice, setSalePrice] = useState(artwork.price?.toString() ?? '');
   const [saleCurrency, setSaleCurrency] = useState(artwork.currency ?? 'EUR');
-  const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10));
+  const [saleDate, setSaleDate] = useState(todayLocal());
   const [saleCityState, setSaleCityState] = useState('');
   const [saleCountryState, setSaleCountryState] = useState('');
   const [saleTypeState, setSaleTypeState] = useState('');
@@ -165,7 +165,7 @@ export function ArtworkDetail({
               onClick={() => {
                 setSalePrice(artwork.price?.toString() ?? '');
                 setSaleCurrency(artwork.currency ?? 'EUR');
-                setSaleDate(new Date().toISOString().slice(0, 10));
+                setSaleDate(todayLocal());
                 setSaleCityState('');
                 setSaleCountryState('');
                 setSaleTypeState('');

@@ -39,6 +39,18 @@ export function formatDate(date: string | Date): string {
   return format(d, 'dd MMM yyyy');
 }
 
+/**
+ * Local calendar date as YYYY-MM-DD.
+ *
+ * Do NOT use `toISOString().slice(0, 10)` for this: it converts to UTC first,
+ * so in CET/CEST every local time before 01:00/02:00 — local midnight above
+ * all — comes back as the PREVIOUS day. That once made income dated on the
+ * last day of a month fall out of the liquidity plan entirely.
+ */
+export function todayLocal(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // ---------------------------------------------------------------------------
 // Dimension formatting  --  "100 x 80 x 5 cm"
 // ---------------------------------------------------------------------------

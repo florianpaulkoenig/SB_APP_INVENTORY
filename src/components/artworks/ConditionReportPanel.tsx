@@ -10,7 +10,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { EmptyState } from '../ui/EmptyState';
 import { useConditionReports } from '../../hooks/useConditionReports';
 import { CONDITION_GRADES } from '../../lib/constants';
-import { formatDate } from '../../lib/utils';
+import { formatDate, todayLocal } from '../../lib/utils';
 import type { ConditionGrade } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -47,7 +47,7 @@ export function ConditionReportPanel({ artworkId }: ConditionReportPanelProps) {
   // Form state
   const [condition, setCondition] = useState<string>('good');
   const [reportDate, setReportDate] = useState(
-    new Date().toISOString().slice(0, 10),
+    todayLocal(),
   );
   const [reportedBy, setReportedBy] = useState('');
   const [notes, setNotes] = useState('');
@@ -59,7 +59,7 @@ export function ConditionReportPanel({ artworkId }: ConditionReportPanelProps) {
 
   function resetForm() {
     setCondition('good');
-    setReportDate(new Date().toISOString().slice(0, 10));
+    setReportDate(todayLocal());
     setReportedBy('');
     setNotes('');
   }

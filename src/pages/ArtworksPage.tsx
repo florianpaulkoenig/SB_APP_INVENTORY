@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, createElement, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getSignedUrl } from '../lib/signedUrlCache';
-import { downloadBlob, buildCertificateFilename, formatDimensions } from '../lib/utils';
+import { downloadBlob, buildCertificateFilename, formatDimensions, todayLocal } from '../lib/utils';
 import { useArtworks } from '../hooks/useArtworks';
 import type { ArtworkFilters as ArtworkFiltersType } from '../hooks/useArtworks';
 import type { ArtworkColor } from '../types/database';
@@ -554,7 +554,7 @@ export function ArtworksPage() {
 
       const csv = [headers.join(','), ...csvRows.map((r) => r.map(escape).join(','))].join('\n');
       const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
-      downloadBlob(blob, `NOA_Artworks_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+      downloadBlob(blob, `NOA_Artworks_Export_${todayLocal()}.csv`);
     } finally {
       setExporting(false);
     }

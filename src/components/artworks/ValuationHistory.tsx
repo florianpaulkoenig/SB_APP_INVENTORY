@@ -9,7 +9,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { EmptyState } from '../ui/EmptyState';
 import { useValuations } from '../../hooks/useValuations';
 import { CURRENCIES } from '../../lib/constants';
-import { formatCurrency, formatDate } from '../../lib/utils';
+import { formatCurrency, formatDate, todayLocal } from '../../lib/utils';
 import type { Currency } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -37,7 +37,7 @@ export function ValuationHistory({ artworkId }: ValuationHistoryProps) {
   const [currency, setCurrency] = useState<string>('EUR');
   const [appraiser, setAppraiser] = useState('');
   const [valuationDate, setValuationDate] = useState(
-    new Date().toISOString().slice(0, 10),
+    todayLocal(),
   );
   const [notes, setNotes] = useState('');
 
@@ -50,7 +50,7 @@ export function ValuationHistory({ artworkId }: ValuationHistoryProps) {
     setValue('');
     setCurrency('EUR');
     setAppraiser('');
-    setValuationDate(new Date().toISOString().slice(0, 10));
+    setValuationDate(todayLocal());
     setNotes('');
   }
 
