@@ -2370,6 +2370,8 @@ export type NOALiquidityExpenseRow = {
   currency: string;
   type: LiquidityExpenseType;
   active: boolean;
+  /** Date the expense was deactivated — instances due before it still apply */
+  deactivated_at: string | null;
   due_date: string | null;
   invoice_number: string | null;
   provisional: boolean;
@@ -2386,6 +2388,7 @@ export type NOALiquidityExpenseInsert = {
   currency?: string;
   type: LiquidityExpenseType;
   active?: boolean;
+  deactivated_at?: string | null;
   due_date?: string | null;
   created_at?: string;
   updated_at?: string;

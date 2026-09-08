@@ -111,8 +111,17 @@ function IstSaldoActiveDot(props: { cx?: number; cy?: number; payload?: Record<s
 // Component
 // ---------------------------------------------------------------------------
 
-const RANGE_OPTIONS = [3, 6, 9, 12] as const;
-type Range = typeof RANGE_OPTIONS[number];
+// Base steps; the actual list grows with the data so a longer horizon stays
+// reachable (the plan is no longer capped at 12 months).
+const BASE_RANGE_OPTIONS = [3, 6, 9, 12] as const;
+type Range = number;
+
+function rangeOptions(total: number): number[] {
+  const opts = BASE_RANGE_OPTIONS.filter((r) => r < total) as number[];
+  for (let r = 24; r < total; r += 12) opts.push(r);
+  opts.push(total);
+  return opts;
+}
 
 /**
  * paidOnly (past months): bars show only what was effectively paid — unpaid
@@ -195,7 +204,8 @@ export function LiquidityCashFlowChart({
   // Static at mount — phones don't change width class mid-session
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
 
-  const [range, setRange]       = useState<Range>(isMobile ? 6 : 12);
+  const options = rangeOptions(months.length);
+  const [range, setRange]       = useState<Range>(isMobile ? 6 : Math.min(12, months.length || 12));
   const [showPast, setShowPast] = useState(false);
   const { toCHF } = useExchangeRates();
 
@@ -246,7 +256,7 @@ export function LiquidityCashFlowChart({
             </button>
           )}
           <div className="flex items-center gap-1 rounded-lg border border-primary-100 bg-primary-50 p-0.5">
-            {RANGE_OPTIONS.map((r) => (
+            {options.map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
