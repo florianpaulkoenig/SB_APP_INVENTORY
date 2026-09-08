@@ -2253,6 +2253,7 @@ function MonthSection({
   const [showPaidIncome,        setShowPaidIncome]        = useState(false);
   const [showPaidExpenses,      setShowPaidExpenses]      = useState(false);
   const [showOneTimeForm,       setShowOneTimeForm]       = useState(false);
+  const { toCHF } = useExchangeRates();
 
   // Default date = first day of this month
   const defaultDate = `${bucket.year}-${String(bucket.month + 1).padStart(2, '0')}-01`;
@@ -2295,6 +2296,12 @@ function MonthSection({
   const hasExpenses      = bucket.expenses.length > 0;
   const hasAny           = hasUnpaid || hasLate || hasLateExpenses || hasProvCarryInc || hasProvCarryExp || hasPaidIncome || hasExpenses;
   const lateCount        = bucket.lateEntries.length + bucket.lateExpenses.length;
+
+  // Zwischensumme der überfälligen Positionen (immer definitiv — provisorische
+  // Überträge laufen über provCarry* und stehen im eigenen Block darunter)
+  const lateIncomeSum  = bucket.lateEntries.reduce((sum, e) => sum + toCHF(e.amount, e.currency), 0);
+  const lateExpenseSum = bucket.lateExpenses.reduce((sum, le) => sum + toCHF(le.expense.amount, le.expense.currency), 0);
+  const lateNet        = lateIncomeSum - lateExpenseSum;
 
   // ---- Definitiv/Provisorisch split of the month's open positions ----------
   const defIncome     = bucket.entries.filter((e) => !e.provisional);
@@ -2382,6 +2389,31 @@ function MonthSection({
                   onCancel={() => onCancelExpenseInstance(le.expense, le.year, le.month)}
                 />
               ))}
+            </div>
+          )}
+
+          {/* Zwischensumme der überfälligen Positionen */}
+          {(hasLate || hasLateExpenses) && (
+            <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 border-b border-red-100 bg-red-50/40 px-2 py-2 -mx-2">
+              <span className="mr-auto text-[10px] font-semibold uppercase tracking-wide text-red-500">
+                Zwischensumme überfällig
+              </span>
+              {lateIncomeSum > 0 && (
+                <span className="text-xs tabular-nums text-emerald-600" title="Überfällige Einnahmen">
+                  +{formatCurrency(lateIncomeSum, balanceCurrency)}
+                </span>
+              )}
+              {lateExpenseSum > 0 && (
+                <span className="text-xs tabular-nums text-red-500" title="Überfällige Ausgaben">
+                  -{formatCurrency(lateExpenseSum, balanceCurrency)}
+                </span>
+              )}
+              <span
+                className={`text-sm font-semibold tabular-nums ${lateNet < 0 ? 'text-red-600' : lateNet > 0 ? 'text-emerald-700' : 'text-primary-400'}`}
+                title="Netto der überfälligen Positionen"
+              >
+                {lateNet > 0 ? '+' : lateNet < 0 ? '-' : ''}{formatCurrency(Math.abs(lateNet), balanceCurrency)}
+              </span>
             </div>
           )}
 
