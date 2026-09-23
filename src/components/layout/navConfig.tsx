@@ -17,6 +17,8 @@ export interface NavItem {
 export interface NavSection {
   title: string;
   items: NavItem[];
+  /** Rendered as a toggle, closed by default (opens itself when a child route is active) */
+  collapsible?: boolean;
 }
 
 export const icons = {
@@ -217,88 +219,61 @@ export const socialMediaIcon = (
   </svg>
 );
 
+const publicationIcon = (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+    <rect x="3" y="2" width="14" height="16" rx="1.5" />
+    <path strokeLinecap="round" d="M6 6h8M6 9h8M6 12h5" />
+  </svg>
+);
+
 // Simon Berger navigation (full feature set)
+// Order reflects actual use (record counts + activity in the last 90 days,
+// checked 2026-09-23). Pages with little or no data sit in the collapsed
+// "SELTEN GENUTZT" section at the bottom — still reachable, just out of the way.
 export const navSections: NavSection[] = [
   {
     title: 'INVENTORY',
     items: [
       { label: 'Dashboard', to: '/', icon: icons.dashboard, roles: ['admin', 'gallery', 'collector'] },
       { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin', 'gallery', 'collector'] },
+      { label: 'Production Orders', to: '/production', icon: icons.production, roles: ['admin'] },
       { label: 'Galleries', to: '/galleries', icon: icons.galleries, roles: ['admin'] },
       { label: 'Collections', to: '/collections', icon: icons.collections, roles: ['admin'] },
-      { label: 'Production Requests', to: '/production-requests', icon: icons.production, roles: ['admin'] },
-      { label: 'Production Orders', to: '/production', icon: icons.production, roles: ['admin'] },
     ],
   },
   {
     title: 'DOCUMENTS',
     items: [
       { label: 'Certificates', to: '/certificates', icon: icons.certificate, roles: ['admin', 'collector'] },
-      { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin', 'gallery'] },
-      { label: 'Forwarding', to: '/forwarding', icon: icons.forwarding, roles: ['admin'] },
-      { label: 'Packing Lists', to: '/packing-lists', icon: icons.packingList, roles: ['admin'] },
       { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
+      { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin', 'gallery'] },
     ],
   },
   {
-    title: 'SALES & CRM',
+    title: 'SALES & FINANCE',
     items: [
-      { label: 'Contacts', to: '/contacts', icon: icons.contacts, roles: ['admin'] },
-      { label: 'Enquiries', to: '/enquiries', icon: icons.enquiry, roles: ['admin'] },
-      { label: 'Invoices', to: '/invoices', icon: icons.invoices, roles: ['admin'] },
       { label: 'Sales', to: '/sales', icon: icons.sales, roles: ['admin', 'gallery'] },
-    ],
-  },
-  {
-    title: 'SHARING',
-    items: [
-      { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin', 'gallery'] },
-    ],
-  },
-  {
-    title: 'PLANNING',
-    items: [
-      { label: 'Annual Schedule', to: '/schedule', icon: icons.calendar, roles: ['admin'] },
-      { label: 'Projects', to: '/projects', icon: icons.project, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'FINANCE',
-    items: [
       { label: 'Liquidity', to: '/liquidity', icon: liquidityIcon, roles: ['admin'] },
-      { label: 'Publication Budget', to: '/publication-budget', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-          <rect x="3" y="2" width="14" height="16" rx="1.5" />
-          <path strokeLinecap="round" d="M6 6h8M6 9h8M6 12h5" />
-        </svg>
-      ), roles: ['admin'] },
+      { label: 'Contacts', to: '/contacts', icon: icons.contacts, roles: ['admin'] },
     ],
   },
   {
-    title: 'MARKETING',
+    title: 'EXHIBITIONS & MARKETING',
     items: [
+      { label: 'Exhibitions & Fairs', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
       { label: 'Social Media', to: '/social-media', icon: socialMediaIcon, roles: ['admin'] },
+      { label: 'Annual Schedule', to: '/schedule', icon: icons.calendar, roles: ['admin'] },
     ],
   },
   {
     title: 'ANALYTICS',
     items: [
-      { label: 'Portfolio Overview', to: '/analytics/portfolio', icon: icons.inventoryHealth, roles: ['admin'] },
-      { label: 'Revenue & Pricing', to: '/analytics/revenue', icon: icons.sales, roles: ['admin'] },
-      { label: 'Gallery Intelligence', to: '/analytics/galleries', icon: icons.galleryPerformance, roles: ['admin'] },
-      { label: 'Collector & Sales', to: '/analytics/collectors', icon: icons.contacts, roles: ['admin'] },
-      { label: 'Market & Auction', to: '/analytics/market', icon: icons.map, roles: ['admin'] },
-      { label: 'Exhibition & Career', to: '/analytics/exhibitions', icon: icons.exhibition, roles: ['admin'] },
-      { label: 'Series & Artwork', to: '/analytics/series', icon: icons.artworks, roles: ['admin'] },
-      { label: 'Strategic Intelligence', to: '/analytics/strategic', icon: icons.analytics, roles: ['admin'] },
       { label: 'Monthly Report', to: '/analytics/monthly-report', icon: icons.sales, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'MARKET INTELLIGENCE',
-    items: [
-      { label: 'Exhibitions & Fairs', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
-      { label: 'Price Management', to: '/price-management', icon: icons.priceTag, roles: ['admin'] },
+      { label: 'Revenue & Pricing', to: '/analytics/revenue', icon: icons.sales, roles: ['admin'] },
+      { label: 'Portfolio Overview', to: '/analytics/portfolio', icon: icons.inventoryHealth, roles: ['admin'] },
+      { label: 'Gallery Intelligence', to: '/analytics/galleries', icon: icons.galleryPerformance, roles: ['admin'] },
+      { label: 'Series & Artwork', to: '/analytics/series', icon: icons.artworks, roles: ['admin'] },
+      { label: 'Exhibition & Career', to: '/analytics/exhibitions', icon: icons.exhibition, roles: ['admin'] },
     ],
   },
   {
@@ -314,39 +289,34 @@ export const navSections: NavSection[] = [
     ],
   },
   {
-    title: 'ADMIN',
+    title: 'SELTEN GENUTZT',
+    collapsible: true,
     items: [
+      { label: 'Publication Budget', to: '/publication-budget', icon: publicationIcon, roles: ['admin'] },
+      { label: 'Projects', to: '/projects', icon: icons.project, roles: ['admin'] },
+      { label: 'Forwarding', to: '/forwarding', icon: icons.forwarding, roles: ['admin'] },
+      { label: 'Packing Lists', to: '/packing-lists', icon: icons.packingList, roles: ['admin'] },
+      { label: 'Invoices', to: '/invoices', icon: icons.invoices, roles: ['admin'] },
+      { label: 'Enquiries', to: '/enquiries', icon: icons.enquiry, roles: ['admin'] },
+      { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin', 'gallery'] },
+      { label: 'Production Requests', to: '/production-requests', icon: icons.production, roles: ['admin'] },
+      { label: 'Price Management', to: '/price-management', icon: icons.priceTag, roles: ['admin'] },
+      { label: 'Strategic Intelligence', to: '/analytics/strategic', icon: icons.analytics, roles: ['admin'] },
+      { label: 'Collector & Sales', to: '/analytics/collectors', icon: icons.contacts, roles: ['admin'] },
+      { label: 'Market & Auction', to: '/analytics/market', icon: icons.map, roles: ['admin'] },
     ],
   },
 ];
 
-// NOA Collection navigation (subset: Artworks, Deliveries, Catalogues,
-// Viewing Rooms, Image Sharing, Exhibitions, Anlageverwaltung + Liquidity)
+// NOA Collection navigation — Artworks, Artists and Anlageverwaltung carry
+// the data; the other pages have no NOA Collection records yet.
 export const noaNavSections: NavSection[] = [
   {
     title: 'INVENTORY',
     items: [
       { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin'] },
       { label: 'Artists', to: '/artists', icon: icons.artists, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'DOCUMENTS',
-    items: [
-      { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin'] },
-      { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'SHARING',
-    items: [
-      { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'EXHIBITIONS',
-    items: [
-      { label: 'Exhibitions', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
+      { label: 'Anlageverwaltung', to: '/anlageverwaltung', icon: anlageIcon, roles: ['admin'] },
     ],
   },
   {
@@ -356,20 +326,14 @@ export const noaNavSections: NavSection[] = [
     ],
   },
   {
-    title: 'ANLAGEN',
+    title: 'SELTEN GENUTZT',
+    collapsible: true,
     items: [
-      { label: 'Anlageverwaltung', to: '/anlageverwaltung', icon: anlageIcon, roles: ['admin'] },
-    ],
-  },
-  {
-    title: 'FINANCE',
-    items: [
-      { label: 'Publication Budget', to: '/publication-budget', icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-          <rect x="3" y="2" width="14" height="16" rx="1.5" />
-          <path strokeLinecap="round" d="M6 6h8M6 9h8M6 12h5" />
-        </svg>
-      ), roles: ['admin'] },
+      { label: 'Exhibitions', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
+      { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
+      { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin'] },
+      { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin'] },
+      { label: 'Publication Budget', to: '/publication-budget', icon: publicationIcon, roles: ['admin'] },
     ],
   },
 ];

@@ -4,13 +4,68 @@ import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 import { usePortfolio, type Portfolio } from '../../contexts/PortfolioContext';
 import type { UserRole } from '../../types/database';
+import { useNavSectionOpen } from './useNavSectionOpen';
 import {
   icons,
   bottomItems,
   filterByRole,
   getNavSections,
   PORTFOLIO_LABELS,
+  type NavItem,
+  type NavSection,
 } from './navConfig';
+
+function SidebarSection({ section, items, collapsed }: { section: NavSection; items: NavItem[]; collapsed: boolean }) {
+  const { open, toggle } = useNavSectionOpen(section);
+  // Icon-only sidebar has no room for a toggle — show everything
+  const showItems = collapsed || open;
+
+  return (
+    <div className="mb-4">
+      {!collapsed && (section.collapsible ? (
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          className="mb-1 flex w-full items-center gap-1.5 px-6 text-[9px] font-light uppercase tracking-[0.2em] text-primary-300 hover:text-primary-600"
+        >
+          {section.title}
+          <span className="normal-case tracking-normal">({items.length})</span>
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className={cn('h-3 w-3 transition-transform', open && 'rotate-90')}><path strokeLinecap="round" strokeLinejoin="round" d="M8 5l5 5-5 5" /></svg>
+        </button>
+      ) : (
+        <p className="mb-1 px-6 text-[9px] font-light uppercase tracking-[0.2em] text-primary-300">
+          {section.title}
+        </p>
+      ))}
+      {showItems && (
+        <ul className="space-y-0 px-2">
+          {items.map((item) => (
+            <li key={item.to}>
+              <NavLink
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 rounded-none px-3 py-2 text-xs transition-colors',
+                    collapsed && 'justify-center px-2',
+                    isActive
+                      ? 'border-l border-l-accent text-primary-900'
+                      : 'border-l border-l-transparent text-primary-400 hover:text-primary-900',
+                  )
+                }
+                title={collapsed ? item.label : undefined}
+              >
+                <span className="shrink-0">{item.icon}</span>
+                {!collapsed && <span>{item.label}</span>}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 interface SidebarProps {
   collapsed: boolean;
@@ -88,39 +143,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {getNavSections(portfolio).map((section) => {
           const visibleItems = filterByRole(section.items, role);
           if (visibleItems.length === 0) return null;
-
-          return (
-            <div key={section.title} className="mb-4">
-              {!collapsed && (
-                <p className="mb-1 px-6 text-[9px] font-light uppercase tracking-[0.2em] text-primary-300">
-                  {section.title}
-                </p>
-              )}
-              <ul className="space-y-0 px-2">
-                {visibleItems.map((item) => (
-                  <li key={item.to}>
-                    <NavLink
-                      to={item.to}
-                      end={item.to === '/'}
-                      className={({ isActive }) =>
-                        cn(
-                          'flex items-center gap-3 rounded-none px-3 py-2 text-xs transition-colors',
-                          collapsed && 'justify-center px-2',
-                          isActive
-                            ? 'border-l border-l-accent text-primary-900'
-                            : 'border-l border-l-transparent text-primary-400 hover:text-primary-900',
-                        )
-                      }
-                      title={collapsed ? item.label : undefined}
-                    >
-                      <span className="shrink-0">{item.icon}</span>
-                      {!collapsed && <span>{item.label}</span>}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
+          return <SidebarSection key={section.title} section={section} items={visibleItems} collapsed={collapsed} />;
         })}
       </nav>
 

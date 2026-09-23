@@ -4,12 +4,64 @@ import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 import { usePortfolio, type Portfolio } from '../../contexts/PortfolioContext';
 import type { UserRole } from '../../types/database';
+import { useNavSectionOpen } from './useNavSectionOpen';
 import {
   bottomItems,
   filterByRole,
   getNavSections,
   PORTFOLIO_LABELS,
+  type NavItem,
+  type NavSection,
 } from './navConfig';
+
+function MobileNavSection({ section, items, onNavigate }: { section: NavSection; items: NavItem[]; onNavigate: () => void }) {
+  const { open, toggle } = useNavSectionOpen(section);
+
+  return (
+    <div className="mb-4">
+      {section.collapsible ? (
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          className="mb-1 flex w-full items-center gap-1.5 px-6 text-[10px] font-semibold uppercase tracking-wider text-primary-400 hover:text-primary-700"
+        >
+          {section.title}
+          <span className="font-normal normal-case tracking-normal">({items.length})</span>
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className={cn('h-3 w-3 transition-transform', open && 'rotate-90')}><path strokeLinecap="round" strokeLinejoin="round" d="M8 5l5 5-5 5" /></svg>
+        </button>
+      ) : (
+        <p className="mb-1 px-6 text-[10px] font-semibold uppercase tracking-wider text-primary-400">
+          {section.title}
+        </p>
+      )}
+      {open && (
+        <ul className="space-y-0.5 px-3">
+          {items.map((item) => (
+            <li key={item.to}>
+              <NavLink
+                to={item.to}
+                end={item.to === '/'}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'border-l-2 border-l-accent bg-primary-100 text-primary-900'
+                      : 'border-l-2 border-l-transparent text-primary-500 hover:bg-primary-50 hover:text-primary-900',
+                  )
+                }
+              >
+                <span className="shrink-0">{item.icon}</span>
+                <span>{item.label}</span>
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -111,36 +163,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           {getNavSections(portfolio).map((section) => {
             const visibleItems = filterByRole(section.items, role);
             if (visibleItems.length === 0) return null;
-
-            return (
-              <div key={section.title} className="mb-4">
-                <p className="mb-1 px-6 text-[10px] font-semibold uppercase tracking-wider text-primary-400">
-                  {section.title}
-                </p>
-                <ul className="space-y-0.5 px-3">
-                  {visibleItems.map((item) => (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        end={item.to === '/'}
-                        onClick={onClose}
-                        className={({ isActive }) =>
-                          cn(
-                            'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
-                            isActive
-                              ? 'border-l-2 border-l-accent bg-primary-100 text-primary-900'
-                              : 'border-l-2 border-l-transparent text-primary-500 hover:bg-primary-50 hover:text-primary-900',
-                          )
-                        }
-                      >
-                        <span className="shrink-0">{item.icon}</span>
-                        <span>{item.label}</span>
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
+            return <MobileNavSection key={section.title} section={section} items={visibleItems} onNavigate={onClose} />;
           })}
 
           {/* Bottom items */}
