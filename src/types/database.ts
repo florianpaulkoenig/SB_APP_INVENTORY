@@ -3322,6 +3322,25 @@ export type Database = {
           },
         ];
       };
+      websites: {
+        Row: WebsiteRow;
+        Insert: WebsiteInsert;
+        Update: WebsiteUpdate;
+        Relationships: [];
+      };
+      website_metrics: {
+        Row: WebsiteMetricRow;
+        Insert: WebsiteMetricInsert;
+        Update: WebsiteMetricUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'website_metrics_website_id_fkey';
+            columns: ['website_id'];
+            referencedRelation: 'websites';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       social_media_accounts: {
         Row: SocialMediaAccountRow;
         Insert: SocialMediaAccountInsert;
@@ -3772,6 +3791,70 @@ export type SocialMediaMetricInsert = {
 }
 
 export type SocialMediaMetricUpdate = Partial<SocialMediaMetricInsert>;
+
+export type WebsiteRow = {
+  id: string;
+  user_id: string | null;
+  portfolio: string;
+  domain: string;
+  url: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type WebsiteInsert = {
+  id?: string;
+  user_id?: string | null;
+  portfolio?: string;
+  domain: string;
+  url?: string | null;
+  is_active?: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type WebsiteUpdate = Partial<WebsiteInsert>;
+
+export type WebsiteMetricValues = {
+  unique_visitors: number | null;
+  visits: number | null;
+  pageviews: number | null;
+  bounce_rate: number | null;          // %
+  avg_visit_duration: number | null;   // seconds
+  form_submissions: number | null;
+  newsletter_signups: number | null;
+  source_direct: number | null;
+  source_search: number | null;
+  source_social: number | null;
+  source_referral: number | null;
+  source_email: number | null;
+  source_other: number | null;
+  /** Social visits per platform, keys = SocialMediaPlatform */
+  social_by_platform: Partial<Record<SocialMediaPlatform, number>>;
+}
+
+export type WebsiteMetricRow = WebsiteMetricValues & {
+  id: string;
+  website_id: string;
+  month: string;                       // 'YYYY-MM-01'
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type WebsiteMetricInsert = Partial<WebsiteMetricValues> & {
+  id?: string;
+  website_id: string;
+  month: string;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type WebsiteMetricUpdate = Partial<WebsiteMetricInsert>;
 // ---------------------------------------------------------------------------
 // Generated from the live PostgREST OpenAPI schema (2026-07-03) for tables
 // that were missing from the Tables map below.

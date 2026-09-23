@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect, type ReactNode } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
+import { PlatformDot, Delta, KpiTile, MonthStepper } from '../components/social-media/ui';
 import { Tabs } from '../components/ui/Tabs';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -12,6 +13,12 @@ import { cn } from '../lib/utils';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { PORTFOLIO_LABELS } from '../components/layout/navConfig';
 import { useSocialMedia, type MonthEntry } from '../hooks/useSocialMedia';
+import { useWebsites, type WebMonthEntry } from '../hooks/useWebsites';
+import { useToast } from '../components/ui/Toast';
+import { WebEntryGrid, WebsiteStatsTab, WebsitesManager } from '../components/social-media/WebsiteSections';
+import {
+  splitPlatforms, webRowFromMetric, webEntryFromRow, webGridHasInvalid, type WebGridRow,
+} from '../components/social-media/websiteGrid';
 import {
   FollowerGrowthChart, MonthlyMetricChart, AccountTrendChart, type MonthlyValue,
 } from '../components/social-media/SocialMediaCharts';
@@ -19,85 +26,27 @@ import {
   PLATFORMS, PLATFORM_MAP, METRICS, FLOW_METRICS, accountLabel,
   computeSocialStats, latestDataMonth, earliestDataMonth, currentMonthKey,
   addMonths, monthDiff, monthLabel, toMonthKey, engagementOf,
-  fmtInt, fmtCompact, fmtSigned, fmtPct, parseCount,
+  fmtInt, fmtCompact, fmtSigned, fmtPct, parseCount, PERIODS,
   type MetricKey, type FlowMetricKey, type SocialStats,
 } from '../lib/socialMedia';
-import type { SocialMediaAccountRow, SocialMediaMetricRow, SocialMediaPlatform } from '../types/database';
+import type { SocialMediaAccountRow, SocialMediaMetricRow, SocialMediaPlatform, WebsiteRow, WebsiteMetricRow } from '../types/database';
 
 const TABS = [
-  { key: 'overview', label: 'Statistik' },
+  { key: 'overview', label: 'Statistik Social' },
+  { key: 'web',      label: 'Webseiten & Conversion' },
   { key: 'entry',    label: 'Monat erfassen' },
   { key: 'history',  label: 'Verlauf pro Konto' },
-  { key: 'accounts', label: 'Konten' },
+  { key: 'accounts', label: 'Konten & Webseiten' },
 ];
 
 // ---------------------------------------------------------------------------
 // Small building blocks
 // ---------------------------------------------------------------------------
 
-function PlatformDot({ platform, className }: { platform: SocialMediaPlatform; className?: string }) {
-  return (
-    <span
-      className={cn('inline-block h-2.5 w-2.5 shrink-0 rounded-full', className)}
-      style={{ backgroundColor: PLATFORM_MAP[platform]?.color }}
-    />
-  );
-}
-
-function Delta({ value, pct, invert = false }: { value?: number | null; pct?: number | null; invert?: boolean }) {
-  const v = pct ?? value;
-  if (v == null) return <span className="text-primary-300">—</span>;
-  const up = invert ? v < 0 : v > 0;
-  const down = invert ? v > 0 : v < 0;
-  return (
-    <span className={cn('tabular-nums', up && 'text-emerald-600', down && 'text-red-500', !up && !down && 'text-primary-400')}>
-      {pct != null ? fmtPct(pct) : fmtSigned(value)}
-    </span>
-  );
-}
-
-function KpiTile({ label, value, sub, hint }: { label: string; value: string; sub?: ReactNode; hint?: string }) {
-  return (
-    <Card className="px-4 py-3">
-      <p className="text-xs text-primary-400" title={hint}>{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-primary-900">{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-primary-400">{sub}</p>}
-    </Card>
-  );
-}
-
-function MonthStepper({ month, onChange, max }: { month: string; onChange: (m: string) => void; max?: string }) {
-  const arrow = 'rounded p-1.5 text-primary-400 hover:bg-primary-50 hover:text-primary-700 disabled:opacity-30 disabled:hover:bg-transparent';
-  return (
-    <div className="flex items-center gap-1">
-      <button type="button" className={arrow} onClick={() => onChange(addMonths(month, -1))} aria-label="Vorheriger Monat">
-        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M12 5l-5 5 5 5" /></svg>
-      </button>
-      <input
-        type="month"
-        value={month}
-        max={max}
-        onChange={(e) => e.target.value && onChange(e.target.value)}
-        className="rounded border border-primary-200 bg-white px-2 py-1 text-sm text-primary-800"
-      />
-      <button type="button" className={arrow} disabled={!!max && month >= max} onClick={() => onChange(addMonths(month, 1))} aria-label="Nächster Monat">
-        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M8 5l5 5-5 5" /></svg>
-      </button>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Overview / statistics
 // ---------------------------------------------------------------------------
 
-const PERIODS = [
-  { value: '3', label: 'Letzte 3 Monate' },
-  { value: '6', label: 'Letzte 6 Monate' },
-  { value: '12', label: 'Letzte 12 Monate' },
-  { value: '24', label: 'Letzte 24 Monate' },
-  { value: 'all', label: 'Gesamter Zeitraum' },
-];
 
 type BarMetric = 'netNew' | 'engagement' | FlowMetricKey;
 
@@ -343,13 +292,17 @@ function rowFromMetric(r: SocialMediaMetricRow | undefined): GridRow {
   return out;
 }
 
-function EntryTab({ accounts, metrics, month, onMonthChange, onSave }: {
+function EntryTab({ accounts, metrics, sites, webMetrics, month, onMonthChange, onSave, onSaveWeb }: {
   accounts: SocialMediaAccountRow[];
   metrics: SocialMediaMetricRow[];
+  sites: WebsiteRow[];
+  webMetrics: WebsiteMetricRow[];
   month: string;
   onMonthChange: (m: string) => void;
-  onSave: (month: string, entries: MonthEntry[]) => Promise<boolean>;
+  onSave: (month: string, entries: MonthEntry[], opts?: { silent?: boolean }) => Promise<boolean>;
+  onSaveWeb: (month: string, entries: WebMonthEntry[]) => Promise<boolean>;
 }) {
+  const { toast } = useToast();
   const [showAll, setShowAll] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingMonth, setPendingMonth] = useState<string | null>(null);
@@ -381,10 +334,32 @@ function EntryTab({ accounts, metrics, month, onMonthChange, onSave }: {
   const [grid, setGrid] = useState<Record<string, GridRow>>(saved);
   useEffect(() => { setGrid(saved); }, [saved]);
 
+  // Websites — same month, same save button
+  const activeSites = useMemo(() => {
+    const withData = new Set(webMetrics.filter((m) => toMonthKey(m.month) === month).map((m) => m.website_id));
+    return sites.filter((s) => s.is_active || withData.has(s.id));
+  }, [sites, webMetrics, month]);
+  const savedWeb = useMemo(() => {
+    const map: Record<string, WebGridRow> = {};
+    for (const s of activeSites) map[s.id] = webRowFromMetric(webMetrics.find((m) => m.website_id === s.id && toMonthKey(m.month) === month));
+    return map;
+  }, [activeSites, webMetrics, month]);
+  const previousWeb = useMemo(() => {
+    const map: Record<string, WebsiteMetricRow | undefined> = {};
+    const prevMonth = addMonths(month, -1);
+    for (const s of activeSites) map[s.id] = webMetrics.find((m) => m.website_id === s.id && toMonthKey(m.month) === prevMonth);
+    return map;
+  }, [activeSites, webMetrics, month]);
+  const [webGrid, setWebGrid] = useState<Record<string, WebGridRow>>(savedWeb);
+  useEffect(() => { setWebGrid(savedWeb); }, [savedWeb]);
+  const webDirty = activeSites.some((s) => JSON.stringify(webGrid[s.id]) !== JSON.stringify(savedWeb[s.id]));
+  const webInvalid = activeSites.some((s) => webGridHasInvalid(webGrid[s.id]));
+
   const cols = METRICS.filter((m) => showAll || m.core);
   const invalid = (v: string) => v.trim() !== '' && parseCount(v) == null;
-  const dirty = active.some((a) => JSON.stringify(grid[a.id]) !== JSON.stringify(saved[a.id]));
-  const hasInvalid = active.some((a) => grid[a.id] && METRIC_KEYS.some((k) => invalid(grid[a.id][k])));
+  const socialDirty = active.some((a) => JSON.stringify(grid[a.id]) !== JSON.stringify(saved[a.id]));
+  const dirty = socialDirty || webDirty;
+  const hasInvalid = webInvalid || active.some((a) => grid[a.id] && METRIC_KEYS.some((k) => invalid(grid[a.id][k])));
   // A value hidden by the collapsed view still counts — show a hint so it is not forgotten
   const hiddenFilled = !showAll && active.some((a) => METRICS.some((m) => !m.core && grid[a.id]?.[m.key]));
 
@@ -405,7 +380,11 @@ function EntryTab({ accounts, metrics, month, onMonthChange, onSave }: {
       return e;
     });
     setSaving(true);
-    await onSave(month, entries);
+    // Websites first (silent), then social; one toast for the whole month
+    let ok = true;
+    if (webDirty) ok = await onSaveWeb(month, activeSites.map((s) => webEntryFromRow(s.id, webGrid[s.id])));
+    if (ok && socialDirty) ok = await onSave(month, entries, { silent: true });
+    if (ok) toast({ title: `${monthLabel(month, true)} gespeichert`, variant: 'success' });
     setSaving(false);
   }
 
@@ -424,11 +403,12 @@ function EntryTab({ accounts, metrics, month, onMonthChange, onSave }: {
             <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
             Alle Kennzahlen
           </label>
-          <Button variant="ghost" size="sm" disabled={!dirty || saving} onClick={() => setGrid(saved)}>Verwerfen</Button>
+          <Button variant="ghost" size="sm" disabled={!dirty || saving} onClick={() => { setGrid(saved); setWebGrid(savedWeb); }}>Verwerfen</Button>
           <Button size="sm" onClick={handleSave} loading={saving} disabled={!dirty || hasInvalid}>Speichern</Button>
         </div>
       </div>
 
+      <h2 className="pt-2 text-sm font-semibold uppercase tracking-wider text-primary-500">Social Media</h2>
       <p className="text-xs text-primary-400">
         Follower = Stand am Monatsende. Alle anderen Werte = Aktivität im Monat (aus den Insights der Plattform).
         Leere Felder bleiben leer (≠ 0). Eingaben wie <span className="font-mono">12'345</span>, <span className="font-mono">12.3k</span> oder <span className="font-mono">1.2M</span> sind möglich.
@@ -511,6 +491,23 @@ function EntryTab({ accounts, metrics, month, onMonthChange, onSave }: {
           </tbody>
         </table>
       </Card>
+
+      {activeSites.length > 0 && (
+        <section className="space-y-2 pt-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-primary-500">Webseiten</h2>
+          <p className="text-xs text-primary-400">
+            Aus Squarespace/Wix Analytics für {monthLabel(month, true)}. Graue Werte = Vormonat.
+          </p>
+          <WebEntryGrid
+            key={month}
+            sites={activeSites}
+            grid={webGrid}
+            onChange={(id, next) => setWebGrid((g) => ({ ...g, [id]: next }))}
+            platforms={splitPlatforms(accounts)}
+            previous={previousWeb}
+          />
+        </section>
+      )}
 
       <ConfirmDialog
         isOpen={pendingMonth != null}
@@ -790,6 +787,7 @@ export function SocialMediaPage() {
   const entryMonth = searchParams.get('month') || addMonths(currentMonthKey(), -1);
 
   const sm = useSocialMedia(portfolio);
+  const web = useWebsites(portfolio);
 
   const go = (tab: string, month?: string) => {
     const p: Record<string, string> = { tab };
@@ -801,17 +799,17 @@ export function SocialMediaPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary-900">Social Media</h1>
+        <h1 className="text-2xl font-bold text-primary-900">Social Media & Web</h1>
         <p className="mt-1 text-sm text-primary-400">
-          Monatliche Kennzahlen und Wachstum · {PORTFOLIO_LABELS[portfolio]?.name}
+          Monatliche Kennzahlen, Wachstum und Conversion zur Webseite · {PORTFOLIO_LABELS[portfolio]?.name}
         </p>
       </div>
 
       <Tabs tabs={TABS} activeTab={activeTab} onChange={(k) => go(k)} />
 
-      {sm.loading ? (
+      {sm.loading || web.loading ? (
         <div className="flex items-center justify-center py-20"><LoadingSpinner size="lg" /></div>
-      ) : sm.accounts.length === 0 && activeTab !== 'accounts' ? (
+      ) : sm.accounts.length === 0 && (activeTab === 'overview' || activeTab === 'history') ? (
         <EmptyState
           title="Noch keine Konten"
           description="Lege zuerst die Social-Media-Konten an, deren Zahlen du monatlich erfassen willst."
@@ -827,13 +825,26 @@ export function SocialMediaPage() {
           {activeTab === 'overview' && (
             <OverviewTab accounts={sm.accounts} metrics={sm.metrics} onGoToEntry={(m) => go('entry', m)} />
           )}
+          {activeTab === 'web' && (
+            <WebsiteStatsTab
+              sites={web.sites}
+              metrics={web.metrics}
+              accounts={sm.accounts}
+              socialMetrics={sm.metrics}
+              onGoToEntry={(m) => go('entry', m)}
+              onDeleteMetric={web.deleteMetric}
+            />
+          )}
           {activeTab === 'entry' && (
             <EntryTab
               accounts={sm.accounts}
               metrics={sm.metrics}
+              sites={web.sites}
+              webMetrics={web.metrics}
               month={entryMonth}
               onMonthChange={(m) => go('entry', m)}
               onSave={sm.saveMonth}
+              onSaveWeb={web.saveMonth}
             />
           )}
           {activeTab === 'history' && (
@@ -845,14 +856,23 @@ export function SocialMediaPage() {
             />
           )}
           {activeTab === 'accounts' && (
-            <AccountsTab
-              accounts={sm.accounts}
-              metrics={sm.metrics}
-              onCreate={sm.createAccount}
-              onCreateMissing={sm.createMissingPlatforms}
-              onUpdate={sm.updateAccount}
-              onDelete={sm.deleteAccount}
-            />
+            <div className="space-y-6">
+              <AccountsTab
+                accounts={sm.accounts}
+                metrics={sm.metrics}
+                onCreate={sm.createAccount}
+                onCreateMissing={sm.createMissingPlatforms}
+                onUpdate={sm.updateAccount}
+                onDelete={sm.deleteAccount}
+              />
+              <WebsitesManager
+                sites={web.sites}
+                metrics={web.metrics}
+                onCreate={web.createSite}
+                onUpdate={web.updateSite}
+                onDelete={web.deleteSite}
+              />
+            </div>
           )}
         </>
       )}

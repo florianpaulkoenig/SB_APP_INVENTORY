@@ -132,7 +132,7 @@ export function useSocialMedia(portfolio: string) {
    * (replacing the whole row, so a cleared cell really becomes empty); rows
    * that are now completely empty are deleted.
    */
-  const saveMonth = useCallback(async (monthKey: string, entries: MonthEntry[]): Promise<boolean> => {
+  const saveMonth = useCallback(async (monthKey: string, entries: MonthEntry[], opts?: { silent?: boolean }): Promise<boolean> => {
     const month = monthStart(monthKey);
     const hasValue = (e: MonthEntry) =>
       Object.entries(e).some(([k, v]) => k !== 'account_id' && v != null && v !== '');
@@ -151,7 +151,7 @@ export function useSocialMedia(portfolio: string) {
       const { error } = await supabase.from('social_media_metrics').delete().in('id', toDelete);
       if (error) { toast(errorToast); return false; }
     }
-    toast({ title: 'Monat gespeichert', variant: 'success' });
+    if (!opts?.silent) toast({ title: 'Monat gespeichert', variant: 'success' });
     await fetchAll();
     return true;
   }, [metrics, fetchAll, toast]);

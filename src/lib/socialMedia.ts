@@ -142,6 +142,15 @@ export function monthLabel(key: string, long = false): string {
   return long ? `${MONTH_NAMES_LONG[m - 1]} ${y}` : `${MONTH_NAMES[m - 1]} '${String(y).slice(2)}`;
 }
 
+/** Period choices for the statistics views ('all' = whole history) */
+export const PERIODS = [
+  { value: '3', label: 'Letzte 3 Monate' },
+  { value: '6', label: 'Letzte 6 Monate' },
+  { value: '12', label: 'Letzte 12 Monate' },
+  { value: '24', label: 'Letzte 24 Monate' },
+  { value: 'all', label: 'Gesamter Zeitraum' },
+];
+
 // ---------------------------------------------------------------------------
 // Statistics
 // ---------------------------------------------------------------------------

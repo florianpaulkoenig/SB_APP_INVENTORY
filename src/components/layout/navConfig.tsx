@@ -261,7 +261,7 @@ export const navSections: NavSection[] = [
     title: 'EXHIBITIONS & MARKETING',
     items: [
       { label: 'Exhibitions & Fairs', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
-      { label: 'Social Media', to: '/social-media', icon: socialMediaIcon, roles: ['admin'] },
+      { label: 'Social Media & Web', to: '/social-media', icon: socialMediaIcon, roles: ['admin'] },
       { label: 'Annual Schedule', to: '/schedule', icon: icons.calendar, roles: ['admin'] },
     ],
   },
@@ -322,7 +322,7 @@ export const noaNavSections: NavSection[] = [
   {
     title: 'MARKETING',
     items: [
-      { label: 'Social Media', to: '/social-media', icon: socialMediaIcon, roles: ['admin'] },
+      { label: 'Social Media & Web', to: '/social-media', icon: socialMediaIcon, roles: ['admin'] },
     ],
   },
   {

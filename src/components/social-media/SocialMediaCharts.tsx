@@ -12,25 +12,24 @@ import {
 import type { SocialMediaAccountRow } from '../../types/database';
 import type { MonthTotals, AccountMonth } from '../../lib/socialMedia';
 import { PLATFORM_MAP, accountLabel, monthLabel, fmtInt, fmtCompact } from '../../lib/socialMedia';
+import { axisProps } from './chartStyle';
 
 // ---------------------------------------------------------------------------
 // Shared
 // ---------------------------------------------------------------------------
 
-const axisProps = {
-  tick: { fontSize: 11, fill: '#8a817c' },
-  axisLine: false,
-  tickLine: false,
-} as const;
 
 interface TooltipEntry { name?: string; value?: number | null; color?: string; dataKey?: string | number }
 
-function ChartTooltip({ active, payload, label, showTotal }: {
+export function ChartTooltip({ active, payload, label, showTotal, format }: {
   active?: boolean; payload?: TooltipEntry[]; label?: string; showTotal?: boolean;
+  /** Per-dataKey value formatter (default: integer) */
+  format?: Record<string, (v: number | null | undefined) => string>;
 }) {
   if (!active || !payload?.length) return null;
   const rows = payload.filter((p) => p.value != null && p.value !== 0);
   const total = payload.reduce((s, p) => s + (p.value ?? 0), 0);
+  const fmtOf = (key: string | number | undefined) => format?.[String(key)] ?? fmtInt;
   return (
     <div className="rounded-lg border border-primary-100 bg-white px-3 py-2.5 text-xs shadow-lg">
       <p className="mb-2 font-semibold text-primary-700">{label}</p>
@@ -38,7 +37,7 @@ function ChartTooltip({ active, payload, label, showTotal }: {
         <div key={String(p.dataKey)} className="mb-0.5 flex items-center gap-2">
           <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: p.color }} />
           <span className="text-primary-500">{p.name}:</span>
-          <span className="ml-auto pl-3 font-medium tabular-nums text-primary-800">{fmtInt(p.value)}</span>
+          <span className="ml-auto pl-3 font-medium tabular-nums text-primary-800">{fmtOf(p.dataKey)(p.value)}</span>
         </div>
       ))}
       {showTotal && rows.length > 1 && (
