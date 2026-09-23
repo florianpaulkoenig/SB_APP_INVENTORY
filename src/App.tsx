@@ -285,6 +285,9 @@ const StrategicIntelligencePage = React.lazy(() =>
 const IntelligenceChatPage = React.lazy(() =>
   import('./pages/analytics/IntelligenceChatPage').then((m) => ({ default: m.IntelligenceChatPage })),
 );
+const SocialMediaPage = React.lazy(() =>
+  import('./pages/SocialMediaPage').then((m) => ({ default: m.SocialMediaPage })),
+);
 const LiquidityPlanningPage = React.lazy(() =>
   import('./pages/LiquidityPlanningPage').then((m) => ({ default: m.LiquidityPlanningPage })),
 );
@@ -857,6 +860,17 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <RouteErrorBoundary><LiquidityPlanningPage />
+              </RouteErrorBoundary></Suspense>
+            </RoleGuard>
+          ),
+        },
+        // Social Media Tracker (admin only)
+        {
+          path: 'social-media',
+          element: (
+            <RoleGuard allowed={['admin']}>
+              <Suspense fallback={<SuspenseFallback />}>
+                <RouteErrorBoundary><SocialMediaPage />
               </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),

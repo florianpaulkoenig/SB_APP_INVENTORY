@@ -3322,6 +3322,25 @@ export type Database = {
           },
         ];
       };
+      social_media_accounts: {
+        Row: SocialMediaAccountRow;
+        Insert: SocialMediaAccountInsert;
+        Update: SocialMediaAccountUpdate;
+        Relationships: [];
+      };
+      social_media_metrics: {
+        Row: SocialMediaMetricRow;
+        Insert: SocialMediaMetricInsert;
+        Update: SocialMediaMetricUpdate;
+        Relationships: [
+          {
+            foreignKeyName: 'social_media_metrics_account_id_fkey';
+            columns: ['account_id'];
+            referencedRelation: 'social_media_accounts';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       publication_budgets: {
         Row: PublicationBudgetRow;
         Insert: PublicationBudgetInsert;
@@ -3675,6 +3694,84 @@ export type PublicationBudgetItemInsert = {
 }
 
 export type PublicationBudgetItemUpdate = Partial<PublicationBudgetItemInsert>;
+
+// ---------------------------------------------------------------------------
+// Social Media Tracker
+// ---------------------------------------------------------------------------
+
+export type SocialMediaPlatform =
+  | 'instagram' | 'facebook' | 'tiktok' | 'threads' | 'x'
+  | 'linkedin' | 'rednote' | 'youtube' | 'snapchat' | 'bluesky';
+
+export type SocialMediaAccountRow = {
+  id: string;
+  user_id: string | null;
+  portfolio: string;
+  platform: SocialMediaPlatform;
+  handle: string;
+  url: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SocialMediaAccountInsert = {
+  id?: string;
+  user_id?: string | null;
+  portfolio?: string;
+  platform: SocialMediaPlatform;
+  handle?: string;
+  url?: string | null;
+  is_active?: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type SocialMediaAccountUpdate = Partial<SocialMediaAccountInsert>;
+
+export type SocialMediaMetricRow = {
+  id: string;
+  account_id: string;
+  month: string;                 // 'YYYY-MM-01'
+  followers: number | null;
+  posts: number | null;
+  views: number | null;
+  reach: number | null;
+  impressions: number | null;
+  likes: number | null;
+  comments: number | null;
+  shares: number | null;
+  saves: number | null;
+  profile_visits: number | null;
+  link_clicks: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SocialMediaMetricInsert = {
+  id?: string;
+  account_id: string;
+  month: string;
+  followers?: number | null;
+  posts?: number | null;
+  views?: number | null;
+  reach?: number | null;
+  impressions?: number | null;
+  likes?: number | null;
+  comments?: number | null;
+  shares?: number | null;
+  saves?: number | null;
+  profile_visits?: number | null;
+  link_clicks?: number | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type SocialMediaMetricUpdate = Partial<SocialMediaMetricInsert>;
 // ---------------------------------------------------------------------------
 // Generated from the live PostgREST OpenAPI schema (2026-07-03) for tables
 // that were missing from the Tables map below.

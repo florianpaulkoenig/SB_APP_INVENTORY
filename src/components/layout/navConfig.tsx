@@ -208,6 +208,15 @@ export const liquidityIcon = (
   </svg>
 );
 
+export const socialMediaIcon = (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+    <circle cx="5" cy="10" r="2" />
+    <circle cx="15" cy="5" r="2" />
+    <circle cx="15" cy="15" r="2" />
+    <path strokeLinecap="round" d="M6.8 9.1l6.4-3.2M6.8 10.9l6.4 3.2" />
+  </svg>
+);
+
 // Simon Berger navigation (full feature set)
 export const navSections: NavSection[] = [
   {
@@ -263,6 +272,12 @@ export const navSections: NavSection[] = [
           <path strokeLinecap="round" d="M6 6h8M6 9h8M6 12h5" />
         </svg>
       ), roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'MARKETING',
+    items: [
+      { label: 'Social Media', to: '/social-media', icon: socialMediaIcon, roles: ['admin'] },
     ],
   },
   {
@@ -332,6 +347,12 @@ export const noaNavSections: NavSection[] = [
     title: 'EXHIBITIONS',
     items: [
       { label: 'Exhibitions', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
+    ],
+  },
+  {
+    title: 'MARKETING',
+    items: [
+      { label: 'Social Media', to: '/social-media', icon: socialMediaIcon, roles: ['admin'] },
     ],
   },
   {
