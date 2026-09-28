@@ -963,7 +963,7 @@ function ProjectsPanel({
   /** Row ids that appear in no month column (outside the 12-month view etc.) */
   outOfWindowIds: Set<string>;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [editingKey, setEditingKey]     = useState<string | null>(null);
   const [confirmingPos, setConfirmingPos] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -2089,7 +2089,7 @@ function ExpenseManagementCard({
   onDelete: (id: string) => void;
   onToggleActive: (id: string, active: boolean) => void;
 }) {
-  const [open, setOpen]           = useState(true);
+  const [open, setOpen]           = useState(false);
   const [sortKey, setSortKey]     = useState<ExpenseSortKey | null>(null);
   const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('asc');
 
