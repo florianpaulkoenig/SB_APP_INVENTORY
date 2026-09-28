@@ -28,15 +28,15 @@ export function Tabs({ tabs, activeTab, onChange, className }: TabsProps) {
             aria-selected={isActive}
             onClick={() => onChange(tab.key)}
             className={cn(
-              'relative shrink-0 whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none sm:px-4',
+              'relative shrink-0 whitespace-nowrap px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] transition-colors focus:outline-none sm:px-4',
               isActive
                 ? 'text-primary-900'
-                : 'text-primary-400 hover:text-primary-600',
+                : 'text-primary-400 hover:text-primary-900',
             )}
           >
             {tab.label}
             {isActive && (
-              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-accent" />
+              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-black" />
             )}
           </button>
         );

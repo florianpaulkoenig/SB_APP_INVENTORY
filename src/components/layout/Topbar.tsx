@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useUnreadNews } from '../../hooks/useUnreadNews';
 import { useAiInsightCount } from '../../hooks/useAiInsightCount';
 import { getInitials } from '../../lib/utils';
+import { usePortfolio } from '../../contexts/PortfolioContext';
 import { GlobalSearchOverlay } from './GlobalSearchOverlay';
+import { bottomItems, getNavSections, PORTFOLIO_LABELS } from './navConfig';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,6 +21,8 @@ interface TopbarProps {
 // ---------------------------------------------------------------------------
 export function Topbar({ onMenuToggle, title }: TopbarProps) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { portfolio } = usePortfolio();
   const { user, signOut, role } = useAuth();
   const { unreadCount } = useUnreadNews();
   const { count: aiInsightCount } = useAiInsightCount();
@@ -50,19 +54,28 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Dossier-style running header: "SECTION · PAGE" of the deepest matching nav entry
+  const current = getNavSections(portfolio)
+    .flatMap((section) => section.items.map((item) => ({ section: section.title, item })))
+    .concat(bottomItems.map((item) => ({ section: '', item })))
+    .filter(({ item }) => item.to === '/' ? pathname === '/' : pathname === item.to || pathname.startsWith(item.to + '/'))
+    .sort((a, b) => b.item.to.length - a.item.to.length)[0];
+  const runningHeader = title
+    ?? (current ? [current.section, current.item.label].filter(Boolean).join(' · ') : PORTFOLIO_LABELS[portfolio].name);
+
   const userEmail = user?.email ?? '';
   const initials = userEmail ? getInitials(userEmail.split('@')[0].replace(/[._-]/g, ' ')) : '?';
 
   return (
     <>
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-primary-100 bg-white px-4 lg:px-6">
+    <header className="flex h-16 shrink-0 items-center justify-between bg-black px-4 text-white lg:px-8">
       {/* Left side */}
       <div className="flex items-center gap-3">
         {/* Mobile menu toggle */}
         <button
           type="button"
           onClick={onMenuToggle}
-          className="rounded-md p-2 text-primary-500 transition-colors hover:bg-primary-50 hover:text-primary-900 lg:hidden"
+          className="p-2 text-white/70 transition-colors hover:text-white lg:hidden"
           aria-label="Toggle menu"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
@@ -70,19 +83,22 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
           </svg>
         </button>
 
-        {/* Page title / breadcrumb */}
-        {title && (
-          <h1 className="text-sm font-medium text-primary-700">{title}</h1>
-        )}
+        {/* Brand — the sidebar carries it on desktop */}
+        <span className="font-display text-lg text-white lg:hidden">NOA Contemporary</span>
       </div>
 
       {/* Right side */}
       <div className="flex items-center gap-2">
+        {/* Running header, as on every dossier page */}
+        <span className="mr-4 hidden truncate text-[10px] font-medium uppercase tracking-[0.25em] text-white/80 md:block">
+          {runningHeader}
+        </span>
+
         {/* Search button */}
         <button
           type="button"
           onClick={() => setSearchOpen(true)}
-          className="rounded-md p-2 text-primary-400 transition-colors hover:bg-primary-50 hover:text-primary-700"
+          className="p-2 text-white/60 transition-colors hover:text-white"
           aria-label="Search"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
@@ -96,7 +112,7 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
           <button
             type="button"
             onClick={() => navigate('/analytics/strategic-intelligence')}
-            className="relative rounded-md p-2 text-primary-400 transition-colors hover:bg-primary-50 hover:text-primary-700"
+            className="relative p-2 text-white/60 transition-colors hover:text-white"
             aria-label="AI Insights"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
@@ -115,7 +131,7 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
         <button
           type="button"
           onClick={() => navigate(role === 'gallery' ? '/gallery/news' : '/news')}
-          className="relative rounded-md p-2 text-primary-400 transition-colors hover:bg-primary-50 hover:text-primary-700"
+          className="relative p-2 text-white/60 transition-colors hover:text-white"
           aria-label="Notifications"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
@@ -133,7 +149,7 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
           <button
             type="button"
             onClick={() => setDropdownOpen((prev) => !prev)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-900 text-xs font-medium text-white transition-colors hover:bg-primary-800"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-xs font-semibold text-black transition-colors hover:bg-primary-200"
             aria-label="User menu"
           >
             {initials}
@@ -141,7 +157,7 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
 
           {/* Dropdown */}
           {dropdownOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-primary-100 bg-white py-2 shadow-lg sm:w-56">
+            <div className="absolute right-0 top-full z-50 mt-2 w-48 border border-black bg-white py-2 text-primary-900 sm:w-56">
               <div className="border-b border-primary-100 px-4 pb-2">
                 <p className="truncate text-sm font-medium text-primary-900">{userEmail}</p>
                 <p className="text-xs text-primary-400">Admin</p>

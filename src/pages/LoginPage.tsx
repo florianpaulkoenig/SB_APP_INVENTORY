@@ -108,12 +108,15 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#e8e8e8] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-white px-4">
       <div className="w-full max-w-sm flex flex-col items-center">
         {/* Brand */}
-        <h1 className="mb-16 text-center font-display text-base font-normal tracking-widest text-primary-900">
-          NOA <span className="lowercase">contemporary</span>
-        </h1>
+        <div className="mb-16 text-center">
+          <h1 className="font-display text-4xl text-primary-900">NOA Contemporary</h1>
+          <p className="mt-3 text-[10px] font-medium uppercase tracking-[0.3em] text-primary-500">
+            Inventory · Private &amp; Confidential
+          </p>
+        </div>
 
         {showMfaChallenge ? (
           <form onSubmit={handleMfaVerify} className="w-full flex flex-col items-center gap-8">

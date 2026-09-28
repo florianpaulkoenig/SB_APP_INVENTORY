@@ -1,34 +1,55 @@
 @import "tailwindcss";
 
+/* NOA house typography (dossier style): Anton for headlines, Manrope for text.
+   Anton ships a single weight — the 100–900 range stops the browser from
+   synthesising a fake bold when headings carry font-bold/font-semibold. */
 @font-face {
-  font-family: "Anziano Pro";
-  src: url("/fonts/AnzianoPro-Regular.otf") format("opentype");
-  font-weight: 400;
+  font-family: "Anton";
+  src: url("/fonts/Anton-Regular.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope-Variable.woff2") format("woff2");
+  font-weight: 200 800;
   font-style: normal;
   font-display: swap;
 }
 
 @theme {
-  --color-primary-50: #f9f6f2;
-  --color-primary-100: #f0ebe3;
-  --color-primary-200: #dfd6cb;
-  --color-primary-300: #c5b8aa;
-  --color-primary-400: #a09080;
-  --color-primary-500: #7d6d60;
-  --color-primary-600: #5e5048;
-  --color-primary-700: #463c36;
-  --color-primary-800: #2e2620;
-  --color-primary-900: #1c1510;
-  --color-primary-950: #110d09;
-  --color-accent: #1c1510;
-  --color-accent-light: #463c36;
-  --color-accent-dark: #110d09;
+  /* Monochrome scale — pure black on white, neutral greys in between */
+  --color-primary-50: #f7f7f7;
+  --color-primary-100: #ededed;
+  --color-primary-200: #dcdcdc;
+  --color-primary-300: #bdbdbd;
+  --color-primary-400: #8c8c8c;
+  --color-primary-500: #6b6b6b;
+  --color-primary-600: #4d4d4d;
+  --color-primary-700: #333333;
+  --color-primary-800: #1a1a1a;
+  --color-primary-900: #000000;
+  --color-primary-950: #000000;
+  --color-accent: #000000;
+  --color-accent-light: #333333;
+  --color-accent-dark: #000000;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-info: #3b82f6;
-  --font-sans: "Anziano Pro", Georgia, serif;
-  --font-display: "Anziano Pro", Georgia, serif;
+  --font-sans: "Manrope", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Anton", "Impact", "Arial Narrow", sans-serif;
+
+  /* Sharp edges throughout, like the printed dossier (rounded-full stays for dots/avatars) */
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
 
   /* Badge backgrounds — very light tints, still distinguishable */
   --color-emerald-100: #e8edea;
@@ -38,8 +59,8 @@
   --color-blue-100:    #e4eaf2;
   --color-sky-100:     #e4ecf4;
   --color-sky-500:     #6888a8;
-  --color-sky-600:     #1c1510;
-  --color-sky-700:     #1c1510;
+  --color-sky-600:     #000000;
+  --color-sky-700:     #000000;
   --color-amber-100:   #f0eadc;
   --color-orange-100:  #f0e8dc;
   --color-purple-100:  #ece8f2;
@@ -59,55 +80,64 @@
   --color-rose-500:    #a87080;
 
   /* All text variants → near-black (primary-900) */
-  --color-emerald-600: #1c1510;
-  --color-emerald-700: #1c1510;
-  --color-emerald-800: #1c1510;
-  --color-green-600:   #1c1510;
-  --color-green-800:   #1c1510;
-  --color-red-600:     #1c1510;
-  --color-red-700:     #1c1510;
-  --color-red-800:     #1c1510;
-  --color-red-900:     #1c1510;
-  --color-blue-600:    #1c1510;
-  --color-blue-700:    #1c1510;
-  --color-blue-800:    #1c1510;
-  --color-sky-800:     #1c1510;
-  --color-amber-600:   #1c1510;
-  --color-amber-700:   #1c1510;
-  --color-amber-800:   #1c1510;
-  --color-orange-800:  #1c1510;
-  --color-purple-600:  #1c1510;
-  --color-purple-700:  #1c1510;
-  --color-purple-800:  #1c1510;
-  --color-violet-600:  #1c1510;
-  --color-violet-700:  #1c1510;
-  --color-violet-800:  #1c1510;
-  --color-indigo-600:  #1c1510;
-  --color-indigo-700:  #1c1510;
-  --color-indigo-800:  #1c1510;
-  --color-teal-700:    #1c1510;
-  --color-teal-800:    #1c1510;
-  --color-cyan-700:    #1c1510;
-  --color-cyan-800:    #1c1510;
-  --color-rose-700:    #1c1510;
-  --color-rose-800:    #1c1510;
-  --color-pink-700:    #1c1510;
-  --color-pink-800:    #1c1510;
+  --color-emerald-600: #000000;
+  --color-emerald-700: #000000;
+  --color-emerald-800: #000000;
+  --color-green-600:   #000000;
+  --color-green-800:   #000000;
+  --color-red-600:     #000000;
+  --color-red-700:     #000000;
+  --color-red-800:     #000000;
+  --color-red-900:     #000000;
+  --color-blue-600:    #000000;
+  --color-blue-700:    #000000;
+  --color-blue-800:    #000000;
+  --color-sky-800:     #000000;
+  --color-amber-600:   #000000;
+  --color-amber-700:   #000000;
+  --color-amber-800:   #000000;
+  --color-orange-800:  #000000;
+  --color-purple-600:  #000000;
+  --color-purple-700:  #000000;
+  --color-purple-800:  #000000;
+  --color-violet-600:  #000000;
+  --color-violet-700:  #000000;
+  --color-violet-800:  #000000;
+  --color-indigo-600:  #000000;
+  --color-indigo-700:  #000000;
+  --color-indigo-800:  #000000;
+  --color-teal-700:    #000000;
+  --color-teal-800:    #000000;
+  --color-cyan-700:    #000000;
+  --color-cyan-800:    #000000;
+  --color-rose-700:    #000000;
+  --color-rose-800:    #000000;
+  --color-pink-700:    #000000;
+  --color-pink-800:    #000000;
 
-  /* Warm gray — replaces neutral gray */
-  --color-gray-100: #f0ebe3;
-  --color-gray-500: #8a7d70;
-  --color-gray-800: #3a3028;
+  /* Neutral gray */
+  --color-gray-100: #ededed;
+  --color-gray-500: #6b6b6b;
+  --color-gray-800: #1a1a1a;
 }
 
 body {
   margin: 0;
   font-family: var(--font-sans);
   color: var(--color-primary-900);
-  background-color: #e8e8e8;
+  background-color: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  letter-spacing: 0.02em;
+}
+
+/* Headlines: Anton, uppercase — as in the dossier. In the base layer so
+   utilities (normal-case, tracking-*, leading-*) can still override it. */
+@layer base {
+  .font-display {
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    font-synthesis: none;
+  }
 }
 
 ::-webkit-scrollbar {
@@ -120,7 +150,6 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-primary-300);
-  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {

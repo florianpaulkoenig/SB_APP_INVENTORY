@@ -58,15 +58,15 @@ export function Modal({
       {/* Dialog */}
       <div
         className={cn(
-          'relative flex max-h-[calc(100vh-1rem)] w-full flex-col rounded-t-2xl bg-white shadow-xl transition-all sm:max-h-[calc(100vh-2rem)] sm:rounded-lg',
+          'relative flex max-h-[calc(100vh-1rem)] w-full flex-col bg-white shadow-xl transition-all sm:max-h-[calc(100vh-2rem)]',
           'animate-in fade-in zoom-in-95 duration-200',
           sizeStyles[size],
         )}
       >
         {/* Header */}
         {title && (
-          <div className="flex shrink-0 items-center justify-between border-b border-primary-100 px-4 py-3 sm:px-6 sm:py-4">
-            <h2 className="font-display text-lg font-semibold text-primary-900">
+          <div className="flex shrink-0 items-center justify-between border-b border-black px-4 py-3 sm:px-6 sm:py-4">
+            <h2 className="font-display text-xl text-primary-900">
               {title}
             </h2>
             <button

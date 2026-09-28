@@ -32,7 +32,7 @@ export function AppLayout() {
       <div
         className={cn(
           'flex flex-1 flex-col overflow-hidden transition-all duration-200',
-          sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64',
+          sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-60',
         )}
       >
         {/* Top bar */}

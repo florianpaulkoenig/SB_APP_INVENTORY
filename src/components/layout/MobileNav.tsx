@@ -106,25 +106,25 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         )}
       >
         {/* Header */}
-        <div className="relative flex h-16 items-center justify-between border-b border-primary-100 px-6">
+        <div className="relative flex h-16 items-center justify-between bg-black px-6 text-white">
           <button
             onClick={() => setSwitcherOpen((o) => !o)}
             className="flex items-center gap-2 text-left"
           >
             <div>
-              <span className="font-display text-base font-bold text-primary-900">NOA contemporary</span>
-              <p className="text-[10px] font-medium tracking-widest text-primary-400">
+              <span className="block font-display text-lg leading-none text-white">NOA Contemporary</span>
+              <p className="mt-1 text-[9px] font-medium tracking-[0.25em] text-white/60">
                 {PORTFOLIO_LABELS[portfolio].name.toUpperCase()}
               </p>
             </div>
-            <svg className="h-3 w-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-3 w-3 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-2 text-primary-400 transition-colors hover:bg-primary-50 hover:text-primary-700"
+            className="p-2 text-white/60 transition-colors hover:text-white"
             aria-label="Close menu"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">

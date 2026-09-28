@@ -64,10 +64,10 @@ export function GuestLayout() {
       {/* Simplified sidebar -- desktop only */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-primary-100 bg-white lg:flex">
         {/* Logo */}
-        <div className="flex h-16 items-center border-b border-primary-100 px-6">
+        <div className="flex h-16 items-center bg-black px-6 text-white">
           <div>
-            <span className="font-display text-base font-bold text-primary-900">NOA contemporary</span>
-            <p className="text-[10px] font-medium tracking-widest text-primary-400">MANAGEMENT</p>
+            <span className="block font-display text-lg leading-none text-white">NOA Contemporary</span>
+            <p className="mt-1 text-[9px] font-medium tracking-[0.25em] text-white/60">MANAGEMENT</p>
           </div>
         </div>
 
@@ -126,15 +126,15 @@ export function GuestLayout() {
             aria-hidden="true"
           />
           <div className="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl lg:hidden">
-            <div className="flex h-16 items-center justify-between border-b border-primary-100 px-6">
+            <div className="flex h-16 items-center justify-between bg-black px-6 text-white">
               <div>
-                <span className="font-display text-xl font-bold text-primary-900">NOA</span>
-                <p className="text-[10px] font-medium tracking-widest text-primary-400">INVENTORY</p>
+                <span className="block font-display text-lg leading-none text-white">NOA Contemporary</span>
+                <p className="mt-1 text-[9px] font-medium tracking-[0.25em] text-white/60">INVENTORY</p>
               </div>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="rounded-md p-2 text-primary-400 transition-colors hover:bg-primary-50 hover:text-primary-700"
+                className="p-2 text-white/60 transition-colors hover:text-white"
                 aria-label="Close menu"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">

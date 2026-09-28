@@ -27,14 +27,14 @@ function SidebarSection({ section, items, collapsed }: { section: NavSection; it
           type="button"
           onClick={toggle}
           aria-expanded={open}
-          className="mb-1 flex w-full items-center gap-1.5 px-6 text-[9px] font-light uppercase tracking-[0.2em] text-primary-300 hover:text-primary-600"
+          className="mb-1.5 flex w-full items-center gap-1.5 px-6 text-[9px] font-medium uppercase tracking-[0.25em] text-primary-400 hover:text-primary-900"
         >
           {section.title}
           <span className="normal-case tracking-normal">({items.length})</span>
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className={cn('h-3 w-3 transition-transform', open && 'rotate-90')}><path strokeLinecap="round" strokeLinejoin="round" d="M8 5l5 5-5 5" /></svg>
         </button>
       ) : (
-        <p className="mb-1 px-6 text-[9px] font-light uppercase tracking-[0.2em] text-primary-300">
+        <p className="mb-1.5 px-6 text-[9px] font-medium uppercase tracking-[0.25em] text-primary-400">
           {section.title}
         </p>
       ))}
@@ -50,8 +50,8 @@ function SidebarSection({ section, items, collapsed }: { section: NavSection; it
                     'flex items-center gap-3 rounded-none px-3 py-2 text-xs transition-colors',
                     collapsed && 'justify-center px-2',
                     isActive
-                      ? 'border-l border-l-accent text-primary-900'
-                      : 'border-l border-l-transparent text-primary-400 hover:text-primary-900',
+                      ? 'border-l-2 border-l-black font-semibold text-black'
+                      : 'border-l-2 border-l-transparent text-primary-500 hover:text-black',
                   )
                 }
                 title={collapsed ? item.label : undefined}
@@ -80,31 +80,31 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-30 flex flex-col border-r border-primary-100 bg-white transition-all duration-300',
+        'fixed inset-y-0 left-0 z-30 flex flex-col border-r border-primary-200 bg-white transition-all duration-300',
         collapsed ? 'w-16' : 'w-60',
       )}
     >
       {/* Portfolio switcher */}
       <div className={cn(
-        'relative flex h-16 shrink-0 items-center border-b border-primary-100',
+        'relative flex h-16 shrink-0 items-center bg-black text-white',
         collapsed ? 'justify-center px-2' : 'px-6',
       )}>
         {collapsed ? (
-          <span className="font-display text-lg font-bold text-primary-900">N</span>
+          <span className="font-display text-xl text-white">N</span>
         ) : (
           <button
             onClick={() => setSwitcherOpen((o) => !o)}
             className="flex w-full items-center justify-between text-left"
           >
             <div>
-              <span className="font-display text-base font-bold text-primary-900">
-                NOA contemporary
+              <span className="block font-display text-lg leading-none text-white">
+                NOA Contemporary
               </span>
-              <p className="text-[10px] font-medium tracking-widest text-accent">
+              <p className="mt-1 text-[9px] font-medium uppercase tracking-[0.25em] text-white/60">
                 {PORTFOLIO_LABELS[portfolio].sub}
               </p>
             </div>
-            <svg className="h-3 w-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-3 w-3 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
@@ -114,7 +114,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {switcherOpen && !collapsed && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setSwitcherOpen(false)} />
-            <div className="absolute left-4 right-4 top-14 z-50 rounded-md border border-primary-100 bg-white shadow-lg">
+            <div className="absolute left-4 right-4 top-14 z-50 border border-black bg-white text-primary-900">
               {(['simon_berger', 'noa_collection', 'noa_curation', 'noa_liquidity'] as Portfolio[]).map((p) => (
                 <button
                   key={p}
@@ -129,7 +129,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     p === portfolio ? 'bg-accent' : 'bg-primary-200',
                   )} />
                   <div>
-                    <p className="text-xs font-semibold">{PORTFOLIO_LABELS[p].name}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em]">{PORTFOLIO_LABELS[p].name}</p>
                   </div>
                 </button>
               ))}
@@ -160,8 +160,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     'flex items-center gap-3 rounded-none px-3 py-2 text-xs transition-colors',
                     collapsed && 'justify-center px-2',
                     isActive
-                      ? 'border-l border-l-accent text-primary-900'
-                      : 'border-l border-l-transparent text-primary-400 hover:text-primary-900',
+                      ? 'border-l-2 border-l-black font-semibold text-black'
+                      : 'border-l-2 border-l-transparent text-primary-500 hover:text-black',
                   )
                 }
                 title={collapsed ? item.label : undefined}
@@ -177,7 +177,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {!collapsed && user && (
           <div className="mt-3 border-t border-primary-100 px-4 pt-3">
             <p className="truncate text-xs font-medium text-primary-700">{user.email}</p>
-            <p className="text-[10px] uppercase tracking-wider text-primary-400">{role}</p>
+            <p className="text-[9px] uppercase tracking-[0.25em] text-primary-400">{role}</p>
           </div>
         )}
 
