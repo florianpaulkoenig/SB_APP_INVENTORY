@@ -21,6 +21,7 @@ import { ExhibitionImpactTable } from '../components/dashboard/ExhibitionImpactT
 import { PriceIntelligenceCard } from '../components/dashboard/PriceIntelligenceCard';
 import { ViewingRoomEngagement } from '../components/dashboard/ViewingRoomEngagement';
 import { GeoDistributionChart } from '../components/dashboard/GeoDistributionChart';
+import { RecurringFairNotice } from '../components/exhibitions/RecurringFairNotice';
 
 interface DashboardStats {
   total: number;
@@ -684,6 +685,8 @@ export function DashboardPage() {
 
   return (
     <div>
+      <RecurringFairNotice />
+
       {/* Stat cards */}
       {loading ? (
         <div className="flex justify-center py-12">

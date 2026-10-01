@@ -1159,6 +1159,9 @@ export type ExhibitionRow = {
   updated_at: string;
   portfolio: string;
   pdf_settings: unknown | null;
+  recurs_annually: boolean;
+  recurrence_resolved_at: string | null;
+  successor_id: string | null;
 }
 
 export type ExhibitionInsert = {
@@ -1182,6 +1185,9 @@ export type ExhibitionInsert = {
   updated_at?: string;
   portfolio?: string;
   pdf_settings?: unknown | null;
+  recurs_annually?: boolean;
+  recurrence_resolved_at?: string | null;
+  successor_id?: string | null;
 }
 
 export type ExhibitionUpdate = Partial<ExhibitionInsert>;

@@ -12,6 +12,9 @@ import { formatCurrency, formatDate } from '../lib/utils';
 import { useToast } from '../components/ui/Toast';
 import { useExhibitions } from '../hooks/useExhibitions';
 import { EXHIBITION_TYPES, CURRENCIES } from '../lib/constants';
+import { RecurringFairPrompt } from '../components/exhibitions/RecurringFairPrompt';
+import { pendingRecurrences } from '../lib/recurringFair';
+import type { ExhibitionRow, ExhibitionInsert } from '../types/database';
 
 type ExhibitionType = string;
 
@@ -29,6 +32,7 @@ interface ExhibitionForm {
   contact_id: string;
   catalogue_reference: string;
   notes: string;
+  recurs_annually: boolean;
 }
 
 const emptyForm: ExhibitionForm = {
@@ -45,6 +49,7 @@ const emptyForm: ExhibitionForm = {
   contact_id: '',
   catalogue_reference: '',
   notes: '',
+  recurs_annually: false,
 };
 
 const FILTER_TABS = ['All', 'Exhibitions', 'Art Fairs', 'Solo Shows', 'Group Shows'] as const;
@@ -71,6 +76,11 @@ export function ExhibitionsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [galleryOptions, setGalleryOptions] = useState<{ value: string; label: string }[]>([]);
   const [contactOptions, setContactOptions] = useState<{ value: string; label: string }[]>([]);
+  // Follow-up for recurring fairs that have ended: ids dismissed with "later" (this visit only)
+  const [recurrenceDismissed, setRecurrenceDismissed] = useState<string[]>([]);
+  const recurrenceDue = loading
+    ? null
+    : pendingRecurrences(exhibitions).find((ex) => !recurrenceDismissed.includes(ex.id)) ?? null;
 
   useEffect(() => {
     (async () => {
@@ -114,6 +124,7 @@ export function ExhibitionsPage() {
       contact_id: ex.contact_id || '',
       catalogue_reference: ex.catalogue_reference || '',
       notes: ex.notes || '',
+      recurs_annually: ex.recurs_annually ?? false,
     });
     setModalOpen(true);
   }, []);
@@ -139,6 +150,7 @@ export function ExhibitionsPage() {
         contact_id: form.contact_id || null,
         catalogue_reference: form.catalogue_reference.trim() || null,
         notes: form.notes.trim() || null,
+        recurs_annually: form.type === 'art_fair' && form.recurs_annually,
       };
       if (editingId) {
         await updateExhibition(editingId, payload as never);
@@ -154,6 +166,27 @@ export function ExhibitionsPage() {
       setSubmitting(false);
     }
   }, [form, editingId, createExhibition, updateExhibition, toast]);
+
+  // "Yes" — create next year's edition and link it to the one that ended
+  const handleCreateNextEdition = useCallback(async (previous: ExhibitionRow, next: ExhibitionInsert) => {
+    const created = await createExhibition(next);
+    if (!created) return false;
+    await updateExhibition(previous.id, {
+      recurrence_resolved_at: new Date().toISOString(),
+      successor_id: created.id,
+    });
+    toast({ title: 'Next edition created', description: `"${created.title}" has been added.`, variant: 'success' });
+    return true;
+  }, [createExhibition, updateExhibition, toast]);
+
+  // "No" — stop asking; the fair no longer counts as recurring
+  const handleDeclineNextEdition = useCallback(async (previous: ExhibitionRow) => {
+    const updated = await updateExhibition(previous.id, {
+      recurrence_resolved_at: new Date().toISOString(),
+      recurs_annually: false,
+    });
+    return updated != null;
+  }, [updateExhibition]);
 
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -220,7 +253,14 @@ export function ExhibitionsPage() {
                     onClick={() => navigate(`/exhibitions/${ex.id}`)}
                     className="hover:bg-gray-50 cursor-pointer"
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{ex.title}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      {ex.title}
+                      {ex.recurs_annually && (
+                        <span className="ml-2 text-[9px] font-medium uppercase tracking-[0.2em] text-primary-400" title="Repeats annually">
+                          Annual
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-sm">{getTypeBadge(ex.type)}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{ex.venue || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">
@@ -261,6 +301,22 @@ export function ExhibitionsPage() {
         <div className="space-y-4">
           <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} maxLength={256} />
           <Select label="Type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} options={[{value: '', label: 'Select type'}, ...EXHIBITION_TYPES]} />
+          {form.type === 'art_fair' && (
+            <label className="flex cursor-pointer items-start gap-3 border border-primary-200 px-4 py-3">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 accent-black"
+                checked={form.recurs_annually}
+                onChange={(e) => setForm({ ...form, recurs_annually: e.target.checked })}
+              />
+              <span>
+                <span className="block text-sm font-medium text-primary-900">Repeats annually</span>
+                <span className="block text-xs text-primary-500">
+                  Once this edition has ended, you will be asked for next year's dates and whether Simon exhibits again.
+                </span>
+              </span>
+            </label>
+          )}
           <Input label="Venue" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} maxLength={256} />
           <div className="grid grid-cols-2 gap-4">
             <Input label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} maxLength={256} />
@@ -297,6 +353,13 @@ export function ExhibitionsPage() {
           </div>
         </div>
       </Modal>
+
+      <RecurringFairPrompt
+        exhibition={modalOpen ? null : recurrenceDue}
+        onCreateNext={handleCreateNextEdition}
+        onDecline={handleDeclineNextEdition}
+        onLater={() => recurrenceDue && setRecurrenceDismissed((ids) => [...ids, recurrenceDue.id])}
+      />
     </div>
   );
 }
