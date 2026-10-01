@@ -4,6 +4,7 @@ import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
 import type { CertificateRow, CertificateInsert, CertificateUpdate } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Extended row type with joined data
 // ---------------------------------------------------------------------------
@@ -132,7 +133,7 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
       const message =
         err instanceof Error ? err.message : 'Failed to fetch certificates';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       if (gen === fetchGenRef.current) setLoading(false);
     }
@@ -170,7 +171,7 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
         return created as CertificateRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -196,7 +197,7 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
         return updated as CertificateRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -220,7 +221,7 @@ export function useCertificates(options: UseCertificatesOptions = {}): UseCertif
 
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -283,7 +284,7 @@ export function useCertificate(id: string): UseCertificateReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch certificate';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }

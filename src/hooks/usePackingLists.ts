@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
+import { describeError } from '../lib/errors';
 import type {
   PackingListRow,
   PackingListInsert,
@@ -132,7 +133,7 @@ export function usePackingLists(options: UsePackingListsOptions = {}): UsePackin
       const message =
         err instanceof Error ? err.message : 'Failed to fetch packing lists';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -170,7 +171,7 @@ export function usePackingLists(options: UsePackingListsOptions = {}): UsePackin
 
         return created as PackingListRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -196,7 +197,7 @@ export function usePackingLists(options: UsePackingListsOptions = {}): UsePackin
 
         return updated as PackingListRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -220,7 +221,7 @@ export function usePackingLists(options: UsePackingListsOptions = {}): UsePackin
 
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -283,7 +284,7 @@ export function usePackingList(id: string): UsePackingListReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch packing list';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -350,7 +351,7 @@ export function usePackingListItems(packingListId: string): UsePackingListItemsR
       const message =
         err instanceof Error ? err.message : 'Failed to fetch packing list items';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -388,7 +389,7 @@ export function usePackingListItems(packingListId: string): UsePackingListItemsR
 
         return created as PackingListItemRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -414,7 +415,7 @@ export function usePackingListItems(packingListId: string): UsePackingListItemsR
 
         return updated as PackingListItemRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -438,7 +439,7 @@ export function usePackingListItems(packingListId: string): UsePackingListItemsR
 
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },

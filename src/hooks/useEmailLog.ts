@@ -4,6 +4,7 @@ import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
 import type { EmailLogRow, EmailStatus } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -96,7 +97,7 @@ export function useEmailLog(options: UseEmailLogOptions = {}): UseEmailLogReturn
       setEmails((data as EmailLogWithJoins[]) ?? []);
       setTotalCount(count ?? 0);
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }

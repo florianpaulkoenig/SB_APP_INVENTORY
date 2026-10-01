@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { ExpenseRow, ExpenseInsert, ExpenseUpdate } from '../types/database';
 
+import { describeError } from '../lib/errors';
 export function useExpenses(artworkId?: string) {
   const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +33,7 @@ export function useExpenses(artworkId?: string) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch expenses';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -61,7 +62,7 @@ export function useExpenses(artworkId?: string) {
       await fetch();
       return created as ExpenseRow;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -79,7 +80,7 @@ export function useExpenses(artworkId?: string) {
       await fetch();
       return updated as ExpenseRow;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -92,7 +93,7 @@ export function useExpenses(artworkId?: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [toast, fetch]);

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm, generateArtworkRefCode } from '../lib/utils';
 import { DOC_PREFIXES } from '../lib/constants';
+import { describeError } from '../lib/errors';
 import type {
   ProductionOrderRow,
   ProductionOrderInsert,
@@ -135,7 +136,7 @@ export function useProductionOrders(options: UseProductionOrdersOptions = {}): U
       const message =
         err instanceof Error ? err.message : 'Failed to fetch production orders';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       if (gen === fetchGenRef.current) setLoading(false);
     }
@@ -414,7 +415,7 @@ export function useProductionOrder(id: string): UseProductionOrderReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch production order';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -482,7 +483,7 @@ export function useProductionOrderItems(productionOrderId: string): UseProductio
       const message =
         err instanceof Error ? err.message : 'Failed to fetch production order items';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }

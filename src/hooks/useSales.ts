@@ -4,6 +4,7 @@ import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
 import type { SaleRow, SaleInsert, SaleUpdate } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Extended row type with joined data
 // ---------------------------------------------------------------------------
@@ -125,7 +126,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch sales';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       if (gen === fetchGenRef.current) setLoading(false);
     }
@@ -163,7 +164,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
 
         return created as SaleRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -189,7 +190,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
 
         return updated as SaleRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -213,7 +214,7 @@ export function useSales(options: UseSalesOptions = {}): UseSalesReturn {
 
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -276,7 +277,7 @@ export function useSale(id: string): UseSaleReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch sale';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }

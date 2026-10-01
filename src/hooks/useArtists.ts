@@ -5,6 +5,7 @@ import { sanitizeFilterTerm } from '../lib/utils';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import type { ArtistRow, ArtistInsert, ArtistUpdate } from '../types/database';
 
+import { describeError } from '../lib/errors';
 export interface ArtistFilters {
   search?: string;
   sortBy?: string;
@@ -96,7 +97,7 @@ export function useArtists(options: UseArtistsOptions = {}) {
     } catch (err) {
       if (gen !== fetchGenRef.current) return;
       setError(err instanceof Error ? err.message : 'Failed to fetch artists');
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       if (gen === fetchGenRef.current) setLoading(false);
     }
@@ -116,7 +117,7 @@ export function useArtists(options: UseArtistsOptions = {}) {
       await fetchArtists();
       return created as ArtistRow;
     } catch (err) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetchArtists, portfolio]);
@@ -130,7 +131,7 @@ export function useArtists(options: UseArtistsOptions = {}) {
       await fetchArtists();
       return updated as ArtistRow;
     } catch (err) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetchArtists]);
@@ -143,7 +144,7 @@ export function useArtists(options: UseArtistsOptions = {}) {
       await fetchArtists();
       return true;
     } catch (err) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [toast, fetchArtists]);
@@ -191,7 +192,7 @@ export function useArtist(id: string) {
       setArtist(artistData as ArtistRow);
       setArtworks(awData ?? []);
     } catch (err) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }

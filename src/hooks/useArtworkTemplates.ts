@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { ArtworkTemplateRow, ArtworkTemplateInsert } from '../types/database';
 
+import { describeError } from '../lib/errors';
 export function useArtworkTemplates() {
   const [templates, setTemplates] = useState<ArtworkTemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +27,7 @@ export function useArtworkTemplates() {
       if (error) throw error;
       setTemplates(data ?? []);
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -62,7 +63,7 @@ export function useArtworkTemplates() {
         await fetchTemplates();
         return created as ArtworkTemplateRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -85,7 +86,7 @@ export function useArtworkTemplates() {
         await fetchTemplates();
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -108,7 +109,7 @@ export function useArtworkTemplates() {
         await fetchTemplates();
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },

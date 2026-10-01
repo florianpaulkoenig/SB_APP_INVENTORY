@@ -4,6 +4,7 @@ import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
 import type { ContactRow, ContactInsert, ContactUpdate, ContactType } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Filter / pagination types
 // ---------------------------------------------------------------------------
@@ -108,7 +109,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
       const message =
         err instanceof Error ? err.message : 'Failed to fetch contacts';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       if (gen === fetchGenRef.current) setLoading(false);
     }
@@ -146,7 +147,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         await fetchContacts();
         return created as ContactRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -172,7 +173,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         await fetchContacts();
         return updated as ContactRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -196,7 +197,7 @@ export function useContacts(options: UseContactsOptions = {}): UseContactsReturn
         await fetchContacts();
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -257,7 +258,7 @@ export function useContact(id: string): UseContactReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch contact';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }

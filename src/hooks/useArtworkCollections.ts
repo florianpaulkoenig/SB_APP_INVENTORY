@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { PublicCollectionInsert } from '../types/database';
 
+import { describeError } from '../lib/errors';
 export function useArtworkCollections(artworkId: string) {
   const [collections, setCollections] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +20,7 @@ export function useArtworkCollections(artworkId: string) {
       if (fetchError) throw fetchError;
       setCollections(data ?? []);
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -72,7 +73,7 @@ export function useArtworkCollections(artworkId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [artworkId, toast, fetch]);
@@ -88,7 +89,7 @@ export function useArtworkCollections(artworkId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [toast, fetch]);

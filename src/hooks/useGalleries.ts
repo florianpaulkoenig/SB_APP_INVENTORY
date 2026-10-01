@@ -4,6 +4,7 @@ import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
 import type { GalleryRow, GalleryInsert, GalleryUpdate } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Filter / pagination types
 // ---------------------------------------------------------------------------
@@ -109,7 +110,7 @@ export function useGalleries(options: UseGalleriesOptions = {}): UseGalleriesRet
       const message =
         err instanceof Error ? err.message : 'Failed to fetch galleries';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       if (gen === fetchGenRef.current) setLoading(false);
     }

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { GalleryTeamMemberRow, GalleryTeamMemberInsert, GalleryTeamMemberUpdate } from '../types/database';
 
+import { describeError } from '../lib/errors';
 export function useGalleryTeamMembers(galleryId: string) {
   const [members, setMembers] = useState<GalleryTeamMemberRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +25,7 @@ export function useGalleryTeamMembers(galleryId: string) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch team members';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -49,7 +50,7 @@ export function useGalleryTeamMembers(galleryId: string) {
       await fetch();
       return created as GalleryTeamMemberRow;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -67,7 +68,7 @@ export function useGalleryTeamMembers(galleryId: string) {
       await fetch();
       return updated as GalleryTeamMemberRow;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -80,7 +81,7 @@ export function useGalleryTeamMembers(galleryId: string) {
       await fetch();
       return true;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [toast, fetch]);

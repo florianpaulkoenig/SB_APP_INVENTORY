@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { COMPANY_EMAIL } from '../lib/constants';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -88,7 +89,7 @@ export function useEmailSend(): UseEmailSendReturn {
         toast({ title: 'Email sent', description: `Email sent to ${params.to}`, variant: 'success' });
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Email failed', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Email failed', description: describeError(err), variant: 'error' });
 
         // Attempt to log the failure
         try {

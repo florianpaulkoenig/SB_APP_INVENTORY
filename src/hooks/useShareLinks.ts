@@ -5,6 +5,7 @@ import { useToast } from '../components/ui/Toast';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import type { ShareLinkRow, ShareLinkInsert, ImageType } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Helper – generate a random share token
 // ---------------------------------------------------------------------------
@@ -51,7 +52,7 @@ export function useShareLinks() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch share links';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -82,7 +83,7 @@ export function useShareLinks() {
 
       return created as ShareLinkRow;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetchLinks]);
@@ -103,7 +104,7 @@ export function useShareLinks() {
 
       return true;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [toast, fetchLinks]);

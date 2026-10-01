@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
 import { usePortfolio } from '../contexts/PortfolioContext';
+import { describeError } from '../lib/errors';
 import type {
   DeliveryRow,
   DeliveryInsert,
@@ -159,7 +160,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
       const message =
         err instanceof Error ? err.message : 'Failed to fetch deliveries';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       if (gen === fetchGenRef.current) setLoading(false);
     }
@@ -197,7 +198,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
 
         return created as DeliveryRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -223,7 +224,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
 
         return updated as DeliveryRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -247,7 +248,7 @@ export function useDeliveries(options: UseDeliveriesOptions = {}): UseDeliveries
 
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -310,7 +311,7 @@ export function useDelivery(id: string): UseDeliveryReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch delivery';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -377,7 +378,7 @@ export function useDeliveryItems(deliveryId: string): UseDeliveryItemsReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch delivery items';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -415,7 +416,7 @@ export function useDeliveryItems(deliveryId: string): UseDeliveryItemsReturn {
 
         return created as DeliveryItemRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -441,7 +442,7 @@ export function useDeliveryItems(deliveryId: string): UseDeliveryItemsReturn {
 
         return updated as DeliveryItemRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -465,7 +466,7 @@ export function useDeliveryItems(deliveryId: string): UseDeliveryItemsReturn {
 
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },

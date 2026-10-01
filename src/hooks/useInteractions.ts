@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { InteractionRow, InteractionInsert } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Return type
 // ---------------------------------------------------------------------------
@@ -53,7 +54,7 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch interactions';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -91,7 +92,7 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
         await fetchInteractions();
         return created as InteractionRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -115,7 +116,7 @@ export function useInteractions(contactId: string): UseInteractionsReturn {
         await fetchInteractions();
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },

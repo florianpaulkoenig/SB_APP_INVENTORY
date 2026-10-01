@@ -6,6 +6,7 @@ import { useToast } from '../components/ui/Toast';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import type { ViewingRoomRow, ViewingRoomInsert, ViewingRoomUpdate } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Helper – generate a URL-friendly slug from a title
 // ---------------------------------------------------------------------------
@@ -74,7 +75,7 @@ export function useViewingRooms() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch viewing rooms';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -105,7 +106,7 @@ export function useViewingRooms() {
 
       return created as ViewingRoomRow;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetchRooms]);
@@ -126,7 +127,7 @@ export function useViewingRooms() {
 
       return true;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [toast, fetchRooms]);
@@ -147,7 +148,7 @@ export function useViewingRooms() {
 
       return true;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [toast, fetchRooms]);
@@ -189,7 +190,7 @@ export function useViewingRoom(id: string) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch viewing room';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -215,7 +216,7 @@ export function useViewingRoom(id: string) {
 
       return true;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [id, toast]);
@@ -244,7 +245,7 @@ export function useViewingRoom(id: string) {
 
       return true;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [id, room, toast]);

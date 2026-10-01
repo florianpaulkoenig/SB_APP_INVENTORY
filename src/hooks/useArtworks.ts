@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
 import { usePortfolio } from '../contexts/PortfolioContext';
+import { describeError } from '../lib/errors';
 import type {
   ArtworkRow,
   ArtworkInsert,
@@ -221,7 +222,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
       const message =
         err instanceof Error ? err.message : 'Failed to fetch artworks';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       if (gen === fetchGenRef.current) setLoading(false);
     }
@@ -304,7 +305,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         await fetchArtworks();
         return created as ArtworkRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -330,7 +331,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         await fetchArtworks();
         return updated as ArtworkRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -366,7 +367,7 @@ export function useArtworks(options: UseArtworksOptions = {}): UseArtworksReturn
         await fetchArtworks();
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -498,7 +499,7 @@ export function useArtwork(id: string): UseArtworkReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch artwork';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }

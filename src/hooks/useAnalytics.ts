@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { useExchangeRates } from './useExchangeRates';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Analytics data types
 // ---------------------------------------------------------------------------
@@ -405,7 +406,7 @@ export function useAnalytics(): UseAnalyticsReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch analytics data';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }

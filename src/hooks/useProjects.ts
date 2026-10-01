@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { ProjectRow, ProjectInsert, ProjectUpdate } from '../types/database';
 
+import { describeError } from '../lib/errors';
 export function useProjects() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +26,7 @@ export function useProjects() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch projects';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -50,7 +51,7 @@ export function useProjects() {
       await fetch();
       return created as ProjectRow;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -68,7 +69,7 @@ export function useProjects() {
       await fetch();
       return updated as ProjectRow;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -81,7 +82,7 @@ export function useProjects() {
       await fetch();
       return true;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [toast, fetch]);

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { ReminderRow, ReminderInsert, ReminderUpdate, ReminderType } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Filter types
 // ---------------------------------------------------------------------------
@@ -63,7 +64,7 @@ export function useReminders(filters: ReminderFilters = {}) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch reminders';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -98,7 +99,7 @@ export function useReminders(filters: ReminderFilters = {}) {
 
         return created as ReminderRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -124,7 +125,7 @@ export function useReminders(filters: ReminderFilters = {}) {
 
         return updated as ReminderRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -148,7 +149,7 @@ export function useReminders(filters: ReminderFilters = {}) {
 
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -174,7 +175,7 @@ export function useReminders(filters: ReminderFilters = {}) {
 
         return updated as ReminderRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },

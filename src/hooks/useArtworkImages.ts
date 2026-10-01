@@ -6,6 +6,7 @@ import { invalidateSignedUrl } from '../lib/signedUrlCache';
 import { useToast } from '../components/ui/Toast';
 import type { ArtworkImageRow, ImageType } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Return type
 // ---------------------------------------------------------------------------
@@ -66,7 +67,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
       setImages((data as ArtworkImageRow[]) ?? []);
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -161,7 +162,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
         return created as ArtworkImageRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -217,7 +218,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -252,7 +253,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -272,7 +273,7 @@ export function useArtworkImages(artworkId: string): UseArtworkImagesReturn {
 
         return data.signedUrl;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },

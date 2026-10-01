@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { PublicCollectionRow, PublicCollectionInsert, PublicCollectionUpdate } from '../types/database';
 
+import { describeError } from '../lib/errors';
 export function usePublicCollections() {
   const [collections, setCollections] = useState<PublicCollectionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +29,7 @@ export function usePublicCollections() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch collections';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -53,7 +54,7 @@ export function usePublicCollections() {
       await fetch();
       return created as PublicCollectionRow;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -71,7 +72,7 @@ export function usePublicCollections() {
       await fetch();
       return updated as PublicCollectionRow;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return null;
     }
   }, [toast, fetch]);
@@ -84,7 +85,7 @@ export function usePublicCollections() {
       await fetch();
       return true;
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
       return false;
     }
   }, [toast, fetch]);

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { DealRow, DealInsert, DealUpdate, DealStage } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Filter / pagination types
 // ---------------------------------------------------------------------------
@@ -99,7 +100,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch deals';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       if (gen === fetchGenRef.current) setLoading(false);
     }
@@ -138,7 +139,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
 
         return created as DealRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -171,7 +172,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
       } catch (err: unknown) {
         // Rollback on error
         setDeals(previous);
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -201,7 +202,7 @@ export function useDeals(options: UseDealsOptions = {}): UseDealsReturn {
         // Rollback on error
         setDeals(previous);
         setTotalCount((prev) => prev + 1);
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -261,7 +262,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
 
       setDeals((data as DealRow[]) ?? []);
     } catch (err: unknown) {
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -299,7 +300,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
 
         return created as DealRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -330,7 +331,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
         return updated as DealRow;
       } catch (err: unknown) {
         setDeals(previous);
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -357,7 +358,7 @@ export function useContactDeals(contactId: string): UseContactDealsReturn {
         return true;
       } catch (err: unknown) {
         setDeals(previous);
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },

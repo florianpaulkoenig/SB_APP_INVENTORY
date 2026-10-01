@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import type { TaskRow, TaskInsert, TaskUpdate } from '../types/database';
 
+import { describeError } from '../lib/errors';
 // ---------------------------------------------------------------------------
 // Filter / pagination types
 // ---------------------------------------------------------------------------
@@ -117,7 +118,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch tasks';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -156,7 +157,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
 
         return created as TaskRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -189,7 +190,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       } catch (err: unknown) {
         // Rollback on error
         setTasks(previous);
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -217,7 +218,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       } catch (err: unknown) {
         // Rollback on error
         setTasks(previous);
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -253,7 +254,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       } catch (err: unknown) {
         // Rollback on error
         setTasks(previous);
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },

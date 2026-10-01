@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { sanitizeFilterTerm } from '../lib/utils';
+import { describeError } from '../lib/errors';
 import type {
   GalleryForwardingOrderRow,
   GalleryForwardingOrderInsert,
@@ -119,7 +120,7 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
       if (gen !== fetchGenRef.current) return;
       const message = err instanceof Error ? err.message : 'Failed to fetch forwarding orders';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       if (gen === fetchGenRef.current) setLoading(false);
     }
@@ -156,7 +157,7 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
 
         return created as GalleryForwardingOrderRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -182,7 +183,7 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
 
         return updated as GalleryForwardingOrderRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -206,7 +207,7 @@ export function useGalleryForwardings(options: UseGalleryForwardingsOptions = {}
 
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
@@ -266,7 +267,7 @@ export function useGalleryForwarding(id: string): UseGalleryForwardingReturn {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch forwarding order';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -327,7 +328,7 @@ export function useGalleryForwardingItems(forwardingOrderId: string): UseGallery
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch forwarding items';
       setError(message);
-      toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -368,7 +369,7 @@ export function useGalleryForwardingItems(forwardingOrderId: string): UseGallery
 
         return created as GalleryForwardingItemRow;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return null;
       }
     },
@@ -392,7 +393,7 @@ export function useGalleryForwardingItems(forwardingOrderId: string): UseGallery
 
         return true;
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'An error occurred. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
         return false;
       }
     },
