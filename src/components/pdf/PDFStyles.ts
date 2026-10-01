@@ -24,6 +24,25 @@ Font.register({
   ],
 });
 
+// NOA house fonts (dossier style) — Anton for headlines, Manrope for text.
+// Static TTF instances: react-pdf cannot pick weights from a variable font.
+Font.register({
+  family: 'Anton',
+  fonts: [
+    { src: `${import.meta.env.BASE_URL}fonts/Anton-Regular.ttf`, fontWeight: 'normal' },
+    { src: `${import.meta.env.BASE_URL}fonts/Anton-Regular.ttf`, fontWeight: 'bold' },
+  ],
+});
+
+Font.register({
+  family: 'Manrope',
+  fonts: [
+    { src: `${import.meta.env.BASE_URL}fonts/Manrope-Regular.ttf`,  fontWeight: 400 },
+    { src: `${import.meta.env.BASE_URL}fonts/Manrope-Medium.ttf`,   fontWeight: 500 },
+    { src: `${import.meta.env.BASE_URL}fonts/Manrope-SemiBold.ttf`, fontWeight: 600 },
+  ],
+});
+
 // Separate family for italic — registered only when the font files are present.
 // Falls back gracefully: if the files are missing, AnzianoPro (regular) is used
 // for italic tokens, which is still readable.

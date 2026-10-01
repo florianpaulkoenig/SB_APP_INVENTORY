@@ -21,7 +21,7 @@ import { LoanPanel } from '../components/artworks/LoanPanel';
 import { ExpenseTracker } from '../components/artworks/ExpenseTracker';
 import { SaleRecordPanel } from '../components/artworks/SaleRecordPanel';
 import { ProvenancePanel } from '../components/artworks/ProvenancePanel';
-import { CertificatePDF } from '../components/pdf/CertificatePDF';
+import { CertificatePDF, DEFAULT_CERTIFICATE_PLACE } from '../components/pdf/CertificatePDF';
 import { useDocumentNumber } from '../hooks/useDocumentNumber';
 import { useArtworkProvenance } from '../hooks/useArtworkProvenance';
 import { useAuth } from '../hooks/useAuth';
@@ -78,7 +78,7 @@ export function ArtworkDetailPage() {
   const [imageRefreshKey, setImageRefreshKey] = useState(0);
   const [certificate, setCertificate] = useState<CertificateInfo | null>(null);
   const [language, setLanguage] = useState<Language>('en');
-  const [placeOfCreation, setPlaceOfCreation] = useState('Switzerland');
+  const [placeOfCreation, setPlaceOfCreation] = useState(DEFAULT_CERTIFICATE_PLACE);
   const [certShowProvenance, setCertShowProvenance] = useState(true);
   const [certShowSignature, setCertShowSignature] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -218,6 +218,7 @@ export function ArtworkDetailPage() {
             framed_height: artwork.framed_height,
             framed_width: artwork.framed_width,
             framed_depth: artwork.framed_depth,
+            weight: artwork.weight,
             edition_type: artwork.edition_type,
             edition_number: artwork.edition_number,
             edition_total: artwork.edition_total,
@@ -398,6 +399,7 @@ export function ArtworkDetailPage() {
             framed_height: artwork.framed_height,
             framed_width: artwork.framed_width,
             framed_depth: artwork.framed_depth,
+            weight: artwork.weight,
             edition_type: artwork.edition_type,
             edition_number: artwork.edition_number,
             edition_total: artwork.edition_total,
@@ -703,7 +705,7 @@ export function ArtworkDetailPage() {
               </div>
               <div className="w-full sm:w-48">
                 <Input
-                  label="Place of Creation"
+                  label="Place of Issue"
                   value={placeOfCreation}
                   onChange={(e) => setPlaceOfCreation(e.target.value)}
                 />
@@ -788,7 +790,7 @@ export function ArtworkDetailPage() {
               </div>
               <div className="w-full sm:w-48">
                 <Input
-                  label="Place of Creation"
+                  label="Place of Issue"
                   value={placeOfCreation}
                   onChange={(e) => setPlaceOfCreation(e.target.value)}
                 />
