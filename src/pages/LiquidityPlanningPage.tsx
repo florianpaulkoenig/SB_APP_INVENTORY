@@ -56,6 +56,18 @@ function ProvBadge() {
   );
 }
 
+// Project on hold — unpaid positions count towards nothing
+function OnHoldBadge() {
+  return (
+    <span
+      className="shrink-0 rounded-full bg-primary-200 px-2 py-0.5 text-xs font-medium text-primary-700"
+      title="On Hold — offene Positionen zählen nicht zu Umsatz, Profit und Saldo"
+    >
+      On Hold
+    </span>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Project badge — prominent marker on every row that belongs to a project.
 // Clicking it filters the month lists to that project (via context).
@@ -575,6 +587,7 @@ function AddProjectForm({
 }: {
   onSave: (data: {
     name: string;
+    on_hold?: boolean;
     incomes:  { description: string; amount: number; currency: string; expected_date: string; provisional?: boolean }[];
     expenses: { description: string; amount: number; currency: string; due_date: string; provisional?: boolean }[];
   }) => Promise<boolean>;
@@ -583,6 +596,7 @@ function AddProjectForm({
   existingOpen?: { description: string; amount: number; date: string }[];
 }) {
   const [name, setName]           = useState('');
+  const [onHold, setOnHold]       = useState(false);
   const [positions, setPositions] = useState<ProjectPositionDraft[]>([emptyPosition()]);
   const [saving, setSaving]       = useState(false);
   const [templates, setTemplates] = useState<SavedTemplate[]>(loadTemplates);
@@ -627,6 +641,7 @@ function AddProjectForm({
     setSaving(true);
     const ok = await onSave({
       name: name.trim(),
+      on_hold: onHold,
       incomes: filled.filter((p) => p.kind === 'income').map((p) => ({
         description:   p.description,
         amount:        parseFloat(p.amount),
@@ -643,7 +658,7 @@ function AddProjectForm({
       })),
     });
     setSaving(false);
-    if (ok) { setName(''); setPositions([emptyPosition()]); }
+    if (ok) { setName(''); setOnHold(false); setPositions([emptyPosition()]); }
   }
 
   return (
@@ -714,6 +729,15 @@ function AddProjectForm({
           in den Monaten und können einzeln bezahlt werden; das Projekt lässt sich als
           Ganzes löschen.
         </p>
+        <label className="mt-2 flex items-center gap-2 text-xs text-primary-600 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={onHold}
+            onChange={(e) => setOnHold(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-primary-300 accent-primary-700"
+          />
+          On Hold — Projekt wird erfasst, zählt aber nicht zu Umsatz, Profit und Saldo
+        </label>
         {dupMatch && (
           <div className="mt-2">
             <DuplicateWarning match={dupMatch} />
@@ -948,7 +972,7 @@ function ProjectPositionEditForm({
 }
 
 function ProjectsPanel({
-  projects, incomes, expenses, expensePayments, onDeleteProject, onRenameProject, onAddPosition,
+  projects, incomes, expenses, expensePayments, onDeleteProject, onRenameProject, onSetOnHold, onAddPosition,
   onUpdatePosition, onDeletePosition, outOfWindowIds,
 }: {
   projects: NOALiquidityProjectRow[];
@@ -957,6 +981,8 @@ function ProjectsPanel({
   expensePayments: NOALiquidityExpensePaymentRow[];
   onDeleteProject: (id: string) => void;
   onRenameProject: (id: string, newName: string) => Promise<boolean>;
+  /** On hold ⇄ active — unpaid positions of held projects count towards nothing */
+  onSetOnHold: (id: string, onHold: boolean) => Promise<boolean>;
   onAddPosition: (project: NOALiquidityProjectRow, position: { kind: 'income' | 'expense'; description: string; amount: number; currency: string; date: string; provisional?: boolean }) => Promise<boolean>;
   onUpdatePosition: (project: NOALiquidityProjectRow, position: { kind: 'income' | 'expense'; id: string; description: string; amount: number; currency: string; date: string; provisional?: boolean }) => Promise<boolean>;
   onDeletePosition: (kind: 'income' | 'expense', id: string) => Promise<boolean>;
@@ -977,6 +1003,212 @@ function ProjectsPanel({
   const expensePaid = (expenseId: string) =>
     expensePayments.some((p) => p.expense_id === expenseId && !p.skipped);
 
+  const activeProjects = projects.filter((p) => !p.on_hold);
+  const heldProjects   = projects.filter((p) =>  p.on_hold);
+
+  const renderProject = (project: NOALiquidityProjectRow) => {
+    const projIncomes  = incomes.filter((e) => e.project_id === project.id);
+    const projExpenses = expenses.filter((e) => e.project_id === project.id);
+    const items = [
+      ...projIncomes.map((e) => ({
+        key:  `i:${e.id}`,
+        kind: 'income' as const,
+        description: e.description,
+        amount: e.amount,
+        currency: e.currency,
+        date: e.expected_date,
+        provisional: !!e.provisional,
+        paid: e.paid_at !== null,
+      })),
+      ...projExpenses.map((e) => ({
+        key:  `e:${e.id}`,
+        kind: 'expense' as const,
+        description: e.description,
+        amount: e.amount,
+        currency: e.currency,
+        date: e.due_date ?? '',
+        provisional: !!e.provisional,
+        paid: expensePaid(e.id),
+      })),
+    ].sort((a, b) => a.date.localeCompare(b.date));
+
+    const openIncome  = projIncomes.filter((e) => !e.paid_at).reduce((s, e) => s + toCHF(e.amount, e.currency), 0);
+    const openExpense = projExpenses.filter((e) => !expensePaid(e.id)).reduce((s, e) => s + toCHF(e.amount, e.currency), 0);
+
+    return (
+      <div key={project.id} className={`rounded-lg border border-primary-100 ${project.on_hold ? 'bg-primary-50/50' : ''}`}>
+        <div className="flex flex-wrap items-center gap-3 gap-y-1.5 border-b border-primary-50 px-3 py-2.5">
+          {renamingId === project.id ? (
+            <span className="flex min-w-0 flex-1 items-center gap-2">
+              <input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter' && renameValue.trim()) {
+                    const ok = await onRenameProject(project.id, renameValue);
+                    if (ok) setRenamingId(null);
+                  }
+                  if (e.key === 'Escape') setRenamingId(null);
+                }}
+                autoFocus
+                className="min-w-0 flex-1 rounded border border-primary-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
+              />
+              <button
+                onClick={async () => { const ok = await onRenameProject(project.id, renameValue); if (ok) setRenamingId(null); }}
+                disabled={!renameValue.trim()}
+                className="text-xs font-medium text-primary-600 hover:text-primary-900 disabled:opacity-40"
+              >
+                Speichern
+              </button>
+              <button onClick={() => setRenamingId(null)} className="text-xs text-primary-400 hover:text-primary-600">✕</button>
+            </span>
+          ) : (
+            <span className="flex min-w-0 flex-1 items-center gap-1.5">
+              <span className={`min-w-0 truncate text-sm font-semibold ${project.on_hold ? 'text-primary-600' : 'text-primary-900'}`}>{project.name}</span>
+              {project.on_hold && <OnHoldBadge />}
+              <button
+                onClick={() => { setRenamingId(project.id); setRenameValue(project.name); }}
+                className="shrink-0 p-0.5 text-primary-300 hover:text-primary-600 transition-colors"
+                aria-label="Projekt umbenennen"
+                title="Projekt umbenennen (Präfix aller Positionen wird angepasst)"
+              >
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                </svg>
+              </button>
+            </span>
+          )}
+          <span
+            className="shrink-0 text-xs text-primary-400 tabular-nums"
+            title={project.on_hold
+              ? 'Noch offene Einnahmen / Ausgaben (in CHF) — on hold, nicht in der Planung'
+              : 'Noch offene Einnahmen / Ausgaben (in CHF)'}
+          >
+            offen +{formatCurrency(openIncome, 'CHF')} / -{formatCurrency(openExpense, 'CHF')}
+          </span>
+          <button
+            onClick={() => onSetOnHold(project.id, !project.on_hold)}
+            className="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium text-primary-500 hover:bg-primary-100 hover:text-primary-800 transition-colors"
+            title={project.on_hold
+              ? 'Projekt reaktivieren — offene Positionen fliessen wieder in die Planung ein'
+              : 'Projekt on hold setzen — offene Positionen zählen nicht zu Umsatz, Profit und Saldo'}
+          >
+            {project.on_hold ? 'Reaktivieren' : 'On Hold'}
+          </button>
+          <button
+            onClick={() => setAddingToId(addingToId === project.id ? null : project.id)}
+            className="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+            title="Position zu diesem Projekt hinzufügen"
+          >
+            + Position
+          </button>
+          {confirmingId === project.id ? (
+            <div className="mt-3 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
+              <button
+                onClick={() => { onDeleteProject(project.id); setConfirmingId(null); }}
+                className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs"
+              >
+                {items.length} Position{items.length !== 1 ? 'en' : ''} löschen
+              </button>
+              <button onClick={() => setConfirmingId(null)} className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmingId(project.id)}
+              className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5 shrink-0"
+              aria-label="Projekt löschen"
+              title="Projekt inkl. aller Positionen löschen"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {addingToId === project.id && (
+          <ProjectPositionForm
+            onSave={(position) => onAddPosition(project, position)}
+            onCancel={() => setAddingToId(null)}
+          />
+        )}
+
+        <div className="px-3 py-1">
+          {items.map((item) => (editingKey === item.key ? (
+            <ProjectPositionEditForm
+              key={item.key}
+              initial={{ kind: item.kind, description: stripProjectPrefix(item.description, project.name), amount: item.amount, currency: item.currency, date: item.date, provisional: item.provisional }}
+              onSave={(data) => onUpdatePosition(project, { kind: item.kind, id: item.key.slice(2), ...data })}
+              onCancel={() => setEditingKey(null)}
+            />
+          ) : (
+            <div key={item.key} className={`flex flex-wrap items-center gap-2 gap-y-1 py-1.5 border-b border-primary-50 last:border-0 ${item.paid ? 'opacity-60' : ''}`}>
+              {item.paid ? (
+                <svg className="h-3.5 w-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" aria-label="Bezahlt">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              ) : (
+                <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-primary-200" title="Offen" />
+              )}
+              <span className="w-20 shrink-0 text-xs text-primary-400 tabular-nums">
+                {item.date ? formatDate(item.date) : '—'}
+              </span>
+              {item.provisional && <ProvBadge />}
+              <span className={`min-w-0 flex-1 truncate text-sm ${item.paid ? 'text-primary-400 line-through' : 'text-primary-800'}`}>
+                {stripProjectPrefix(item.description, project.name)}
+              </span>
+              {outOfWindowIds.has(item.key.slice(2)) && (
+                <span
+                  className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                  title="Erscheint in keiner Monatsspalte — siehe Hinweis über der Projektliste"
+                >
+                  nicht im Plan
+                </span>
+              )}
+              <span className={`shrink-0 text-sm font-medium tabular-nums ${item.kind === 'income' ? 'text-emerald-700' : 'text-red-500'}`}>
+                {item.kind === 'income' ? '+' : '-'}{formatCurrency(item.amount, item.currency)}
+              </span>
+              <span className="flex shrink-0 items-center gap-1">
+                <button
+                  onClick={() => { setEditingKey(item.key); setConfirmingPos(null); }}
+                  className="p-1 text-primary-300 hover:text-primary-700 transition-colors"
+                  aria-label="Position bearbeiten"
+                  title="Position bearbeiten"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                  </svg>
+                </button>
+                {confirmingPos === item.key ? (
+                  <>
+                    <button
+                      onClick={async () => { await onDeletePosition(item.kind, item.key.slice(2)); setConfirmingPos(null); }}
+                      className="rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
+                    >
+                      Löschen
+                    </button>
+                    <button onClick={() => setConfirmingPos(null)} className="px-1 text-[11px] text-primary-400 hover:text-primary-600">Nein</button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setConfirmingPos(item.key)}
+                    className="p-1 text-primary-300 hover:text-red-500 transition-colors"
+                    aria-label="Position löschen"
+                    title="Position löschen"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </span>
+            </div>
+          )))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="mb-6 rounded-lg border border-primary-100 bg-white overflow-hidden">
       <button
@@ -986,8 +1218,13 @@ function ProjectsPanel({
         <span className="text-sm font-semibold text-primary-600">
           Projekte
           <span className="ml-2 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500">
-            {projects.length}
+            {activeProjects.length}
           </span>
+          {heldProjects.length > 0 && (
+            <span className="ml-1.5 text-xs font-normal text-primary-400">
+              + {heldProjects.length} on hold
+            </span>
+          )}
         </span>
         <svg className={`h-4 w-4 text-primary-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
@@ -996,193 +1233,23 @@ function ProjectsPanel({
 
       {open && (
         <div className="space-y-3 border-t border-primary-100 p-3">
-          {projects.map((project) => {
-            const projIncomes  = incomes.filter((e) => e.project_id === project.id);
-            const projExpenses = expenses.filter((e) => e.project_id === project.id);
-            const items = [
-              ...projIncomes.map((e) => ({
-                key:  `i:${e.id}`,
-                kind: 'income' as const,
-                description: e.description,
-                amount: e.amount,
-                currency: e.currency,
-                date: e.expected_date,
-                provisional: !!e.provisional,
-                paid: e.paid_at !== null,
-              })),
-              ...projExpenses.map((e) => ({
-                key:  `e:${e.id}`,
-                kind: 'expense' as const,
-                description: e.description,
-                amount: e.amount,
-                currency: e.currency,
-                date: e.due_date ?? '',
-                provisional: !!e.provisional,
-                paid: expensePaid(e.id),
-              })),
-            ].sort((a, b) => a.date.localeCompare(b.date));
+          {activeProjects.map(renderProject)}
 
-            const openIncome  = projIncomes.filter((e) => !e.paid_at).reduce((s, e) => s + toCHF(e.amount, e.currency), 0);
-            const openExpense = projExpenses.filter((e) => !expensePaid(e.id)).reduce((s, e) => s + toCHF(e.amount, e.currency), 0);
-
-            return (
-              <div key={project.id} className="rounded-lg border border-primary-100">
-                <div className="flex flex-wrap items-center gap-3 gap-y-1.5 border-b border-primary-50 px-3 py-2.5">
-                  {renamingId === project.id ? (
-                    <span className="flex min-w-0 flex-1 items-center gap-2">
-                      <input
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onKeyDown={async (e) => {
-                          if (e.key === 'Enter' && renameValue.trim()) {
-                            const ok = await onRenameProject(project.id, renameValue);
-                            if (ok) setRenamingId(null);
-                          }
-                          if (e.key === 'Escape') setRenamingId(null);
-                        }}
-                        autoFocus
-                        className="min-w-0 flex-1 rounded border border-primary-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
-                      />
-                      <button
-                        onClick={async () => { const ok = await onRenameProject(project.id, renameValue); if (ok) setRenamingId(null); }}
-                        disabled={!renameValue.trim()}
-                        className="text-xs font-medium text-primary-600 hover:text-primary-900 disabled:opacity-40"
-                      >
-                        Speichern
-                      </button>
-                      <button onClick={() => setRenamingId(null)} className="text-xs text-primary-400 hover:text-primary-600">✕</button>
-                    </span>
-                  ) : (
-                    <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                      <span className="min-w-0 truncate text-sm font-semibold text-primary-900">{project.name}</span>
-                      <button
-                        onClick={() => { setRenamingId(project.id); setRenameValue(project.name); }}
-                        className="shrink-0 p-0.5 text-primary-300 hover:text-primary-600 transition-colors"
-                        aria-label="Projekt umbenennen"
-                        title="Projekt umbenennen (Präfix aller Positionen wird angepasst)"
-                      >
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-                        </svg>
-                      </button>
-                    </span>
-                  )}
-                  <span className="shrink-0 text-xs text-primary-400 tabular-nums" title="Noch offene Einnahmen / Ausgaben (in CHF)">
-                    offen +{formatCurrency(openIncome, 'CHF')} / -{formatCurrency(openExpense, 'CHF')}
-                  </span>
-                  <button
-                    onClick={() => setAddingToId(addingToId === project.id ? null : project.id)}
-                    className="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
-                    title="Position zu diesem Projekt hinzufügen"
-                  >
-                    + Position
-                  </button>
-                  {confirmingId === project.id ? (
-                    <div className="mt-3 flex w-full items-center gap-2 sm:mt-0 sm:w-auto sm:gap-1 shrink-0">
-                      <button
-                        onClick={() => { onDeleteProject(project.id); setConfirmingId(null); }}
-                        className="h-11 flex-1 rounded-md border border-red-200 bg-red-50 px-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs"
-                      >
-                        {items.length} Position{items.length !== 1 ? 'en' : ''} löschen
-                      </button>
-                      <button onClick={() => setConfirmingId(null)} className="h-11 flex-1 rounded-md border border-primary-200 px-2.5 text-sm font-medium text-primary-500 hover:bg-primary-50 transition-colors sm:h-auto sm:flex-none sm:py-1.5 sm:text-xs">Nein</button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmingId(project.id)}
-                      className="flex h-11 flex-1 items-center justify-center rounded-md border border-primary-100 text-primary-400 hover:border-red-200 hover:text-red-500 transition-colors sm:h-auto sm:flex-none sm:p-1.5 shrink-0"
-                      aria-label="Projekt löschen"
-                      title="Projekt inkl. aller Positionen löschen"
-                    >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-
-                {addingToId === project.id && (
-                  <ProjectPositionForm
-                    onSave={(position) => onAddPosition(project, position)}
-                    onCancel={() => setAddingToId(null)}
-                  />
-                )}
-
-                <div className="px-3 py-1">
-                  {items.map((item) => (editingKey === item.key ? (
-                    <ProjectPositionEditForm
-                      key={item.key}
-                      initial={{ kind: item.kind, description: stripProjectPrefix(item.description, project.name), amount: item.amount, currency: item.currency, date: item.date, provisional: item.provisional }}
-                      onSave={(data) => onUpdatePosition(project, { kind: item.kind, id: item.key.slice(2), ...data })}
-                      onCancel={() => setEditingKey(null)}
-                    />
-                  ) : (
-                    <div key={item.key} className={`flex flex-wrap items-center gap-2 gap-y-1 py-1.5 border-b border-primary-50 last:border-0 ${item.paid ? 'opacity-60' : ''}`}>
-                      {item.paid ? (
-                        <svg className="h-3.5 w-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" aria-label="Bezahlt">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
-                      ) : (
-                        <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-primary-200" title="Offen" />
-                      )}
-                      <span className="w-20 shrink-0 text-xs text-primary-400 tabular-nums">
-                        {item.date ? formatDate(item.date) : '—'}
-                      </span>
-                      {item.provisional && <ProvBadge />}
-                      <span className={`min-w-0 flex-1 truncate text-sm ${item.paid ? 'text-primary-400 line-through' : 'text-primary-800'}`}>
-                        {stripProjectPrefix(item.description, project.name)}
-                      </span>
-                      {outOfWindowIds.has(item.key.slice(2)) && (
-                        <span
-                          className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700"
-                          title="Erscheint in keiner Monatsspalte — siehe Hinweis über der Projektliste"
-                        >
-                          nicht im Plan
-                        </span>
-                      )}
-                      <span className={`shrink-0 text-sm font-medium tabular-nums ${item.kind === 'income' ? 'text-emerald-700' : 'text-red-500'}`}>
-                        {item.kind === 'income' ? '+' : '-'}{formatCurrency(item.amount, item.currency)}
-                      </span>
-                      <span className="flex shrink-0 items-center gap-1">
-                        <button
-                          onClick={() => { setEditingKey(item.key); setConfirmingPos(null); }}
-                          className="p-1 text-primary-300 hover:text-primary-700 transition-colors"
-                          aria-label="Position bearbeiten"
-                          title="Position bearbeiten"
-                        >
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-                          </svg>
-                        </button>
-                        {confirmingPos === item.key ? (
-                          <>
-                            <button
-                              onClick={async () => { await onDeletePosition(item.kind, item.key.slice(2)); setConfirmingPos(null); }}
-                              className="rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-100 transition-colors"
-                            >
-                              Löschen
-                            </button>
-                            <button onClick={() => setConfirmingPos(null)} className="px-1 text-[11px] text-primary-400 hover:text-primary-600">Nein</button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmingPos(item.key)}
-                            className="p-1 text-primary-300 hover:text-red-500 transition-colors"
-                            aria-label="Position löschen"
-                            title="Position löschen"
-                          >
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        )}
-                      </span>
-                    </div>
-                  )))}
-                </div>
+          {/* On hold — listed last; unpaid positions count towards nothing */}
+          {heldProjects.length > 0 && (
+            <div className="pt-1">
+              <div className="mb-2 flex flex-wrap items-center gap-2 border-t border-dashed border-primary-200 pt-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-primary-500">On Hold</span>
+                <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-500">
+                  {heldProjects.length}
+                </span>
+                <span className="text-xs text-primary-400">
+                  offene Positionen zählen nicht zu Umsatz, Profit und Saldo
+                </span>
               </div>
-            );
-          })}
+              <div className="space-y-3">{heldProjects.map(renderProject)}</div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -2737,7 +2804,7 @@ export function LiquidityPlanningPage() {
     addIncome, updateIncome, deleteIncome, markIncomePaid, markIncomeUnpaid, recordPartialIncomePayment,
     addExpense, updateExpense, deleteExpense, toggleExpenseActive, markExpensePaid, markExpenseUnpaid,
     skipExpenseInstance,
-    addProject, deleteProject, renameProject, addProjectPosition,
+    addProject, deleteProject, setProjectOnHold, renameProject, addProjectPosition,
     updateProjectPosition, deleteProjectPosition,
     upsertStartsaldo, upsertEffectiveBalance, clearEffectiveBalance, acceptEffectiveBalance,
     upsertActualBalance, deleteActualBalance,
@@ -2932,6 +2999,7 @@ export function LiquidityPlanningPage() {
           expensePayments={expensePayments}
           onDeleteProject={deleteProject}
           onRenameProject={renameProject}
+          onSetOnHold={setProjectOnHold}
           onAddPosition={addProjectPosition}
           onUpdatePosition={updateProjectPosition}
           onDeletePosition={deleteProjectPosition}

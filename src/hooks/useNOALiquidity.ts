@@ -197,11 +197,18 @@ export interface UseNOALiquidityReturn {
   addProject: (data: {
     name: string;
     notes?: string | null;
+    on_hold?: boolean;
     incomes: ProjectIncomeInput[];
     expenses: ProjectExpenseInput[];
   }) => Promise<boolean>;
   /** Deletes the project AND all its income/expense positions (cascade) */
   deleteProject: (id: string) => Promise<boolean>;
+  /**
+   * Puts a project on hold (or reactivates it). On hold = its unpaid
+   * positions are excluded from every projection; the positions themselves
+   * are untouched.
+   */
+  setProjectOnHold: (id: string, onHold: boolean) => Promise<boolean>;
   /** Renames a project and rewrites the "Name — " prefix on all its positions */
   renameProject: (id: string, newName: string) => Promise<boolean>;
   /** Edits a single position of a project (keeps the "Name — " prefix in sync) */
@@ -385,8 +392,19 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         return;
       }
 
-      const windowEntries  = (incomeRes.data       ?? []) as NOALiquidityIncomeRow[];
-      const pastIncome     = (pastIncomeRes.data    ?? []) as NOALiquidityIncomeRow[];
+      const projectList = (projectsRes.data ?? []) as NOALiquidityProjectRow[];
+      // Projects on hold: their UNPAID positions are excluded from every
+      // projection (month columns, balance chains, chart, export). Paid
+      // positions are real cash movements and keep counting. The raw rows
+      // still reach `incomes` / `expenses` so the projects panel shows them.
+      const onHoldProjectIds = new Set(projectList.filter((p) => p.on_hold).map((p) => p.id));
+      const isOnHold = (e: { project_id?: string | null }) =>
+        !!e.project_id && onHoldProjectIds.has(e.project_id);
+
+      const windowEntriesAll = (incomeRes.data     ?? []) as NOALiquidityIncomeRow[];
+      const pastIncomeAll    = (pastIncomeRes.data ?? []) as NOALiquidityIncomeRow[];
+      const windowEntries  = windowEntriesAll.filter((e) => e.paid_at || !isOnHold(e));
+      const pastIncome     = pastIncomeAll.filter((e) => e.paid_at || !isOnHold(e));
       // Provisional items never become überfällig — they stay provisional
       // and are carried into the current month instead.
       const lateEntries     = pastIncome.filter((e) => !e.paid_at && !e.provisional);
@@ -398,7 +416,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       const corrections    = (correctionsRes.data   ?? []) as NOALiquidityBalanceCorrectionRow[];
       const correction     = corrections[0] ?? null; // newest
       setLastCorrection(correction);
-      setProjects((projectsRes.data ?? []) as NOALiquidityProjectRow[]);
+      setProjects(projectList);
       setExpensePayments(expPaymentList);
 
       // Expense payment lookup: "expenseId:year-MM" → payment_id / paid_at.
@@ -536,7 +554,9 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
           const monthExpenses = allExpenses.filter(
             (e) =>
               (expenseAppliesTo(e, year, month) || !!expPaymentMap[`${e.id}:${year}-${monthKey1}`]) &&
-              !skippedInstances.has(`${e.id}:${year}-${monthKey1}`),
+              !skippedInstances.has(`${e.id}:${year}-${monthKey1}`) &&
+              // on hold → only instances that were actually paid
+              (!isOnHold(e) || !!expPaymentMap[`${e.id}:${year}-${monthKey1}`]),
           );
           const paidExpenseMap: Record<string, string> = {};
           const paidExpenseAtMap: Record<string, string> = {};
@@ -645,7 +665,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       // ever tracked, and generating them back to the anchor would flood the
       // current month.
       for (const e of allExpenses) {
-        if (e.type !== 'one_time' || !e.due_date) continue;
+        if (e.type !== 'one_time' || !e.due_date || isOnHold(e)) continue;
         const d  = new Date(e.due_date + 'T00:00:00');
         const dm = new Date(d.getFullYear(), d.getMonth(), 1);
         if (dm >= windowStart) continue;                       // not in the past
@@ -685,7 +705,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         // Recurring expenses repeat forever — only dated (one_time) ones extend
         // the horizon; the recurring ones simply fill whatever range results.
         ...allExpenses
-          .filter((e) => e.type === 'one_time' && e.due_date)
+          .filter((e) => e.type === 'one_time' && e.due_date && !isOnHold(e))
           .map((e) => new Date((e.due_date as string) + 'T00:00:00')),
       ];
       const HORIZON_MIN = 12;
@@ -713,7 +733,11 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
 
         const monthKey1 = String(month + 1).padStart(2, '0'); // 1-indexed month string
         const monthExpenses = allExpenses.filter(
-          (e) => expenseAppliesTo(e, year, month) && !skippedInstances.has(`${e.id}:${year}-${monthKey1}`),
+          (e) =>
+            expenseAppliesTo(e, year, month) &&
+            !skippedInstances.has(`${e.id}:${year}-${monthKey1}`) &&
+            // on hold → only instances that were actually paid
+            (!isOnHold(e) || !!expPaymentMap[`${e.id}:${year}-${monthKey1}`]),
         );
 
         // Build paidExpenseMap for this month: expenseId → paymentId
@@ -800,7 +824,8 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
             reason: (e.expected_date > windowEndStr ? 'beyond_window' : 'unknown') as UnbucketedItem['reason'],
           })),
         ...allExpenses
-          .filter((e) => !shownExpense.has(e.id))
+          // on-hold positions are deliberately absent from every column
+          .filter((e) => !shownExpense.has(e.id) && !isOnHold(e))
           .map((e) => ({
             kind: 'expense' as const,
             id: e.id, description: e.description, amount: e.amount, currency: e.currency,
@@ -819,7 +844,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
       setMonths(buckets);
       setPastMonths(pastBuckets);
       setExpenses(allExpenses);
-      setIncomes(allIncome);
+      setIncomes([...windowEntriesAll, ...pastIncomeAll]);
       setLoading(false);
     }
 
@@ -1140,6 +1165,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
   const addProject = useCallback(async (data: {
     name: string;
     notes?: string | null;
+    on_hold?: boolean;
     incomes: ProjectIncomeInput[];
     expenses: ProjectExpenseInput[];
   }): Promise<boolean> => {
@@ -1152,6 +1178,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
         user_id: session.user.id,
         name:    data.name,
         notes:   data.notes ?? null,
+        ...(data.on_hold ? { on_hold: true } : {}),
       } as never)
       .select()
       .single();
@@ -1219,6 +1246,24 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
 
     if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
     toast({ title: 'Projekt inkl. aller Positionen gelöscht', variant: 'success' });
+    refetch();
+    return true;
+  }, [toast, refetch]);
+
+  const setProjectOnHold = useCallback(async (id: string, onHold: boolean): Promise<boolean> => {
+    const { error } = await supabase
+      .from('noa_liquidity_projects' as never)
+      .update({ on_hold: onHold, updated_at: new Date().toISOString() } as never)
+      .eq('id', id);
+
+    if (error) { toast({ title: 'Fehler', description: error.message, variant: 'error' }); return false; }
+    toast({
+      title: onHold ? 'Projekt on hold' : 'Projekt reaktiviert',
+      description: onHold
+        ? 'Offene Positionen zählen nicht mehr zu Umsatz, Profit und Saldo.'
+        : 'Offene Positionen fliessen wieder in die Planung ein.',
+      variant: 'success',
+    });
     refetch();
     return true;
   }, [toast, refetch]);
@@ -1539,6 +1584,7 @@ export function useNOALiquidity(): UseNOALiquidityReturn {
     skipExpenseInstance,
     addProject,
     deleteProject,
+    setProjectOnHold,
     renameProject,
     addProjectPosition,
     updateProjectPosition,

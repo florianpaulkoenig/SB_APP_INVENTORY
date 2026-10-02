@@ -2438,6 +2438,8 @@ export type NOALiquidityProjectRow = {
   user_id: string;
   name: string;
   notes: string | null;
+  /** On hold — unpaid positions are excluded from every projection */
+  on_hold?: boolean;
   created_at: string;
   updated_at: string;
 }
