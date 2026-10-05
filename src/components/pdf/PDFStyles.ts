@@ -34,6 +34,15 @@ Font.register({
   ],
 });
 
+// Bebas Neue — certificate headlines (reference layout from Claude Design)
+Font.register({
+  family: 'BebasNeue',
+  fonts: [
+    { src: `${import.meta.env.BASE_URL}fonts/BebasNeue-Regular.ttf`, fontWeight: 'normal' },
+    { src: `${import.meta.env.BASE_URL}fonts/BebasNeue-Regular.ttf`, fontWeight: 'bold' },
+  ],
+});
+
 Font.register({
   family: 'Manrope',
   fonts: [

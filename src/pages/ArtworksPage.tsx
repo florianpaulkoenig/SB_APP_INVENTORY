@@ -392,6 +392,7 @@ export function ArtworksPage() {
             framed_height: (artwork as Record<string, unknown>).framed_height as number | null ?? null,
             framed_width: (artwork as Record<string, unknown>).framed_width as number | null ?? null,
             framed_depth: (artwork as Record<string, unknown>).framed_depth as number | null ?? null,
+            is_circular: (artwork as Record<string, unknown>).is_circular as boolean | undefined,
             edition_type: artwork.edition_type ?? 'unique',
             edition_number: artwork.edition_number ?? null,
             edition_total: artwork.edition_total ?? null,

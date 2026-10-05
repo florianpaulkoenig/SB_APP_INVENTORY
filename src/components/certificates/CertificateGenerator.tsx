@@ -92,7 +92,7 @@ export function CertificateGenerator({
       // CertificatePDF needs the full artwork row — fetch it on demand
       const { data: artwork, error: artworkError } = await supabase
         .from('artworks')
-        .select('title, reference_code, medium, year, height, width, depth, dimension_unit, framed_height, framed_width, framed_depth, weight, edition_type, edition_number, edition_total')
+        .select('title, reference_code, medium, year, height, width, depth, dimension_unit, framed_height, framed_width, framed_depth, is_circular, weight, edition_type, edition_number, edition_total')
         .eq('id', artworkId)
         .single();
       if (artworkError || !artwork) return;

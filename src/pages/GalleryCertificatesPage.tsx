@@ -89,7 +89,7 @@ export function GalleryCertificatesPage() {
         const { data: artwork, error: artworkError } = await supabase
           .from('artworks')
           .select(
-            'title, reference_code, medium, year, height, width, depth, dimension_unit, framed_height, framed_width, framed_depth, weight, edition_type, edition_number, edition_total'
+            'title, reference_code, medium, year, height, width, depth, dimension_unit, framed_height, framed_width, framed_depth, is_circular, weight, edition_type, edition_number, edition_total'
           )
           .eq('id', artworkId)
           .single();

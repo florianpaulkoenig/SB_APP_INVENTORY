@@ -2,11 +2,14 @@
 // NOA Inventory -- Certificate of Authenticity PDF
 // NOA dossier style (reference: NOA_SB_Basisdokumente/COA.pdf): A4 landscape,
 // black header band, artwork image left, certificate details right.
-// Anton for headlines, Manrope for text.
+// Bebas Neue for headlines, Manrope for text. Every measurement below was
+// matched against the reference layout (scratch/coa design PDF, A4 landscape):
+// rule at y=185, detail rows on a 19.4pt pitch, place & date line at y=422,
+// signature line at y=477, disclaimer bottom at y=530.
 // ---------------------------------------------------------------------------
 
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import './PDFStyles'; // registers Anton / Manrope / script fallback fonts
+import './PDFStyles'; // registers Bebas Neue / Manrope / script fallback fonts
 import { MixedText } from './MixedText';
 import { ARTIST_NAME, COMPANY_NAME } from '../../lib/constants';
 
@@ -21,6 +24,7 @@ interface TranslationStrings {
   medium: string;
   year: string;
   dimensions: string;
+  diameter: string;
   framedDimensions: string;
   weight: string;
   edition: string;
@@ -41,12 +45,13 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
   en: {
     certificateTitle: 'Certificate of Authenticity',
     intro:
-      `This is to certify that the work described below is an original work by ${ARTIST_NAME}, created by the artist’s own hand. The certificate is issued jointly by the artist and ${COMPANY_NAME}.`,
+      `This is to certify that the work described below is an original work by ${ARTIST_NAME}, created by the artist’s own hand.`,
     title: 'Title',
     titleOriginal: 'Original Title',
     medium: 'Medium',
     year: 'Year',
     dimensions: 'Dimensions',
+    diameter: 'Diameter',
     framedDimensions: 'Framed',
     weight: 'Weight',
     edition: 'Edition',
@@ -66,12 +71,13 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
   de: {
     certificateTitle: 'Echtheitszertifikat',
     intro:
-      `Hiermit wird bestätigt, dass das nachfolgend beschriebene Werk ein Original von ${ARTIST_NAME} ist, eigenhändig vom Künstler geschaffen. Das Zertifikat wird gemeinsam vom Künstler und ${COMPANY_NAME} ausgestellt.`,
+      `Hiermit wird bestätigt, dass das nachfolgend beschriebene Werk ein Original von ${ARTIST_NAME} ist, eigenhändig vom Künstler geschaffen.`,
     title: 'Titel',
     titleOriginal: 'Originaltitel',
     medium: 'Technik',
     year: 'Jahr',
     dimensions: 'Masse',
+    diameter: 'Durchmesser',
     framedDimensions: 'Gerahmt',
     weight: 'Gewicht',
     edition: 'Auflage',
@@ -91,12 +97,13 @@ const TRANSLATIONS: Record<string, TranslationStrings> = {
   fr: {
     certificateTitle: "Certificat d'Authenticité",
     intro:
-      `Nous certifions que l’œuvre décrite ci-dessous est une œuvre originale de ${ARTIST_NAME}, réalisée de la main de l’artiste. Ce certificat est délivré conjointement par l’artiste et ${COMPANY_NAME}.`,
+      `Nous certifions que l’œuvre décrite ci-dessous est une œuvre originale de ${ARTIST_NAME}, réalisée de la main de l’artiste.`,
     title: 'Titre',
     titleOriginal: 'Titre original',
     medium: 'Technique',
     year: 'Année',
     dimensions: 'Dimensions',
+    diameter: 'Diamètre',
     framedDimensions: 'Encadré',
     weight: 'Poids',
     edition: 'Édition',
@@ -135,9 +142,11 @@ const IMAGE_SIZE = 425;
 const COLUMN_GAP = 35;
 const RIGHT_W = PAGE_W - 2 * MARGIN - IMAGE_SIZE - COLUMN_GAP;
 
+const HEADLINE_FONT = 'BebasNeue';
+
 const BLACK = '#000000';
 const GREY = '#555555';
-const RULE_GREY = '#9a9a9a';
+const RULE_GREY = '#999999';
 
 const s = StyleSheet.create({
   page: {
@@ -161,14 +170,15 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   headerBrand: {
-    fontFamily: 'Anton',
+    fontFamily: HEADLINE_FONT,
     fontSize: 15,
+    letterSpacing: 0.16,
     color: '#ffffff',
     textTransform: 'uppercase',
   },
   headerLabel: {
     fontSize: 8.5,
-    letterSpacing: 2,
+    letterSpacing: 1.8,
     color: '#ffffff',
     textTransform: 'uppercase',
   },
@@ -179,7 +189,7 @@ const s = StyleSheet.create({
     top: BODY_TOP,
     left: MARGIN,
     right: MARGIN,
-    bottom: 66,
+    bottom: 65,
     flexDirection: 'row',
   },
 
@@ -202,26 +212,30 @@ const s = StyleSheet.create({
     objectFit: 'contain',
   },
   caption: {
-    marginTop: 10,
+    marginTop: 7,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   captionText: {
     fontSize: 7.5,
-    letterSpacing: 1.5,
+    letterSpacing: 1.1,
     color: GREY,
     textTransform: 'uppercase',
   },
 
-  // Right column — certificate text
+  // Right column — certificate text. Positioned on its own so the Bebas
+  // headline's cap height sits level with the image top (2.9pt above it).
   textColumn: {
+    position: 'absolute',
+    top: BODY_TOP - 2.9,
+    bottom: 65,
+    left: MARGIN + IMAGE_SIZE + COLUMN_GAP,
     width: RIGHT_W,
-    marginLeft: COLUMN_GAP,
     flexDirection: 'column',
     justifyContent: 'space-between',
   },
   artistName: {
-    fontFamily: 'Anton',
+    fontFamily: HEADLINE_FONT,
     fontSize: 26,
     lineHeight: 1.1,
     textTransform: 'uppercase',
@@ -230,18 +244,19 @@ const s = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    marginTop: 8,
+    marginTop: 5.7,
   },
   intro: {
     fontSize: 10,
-    lineHeight: 1.5,
-    marginTop: 16,
+    lineHeight: 1.43,
+    marginTop: 19,
+    maxWidth: 280, // wraps after "original" like the reference
   },
   rule: {
-    borderTopWidth: 0.75,
+    borderTopWidth: 0.8,
     borderTopColor: BLACK,
-    marginTop: 18,
-    marginBottom: 12,
+    marginTop: 20.3,
+    marginBottom: 10.9,
   },
   row: {
     flexDirection: 'row',
@@ -250,7 +265,7 @@ const s = StyleSheet.create({
   label: {
     width: 96,
     fontSize: 8,
-    fontWeight: 600,
+    fontWeight: 500,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
     paddingTop: 1.5,
@@ -272,41 +287,50 @@ const s = StyleSheet.create({
   },
 
   // Place & date / signature lines
+  lineRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
   lineValue: {
     flex: 1,
-    borderBottomWidth: 0.5,
+    borderBottomWidth: 0.8,
     borderBottomColor: RULE_GREY,
-    paddingBottom: 5,
+    paddingBottom: 6,
   },
   signatureRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginTop: 48,
+    marginTop: 54,
   },
   signatureArea: {
     flex: 1,
+    position: 'relative',
   },
+  // Sits above the line without pushing the layout — the line positions stay
+  // identical with and without the printed signature
   signatureImage: {
+    position: 'absolute',
+    left: 0,
+    bottom: 16,
     width: 130,
     height: 42,
     objectFit: 'contain',
-    marginBottom: 2,
   },
   signatureLine: {
-    borderTopWidth: 0.5,
+    borderTopWidth: 0.8,
     borderTopColor: RULE_GREY,
-    paddingTop: 6,
+    paddingTop: 3.2,
   },
   signatureName: {
     fontSize: 7.5,
-    letterSpacing: 1.5,
+    letterSpacing: 1.1,
     textTransform: 'uppercase',
   },
   disclaimer: {
     fontSize: 8.5,
     lineHeight: 1.45,
-    color: '#333333',
-    marginTop: 14,
+    color: GREY,
+    marginTop: 14.4,
   },
 
   // ---- Footer -------------------------------------------------------------
@@ -320,7 +344,7 @@ const s = StyleSheet.create({
   },
   footerText: {
     fontSize: 7.5,
-    letterSpacing: 1.5,
+    letterSpacing: 1.1,
     color: GREY,
     textTransform: 'uppercase',
   },
@@ -353,6 +377,8 @@ export interface CertificatePDFProps {
     framed_height: number | null;
     framed_width: number | null;
     framed_depth: number | null;
+    /** Circular work — printed as a single "Diameter" line */
+    is_circular?: boolean | null;
     /** Weight in kg */
     weight?: number | null;
     edition_type: string;
@@ -419,13 +445,27 @@ function formatEdition(
   }
 }
 
+function ordinal(day: number): string {
+  const mod100 = day % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${day}th`;
+  switch (day % 10) {
+    case 1: return `${day}st`;
+    case 2: return `${day}nd`;
+    case 3: return `${day}rd`;
+    default: return `${day}th`;
+  }
+}
+
 function formatIssueDateFull(dateStr: string, language: string): string {
   try {
     const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return dateStr;
     const day = d.getDate();
     const month = (MONTH_NAMES[language] ?? MONTH_NAMES.en)[d.getMonth()];
     const year = d.getFullYear();
-    return language === 'de' ? `${day}. ${month} ${year}` : `${day} ${month} ${year}`;
+    if (language === 'de') return `${day}. ${month} ${year}`;
+    if (language === 'fr') return `${day === 1 ? '1er' : day} ${month} ${year}`;
+    return `${month} ${ordinal(day)}, ${year}`;
   } catch {
     return dateStr;
   }
@@ -465,13 +505,18 @@ export function CertificatePDF({
 }: CertificatePDFProps) {
   const t = TRANSLATIONS[language] ?? TRANSLATIONS.en;
 
-  const dimensions = formatDimensions(artwork.height, artwork.width, artwork.depth, artwork.dimension_unit);
-  const framedDimensions = formatDimensions(
+  const diameter = artwork.is_circular ? (artwork.height ?? artwork.width) : null;
+  const dimensions = diameter != null
+    ? `${diameter} ${artwork.dimension_unit}`
+    : formatDimensions(artwork.height, artwork.width, artwork.depth, artwork.dimension_unit);
+  const framedRaw = formatDimensions(
     artwork.framed_height,
     artwork.framed_width,
     artwork.framed_depth,
     artwork.dimension_unit,
   );
+  // Framed dimensions only add information when they differ from the work itself
+  const framedDimensions = framedRaw && framedRaw !== dimensions ? framedRaw : null;
   const weight = formatWeight(artwork.weight);
   const editionText = formatEdition(artwork.edition_type, artwork.edition_number, artwork.edition_total, t);
   const place = artwork.placeOfCreation?.trim() || DEFAULT_CERTIFICATE_PLACE;
@@ -487,7 +532,7 @@ export function CertificatePDF({
   }
   if (artwork.year != null) detailRows.push({ label: t.year, value: String(artwork.year) });
   if (artwork.medium) detailRows.push({ label: t.medium, value: artwork.medium });
-  if (dimensions) detailRows.push({ label: t.dimensions, value: dimensions });
+  if (dimensions) detailRows.push({ label: diameter != null ? t.diameter : t.dimensions, value: dimensions });
   if (framedDimensions) detailRows.push({ label: t.framedDimensions, value: framedDimensions });
   if (weight) detailRows.push({ label: t.weight, value: weight });
   detailRows.push({ label: t.edition, value: editionText });
@@ -526,7 +571,8 @@ export function CertificatePDF({
   // Tighten row spacing when provenance makes the table long — everything
   // must fit on one sheet. (No wrap={false} on the Page: in react-pdf 4 it
   // makes the page height follow the content instead of A4.)
-  const rowGap = detailRows.length > 11 ? 3 : detailRows.length > 9 ? 5 : 7;
+  // 6.4 → 19.4pt row pitch as in the reference; tighter when provenance adds rows
+  const rowGap = detailRows.length > 11 ? 2 : detailRows.length > 9 ? 3.5 : detailRows.length > 7 ? 5 : 6.4;
 
   const caption = [artwork.title, artwork.year != null ? String(artwork.year) : null, artwork.medium]
     .filter(Boolean)
@@ -553,8 +599,10 @@ export function CertificatePDF({
             </View>
           </View>
 
-          {/* ----- Right: certificate text -------------------------------- */}
-          <View style={s.textColumn}>
+        </View>
+
+        {/* ----- Right: certificate text ---------------------------------- */}
+        <View style={s.textColumn}>
             <View>
               <Text style={s.artistName}>{ARTIST_NAME}</Text>
               <Text style={s.certTitle}>{t.certificateTitle}</Text>
@@ -572,8 +620,8 @@ export function CertificatePDF({
 
             <View style={{ marginTop: 12 }}>
               {/* Place & date */}
-              <View style={s.row}>
-                <Text style={[s.label, { paddingTop: 3 }]}>{t.placeDate}</Text>
+              <View style={s.lineRow}>
+                <Text style={[s.label, { paddingBottom: 0 }]}>{t.placeDate}</Text>
                 <View style={s.lineValue}>
                   <Text style={s.lineText}>{placeAndDate}</Text>
                 </View>
@@ -592,7 +640,6 @@ export function CertificatePDF({
 
               <Text style={s.disclaimer}>{t.disclaimer}</Text>
             </View>
-          </View>
         </View>
 
         {/* ----- Footer --------------------------------------------------- */}
