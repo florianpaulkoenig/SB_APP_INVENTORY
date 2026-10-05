@@ -67,6 +67,7 @@ export function RecurringFairPrompt({ exhibition, onCreateNext, onDecline, onLat
         gallery_id: exhibition.gallery_id,
         contact_id: exhibition.contact_id,
         recurs_annually: true,
+        status: 'confirmed', // "Yes, exhibiting again"
       });
       if (!ok) setError('Could not save the next edition. Please try again.');
     } finally {

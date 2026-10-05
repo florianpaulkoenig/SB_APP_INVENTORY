@@ -76,7 +76,9 @@ export function useAnnualSchedule({ year, visibleTypes }: UseAnnualScheduleOptio
           .from('exhibitions')
           .select('*, gallery:galleries(name), contact:contacts(first_name, last_name)')
           .eq('user_id', uid)
-          .not('start_date', 'is', null),
+          .not('start_date', 'is', null)
+          // cancelled / declined exhibitions are not on the schedule
+          .not('status', 'in', '("cancelled","declined")'),
         supabase
           .from('production_orders')
           .select('*, gallery:galleries(name), contact:contacts(first_name, last_name)')

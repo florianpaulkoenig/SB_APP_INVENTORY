@@ -1138,6 +1138,9 @@ export type ValuationUpdate = Partial<ValuationInsert>;
 
 export type ExhibitionType = 'exhibition' | 'art_fair' | 'solo_show' | 'group_show';
 
+/** Manual lifecycle status; the display phase is derived from status + dates */
+export type ExhibitionStatus = 'idea' | 'requested' | 'confirmed' | 'cancelled' | 'declined';
+
 export type ExhibitionRow = {
   id: string;
   user_id: string;
@@ -1162,6 +1165,7 @@ export type ExhibitionRow = {
   recurs_annually: boolean;
   recurrence_resolved_at: string | null;
   successor_id: string | null;
+  status: ExhibitionStatus;
 }
 
 export type ExhibitionInsert = {
@@ -1188,6 +1192,7 @@ export type ExhibitionInsert = {
   recurs_annually?: boolean;
   recurrence_resolved_at?: string | null;
   successor_id?: string | null;
+  status?: ExhibitionStatus;
 }
 
 export type ExhibitionUpdate = Partial<ExhibitionInsert>;

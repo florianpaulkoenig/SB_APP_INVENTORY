@@ -60,7 +60,8 @@ export function useExhibitionImpact() {
       if (!session?.user) { setLoading(false); return; }
 
       const [exhRes, eaRes, salesRes, contactsRes] = await Promise.all([
-        supabase.from('exhibitions').select('id, title, type, venue, city, country, start_date, end_date, budget, budget_currency'),
+        // only exhibitions that actually took / take place
+        supabase.from('exhibitions').select('id, title, type, venue, city, country, start_date, end_date, budget, budget_currency').eq('status', 'confirmed'),
         supabase.from('exhibition_artworks').select('exhibition_id, artwork_id'),
         supabase.from('sales').select('id, artwork_id, sale_price, currency, sale_date, source_exhibition_id, contact_id, buyer_name'),
         supabase.from('contacts').select('id, created_at'),

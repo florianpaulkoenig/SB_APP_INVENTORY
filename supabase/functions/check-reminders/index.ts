@@ -731,6 +731,7 @@ async function checkCollectorOutreachTriggers(
     const { data: upcomingExhibitions } = await supabase
       .from('exhibitions')
       .select('id, title, venue, city, start_date')
+      .eq('status', 'confirmed') // ideas, requests and cancellations trigger no outreach
       .gte('start_date', today)
       .lte('start_date', thirtyDaysFromNow)
       .not('city', 'is', null);

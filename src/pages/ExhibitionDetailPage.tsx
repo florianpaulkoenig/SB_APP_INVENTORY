@@ -13,6 +13,8 @@ import { useToast } from '../components/ui/Toast';
 import { useExhibitionGalleries } from '../hooks/useExhibitionGalleries';
 import { useExhibitionFloorPlans } from '../hooks/useExhibitionFloorPlans';
 import { EXHIBITION_TYPES } from '../lib/constants';
+import { EXHIBITION_STATUSES, PHASE_META, exhibitionPhase, phaseHint } from '../lib/exhibitionStatus';
+import type { ExhibitionStatus } from '../types/database';
 import { ExhibitionDossierPDF } from '../components/pdf/ExhibitionDossierPDF';
 import type { DossierProductionOrder } from '../components/pdf/ExhibitionDossierPDF';
 import type { DossierLanguage } from '../lib/dossierI18n';
@@ -35,6 +37,7 @@ interface Exhibition {
   id: string;
   title: string;
   type: string;
+  status?: ExhibitionStatus | null;
   venue: string | null;
   city: string | null;
   country: string | null;
@@ -780,6 +783,17 @@ export function ExhibitionDetailPage() {
     (p.title || p.order_number || '').toLowerCase().includes(poSearch.toLowerCase())
   );
 
+  const handleStatusChange = async (status: ExhibitionStatus) => {
+    if (!id || status === (exhibition?.status ?? 'confirmed')) return;
+    const { error } = await supabase.from('exhibitions').update({ status } as never).eq('id', id);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'error' });
+      return;
+    }
+    toast({ title: 'Status updated', variant: 'success' });
+    fetchExhibition();
+  };
+
   const getTypeBadge = (type: string) => {
     const found = EXHIBITION_TYPES.find((t) => t.value === type);
     return found ? <Badge variant="default">{found.label}</Badge> : null;
@@ -799,9 +813,22 @@ export function ExhibitionDetailPage() {
             &larr; Back
           </Button>
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-2xl font-bold text-gray-900">{exhibition.title}</h1>
               {exhibition.type && getTypeBadge(exhibition.type)}
+              <Badge variant={PHASE_META[exhibitionPhase(exhibition)].variant}>
+                {PHASE_META[exhibitionPhase(exhibition)].label}
+              </Badge>
+              {phaseHint(exhibition) && <span className="text-xs text-gray-500">{phaseHint(exhibition)}</span>}
+              <select
+                value={exhibition.status ?? 'confirmed'}
+                onChange={(e) => handleStatusChange(e.target.value as ExhibitionStatus)}
+                aria-label="Change status"
+                title="Change status"
+                className="cursor-pointer border-0 bg-transparent p-0 text-xs text-gray-400 hover:text-gray-700 focus:outline-none focus:ring-0"
+              >
+                {EXHIBITION_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
             </div>
             {(exhibition.start_date || exhibition.end_date) && (
               <p className="text-sm text-gray-500 mt-1">

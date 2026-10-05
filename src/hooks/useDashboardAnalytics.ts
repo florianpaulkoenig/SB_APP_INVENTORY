@@ -215,7 +215,7 @@ export function useDashboardAnalytics(
       supabase.from('contacts').select('id, first_name, last_name, city, country'),
       supabase.from('artworks').select('id, title, status, consigned_since, price, currency, gallery_id').eq('portfolio', 'simon_berger'),
       supabase.from('invoices').select('id, total, currency, paid_date').eq('status', 'paid'),
-      supabase.from('exhibitions').select('id, title, venue, start_date, end_date, budget, budget_currency, exhibition_artworks(artwork_id)'),
+      supabase.from('exhibitions').select('id, title, venue, start_date, end_date, budget, budget_currency, exhibition_artworks(artwork_id)').eq('status', 'confirmed'),
       supabase.from('viewing_rooms').select('id, title, visibility, artwork_ids'),
       supabase.from('viewing_room_views').select('id, viewing_room_id, viewed_at'),
       supabase.from('galleries').select('id, name'),

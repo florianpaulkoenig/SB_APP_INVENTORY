@@ -72,7 +72,8 @@ export function useArtFairOptimizer() {
           supabase
             .from('exhibitions')
             .select('id, title, city, country, start_date, end_date, budget, budget_currency, type')
-            .eq('type', 'art_fair'),
+            .eq('type', 'art_fair')
+            .eq('status', 'confirmed'),
           supabase
             .from('sales')
             .select('id, source_exhibition_id, sale_price, currency, sale_date'),

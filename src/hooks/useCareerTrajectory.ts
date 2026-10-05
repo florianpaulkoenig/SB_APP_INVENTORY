@@ -65,7 +65,7 @@ export function useCareerTrajectory() {
       const [milestonesRes, salesRes, exhibitionsRes] = await Promise.all([
         supabase.from('career_milestones').select('id, year, milestone_type, title, description, institution, city, country'),
         supabase.from('sales').select('id, sale_price, currency, sale_date'),
-        supabase.from('exhibitions').select('id, start_date, type'),
+        supabase.from('exhibitions').select('id, start_date, type').eq('status', 'confirmed'),
       ]);
 
       // career_milestones table may not exist yet — gracefully handle

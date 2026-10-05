@@ -8,7 +8,7 @@ function ex(over: Partial<ExhibitionRow>): ExhibitionRow {
     start_date: null, end_date: null, catalogue_reference: null, gallery_id: null, contact_id: null,
     budget: null, budget_currency: null, notes: null, description_text: null, created_at: '', updated_at: '',
     portfolio: 'simon_berger', pdf_settings: null, recurs_annually: false, recurrence_resolved_at: null,
-    successor_id: null, ...over,
+    successor_id: null, status: 'confirmed', ...over,
   };
 }
 
