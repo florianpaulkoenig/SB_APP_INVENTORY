@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../ui/Toast';
 import { Button } from '../ui/Button';
@@ -11,6 +12,12 @@ import { Select } from '../ui/Select';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { CURRENCIES, PAYMENT_STATUSES } from '../../lib/constants';
+import { CollectorPicker } from '../contacts/CollectorPicker';
+import { invalidateCollectorPickerCache } from '../../lib/collectorContacts';
+import { ensureCollectorContact, EMPTY_COLLECTOR } from '../../lib/collectors';
+import type { CollectorValue } from '../../lib/collectors';
+import { contactDisplayName } from '../../lib/collectorName';
+import { describeError } from '../../lib/errors';
 
 interface SaleRecord {
   id: string;
@@ -22,8 +29,10 @@ interface SaleRecord {
   final_invoiced_amount: number | null;
   payment_status: string;
   buyer_name: string | null;
+  contact_id: string | null;
   notes: string | null;
   galleries?: { name: string } | null;
+  contacts?: { first_name: string; last_name: string; company: string | null } | null;
 }
 
 interface SaleRecordPanelProps {
@@ -48,7 +57,7 @@ export function SaleRecordPanel({ artworkId, artworkStatus, onSaleDeleted }: Sal
   const [editCommission, setEditCommission] = useState('');
   const [editDiscount, setEditDiscount] = useState('');
   const [editPaymentStatus, setEditPaymentStatus] = useState('pending');
-  const [editBuyerName, setEditBuyerName] = useState('');
+  const [editCollector, setEditCollector] = useState<CollectorValue>(EMPTY_COLLECTOR);
   const [editNotes, setEditNotes] = useState('');
 
   const fetchSale = useCallback(async () => {
@@ -56,7 +65,7 @@ export function SaleRecordPanel({ artworkId, artworkStatus, onSaleDeleted }: Sal
     try {
       const { data, error } = await supabase
         .from('sales')
-        .select('id, sale_date, sale_price, currency, commission_percent, discount_percent, final_invoiced_amount, payment_status, buyer_name, notes, galleries(name)')
+        .select('id, sale_date, sale_price, currency, commission_percent, discount_percent, final_invoiced_amount, payment_status, buyer_name, contact_id, notes, galleries(name), contacts:contact_id(first_name, last_name, company)')
         .eq('artwork_id', artworkId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -82,7 +91,10 @@ export function SaleRecordPanel({ artworkId, artworkStatus, onSaleDeleted }: Sal
     setEditCommission(sale.commission_percent != null ? String(sale.commission_percent) : '');
     setEditDiscount(sale.discount_percent != null ? String(sale.discount_percent) : '');
     setEditPaymentStatus(sale.payment_status ?? 'pending');
-    setEditBuyerName(sale.buyer_name ?? '');
+    setEditCollector({
+      contactId: sale.contact_id,
+      name: sale.contacts ? contactDisplayName(sale.contacts) : (sale.buyer_name ?? ''),
+    });
     setEditNotes(sale.notes ?? '');
     setEditing(true);
   }
@@ -91,6 +103,9 @@ export function SaleRecordPanel({ artworkId, artworkStatus, onSaleDeleted }: Sal
     if (!sale) return;
     setSaving(true);
     try {
+      const buyer = await ensureCollectorContact(editCollector);
+      if (buyer.created) invalidateCollectorPickerCache();
+
       const { error } = await supabase
         .from('sales')
         .update({
@@ -100,18 +115,23 @@ export function SaleRecordPanel({ artworkId, artworkStatus, onSaleDeleted }: Sal
           commission_percent: editCommission ? parseFloat(editCommission) : null,
           discount_percent: editDiscount ? parseFloat(editDiscount) : null,
           payment_status: editPaymentStatus,
-          buyer_name: editBuyerName.trim() || null,
+          contact_id: buyer.contactId,
+          buyer_name: buyer.buyerName,
           notes: editNotes.trim() || null,
         } as never)
         .eq('id', sale.id);
 
       if (error) throw error;
 
-      toast({ title: 'Sale updated', variant: 'success' });
+      toast({
+        title: 'Sale updated',
+        description: buyer.created ? `${buyer.buyerName} was added to Contacts as a collector.` : undefined,
+        variant: 'success',
+      });
       setEditing(false);
       await fetchSale();
-    } catch {
-      toast({ title: 'Error', description: 'Failed to update sale.', variant: 'error' });
+    } catch (err) {
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -221,12 +241,7 @@ export function SaleRecordPanel({ artworkId, artworkStatus, onSaleDeleted }: Sal
               onChange={(e) => setEditPaymentStatus(e.target.value)}
             />
           </div>
-          <Input
-            label="Buyer Name"
-            value={editBuyerName}
-            onChange={(e) => setEditBuyerName(e.target.value)}
-            maxLength={256}
-          />
+          <CollectorPicker value={editCollector} onChange={setEditCollector} />
           <div>
             <label className="block text-sm font-medium text-primary-700 mb-1">Notes</label>
             <textarea
@@ -293,10 +308,18 @@ export function SaleRecordPanel({ artworkId, artworkStatus, onSaleDeleted }: Sal
               </span>
             </dd>
           </div>
-          {sale.buyer_name && (
+          {(sale.contacts || sale.buyer_name) && (
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wider text-primary-400">Buyer</dt>
-              <dd className="mt-1 text-sm text-primary-800">{sale.buyer_name}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wider text-primary-400">Collector</dt>
+              <dd className="mt-1 text-sm text-primary-800">
+                {sale.contact_id && sale.contacts ? (
+                  <Link to={`/contacts/${sale.contact_id}`} className="underline-offset-2 hover:underline">
+                    {contactDisplayName(sale.contacts)}
+                  </Link>
+                ) : (
+                  sale.buyer_name
+                )}
+              </dd>
             </div>
           )}
           {sale.notes && (

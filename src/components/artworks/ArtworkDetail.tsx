@@ -14,6 +14,9 @@ import {
   CURRENCIES,
   SALE_TYPES,
 } from '../../lib/constants';
+import { CollectorPicker } from '../contacts/CollectorPicker';
+import { EMPTY_COLLECTOR } from '../../lib/collectors';
+import type { CollectorValue } from '../../lib/collectors';
 import type { ArtworkRow } from '../../types/database';
 
 // ---------------------------------------------------------------------------
@@ -26,7 +29,7 @@ export interface ArtworkDetailProps {
   isAdmin?: boolean;
   onEdit: () => void;
   onDelete: () => Promise<void>;
-  onMarkSold?: (salePrice: number, currency: string, saleDate: string, saleCity: string, saleCountry: string, saleType: string, paymentExpectedDate: string | null) => Promise<void>;
+  onMarkSold?: (salePrice: number, currency: string, saleDate: string, saleCity: string, saleCountry: string, saleType: string, paymentExpectedDate: string | null, collector: CollectorValue) => Promise<void>;
   onDuplicate?: () => Promise<void>;
   onTogglePartnerAvailability?: () => Promise<void>;
 }
@@ -87,6 +90,7 @@ export function ArtworkDetail({
   const [saleCountryState, setSaleCountryState] = useState('');
   const [saleTypeState, setSaleTypeState] = useState('');
   const [paymentExpectedDate, setPaymentExpectedDate] = useState('');
+  const [collector, setCollector] = useState<CollectorValue>(EMPTY_COLLECTOR);
   const [soldLoading, setSoldLoading] = useState(false);
 
   // Formatted values
@@ -130,9 +134,10 @@ export function ArtworkDetail({
     if (isNaN(price) || price <= 0) return;
 
     setSoldLoading(true);
-    await onMarkSold(price, saleCurrency, saleDate, saleCityState, saleCountryState, saleTypeState, paymentExpectedDate || null);
+    await onMarkSold(price, saleCurrency, saleDate, saleCityState, saleCountryState, saleTypeState, paymentExpectedDate || null, collector);
     setSoldLoading(false);
     setShowSoldDialog(false);
+    setCollector(EMPTY_COLLECTOR);
   }
 
   return (
@@ -386,6 +391,7 @@ export function ArtworkDetail({
             value={saleDate}
             onChange={(e) => setSaleDate(e.target.value)}
           />
+          <CollectorPicker value={collector} onChange={setCollector} />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input
               label="City"

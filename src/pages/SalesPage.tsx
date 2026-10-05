@@ -2,7 +2,12 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSales } from '../hooks/useSales';
 import { useArtworks } from '../hooks/useArtworks';
-import { useContacts } from '../hooks/useContacts';
+import { useToast } from '../components/ui/Toast';
+import { describeError } from '../lib/errors';
+import { CollectorPicker } from '../components/contacts/CollectorPicker';
+import { invalidateCollectorPickerCache } from '../lib/collectorContacts';
+import { ensureCollectorContact, EMPTY_COLLECTOR } from '../lib/collectors';
+import type { CollectorValue } from '../lib/collectors';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
@@ -39,6 +44,7 @@ const PAYMENT_STATUS_COLORS: Record<string, string> = {
 
 export function SalesPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // ---- Filters ------------------------------------------------------------
 
@@ -61,7 +67,6 @@ export function SalesPage() {
   // ---- Data for the form --------------------------------------------------
 
   const { artworks } = useArtworks();
-  const { contacts } = useContacts();
 
   // ---- Modal state --------------------------------------------------------
 
@@ -72,12 +77,11 @@ export function SalesPage() {
 
   const [artworkId, setArtworkId] = useState('');
   const [galleryId, setGalleryId] = useState<string | null>(null);
-  const [contactId, setContactId] = useState('');
+  const [collector, setCollector] = useState<CollectorValue>(EMPTY_COLLECTOR);
   const [saleDate, setSaleDate] = useState('');
   const [salePrice, setSalePrice] = useState('');
   const [currency, setCurrency] = useState('EUR');
   const [commissionPercent, setCommissionPercent] = useState('');
-  const [buyerName, setBuyerName] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
   const [saleCity, setSaleCity] = useState('');
   const [saleCountry, setSaleCountry] = useState('');
@@ -136,12 +140,11 @@ export function SalesPage() {
   function resetForm() {
     setArtworkId('');
     setGalleryId(null);
-    setContactId('');
+    setCollector(EMPTY_COLLECTOR);
     setSaleDate('');
     setSalePrice('');
     setCurrency('EUR');
     setCommissionPercent('');
-    setBuyerName('');
     setBuyerEmail('');
     setSaleCity('');
     setSaleCountry('');
@@ -167,15 +170,26 @@ export function SalesPage() {
 
     setSaving(true);
 
+    // Buyer → contact (links an existing one or creates a collector)
+    let buyer;
+    try {
+      buyer = await ensureCollectorContact(collector);
+    } catch (err) {
+      toast({ title: 'Error', description: describeError(err), variant: 'error' });
+      setSaving(false);
+      return;
+    }
+    if (buyer.created) invalidateCollectorPickerCache();
+
     const data: SaleInsert = {
       artwork_id: artworkId,
       gallery_id: galleryId || null,
-      contact_id: contactId || null,
+      contact_id: buyer.contactId,
       sale_date: saleDate,
       sale_price: parseFloat(salePrice),
       currency: currency as Currency,
       commission_percent: commissionPercent ? parseFloat(commissionPercent) : null,
-      buyer_name: buyerName.trim() || null,
+      buyer_name: buyer.buyerName,
       buyer_email: buyerEmail.trim() || null,
       sale_city: saleCity.trim() || null,
       sale_country: saleCountry.trim() || null,
@@ -194,6 +208,9 @@ export function SalesPage() {
     const created = await createSale(data);
 
     if (created) {
+      if (buyer.created) {
+        toast({ title: 'Collector added', description: `${buyer.buyerName} is now in Contacts.`, variant: 'success' });
+      }
       // Auto-update artwork status to 'sold'
       await supabase
         .from('artworks')
@@ -499,18 +516,7 @@ export function SalesPage() {
             label="Gallery"
           />
 
-          <Select
-            label="Contact"
-            options={[
-              { value: '', label: 'No contact' },
-              ...contacts.map((c) => ({
-                value: c.id,
-                label: `${c.first_name} ${c.last_name}`,
-              })),
-            ]}
-            value={contactId}
-            onChange={(e) => setContactId(e.target.value)}
-          />
+          <CollectorPicker value={collector} onChange={setCollector} />
 
           <Input
             label="Sale Date *"
@@ -544,13 +550,6 @@ export function SalesPage() {
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input
-              label="Buyer Name"
-              placeholder="Buyer's name"
-              value={buyerName}
-              onChange={(e) => setBuyerName(e.target.value)}
-              maxLength={256}
-            />
             <Input
               label="Buyer Email"
               type="email"

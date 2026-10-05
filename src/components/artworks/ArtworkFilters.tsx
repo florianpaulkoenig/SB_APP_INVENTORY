@@ -3,6 +3,7 @@ import { Select } from '../ui/Select';
 import { SearchInput } from '../ui/SearchInput';
 import { GallerySelect } from '../galleries/GallerySelect';
 import { supabase } from '../../lib/supabase';
+import { contactDisplayName } from '../../lib/collectorName';
 import {
   ARTWORK_STATUSES,
   ARTWORK_CATEGORIES,
@@ -22,6 +23,7 @@ export interface ArtworkFiltersProps {
     medium?: string;
     artist?: string;
     owner?: string;
+    collector?: string;
     minHeight?: number;
     maxHeight?: number;
     minWidth?: number;
@@ -63,6 +65,36 @@ export function ArtworkFilters({
   const [ownerOptions, setOwnerOptions] = useState<string[]>([]);
   const [ownersLoaded, setOwnersLoaded] = useState(false);
 
+  // Collectors = contacts with at least one recorded sale
+  const [collectorOptions, setCollectorOptions] = useState<{ value: string; label: string }[]>([]);
+  const [collectorsLoaded, setCollectorsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!(expanded || filters.collector) || collectorsLoaded) return;
+
+    let cancelled = false;
+
+    supabase
+      .from('sales')
+      .select('contact_id, contacts:contact_id(first_name, last_name, company)')
+      .not('contact_id', 'is', null)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const byId = new Map<string, string>();
+        for (const row of (data ?? []) as { contact_id: string; contacts: { first_name: string; last_name: string; company: string | null } | null }[]) {
+          if (row.contact_id && row.contacts) byId.set(row.contact_id, contactDisplayName(row.contacts));
+        }
+        setCollectorOptions(
+          [...byId.entries()]
+            .map(([value, label]) => ({ value, label }))
+            .sort((a, b) => a.label.localeCompare(b.label)),
+        );
+        setCollectorsLoaded(true);
+      });
+
+    return () => { cancelled = true; };
+  }, [expanded, filters.collector, collectorsLoaded]);
+
   useEffect(() => {
     if (!expanded || ownersLoaded) return;
 
@@ -87,7 +119,7 @@ export function ArtworkFilters({
   const secondaryActive = Boolean(
     filters.category || filters.motif || filters.series ||
     filters.color || filters.medium || filters.artist ||
-    filters.owner ||
+    filters.owner || filters.collector ||
     filters.minHeight != null || filters.maxHeight != null ||
     filters.minWidth != null || filters.maxWidth != null ||
     noPhotoFilter ||
@@ -269,6 +301,18 @@ export function ArtworkFilters({
               className={inputCls}
             />
           )}
+
+          <Select
+            options={[
+              { value: '', label: 'All Collectors' },
+              ...(filters.collector && !collectorOptions.some((o) => o.value === filters.collector)
+                ? [{ value: filters.collector, label: 'Selected collector' }]
+                : []),
+              ...collectorOptions,
+            ]}
+            value={filters.collector ?? ''}
+            onChange={(e) => update('collector', e.target.value)}
+          />
 
           <Select
             options={[

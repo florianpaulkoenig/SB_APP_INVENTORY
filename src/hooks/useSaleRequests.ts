@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { ensureCollectorContact } from '../lib/collectors';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import { useAuth } from './useAuth';
@@ -202,6 +203,9 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
 
         if (updateError) throw updateError;
 
+        // Buyer → contact (links an existing one or creates a collector)
+        const buyer = await ensureCollectorContact({ contactId: null, name: request.buyer_name ?? '' });
+
         // Create sale record
         const { error: saleError } = await supabase
           .from('sales')
@@ -211,7 +215,8 @@ export function useSaleRequests(options?: UseSaleRequestsOptions) {
             sale_date: new Date().toISOString().split('T')[0],
             sale_price: request.realized_price,
             currency: request.currency,
-            buyer_name: request.buyer_name,
+            contact_id: buyer.contactId,
+            buyer_name: buyer.buyerName,
           } as never);
 
         if (saleError) throw saleError;

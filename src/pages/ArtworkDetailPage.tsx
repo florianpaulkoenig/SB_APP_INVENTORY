@@ -3,6 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { pdf } from '@react-pdf/renderer';
 import { supabase } from '../lib/supabase';
 import { getSignedUrl } from '../lib/signedUrlCache';
+import { ensureCollectorContact } from '../lib/collectors';
+import { describeError } from '../lib/errors';
+import type { CollectorValue } from '../lib/collectors';
+import { invalidateCollectorPickerCache } from '../lib/collectorContacts';
 import { useArtwork, useArtworks } from '../hooks/useArtworks';
 import { useArtworkImages } from '../hooks/useArtworkImages';
 import { useToast } from '../components/ui/Toast';
@@ -137,7 +141,7 @@ export function ArtworkDetailPage() {
       setCurrentOwnerDate(data.sale_date ?? null);
     }
     fetchCurrentOwner();
-  }, [artwork?.id]);
+  }, [artwork?.id, artwork?.status]);
 
   // ---- Fetch certificate for this artwork -----------------------------------
 
@@ -465,7 +469,7 @@ export function ArtworkDetailPage() {
   // ---- Mark as Sold handler ------------------------------------------------
 
   const handleMarkSold = useCallback(
-    async (salePrice: number, currency: string, saleDateStr: string, saleCity: string, saleCountry: string, saleType: string, paymentExpectedDate: string | null) => {
+    async (salePrice: number, currency: string, saleDateStr: string, saleCity: string, saleCountry: string, saleType: string, paymentExpectedDate: string | null, collector: CollectorValue) => {
       if (!id || !artwork) return;
 
       try {
@@ -478,6 +482,10 @@ export function ArtworkDetailPage() {
           return;
         }
 
+        // Buyer → contact (links an existing one or creates a collector)
+        const buyer = await ensureCollectorContact(collector);
+        if (buyer.created) invalidateCollectorPickerCache();
+
         // Create sale record
         const { error: saleError } = await supabase
           .from('sales')
@@ -487,6 +495,8 @@ export function ArtworkDetailPage() {
             sale_date: saleDateStr,
             sale_price: salePrice,
             currency,
+            contact_id: buyer.contactId,
+            buyer_name: buyer.buyerName,
             sale_city: saleCity.trim() || null,
             sale_country: saleCountry.trim() || null,
             sale_type: saleType || null,
@@ -506,10 +516,14 @@ export function ArtworkDetailPage() {
 
         if (updateError) throw updateError;
 
-        toast({ title: 'Artwork marked as sold', variant: 'success' });
+        toast({
+          title: 'Artwork marked as sold',
+          description: buyer.created ? `${buyer.buyerName} was added to Contacts as a collector.` : undefined,
+          variant: 'success',
+        });
         await refetchArtwork();
       } catch (err: unknown) {
-        toast({ title: 'Error', description: 'Failed to record sale. Please try again.', variant: 'error' });
+        toast({ title: 'Error', description: describeError(err), variant: 'error' });
       }
     },
     [id, artwork, toast, refetchArtwork],
