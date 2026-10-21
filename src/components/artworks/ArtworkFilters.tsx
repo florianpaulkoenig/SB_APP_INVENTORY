@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Select } from '../ui/Select';
 import { SearchInput } from '../ui/SearchInput';
-import { GallerySelect } from '../galleries/GallerySelect';
 import { supabase } from '../../lib/supabase';
 import { contactDisplayName } from '../../lib/collectorName';
 import {
@@ -60,6 +59,35 @@ export function ArtworkFilters({
 }: ArtworkFiltersProps) {
   const [expanded, setExpanded] = useState(false);
 
+  // Galleries, split by partnership type. Terminated partners are kept out
+  // of the primary dropdown and offered as a separate filter under
+  // "More filters" so they don't clutter day-to-day gallery selection.
+  const [galleries, setGalleries] = useState<{ id: string; name: string; type: string | null }[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    supabase
+      .from('galleries')
+      .select('id, name, type')
+      .order('name', { ascending: true })
+      .then(({ data }) => {
+        if (cancelled) return;
+        setGalleries((data ?? []) as { id: string; name: string; type: string | null }[]);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const activeGalleries = galleries.filter((g) => g.type !== 'terminated');
+  const terminatedGalleries = galleries.filter((g) => g.type === 'terminated');
+  const selectedTerminated = Boolean(
+    filters.gallery_id && terminatedGalleries.some((g) => g.id === filters.gallery_id),
+  );
+
+  // A selected terminated gallery lives in the secondary row — keep it visible.
+  const showSecondary = expanded || selectedTerminated;
+
   // Distinct provenance owners — populates the owner filter dropdown.
   // Loaded once on expand; RLS limits what non-admin roles can see.
   const [ownerOptions, setOwnerOptions] = useState<string[]>([]);
@@ -70,7 +98,7 @@ export function ArtworkFilters({
   const [collectorsLoaded, setCollectorsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!(expanded || filters.collector) || collectorsLoaded) return;
+    if (!(showSecondary || filters.collector) || collectorsLoaded) return;
 
     let cancelled = false;
 
@@ -93,10 +121,10 @@ export function ArtworkFilters({
       });
 
     return () => { cancelled = true; };
-  }, [expanded, filters.collector, collectorsLoaded]);
+  }, [showSecondary, filters.collector, collectorsLoaded]);
 
   useEffect(() => {
-    if (!expanded || ownersLoaded) return;
+    if (!showSecondary || ownersLoaded) return;
 
     let cancelled = false;
 
@@ -114,12 +142,13 @@ export function ArtworkFilters({
       });
 
     return () => { cancelled = true; };
-  }, [expanded, ownersLoaded]);
+  }, [showSecondary, ownersLoaded]);
 
   const secondaryActive = Boolean(
     filters.category || filters.motif || filters.series ||
     filters.color || filters.medium || filters.artist ||
     filters.owner || filters.collector ||
+    selectedTerminated ||
     filters.minHeight != null || filters.maxHeight != null ||
     filters.minWidth != null || filters.maxWidth != null ||
     noPhotoFilter ||
@@ -176,10 +205,13 @@ export function ArtworkFilters({
           </div>
 
           <div className="min-w-0 flex-1 sm:w-56 sm:flex-none">
-            <GallerySelect
-              label=""
-              value={filters.gallery_id ?? null}
-              onChange={(id) => update('gallery_id', id ?? '')}
+            <Select
+              options={[
+                { value: '', label: 'All Galleries' },
+                ...activeGalleries.map((g) => ({ value: g.id, label: g.name })),
+              ]}
+              value={selectedTerminated ? '' : (filters.gallery_id ?? '')}
+              onChange={(e) => update('gallery_id', e.target.value)}
             />
           </div>
         </div>
@@ -190,7 +222,7 @@ export function ArtworkFilters({
           onClick={() => setExpanded((v) => !v)}
           className="shrink-0 text-xs text-primary-400 hover:text-primary-700 transition-colors"
         >
-          {expanded ? 'Fewer filters' : 'More filters'}{secondaryActive ? ' ·' : ''}
+          {showSecondary ? 'Fewer filters' : 'More filters'}{secondaryActive ? ' ·' : ''}
         </button>
 
         {hasActiveFilters && (
@@ -246,7 +278,7 @@ export function ArtworkFilters({
       </div>
 
       {/* Secondary filters — collapsible */}
-      {expanded && (
+      {showSecondary && (
         <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-6 border-t border-primary-100 pt-3">
           <Select
             options={[
@@ -325,6 +357,15 @@ export function ArtworkFilters({
             ]}
             value={filters.owner ?? ''}
             onChange={(e) => update('owner', e.target.value)}
+          />
+
+          <Select
+            options={[
+              { value: '', label: 'Terminated Galleries' },
+              ...terminatedGalleries.map((g) => ({ value: g.id, label: g.name })),
+            ]}
+            value={selectedTerminated ? (filters.gallery_id ?? '') : ''}
+            onChange={(e) => update('gallery_id', e.target.value)}
           />
 
           <div className="flex items-center gap-1">
