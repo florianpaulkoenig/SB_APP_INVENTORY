@@ -531,29 +531,6 @@ export function ArtworkDetailPage() {
     [id, artwork, toast, refetchArtwork],
   );
 
-  // ---- Toggle partner availability handler --------------------------------
-
-  const handleTogglePartnerAvailability = useCallback(async () => {
-    if (!artwork) return;
-
-    try {
-      const { error } = await supabase
-        .from('artworks')
-        .update({ available_for_partners: !artwork.available_for_partners } as never)
-        .eq('id', artwork.id);
-
-      if (error) throw error;
-
-      toast({
-        title: artwork.available_for_partners ? 'Removed from partner galleries' : 'Now available for partner galleries',
-        variant: 'success',
-      });
-      await refetchArtwork();
-    } catch {
-      toast({ title: 'Error', description: 'Failed to update partner availability.', variant: 'error' });
-    }
-  }, [artwork, toast, refetchArtwork]);
-
   // ---- Duplicate handler ---------------------------------------------------
 
   const handleDuplicate = useCallback(async () => {
@@ -687,7 +664,6 @@ export function ArtworkDetailPage() {
         onDelete={handleDelete}
         onMarkSold={handleMarkSold}
         onDuplicate={handleDuplicate}
-        onTogglePartnerAvailability={handleTogglePartnerAvailability}
       />
 
       {/* Sale record (visible when artwork is sold) */}

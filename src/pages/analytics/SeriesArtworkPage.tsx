@@ -1,16 +1,14 @@
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Tabs } from '../../components/ui/Tabs';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { formatCurrency } from '../../lib/utils';
 import { useSeriesPerformance } from '../../hooks/useSeriesPerformance';
-import { useViewingRoomAnalytics } from '../../hooks/useViewingRoomAnalytics';
 import { usePriceTrajectory } from '../../hooks/usePriceTrajectory';
 
 const TABS = [
   { key: 'performance', label: 'Series Performance' },
-  { key: 'viewing-rooms', label: 'Viewing Rooms' },
   { key: 'trajectory', label: 'Price Trajectory' },
 ] as const;
 
@@ -19,10 +17,9 @@ export function SeriesArtworkPage() {
   const activeTab = searchParams.get('tab') || 'performance';
 
   const series = useSeriesPerformance();
-  const viewingRooms = useViewingRoomAnalytics();
   const trajectory = usePriceTrajectory();
 
-  const isLoading = series.loading || viewingRooms.loading || trajectory.loading;
+  const isLoading = series.loading || trajectory.loading;
 
   return (
     <div className="space-y-6">
@@ -42,10 +39,6 @@ export function SeriesArtworkPage() {
 
       {!isLoading && activeTab === 'performance' && series.data && (
         <PerformanceTab data={series.data} />
-      )}
-
-      {!isLoading && activeTab === 'viewing-rooms' && viewingRooms.data && (
-        <ViewingRoomsTab data={viewingRooms.data} />
       )}
 
       {!isLoading && activeTab === 'trajectory' && trajectory.data && (
@@ -103,66 +96,6 @@ function PerformanceTab({ data }: { data: SeriesPerformanceData }) {
                   </td>
                   <td className="px-4 py-2 text-right">{formatCurrency(s.avgPrice, 'CHF')}</td>
                   <td className="px-4 py-2 text-right">{s.avgDaysToSale != null ? `${s.avgDaysToSale}d` : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Viewing Rooms Tab                                                         */
-/* -------------------------------------------------------------------------- */
-
-import type { ViewingRoomAnalyticsData } from '../../hooks/useViewingRoomAnalytics';
-
-function ViewingRoomsTab({ data }: { data: ViewingRoomAnalyticsData }) {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <KpiCard label="Total Views" value={data.totalViews} />
-        <KpiCard label="Published Rooms" value={data.publishedRooms} />
-        <KpiCard label="Conversion Rate" value={`${data.overallConversionRate}%`} />
-      </div>
-
-      <Card className="overflow-hidden">
-        <div className="border-b border-primary-100 px-4 py-3">
-          <h2 className="text-sm font-semibold text-primary-900">Viewing Rooms</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-primary-50 text-left text-xs text-primary-500">
-              <tr>
-                <th className="px-4 py-2">Room</th>
-                <th className="px-4 py-2 text-right">Views</th>
-                <th className="px-4 py-2 text-right">Views/Day</th>
-                <th className="px-4 py-2 text-right">Enquiries</th>
-                <th className="px-4 py-2 text-right">Sales</th>
-                <th className="px-4 py-2 text-right">Conversion</th>
-                <th className="px-4 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-primary-50">
-              {data.rooms.map((r) => (
-                <tr key={r.roomId} className="hover:bg-primary-50/50">
-                  <td className="px-4 py-2">
-                    <Link to={`/viewing-rooms/${r.roomId}`} className="text-accent hover:underline">
-                      {r.roomTitle}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2 text-right">{r.totalViews}</td>
-                  <td className="px-4 py-2 text-right">{r.viewsPerDay}</td>
-                  <td className="px-4 py-2 text-right">{r.convertedToEnquiry}</td>
-                  <td className="px-4 py-2 text-right">{r.convertedToSale}</td>
-                  <td className="px-4 py-2 text-right">{r.conversionRate}%</td>
-                  <td className="px-4 py-2">
-                    <Badge variant={r.published ? 'success' : 'default'}>
-                      {r.published ? 'Published' : 'Draft'}
-                    </Badge>
-                  </td>
                 </tr>
               ))}
             </tbody>

@@ -249,29 +249,6 @@ export const INVOICE_STATUSES = [
 ] as const;
 
 // ---------------------------------------------------------------------------
-// Email template types
-// ---------------------------------------------------------------------------
-export const EMAIL_TEMPLATES = [
-  { value: 'certificate', label: 'Certificate of Authenticity' },
-  { value: 'invoice', label: 'Invoice' },
-  { value: 'delivery_receipt', label: 'Delivery Receipt' },
-  { value: 'quote', label: 'Quote / Offer' },
-  { value: 'catalogue', label: 'Catalogue' },
-  { value: 'follow_up', label: 'Follow-up' },
-  { value: 'gallery_report', label: 'Gallery Report' },
-  { value: 'custom', label: 'Custom' },
-] as const;
-
-// ---------------------------------------------------------------------------
-// Email statuses
-// ---------------------------------------------------------------------------
-export const EMAIL_STATUSES = [
-  { value: 'sent', label: 'Sent', color: 'bg-emerald-100 text-emerald-800' },
-  { value: 'failed', label: 'Failed', color: 'bg-red-100 text-red-800' },
-  { value: 'bounced', label: 'Bounced', color: 'bg-amber-100 text-amber-800' },
-] as const;
-
-// ---------------------------------------------------------------------------
 // Image types
 // ---------------------------------------------------------------------------
 export const IMAGE_TYPES = [

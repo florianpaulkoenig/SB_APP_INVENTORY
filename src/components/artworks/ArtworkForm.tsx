@@ -152,9 +152,6 @@ export function ArtworkForm({
     artwork?.commission_artist != null ? String(artwork.commission_artist) : '',
   );
 
-  // Partner availability
-  const [availableForPartners, setAvailableForPartners] = useState(v?.available_for_partners ?? false);
-
   // Window artwork
   const [isWindow, setIsWindow] = useState(v?.is_window ?? false);
   const [laminationNeeded, setLaminationNeeded] = useState(v?.lamination_needed ?? false);
@@ -298,7 +295,6 @@ export function ArtworkForm({
       notes: notes.trim() || null,
       artist_name: artistName.trim() || null,
       artist_id: artistId,
-      available_for_partners: availableForPartners,
       is_window: isWindow,
       lamination_needed: isWindow && laminationNeeded,
       lamination_cost: isWindow && laminationNeeded && laminationCost !== '' ? parseFloat(laminationCost) : null,
@@ -691,18 +687,6 @@ export function ArtworkForm({
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           />
-        </div>
-
-        <div className="mt-4">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={availableForPartners}
-              onChange={(e) => setAvailableForPartners(e.target.checked)}
-              className="h-4 w-4 rounded border-primary-300 text-accent focus:ring-accent"
-            />
-            <span className="text-sm font-medium text-primary-700">Available for Partner Galleries</span>
-          </label>
         </div>
       </section>
 

@@ -27,13 +27,12 @@ interface MediaFile {
 interface UseMediaFilesOptions {
   category?: string;
   status?: string;
-  galleryOnly?: boolean;
 }
 
 export function useMediaFiles(options?: UseMediaFilesOptions) {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
-  const { profile, isAdmin, isGallery } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const { toast } = useToast();
 
   const fetchFiles = useCallback(async () => {
@@ -60,13 +59,6 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
         query = query.eq('status', options.status);
       }
 
-      if (options?.galleryOnly && isGallery && profile?.gallery_id) {
-        // Gallery users see published files + their own submissions regardless of status
-        query = query.or(
-          `status.eq.published,submitted_by_gallery.eq.${profile.gallery_id}`
-        );
-      }
-
       const { data, error } = await query;
 
       if (error) throw error;
@@ -80,7 +72,7 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
     } finally {
       setLoading(false);
     }
-  }, [options?.category, options?.status, options?.galleryOnly, isGallery, profile?.gallery_id, toast]);
+  }, [options?.category, options?.status, toast]);
 
   useEffect(() => {
     fetchFiles();
@@ -126,7 +118,7 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
         if (uploadError) throw uploadError;
 
         const status = isAdmin ? 'published' : 'pending_review';
-        const submittedByGallery = isGallery ? profile.gallery_id : null;
+        const submittedByGallery = null;
 
         const { data, error } = await supabase
           .from('media_files')
@@ -166,7 +158,7 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
         return null;
       }
     },
-    [profile, isAdmin, isGallery, toast, fetchFiles]
+    [profile, isAdmin, toast, fetchFiles]
   );
 
   const createTextEntry = useCallback(
@@ -185,7 +177,7 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
         }
 
         const status = isAdmin ? 'published' : 'pending_review';
-        const submittedByGallery = isGallery ? profile.gallery_id : null;
+        const submittedByGallery = null;
 
         const { data, error } = await supabase
           .from('media_files')
@@ -229,7 +221,7 @@ export function useMediaFiles(options?: UseMediaFilesOptions) {
         return null;
       }
     },
-    [profile, isAdmin, isGallery, toast, fetchFiles]
+    [profile, isAdmin, toast, fetchFiles]
   );
 
   const deleteFile = useCallback(

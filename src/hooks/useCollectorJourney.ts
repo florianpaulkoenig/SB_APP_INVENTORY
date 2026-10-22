@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 
 export interface JourneyEvent {
   id: string;
-  type: 'enquiry' | 'interaction' | 'viewing_room' | 'deal' | 'sale' | 'wishlist';
+  type: 'enquiry' | 'interaction' | 'deal' | 'sale' | 'wishlist';
   date: string;
   title: string;
   description: string | null;
@@ -54,7 +54,6 @@ export function useCollectorJourney(contactId: string): {
         dealsRes,
         salesRes,
         wishlistRes,
-        viewingRoomsRes,
       ] = await Promise.all([
         // 1. Enquiries where converted_contact_id matches
         supabase
@@ -84,12 +83,6 @@ export function useCollectorJourney(contactId: string): {
         supabase
           .from('wish_list_items')
           .select('id, added_date, notes, artwork_id, artworks(title)')
-          .eq('contact_id', contactId),
-
-        // 6. Viewing rooms linked to this contact
-        supabase
-          .from('viewing_rooms')
-          .select('id, created_at, title, description')
           .eq('contact_id', contactId),
       ]);
 
@@ -185,22 +178,6 @@ export function useCollectorJourney(contactId: string): {
             value: null,
             currency: null,
             metadata: { wishlistId: w.id, artworkId: w.artwork_id },
-          });
-        }
-      }
-
-      // Map viewing rooms
-      if (viewingRoomsRes.data) {
-        for (const vr of viewingRoomsRes.data) {
-          events.push({
-            id: `viewing_room-${vr.id}`,
-            type: 'viewing_room',
-            date: vr.created_at,
-            title: `Viewing Room: ${vr.title}`,
-            description: vr.description as string | null,
-            value: null,
-            currency: null,
-            metadata: { viewingRoomId: vr.id },
           });
         }
       }

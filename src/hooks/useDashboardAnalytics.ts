@@ -115,21 +115,6 @@ export interface PriceIntelligenceData {
   recentDiscounted: { title: string; listPrice: number; salePrice: number; discount: number; gallery: string }[];
 }
 
-// 8. Viewing Room Engagement
-export interface ViewingRoomStats {
-  roomId: string;
-  title: string;
-  visibility: string;
-  artworkCount: number;
-  totalViews: number;
-  lastViewed: string | null;
-}
-export interface ViewingRoomEngagementData {
-  totalViews: number;
-  rooms: ViewingRoomStats[];
-  monthlyTrend: { month: string; views: number }[];
-}
-
 // 9. Geographic Distribution
 export interface GeoEntry {
   location: string;
@@ -150,7 +135,6 @@ export interface DashboardAnalyticsData {
   inventoryAging: InventoryAgingData;
   exhibitionImpact: ExhibitionImpact[];
   priceIntelligence: PriceIntelligenceData;
-  viewingRoomEngagement: ViewingRoomEngagementData;
   geoDistribution: GeoDistributionData;
 }
 
@@ -205,8 +189,6 @@ export function useDashboardAnalytics(
       { data: artworks },
       { data: invoices },
       { data: exhibitions },
-      { data: viewingRooms },
-      { data: vrViews },
       { data: galleries },
     ] = await Promise.all([
       supabase.from('sales').select('id, artwork_id, sale_price, currency, sale_date, contact_id, gallery_id, sale_city, sale_country, sale_type, source_exhibition_id, artworks!inner(title, price, currency, category, portfolio)').eq('artworks.portfolio', 'simon_berger'),
@@ -216,16 +198,13 @@ export function useDashboardAnalytics(
       supabase.from('artworks').select('id, title, status, consigned_since, price, currency, gallery_id').eq('portfolio', 'simon_berger'),
       supabase.from('invoices').select('id, total, currency, paid_date').eq('status', 'paid'),
       supabase.from('exhibitions').select('id, title, venue, start_date, end_date, budget, budget_currency, exhibition_artworks(artwork_id)').eq('status', 'confirmed'),
-      supabase.from('viewing_rooms').select('id, title, visibility, artwork_ids'),
-      supabase.from('viewing_room_views').select('id, viewing_room_id, viewed_at'),
       supabase.from('galleries').select('id, name'),
     ]);
 
     setRaw({
       sales: sales ?? [], expenses: expenses ?? [], deals: deals ?? [],
       contacts: contacts ?? [], artworks: artworks ?? [], invoices: invoices ?? [],
-      exhibitions: exhibitions ?? [], viewingRooms: viewingRooms ?? [],
-      vrViews: vrViews ?? [], galleries: galleries ?? [],
+      exhibitions: exhibitions ?? [], galleries: galleries ?? [],
     });
     setLoading(false);
   }, []);
@@ -236,7 +215,7 @@ export function useDashboardAnalytics(
   useEffect(() => {
     if (!ratesReady || Object.keys(raw).length === 0) return;
 
-    const { sales, expenses, deals, contacts, artworks, invoices, exhibitions, viewingRooms, vrViews, galleries } = raw;
+    const { sales, expenses, deals, contacts, artworks, invoices, exhibitions, galleries } = raw;
 
     // Gallery name map
     const gNameMap = new Map<string, string>();
@@ -540,43 +519,6 @@ export function useDashboardAnalytics(
       recentDiscounted: discounts.filter((d) => d.discount >= 0.5).slice(0, 10),
     };
 
-    // ---- 8. Viewing Room Engagement ----
-    const viewCountMap = new Map<string, { count: number; last: string | null }>();
-    for (const v of vrViews) {
-      const entry = viewCountMap.get(v.viewing_room_id) ?? { count: 0, last: null };
-      entry.count += 1;
-      if (!entry.last || v.viewed_at > entry.last) entry.last = v.viewed_at;
-      viewCountMap.set(v.viewing_room_id, entry);
-    }
-
-    const vrRooms: ViewingRoomStats[] = (viewingRooms ?? []).map((vr: {
-      id: string; title: string; visibility: string; artwork_ids: string[];
-    }) => {
-      const stats = viewCountMap.get(vr.id);
-      return {
-        roomId: vr.id, title: vr.title, visibility: vr.visibility,
-        artworkCount: (vr.artwork_ids ?? []).length,
-        totalViews: stats?.count ?? 0,
-        lastViewed: stats?.last ?? null,
-      };
-    }).sort((a: ViewingRoomStats, b: ViewingRoomStats) => b.totalViews - a.totalViews);
-
-    // Monthly trend
-    const vrMonthMap = new Map<string, number>();
-    for (const v of vrViews) {
-      const mk = monthKey(v.viewed_at);
-      vrMonthMap.set(mk, (vrMonthMap.get(mk) ?? 0) + 1);
-    }
-    const vrMonthly = Array.from(vrMonthMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([mk, views]) => ({ month: formatMonthLabel(mk), views }));
-
-    const viewingRoomEngagement: ViewingRoomEngagementData = {
-      totalViews: vrViews.length,
-      rooms: vrRooms,
-      monthlyTrend: vrMonthly,
-    };
-
     // ---- 9. Geographic Distribution ----
     const salesGeoMap = new Map<string, { revenue: number; count: number }>();
     const collectorGeoMap = new Map<string, { revenue: number; count: number }>();
@@ -617,8 +559,7 @@ export function useDashboardAnalytics(
     // ---- Set combined data ----
     setData({
       profitLoss, salesFunnel, collectorLTV, cashFlow,
-      inventoryAging, exhibitionImpact, priceIntelligence,
-      viewingRoomEngagement, geoDistribution,
+      inventoryAging, exhibitionImpact, priceIntelligence, geoDistribution,
     });
   }, [ratesReady, toCHF, raw]);
 

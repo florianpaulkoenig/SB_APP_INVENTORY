@@ -132,41 +132,5 @@ export function useBulkPriceUpdate() {
     [toast],
   );
 
-  /**
-   * Notify galleries holding affected artworks about price changes.
-   */
-  const notifyGalleries = useCallback(
-    async (previews: PricePreview[]) => {
-      const galleryIds = [...new Set(previews.filter((p) => p.galleryId).map((p) => p.galleryId!))];
-      if (galleryIds.length === 0) return;
-
-      const { data: galleries } = await supabase
-        .from('galleries')
-        .select('id, name, email')
-        .in('id', galleryIds);
-
-      if (!galleries) return;
-
-      for (const gallery of galleries) {
-        if (!gallery.email) continue;
-        const affected = previews.filter((p) => p.galleryId === gallery.id);
-        const artworkList = affected
-          .map((p) => `• ${p.title}: ${p.currency} ${p.currentPrice.toLocaleString()} → ${p.currency} ${p.newPrice.toLocaleString()}`)
-          .join('\n');
-
-        await supabase.functions.invoke('send-email', {
-          body: {
-            to: gallery.email,
-            subject: `Price Update — ${affected.length} artwork${affected.length > 1 ? 's' : ''} affected`,
-            body: `Dear ${gallery.name},\n\nPlease note the following price updates for artworks consigned to your gallery:\n\n${artworkList}\n\nPlease update your records accordingly.\n\nBest regards,\nNOA Contemporary`,
-          },
-        });
-      }
-
-      toast({ title: `Notified ${galleries.filter((g) => g.email).length} galleries`, variant: 'success' });
-    },
-    [toast],
-  );
-
-  return { previewPriceChange, applyPriceChange, notifyGalleries };
+  return { previewPriceChange, applyPriceChange };
 }

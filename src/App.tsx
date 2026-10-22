@@ -11,8 +11,6 @@ import { reportError } from './lib/monitoring';
 import { AppLayout } from './components/layout/AppLayout';
 
 // ---------------------------------------------------------------------------
-// Error boundary for lazy-loaded chunks that fail to load
-// ---------------------------------------------------------------------------
 class ChunkErrorBoundary extends Component<
   { children: ReactNode },
   { hasError: boolean }
@@ -29,7 +27,6 @@ class ChunkErrorBoundary extends Component<
   componentDidCatch(error: Error, _info: ErrorInfo) {
     console.error('Chunk load error:', error);
     reportError(error, { boundary: 'chunk' });
-    // Stale-deploy chunk 404: auto-reload once to fetch the fresh index.html.
     // Guarded so a genuine network outage doesn't cause a reload loop.
     const isChunkError = /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed/i.test(error.message);
     const RELOAD_FLAG = 'chunk-reload-at';
@@ -60,8 +57,6 @@ class ChunkErrorBoundary extends Component<
   }
 }
 
-// ---------------------------------------------------------------------------
-// Lazy-loaded pages (code splitting)
 // ---------------------------------------------------------------------------
 const LoginPage = React.lazy(() =>
   import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })),
@@ -174,41 +169,8 @@ const GalleryForwardingCreatePage = React.lazy(() =>
 const GalleryForwardingDetailPage = React.lazy(() =>
   import('./pages/GalleryForwardingDetailPage').then((m) => ({ default: m.GalleryForwardingDetailPage })),
 );
-const EmailLogPage = React.lazy(() =>
-  import('./pages/EmailLogPage').then((m) => ({ default: m.EmailLogPage })),
-);
 const CataloguesPage = React.lazy(() =>
   import('./pages/CataloguesPage').then((m) => ({ default: m.CataloguesPage })),
-);
-const SharingPage = React.lazy(() =>
-  import('./pages/SharingPage').then((m) => ({ default: m.SharingPage })),
-);
-const SharePage = React.lazy(() =>
-  import('./pages/SharePage').then((m) => ({ default: m.SharePage })),
-);
-const ViewingRoomsPage = React.lazy(() =>
-  import('./pages/ViewingRoomsPage').then((m) => ({ default: m.ViewingRoomsPage })),
-);
-const ViewingRoomCreatePage = React.lazy(() =>
-  import('./pages/ViewingRoomCreatePage').then((m) => ({ default: m.ViewingRoomCreatePage })),
-);
-const ViewingRoomDetailPage = React.lazy(() =>
-  import('./pages/ViewingRoomDetailPage').then((m) => ({ default: m.ViewingRoomDetailPage })),
-);
-const ViewingRoomPage = React.lazy(() =>
-  import('./pages/ViewingRoomPage').then((m) => ({ default: m.ViewingRoomPage })),
-);
-const UserManagementPage = React.lazy(() =>
-  import('./pages/UserManagementPage').then((m) => ({ default: m.UserManagementPage })),
-);
-const GalleryDashboardPage = React.lazy(() =>
-  import('./pages/GalleryDashboardPage').then((m) => ({ default: m.GalleryDashboardPage })),
-);
-const GalleryArtworksPage = React.lazy(() =>
-  import('./pages/GalleryArtworksPage').then((m) => ({ default: m.GalleryArtworksPage })),
-);
-const CollectorCertificatesPage = React.lazy(() =>
-  import('./pages/CollectorCertificatesPage').then((m) => ({ default: m.CollectorCertificatesPage })),
 );
 const AnalyticsPage = React.lazy(() =>
   import('./pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })),
@@ -216,32 +178,11 @@ const AnalyticsPage = React.lazy(() =>
 const SettingsPage = React.lazy(() =>
   import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
-const GalleryDeliveriesPage = React.lazy(() =>
-  import('./pages/GalleryDeliveriesPage').then((m) => ({ default: m.GalleryDeliveriesPage })),
-);
-const GalleryDeliveryDetailPage = React.lazy(() =>
-  import('./pages/GalleryDeliveryDetailPage').then((m) => ({ default: m.GalleryDeliveryDetailPage })),
-);
-const GalleryCertificatesPage = React.lazy(() =>
-  import('./pages/GalleryCertificatesPage').then((m) => ({ default: m.GalleryCertificatesPage })),
-);
-const SaleRequestsPage = React.lazy(() =>
-  import('./pages/SaleRequestsPage').then((m) => ({ default: m.SaleRequestsPage })),
-);
 const MediaLibraryPage = React.lazy(() =>
   import('./pages/MediaLibraryPage').then((m) => ({ default: m.MediaLibraryPage })),
 );
 const CVEditorPage = React.lazy(() =>
   import('./pages/CVEditorPage').then((m) => ({ default: m.CVEditorPage })),
-);
-const GalleryMediaPage = React.lazy(() =>
-  import('./pages/GalleryMediaPage').then((m) => ({ default: m.GalleryMediaPage })),
-);
-const NewsPage = React.lazy(() =>
-  import('./pages/NewsPage').then((m) => ({ default: m.NewsPage })),
-);
-const GalleryNewsPage = React.lazy(() =>
-  import('./pages/GalleryNewsPage').then((m) => ({ default: m.GalleryNewsPage })),
 );
 const PublicCollectionsPage = React.lazy(() =>
   import('./pages/PublicCollectionsPage').then((m) => ({ default: m.PublicCollectionsPage })),
@@ -273,17 +214,8 @@ const PriceManagementPage = React.lazy(() =>
 const AuctionTrackingPage = React.lazy(() =>
   import('./pages/AuctionTrackingPage').then((m) => ({ default: m.AuctionTrackingPage })),
 );
-const GalleryAvailableWorksPage = React.lazy(() =>
-  import('./pages/GalleryAvailableWorksPage').then((m) => ({ default: m.GalleryAvailableWorksPage })),
-);
 const MonthlyReportPage = React.lazy(() =>
   import('./pages/analytics/MonthlyReportPage').then((m) => ({ default: m.MonthlyReportPage })),
-);
-const StrategicIntelligencePage = React.lazy(() =>
-  import('./pages/analytics/StrategicIntelligencePage').then((m) => ({ default: m.StrategicIntelligencePage })),
-);
-const IntelligenceChatPage = React.lazy(() =>
-  import('./pages/analytics/IntelligenceChatPage').then((m) => ({ default: m.IntelligenceChatPage })),
 );
 const SocialMediaPage = React.lazy(() =>
   import('./pages/SocialMediaPage').then((m) => ({ default: m.SocialMediaPage })),
@@ -321,8 +253,6 @@ const SeriesArtworkPage = React.lazy(() =>
 );
 
 // ---------------------------------------------------------------------------
-// Suspense fallback with error boundary
-// ---------------------------------------------------------------------------
 function SuspenseFallback() {
   return (
     <div className="flex h-screen w-screen items-center justify-center">
@@ -342,8 +272,6 @@ function LazyPage({ children }: { children: ReactNode }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Router
 // ---------------------------------------------------------------------------
 const router = createBrowserRouter(
   [
@@ -685,48 +613,12 @@ const router = createBrowserRouter(
           ),
         },
 
-        // Viewing Rooms (admin only)
-        {
-          path: 'viewing-rooms',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <LazyPage><ViewingRoomsPage /></LazyPage>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'viewing-rooms/new',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <LazyPage><ViewingRoomCreatePage /></LazyPage>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'viewing-rooms/:id',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <LazyPage><ViewingRoomDetailPage /></LazyPage>
-            </RoleGuard>
-          ),
-        },
-
         // Catalogues (admin only)
         {
           path: 'catalogues',
           element: (
             <RoleGuard allowed={['admin']}>
               <LazyPage><CataloguesPage /></LazyPage>
-            </RoleGuard>
-          ),
-        },
-
-        // Sharing (admin only)
-        {
-          path: 'sharing',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <LazyPage><SharingPage /></LazyPage>
             </RoleGuard>
           ),
         },
@@ -752,28 +644,6 @@ const router = createBrowserRouter(
             </RoleGuard>
           ),
         },
-        {
-          path: 'analytics/strategic-intelligence',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><StrategicIntelligencePage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'analytics/intelligence-chat',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><IntelligenceChatPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-
-        // Bulk Operations (admin only)
 
         // ---- Consolidated Analytics Dashboards ----
         {
@@ -832,14 +702,6 @@ const router = createBrowserRouter(
             </RoleGuard>
           ),
         },
-        {
-          path: 'analytics/strategic',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <LazyPage><StrategicIntelligencePage /></LazyPage>
-            </RoleGuard>
-          ),
-        },
 
         // Publication Budget (admin only)
         {
@@ -887,20 +749,6 @@ const router = createBrowserRouter(
           ),
         },
 
-        // Email Log (admin only)
-        {
-          path: 'email-log',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><EmailLogPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-
-        // Activity Log (admin only)
-
         // Settings (admin only)
         {
           path: 'settings',
@@ -908,18 +756,6 @@ const router = createBrowserRouter(
             <RoleGuard allowed={['admin']}>
               <Suspense fallback={<SuspenseFallback />}>
                 <RouteErrorBoundary><SettingsPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-
-        // Users (admin only)
-        {
-          path: 'users',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><UserManagementPage />
               </RouteErrorBoundary></Suspense>
             </RoleGuard>
           ),
@@ -1019,99 +855,7 @@ const router = createBrowserRouter(
           ),
         },
 
-        // Gallery portal routes (admin + gallery)
-        {
-          path: 'gallery/available-works',
-          element: (
-            <RoleGuard allowed={['admin', 'gallery']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><GalleryAvailableWorksPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'gallery/dashboard',
-          element: (
-            <RoleGuard allowed={['admin', 'gallery']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><GalleryDashboardPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'gallery/artworks',
-          element: (
-            <RoleGuard allowed={['admin', 'gallery']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><GalleryArtworksPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'gallery/deliveries',
-          element: (
-            <RoleGuard allowed={['admin', 'gallery']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><GalleryDeliveriesPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'gallery/deliveries/:id',
-          element: (
-            <RoleGuard allowed={['admin', 'gallery']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><GalleryDeliveryDetailPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'gallery/certificates',
-          element: (
-            <RoleGuard allowed={['admin', 'gallery']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><GalleryCertificatesPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'gallery/media',
-          element: (
-            <RoleGuard allowed={['admin', 'gallery']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><GalleryMediaPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-        {
-          path: 'gallery/news',
-          element: (
-            <RoleGuard allowed={['admin', 'gallery']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><GalleryNewsPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-
         // Admin routes
-        {
-          path: 'admin/sale-requests',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><SaleRequestsPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
         {
           path: 'media',
           element: (
@@ -1132,28 +876,6 @@ const router = createBrowserRouter(
             </RoleGuard>
           ),
         },
-        {
-          path: 'news',
-          element: (
-            <RoleGuard allowed={['admin']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><NewsPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
-
-        // Collector portal routes (admin + collector)
-        {
-          path: 'collector/certificates',
-          element: (
-            <RoleGuard allowed={['admin', 'collector']}>
-              <Suspense fallback={<SuspenseFallback />}>
-                <RouteErrorBoundary><CollectorCertificatesPage />
-              </RouteErrorBoundary></Suspense>
-            </RoleGuard>
-          ),
-        },
 
         // 404 catch-all within protected area
         {
@@ -1167,33 +889,12 @@ const router = createBrowserRouter(
       ],
     },
 
-    // Public: Share link (high-res image sharing)
-    {
-      path: '/share/:token',
-      element: (
-        <Suspense fallback={<SuspenseFallback />}>
-          <SharePage />
-        </Suspense>
-      ),
-    },
-
-    // Public: Viewing room
-    {
-      path: '/view/:slug',
-      element: (
-        <Suspense fallback={<SuspenseFallback />}>
-          <ViewingRoomPage />
-        </Suspense>
-      ),
-    },
   ],
   {
     basename: import.meta.env.BASE_URL.replace(/\/$/, ''),
   },
 );
 
-// ---------------------------------------------------------------------------
-// App
 // ---------------------------------------------------------------------------
 export default function App() {
   return (

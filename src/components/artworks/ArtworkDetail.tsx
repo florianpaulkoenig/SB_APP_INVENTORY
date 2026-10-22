@@ -31,7 +31,6 @@ export interface ArtworkDetailProps {
   onDelete: () => Promise<void>;
   onMarkSold?: (salePrice: number, currency: string, saleDate: string, saleCity: string, saleCountry: string, saleType: string, paymentExpectedDate: string | null, collector: CollectorValue) => Promise<void>;
   onDuplicate?: () => Promise<void>;
-  onTogglePartnerAvailability?: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -69,17 +68,14 @@ function lookupLabel(
 export function ArtworkDetail({
   artwork,
   galleryName,
-  isAdmin,
   onEdit,
   onDelete,
   onMarkSold,
   onDuplicate,
-  onTogglePartnerAvailability,
 }: ArtworkDetailProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
-  const [togglingPartner, setTogglingPartner] = useState(false);
 
   // ---- Sold dialog state ----
   const [showSoldDialog, setShowSoldDialog] = useState(false);
@@ -230,37 +226,6 @@ export function ArtworkDetail({
           <InfoRow label="Gallery" value={galleryName} />
           <InfoRow label="Inventory Number" value={artwork.inventory_number} />
 
-          {/* Available for Partners */}
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wider text-primary-400">
-              Available for Partners
-            </dt>
-            <dd className="mt-1 flex items-center gap-2">
-              <span
-                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                  artwork.available_for_partners
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-primary-100 text-primary-500'
-                }`}
-              >
-                {artwork.available_for_partners ? 'Yes' : 'No'}
-              </span>
-              {isAdmin && onTogglePartnerAvailability && (
-                <button
-                  type="button"
-                  disabled={togglingPartner}
-                  onClick={async () => {
-                    setTogglingPartner(true);
-                    await onTogglePartnerAvailability();
-                    setTogglingPartner(false);
-                  }}
-                  className="text-xs text-accent hover:text-accent/80 underline disabled:opacity-50"
-                >
-                  {togglingPartner ? 'Saving...' : artwork.available_for_partners ? 'Remove' : 'Enable'}
-                </button>
-              )}
-            </dd>
-          </div>
         </dl>
         {!artwork.medium &&
           artwork.year == null &&

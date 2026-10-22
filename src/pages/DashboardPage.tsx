@@ -19,7 +19,6 @@ import { CashFlowChart } from '../components/dashboard/CashFlowChart';
 import { ConsignmentAgingChart } from '../components/dashboard/ConsignmentAgingChart';
 import { ExhibitionImpactTable } from '../components/dashboard/ExhibitionImpactTable';
 import { PriceIntelligenceCard } from '../components/dashboard/PriceIntelligenceCard';
-import { ViewingRoomEngagement } from '../components/dashboard/ViewingRoomEngagement';
 import { GeoDistributionChart } from '../components/dashboard/GeoDistributionChart';
 import { RecurringFairNotice } from '../components/exhibitions/RecurringFairNotice';
 
@@ -1070,11 +1069,8 @@ export function DashboardPage() {
               <ExhibitionImpactTable data={analyticsData.exhibitionImpact} />
             </div>
 
-            {/* Row 5: Viewing Room Engagement + Geographic Distribution */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <ViewingRoomEngagement data={analyticsData.viewingRoomEngagement} />
-              <GeoDistributionChart data={analyticsData.geoDistribution} />
-            </div>
+            {/* Row 5: Geographic Distribution (full width) */}
+            <GeoDistributionChart data={analyticsData.geoDistribution} />
           </div>
         </div>
       )}

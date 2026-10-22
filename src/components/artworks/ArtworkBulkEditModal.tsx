@@ -29,7 +29,7 @@ import type {
 
 type BulkField =
   | 'category' | 'motif' | 'series' | 'color'
-  | 'price' | 'currency' | 'status' | 'available_for_partners'
+  | 'price' | 'currency' | 'status'
   | 'current_location' | 'gallery_id'
   | 'commission_gallery' | 'commission_noa' | 'commission_artist'
   | 'medium' | 'year' | 'dimension_unit' | 'size_category' | 'edition_type'
@@ -51,7 +51,6 @@ const FIELD_DEFS: FieldDef[] = [
   { key: 'price', label: 'Price', section: 'Commerce' },
   { key: 'currency', label: 'Currency', section: 'Commerce' },
   { key: 'status', label: 'Status', section: 'Commerce' },
-  { key: 'available_for_partners', label: 'Available for Partners', section: 'Commerce' },
   // Location & Gallery
   { key: 'current_location', label: 'Current Location', section: 'Location & Gallery' },
   { key: 'gallery_id', label: 'Gallery', section: 'Location & Gallery' },
@@ -105,7 +104,6 @@ export function ArtworkBulkEditModal({
     price: '',
     currency: 'CHF',
     status: 'available',
-    available_for_partners: false,
     current_location: '',
     gallery_id: null as string | null,
     commission_gallery: '',
@@ -178,7 +176,6 @@ export function ArtworkBulkEditModal({
       price: '',
       currency: 'CHF',
       status: 'available',
-      available_for_partners: false,
       current_location: '',
       gallery_id: null,
       commission_gallery: '',
@@ -267,21 +264,6 @@ export function ArtworkBulkEditModal({
             onChange={(e) => setValue('status', e.target.value as ArtworkStatus)}
             disabled={!isEnabled}
           />
-        );
-      case 'available_for_partners':
-        return (
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={Boolean(values.available_for_partners)}
-              onChange={(e) => setValue('available_for_partners', e.target.checked)}
-              disabled={!isEnabled}
-              className="h-4 w-4 rounded border-primary-300 text-accent-600 focus:ring-accent-500"
-            />
-            <span className={`text-sm ${isEnabled ? 'text-primary-700' : 'text-primary-400'}`}>
-              Yes
-            </span>
-          </label>
         );
       case 'current_location':
         return (

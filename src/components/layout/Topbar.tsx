@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useUnreadNews } from '../../hooks/useUnreadNews';
-import { useAiInsightCount } from '../../hooks/useAiInsightCount';
 import { getInitials } from '../../lib/utils';
 import { usePortfolio } from '../../contexts/PortfolioContext';
 import { GlobalSearchOverlay } from './GlobalSearchOverlay';
@@ -20,12 +18,9 @@ interface TopbarProps {
 // Topbar component
 // ---------------------------------------------------------------------------
 export function Topbar({ onMenuToggle, title }: TopbarProps) {
-  const navigate = useNavigate();
   const { pathname } = useLocation();
   const { portfolio } = usePortfolio();
-  const { user, signOut, role } = useAuth();
-  const { unreadCount } = useUnreadNews();
-  const { count: aiInsightCount } = useAiInsightCount();
+  const { user, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -105,43 +100,6 @@ export function Topbar({ onMenuToggle, title }: TopbarProps) {
             <circle cx="8.5" cy="8.5" r="5.5" />
             <path strokeLinecap="round" d="M13 13l4 4" />
           </svg>
-        </button>
-
-        {/* AI Insights button (admin only) */}
-        {role === 'admin' && (
-          <button
-            type="button"
-            onClick={() => navigate('/analytics/strategic-intelligence')}
-            className="relative p-2 text-white/60 transition-colors hover:text-white"
-            aria-label="AI Insights"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 3l.3 1.05a2 2 0 001.15 1.15L17.5 5.5l-1.05.3a2 2 0 00-1.15 1.15L15 8l-.3-1.05a2 2 0 00-1.15-1.15L12.5 5.5l1.05-.3a2 2 0 001.15-1.15L15 3z" />
-            </svg>
-            {aiInsightCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
-                {aiInsightCount > 9 ? '9+' : aiInsightCount}
-              </span>
-            )}
-          </button>
-        )}
-
-        {/* Notification bell */}
-        <button
-          type="button"
-          onClick={() => navigate(role === 'gallery' ? '/gallery/news' : '/news')}
-          className="relative p-2 text-white/60 transition-colors hover:text-white"
-          aria-label="Notifications"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 2a5 5 0 00-5 5v3l-1.5 2.5h13L15 10V7a5 5 0 00-5-5zM8 15.5a2 2 0 004 0" />
-          </svg>
-          {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
         </button>
 
         {/* User avatar dropdown */}

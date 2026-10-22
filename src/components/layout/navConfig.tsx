@@ -234,8 +234,8 @@ export const navSections: NavSection[] = [
   {
     title: 'INVENTORY',
     items: [
-      { label: 'Dashboard', to: '/', icon: icons.dashboard, roles: ['admin', 'gallery', 'collector'] },
-      { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin', 'gallery', 'collector'] },
+      { label: 'Dashboard', to: '/', icon: icons.dashboard, roles: ['admin'] },
+      { label: 'Artworks', to: '/artworks', icon: icons.artworks, roles: ['admin'] },
       { label: 'Production Orders', to: '/production', icon: icons.production, roles: ['admin'] },
       { label: 'Galleries', to: '/galleries', icon: icons.galleries, roles: ['admin'] },
       { label: 'Collections', to: '/collections', icon: icons.collections, roles: ['admin'] },
@@ -244,15 +244,15 @@ export const navSections: NavSection[] = [
   {
     title: 'DOCUMENTS',
     items: [
-      { label: 'Certificates', to: '/certificates', icon: icons.certificate, roles: ['admin', 'collector'] },
+      { label: 'Certificates', to: '/certificates', icon: icons.certificate, roles: ['admin'] },
       { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
-      { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin', 'gallery'] },
+      { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin'] },
     ],
   },
   {
     title: 'SALES & FINANCE',
     items: [
-      { label: 'Sales', to: '/sales', icon: icons.sales, roles: ['admin', 'gallery'] },
+      { label: 'Sales', to: '/sales', icon: icons.sales, roles: ['admin'] },
       { label: 'Liquidity', to: '/liquidity', icon: liquidityIcon, roles: ['admin'] },
       { label: 'Contacts', to: '/contacts', icon: icons.contacts, roles: ['admin'] },
     ],
@@ -277,18 +277,6 @@ export const navSections: NavSection[] = [
     ],
   },
   {
-    title: 'GALLERY PORTAL',
-    items: [
-      { label: 'Gallery Dashboard', to: '/gallery/dashboard', icon: icons.dashboard, roles: ['gallery'] },
-      { label: 'Available Works', to: '/gallery/available-works', icon: icons.artworks, roles: ['gallery'] },
-      { label: 'My Artworks', to: '/gallery/artworks', icon: icons.artworks, roles: ['gallery'] },
-      { label: 'My Deliveries', to: '/gallery/deliveries', icon: icons.delivery, roles: ['gallery'] },
-      { label: 'Certificates', to: '/gallery/certificates', icon: icons.certificate, roles: ['gallery'] },
-      { label: 'Media Library', to: '/gallery/media', icon: icons.imageSharing, roles: ['gallery'] },
-      { label: 'News', to: '/gallery/news', icon: icons.emailLog, roles: ['gallery'] },
-    ],
-  },
-  {
     title: 'SELTEN GENUTZT',
     collapsible: true,
     items: [
@@ -298,10 +286,8 @@ export const navSections: NavSection[] = [
       { label: 'Packing Lists', to: '/packing-lists', icon: icons.packingList, roles: ['admin'] },
       { label: 'Invoices', to: '/invoices', icon: icons.invoices, roles: ['admin'] },
       { label: 'Enquiries', to: '/enquiries', icon: icons.enquiry, roles: ['admin'] },
-      { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin', 'gallery'] },
       { label: 'Production Requests', to: '/production-requests', icon: icons.production, roles: ['admin'] },
       { label: 'Price Management', to: '/price-management', icon: icons.priceTag, roles: ['admin'] },
-      { label: 'Strategic Intelligence', to: '/analytics/strategic', icon: icons.analytics, roles: ['admin'] },
       { label: 'Collector & Sales', to: '/analytics/collectors', icon: icons.contacts, roles: ['admin'] },
       { label: 'Market & Auction', to: '/analytics/market', icon: icons.map, roles: ['admin'] },
     ],
@@ -332,7 +318,6 @@ export const noaNavSections: NavSection[] = [
       { label: 'Exhibitions', to: '/exhibitions', icon: icons.exhibition, roles: ['admin'] },
       { label: 'Catalogues', to: '/catalogues', icon: icons.catalogue, roles: ['admin'] },
       { label: 'Deliveries', to: '/deliveries', icon: icons.delivery, roles: ['admin'] },
-      { label: 'Viewing Rooms', to: '/viewing-rooms', icon: icons.viewingRooms, roles: ['admin'] },
       { label: 'Publication Budget', to: '/publication-budget', icon: publicationIcon, roles: ['admin'] },
     ],
   },
@@ -372,7 +357,6 @@ export const noaLiquidityNavSections: NavSection[] = [
 ];
 
 export const bottomItems: NavItem[] = [
-  { label: 'Users', to: '/users', icon: icons.contacts, roles: ['admin'] },
   { label: 'Settings', to: '/settings', icon: icons.settings, roles: ['admin'] },
 ];
 

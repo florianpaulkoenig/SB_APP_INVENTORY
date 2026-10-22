@@ -20,8 +20,6 @@ export interface AuthContextValue {
   role: UserRole | null;
   profile: UserProfileRow | null;
   isAdmin: boolean;
-  isGallery: boolean;
-  isCollector: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -235,8 +233,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role,
     profile,
     isAdmin: role === 'admin',
-    isGallery: role === 'gallery',
-    isCollector: role === 'collector',
     signIn,
     signOut,
   };

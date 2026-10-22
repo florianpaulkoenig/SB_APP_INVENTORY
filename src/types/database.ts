@@ -1581,89 +1581,9 @@ export type EmailLogInsert = {
 
 export type EmailLogUpdate = Partial<EmailLogInsert>;
 
-// -- share_links -------------------------------------------------------------
-
-export type ShareLinkRow = {
-  id: string;
-  user_id: string;
-  token: string;
-  artwork_ids: string[];
-  image_types: string[];
-  expiry: string | null;
-  download_count: number;
-  created_at: string;
-  portfolio: string;
-}
-
-export type ShareLinkInsert = {
-  id?: string;
-  user_id?: string;
-  token: string;
-  artwork_ids: string[];
-  image_types?: string[];
-  expiry?: string | null;
-  download_count?: number;
-  created_at?: string;
-  portfolio?: string;
-}
-
-export type ShareLinkUpdate = Partial<ShareLinkInsert>;
-
-// -- viewing_rooms ------------------------------------------------------------
-
-export type ViewingRoomVisibility = 'public' | 'link_only' | 'password';
-export type ViewingRoomTemplate = 'grid' | 'carousel' | 'editorial';
-
-export type ViewingRoomRow = {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string | null;
-  slug: string;
-  artwork_ids: string[];
-  visibility: ViewingRoomVisibility;
-  template: ViewingRoomTemplate;
-  password_hash: string | null;
-  contact_id: string | null;
-  published: boolean;
-  created_at: string;
-  updated_at: string;
-  branding: unknown | null;
-  portfolio: string;
-}
-
-export type ViewingRoomInsert = {
-  id?: string;
-  user_id?: string;
-  title: string;
-  description?: string | null;
-  slug: string;
-  artwork_ids?: string[];
-  visibility?: ViewingRoomVisibility;
-  template?: ViewingRoomTemplate;
-  password_hash?: string | null;
-  contact_id?: string | null;
-  published?: boolean;
-  created_at?: string;
-  updated_at?: string;
-  branding?: unknown | null;
-  portfolio?: string;
-}
-
-export type ViewingRoomUpdate = Partial<ViewingRoomInsert>;
-
-// -- viewing_room_views -------------------------------------------------------
-
-export type ViewingRoomViewRow = {
-  id: string;
-  viewing_room_id: string;
-  viewed_at: string;
-  viewer_ip: string | null;
-}
-
 // -- user_profiles ------------------------------------------------------------
 
-export type UserRole = 'admin' | 'gallery' | 'collector';
+export type UserRole = 'admin';
 
 export type UserProfileRow = {
   id: string;
@@ -2114,34 +2034,6 @@ export type ReportingReminderInsert = {
 }
 
 export type ReportingReminderUpdate = Partial<ReportingReminderInsert>;
-
-// -- gallery_access_tiers ----------------------------------------------------
-
-export type AccessTier = 'standard' | 'priority' | 'premium';
-
-export type GalleryAccessTierRow = {
-  id: string;
-  user_id: string;
-  gallery_id: string;
-  tier: AccessTier;
-  unlocked_features: string[] | null;
-  valid_until: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export type GalleryAccessTierInsert = {
-  id?: string;
-  user_id?: string;
-  gallery_id: string;
-  tier?: AccessTier;
-  unlocked_features?: string[] | null;
-  valid_until?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export type GalleryAccessTierUpdate = Partial<GalleryAccessTierInsert>;
 
 // -- career_milestones -------------------------------------------------------
 
@@ -2868,12 +2760,6 @@ export type Database = {
           },
         ];
       };
-      share_links: {
-        Row: ShareLinkRow;
-        Insert: ShareLinkInsert;
-        Update: ShareLinkUpdate;
-        Relationships: [];
-      };
       contacts: {
         Row: ContactRow;
         Insert: ContactInsert;
@@ -3102,19 +2988,6 @@ export type Database = {
           },
         ];
       };
-      viewing_rooms: {
-        Row: ViewingRoomRow;
-        Insert: ViewingRoomInsert;
-        Update: ViewingRoomUpdate;
-        Relationships: [
-          {
-            foreignKeyName: 'viewing_rooms_contact_id_fkey';
-            columns: ['contact_id'];
-            referencedRelation: 'contacts';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       user_profiles: {
         Row: UserProfileRow;
         Insert: UserProfileInsert;
@@ -3281,19 +3154,6 @@ export type Database = {
             foreignKeyName: 'reporting_reminders_sale_id_fkey';
             columns: ['sale_id'];
             referencedRelation: 'sales';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      gallery_access_tiers: {
-        Row: GalleryAccessTierRow;
-        Insert: GalleryAccessTierInsert;
-        Update: GalleryAccessTierUpdate;
-        Relationships: [
-          {
-            foreignKeyName: 'gallery_access_tiers_gallery_id_fkey';
-            columns: ['gallery_id'];
-            referencedRelation: 'galleries';
             referencedColumns: ['id'];
           },
         ];
@@ -3500,25 +3360,6 @@ export type Database = {
           },
         ];
       };
-      news_posts: {
-        Row: NewsPostRow;
-        Insert: NewsPostInsert;
-        Update: NewsPostUpdate;
-        Relationships: [];
-      };
-      news_read_status: {
-        Row: NewsReadStatusRow;
-        Insert: NewsReadStatusInsert;
-        Update: NewsReadStatusUpdate;
-        Relationships: [
-          {
-            foreignKeyName: 'news_read_status_news_id_fkey';
-            columns: ['news_id'];
-            referencedRelation: 'news_posts';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       packing_list_crates: {
         Row: PackingListCrateRow;
         Insert: PackingListCrateInsert;
@@ -3602,38 +3443,6 @@ export type Database = {
           },
         ];
       };
-      sale_requests: {
-        Row: SaleRequestRow;
-        Insert: SaleRequestInsert;
-        Update: SaleRequestUpdate;
-        Relationships: [
-          {
-            foreignKeyName: 'sale_requests_artwork_id_fkey';
-            columns: ['artwork_id'];
-            referencedRelation: 'artworks';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'sale_requests_gallery_id_fkey';
-            columns: ['gallery_id'];
-            referencedRelation: 'galleries';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      viewing_room_views: {
-        Row: ViewingRoomViewRow;
-        Insert: ViewingRoomViewInsert;
-        Update: ViewingRoomViewUpdate;
-        Relationships: [
-          {
-            foreignKeyName: 'viewing_room_views_viewing_room_id_fkey';
-            columns: ['viewing_room_id'];
-            referencedRelation: 'viewing_rooms';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
     };
     // `[_ in never]` (not Record<string, never>): its `keyof` must stay `never`,
     // otherwise postgrest-js treats every column as a computed field and
@@ -3643,22 +3452,6 @@ export type Database = {
       generate_document_number: {
         Args: { p_user_id: string; p_prefix: string };
         Returns: string;
-      };
-      record_viewing_room_view: {
-        Args: { p_viewing_room_id: string; p_viewer_ip: string | null };
-        Returns: undefined;
-      };
-      get_share_link_by_token: {
-        Args: { p_token: string };
-        Returns: ShareLinkRow[];
-      };
-      increment_share_link_download: {
-        Args: { p_token: string };
-        Returns: undefined;
-      };
-      get_viewing_room_by_slug: {
-        Args: { p_slug: string };
-        Returns: ViewingRoomRow[];
       };
     };
     Enums: { [_ in never]: never };
@@ -4029,50 +3822,6 @@ export type MediaFileInsert = {
 
 export type MediaFileUpdate = Partial<MediaFileInsert>;
 
-export type NewsPostRow = {
-  id: string;
-  title: string;
-  body: string;
-  image_url: string | null;
-  external_link: string | null;
-  published: boolean;
-  published_at: string | null;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export type NewsPostInsert = {
-  id?: string;
-  title: string;
-  body: string;
-  image_url?: string | null;
-  external_link?: string | null;
-  published?: boolean;
-  published_at?: string | null;
-  created_by: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export type NewsPostUpdate = Partial<NewsPostInsert>;
-
-export type NewsReadStatusRow = {
-  id: string;
-  news_id: string;
-  user_id: string;
-  read_at: string;
-}
-
-export type NewsReadStatusInsert = {
-  id?: string;
-  news_id: string;
-  user_id: string;
-  read_at?: string;
-}
-
-export type NewsReadStatusUpdate = Partial<NewsReadStatusInsert>;
-
 export type ProductionOrderImageNoteRow = {
   id: string;
   production_order_id: string;
@@ -4093,48 +3842,10 @@ export type ProductionOrderImageNoteInsert = {
 
 export type ProductionOrderImageNoteUpdate = Partial<ProductionOrderImageNoteInsert>;
 
-export type SaleRequestRow = {
-  id: string;
-  artwork_id: string;
-  gallery_id: string;
-  requested_by: string;
-  realized_price: number;
-  currency: string;
-  buyer_name: string | null;
-  notes: string | null;
-  status: string;
-  admin_notes: string | null;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export type SaleRequestInsert = {
-  id?: string;
-  artwork_id: string;
-  gallery_id: string;
-  requested_by: string;
-  realized_price: number;
-  currency?: string;
-  buyer_name?: string | null;
-  notes?: string | null;
-  status?: string;
-  admin_notes?: string | null;
-  reviewed_by?: string | null;
-  reviewed_at?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export type SaleRequestUpdate = Partial<SaleRequestInsert>;
-
 // Insert/Update aliases for row types that existed but were never wired into
 // the Tables map (kept permissive — call sites historically cast `as never`).
 export type PriceIntelligenceReportInsert = Partial<PriceIntelligenceReportRow>;
 export type PriceIntelligenceReportUpdate = Partial<PriceIntelligenceReportInsert>;
-export type ViewingRoomViewInsert = Partial<ViewingRoomViewRow>;
-export type ViewingRoomViewUpdate = Partial<ViewingRoomViewInsert>;
 export type ExhibitionFloorPlanUpdate = Partial<ExhibitionFloorPlanInsert>;
 export type ExhibitionProductionOrderUpdate = Partial<ExhibitionProductionOrderInsert>;
 export type ProductionOrderDocumentUpdate = Partial<ProductionOrderDocumentInsert>;

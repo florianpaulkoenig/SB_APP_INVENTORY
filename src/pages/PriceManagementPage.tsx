@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // NOA Inventory -- Price Management Page
-// Central price management with bulk updates, price history, and AI research.
+// Central price management with bulk updates and price history.
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect, useCallback } from 'react';
@@ -51,14 +51,6 @@ interface PriceHistoryRow {
   effective_date: string;
   notes: string | null;
   artworks: { title: string } | null;
-}
-
-interface PriceReport {
-  id: string;
-  created_at: string;
-  title: string | null;
-  summary: string | null;
-  report_data: Record<string, unknown> | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -113,7 +105,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 
 export function PriceManagementPage() {
   const { toast } = useToast();
-  const { previewPriceChange, applyPriceChange, notifyGalleries } = useBulkPriceUpdate();
+  const { previewPriceChange, applyPriceChange } = useBulkPriceUpdate();
 
   // ---- Section 1: Bulk Price Update state ---------------------------------
 
@@ -133,13 +125,6 @@ export function PriceManagementPage() {
   const [history, setHistory] = useState<PriceHistoryRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
-  // ---- Section 3: AI Price Research state ---------------------------------
-
-  const [reports, setReports] = useState<PriceReport[]>([]);
-  const [reportsLoading, setReportsLoading] = useState(true);
-  const [analysisRunning, setAnalysisRunning] = useState(false);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
-
   // ---- Section 4 & 5: Collapsible sections --------------------------------
 
   const [showPricingIntel, setShowPricingIntel] = useState(false);
@@ -148,7 +133,7 @@ export function PriceManagementPage() {
   const { data: pricingData, loading: pricingLoading } = usePricingStrategy();
   const { data: trajectoryData, loading: trajectoryLoading } = usePriceTrajectory();
 
-  // ---- Fetch price history and reports on mount ---------------------------
+  // ---- Fetch price history on mount ---------------------------------------
 
   useEffect(() => {
     async function fetchHistory() {
@@ -163,20 +148,7 @@ export function PriceManagementPage() {
       setHistoryLoading(false);
     }
 
-    async function fetchReports() {
-      setReportsLoading(true);
-      const { data } = await supabase
-        .from('price_intelligence_reports')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (data) setReports(data as PriceReport[]);
-      setReportsLoading(false);
-    }
-
     fetchHistory();
-    fetchReports();
   }, []);
 
   // ---- Preview handler ----------------------------------------------------
@@ -226,42 +198,6 @@ export function PriceManagementPage() {
     }
   }, [previews, applyNote, applyPriceChange, toast]);
 
-  // ---- Notify galleries handler -------------------------------------------
-
-  const handleNotify = useCallback(async () => {
-    await notifyGalleries(previews);
-  }, [previews, notifyGalleries]);
-
-  // ---- AI analysis handler ------------------------------------------------
-
-  const handleRunAnalysis = useCallback(async () => {
-    setAnalysisRunning(true);
-    setAnalysisError(null);
-
-    const { error } = await supabase.functions.invoke('price-research-agent', {
-      body: { artist: 'Simon Berger' },
-    });
-
-    if (error) {
-      setAnalysisError(
-        'Unable to run AI analysis. The edge function may not be deployed yet.',
-      );
-      setAnalysisRunning(false);
-      return;
-    }
-
-    // Refresh reports after analysis completes
-    const { data } = await supabase
-      .from('price_intelligence_reports')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    if (data) setReports(data as PriceReport[]);
-    setAnalysisRunning(false);
-    toast({ title: 'AI analysis completed', variant: 'success' });
-  }, [toast]);
-
   // ---- Render -------------------------------------------------------------
 
   return (
@@ -272,7 +208,7 @@ export function PriceManagementPage() {
           Price Management
         </h1>
         <p className="mt-1 text-sm text-primary-500">
-          Manage artwork pricing, apply bulk updates, and run AI market analysis
+          Manage artwork pricing, apply bulk updates and review price history
         </p>
       </div>
 
@@ -421,12 +357,6 @@ export function PriceManagementPage() {
                   </Button>
                 </div>
               )}
-
-              {applied && (
-                <Button variant="outline" onClick={handleNotify}>
-                  Notify Galleries
-                </Button>
-              )}
             </div>
           </div>
         )}
@@ -480,85 +410,6 @@ export function PriceManagementPage() {
             </table>
           </div>
         )}
-      </Card>
-
-      {/* ================================================================== */}
-      {/* Section 3: AI Price Research                                        */}
-      {/* ================================================================== */}
-      <Card className="mb-8 p-6">
-        <h2 className="font-display text-lg font-semibold text-primary-900 mb-2">
-          AI Price Research
-        </h2>
-        <p className="text-sm text-primary-500 mb-4">
-          Run an AI-powered market analysis for Simon Berger&apos;s artwork pricing.
-        </p>
-
-        <Button onClick={handleRunAnalysis} disabled={analysisRunning}>
-          {analysisRunning ? (
-            <span className="flex items-center gap-2">
-              <LoadingSpinner size="sm" />
-              Running Analysis...
-            </span>
-          ) : (
-            'Run Market Analysis'
-          )}
-        </Button>
-
-        {analysisError && (
-          <p className="mt-3 text-sm text-red-600">{analysisError}</p>
-        )}
-
-        {/* Reports list */}
-        <div className="mt-6">
-          {reportsLoading ? (
-            <div className="flex justify-center py-4">
-              <LoadingSpinner />
-            </div>
-          ) : reports.length === 0 ? (
-            <p className="text-sm text-primary-500">
-              No AI reports yet. Run your first analysis above.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {reports.map((report) => (
-                <div
-                  key={report.id}
-                  className="rounded-lg border border-primary-100 p-4"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <h3 className="text-sm font-medium text-primary-900">
-                      {report.title || 'Market Analysis Report'}
-                    </h3>
-                    <span className="text-xs text-primary-400 whitespace-nowrap">
-                      {formatDate(report.created_at)}
-                    </span>
-                  </div>
-                  {report.summary && (
-                    <p className="mt-2 text-sm text-primary-600">{report.summary}</p>
-                  )}
-                  {report.report_data &&
-                    Array.isArray((report.report_data as Record<string, unknown>).recommendations) && (
-                      <div className="mt-3">
-                        <h4 className="text-xs font-medium text-primary-500 uppercase tracking-wider mb-1">
-                          Recommendations
-                        </h4>
-                        <ul className="list-disc list-inside space-y-1">
-                          {(
-                            (report.report_data as Record<string, unknown>)
-                              .recommendations as string[]
-                          ).map((rec, i) => (
-                            <li key={i} className="text-sm text-primary-700">
-                              {rec}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </Card>
 
       {/* ================================================================== */}

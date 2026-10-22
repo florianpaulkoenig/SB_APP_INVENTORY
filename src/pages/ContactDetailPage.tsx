@@ -27,7 +27,6 @@ const JOURNEY_TYPE_CONFIG: Record<
 > = {
   enquiry: { label: 'Enquiry', bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
   interaction: { label: 'Interaction', bg: 'bg-gray-100', text: 'text-gray-700', dot: 'bg-gray-400' },
-  viewing_room: { label: 'Viewing Room', bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500' },
   deal: { label: 'Deal', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   sale: { label: 'Sale', bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
   wishlist: { label: 'Wish List', bg: 'bg-pink-50', text: 'text-pink-700', dot: 'bg-pink-500' },
